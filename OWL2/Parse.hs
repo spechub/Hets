@@ -21,7 +21,6 @@ import OWL2.Keywords
 import OWL2.ColonKeywords
 
 import Common.Keywords
-import Common.Id
 import Common.IRI
 import Common.Lexer
 import Common.Parsec
@@ -35,6 +34,7 @@ import Text.ParserCombinators.Parsec
 import Control.Monad (liftM2)
 import Data.Char
 import qualified Data.Map as Map
+import Data.Maybe (isJust)
 
 characters :: [Character]
 characters = [minBound .. maxBound]
@@ -164,10 +164,12 @@ fullIri :: CharParser st IRI
 fullIri = angles iriParser
 
 uriP :: CharParser st IRI
-uriP =
-  skips $ try $ checkWithUsing showIRI uriQ $ \ q -> let p = prefixName q in
-  if null p then notElem (show $ iriPath q) owlKeywords
-   else notElem p $ map (takeWhile (/= ':'))
+uriP = skips $ try $ do
+  colonM <- optionMaybe . try . lookAhead $ char ':'
+  checkWithUsing (\i -> "keyword \"" ++ showIRI i ++ "\"") uriQ $ \ q -> let p = prefixName q in
+    if not (isAbbrev q) || isJust colonM then True
+    else if null p then notElem (iFragment q) owlKeywords
+    else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
 
@@ -276,7 +278,7 @@ stringLiteral = do
         string asP
         t <- skips $ optionMaybe languageTag
         return $ Literal s $ Untyped t
-    <|> skips (return $ Literal s $ Typed $ mkIRI stringS)
+    <|> skips (return $ Literal s $ Typed $ (mkIRI stringS) {prefixName = "xsd"} )
 
 literal :: CharParser st Literal
 literal = do
@@ -473,7 +475,7 @@ restrictionAny opExpr = do
       case pr of
         Left p -> return $ ObjectValuesFrom v opExpr p
         Right r -> case opExpr of
-          ObjectProp dpExpr -> return $ DataValuesFrom v dpExpr r
+          ObjectProp dpExpr -> return $ DataValuesFrom v [dpExpr] r
           _ -> unexpected $ "dataRange after " ++ showQuantifierType v
     <|> do
       (c, n) <- card

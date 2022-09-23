@@ -33,6 +33,7 @@ import Common.Utils
 import Common.SAX
 import Control.Monad
 import Common.Lib.Maybe
+import qualified Control.Monad.Fail as Fail
 import qualified Data.ByteString.Lazy as L
 import Text.XML.Expat.SAX
 
@@ -226,7 +227,7 @@ importData opts fp' = do
   -- for dmtcp we need an image owned by the current user
   copyFile imageFile tmpImage
   e2 <- doesFileExist imageFile
-  unless e2 $ fail $ image ++ " not found"
+  unless e2 $ Fail.fail $ image ++ " not found"
   tempFile <- getTempFile "" (takeBaseName fp)
   (ex, sout, err) <- executeProcess dmtcpBin [tmpImage]
     $ "use_file " ++ show fp ++ ";;\n"
@@ -238,7 +239,7 @@ importData opts fp' = do
   case ex of
    ExitFailure _ -> do
      removeFile tempFile
-     fail $ "HolLight.importData: " ++ err
+     Fail.fail $ "HolLight.importData: " ++ err
    ExitSuccess -> do
     putIfVerbose opts 5 sout
     let e = ([], [])

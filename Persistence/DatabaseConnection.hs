@@ -19,6 +19,8 @@ import qualified Persistence.PostgreSQL as PSQL
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Logger
+import Control.Monad.IO.Unlift
+import qualified Control.Monad.Fail as Fail
 
 import Data.Maybe (fromMaybe)
 import Data.Pool (Pool)
@@ -28,24 +30,23 @@ import Database.Persist.Sql
 defaultPoolSize :: Int
 defaultPoolSize = 4
 
-getConnection :: ( BaseBackend backend ~ SqlBackend
-                 , IsPersistBackend backend
-                 , MonadIO m
+getConnection :: ( MonadIO m
                  , MonadBaseControl IO m
                  , MonadLogger m
+                 , MonadUnliftIO m
                  )
-              => DBConfig -> IO ((Pool backend -> m a) -> m a)
+              => DBConfig -> IO ((Pool SqlBackend -> m a) -> m a)
 getConnection dbConfig = case adapter dbConfig of
 #ifdef MYSQL
-  Just "mysql" -> fail mySQLErrorMessage
-  Just "mysql2" -> fail mySQLErrorMessage
+  Just "mysql" -> Fail.fail mySQLErrorMessage
+  Just "mysql2" -> Fail.fail mySQLErrorMessage
   Just "mysql" -> return $ MySQL.connection dbConfig $
                     fromMaybe defaultPoolSize $ pool dbConfig
   Just "mysql" -> return $ MySQL.connection dbConfig $
                     fromMaybe defaultPoolSize $ pool dbConfig
 #endif
 #ifdef UNI_PACKAGE
-  Just "postgresql" -> fail postgreSQLErrorMessage
+  Just "postgresql" -> Fail.fail postgreSQLErrorMessage
 #else
   Just "postgresql" -> return $ PSQL.connection dbConfig $
                          fromMaybe defaultPoolSize $ pool dbConfig
@@ -54,7 +55,7 @@ getConnection dbConfig = case adapter dbConfig of
                      fromMaybe defaultPoolSize $ pool dbConfig
   Just "sqlite3" -> return $ SQLite.connection dbConfig $
                       fromMaybe defaultPoolSize $ pool dbConfig
-  _ -> fail ("Persistence.Database: No database adapter specified "
+  _ -> Fail.fail ("Persistence.Database: No database adapter specified "
                ++ "or adapter unsupported.")
   where
 #ifdef MYSQL

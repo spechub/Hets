@@ -1,5 +1,7 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies
-  , FlexibleInstances, DeriveDataTypeable #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  ./CASL/Morphism.hs
 Description :  Symbols and signature morphisms for the CASL logic
@@ -84,6 +86,7 @@ import Common.Result
 import Common.Utils (composeMap)
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 type SymbolSet = Set.Set Symbol
 type SymbolMap = Map.Map Symbol Symbol
@@ -342,7 +345,7 @@ symbOrMapToRaw sig msig k sm = case sm of
             return [(w, x), (mkS s1, mkS res2)]
           (A_type s1, A_type s2) ->
             return [(w, x), (mkS s1, mkS s2)]
-          _ -> fail $ "profiles '" ++ showDoc t1 "' and '"
+          _ -> Fail.fail $ "profiles '" ++ showDoc t1 "' and '"
                ++ showDoc t2 "' do not match"
         _ -> return [(w, x)]
 
@@ -585,7 +588,7 @@ legalMor mor =
   && isSubOpMap (inducedOpMap sm (op_map mor) $ opMap s1) (opMap s2)
   && isSubMap (inducedPredMap sm (pred_map mor) $ predMap s1) (predMap s2)
   && legalSign s2
-  then legalMorphismExtension mor else fail "illegal CASL morphism"
+  then legalMorphismExtension mor else Fail.fail "illegal CASL morphism"
 
 isInclOpMap :: Op_map -> Bool
 isInclOpMap = all (\ ((i, _), (j, _)) -> i == j) . Map.toList

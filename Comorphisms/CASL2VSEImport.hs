@@ -33,6 +33,7 @@ import Common.Id
 import Common.ProofTree
 import Common.Result
 import qualified Common.Lib.MapSet as MapSet
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -73,7 +74,7 @@ mapCASLTheory (sig, n_sens) =
   let (tsig, genAx) = mapSig sig
       tsens = map (mapNamed mapFORMULA) n_sens
   in if not $ null $ checkCases tsig (tsens ++ genAx)
-     then fail "case error in signature"
+     then Fail.fail "case error in signature"
      else return (tsig, tsens ++ genAx)
 
 mkIfProg :: FORMULA () -> Program

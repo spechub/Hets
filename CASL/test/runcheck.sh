@@ -1,33 +1,47 @@
-#!/bin/sh
+#!/bin/ksh93
 
 #first parameter is executable
 #second parameter resets ouput files
 
+SD=$( cd ${ dirname $0; }; printf "$PWD" )
+BD=${SD%/*/*}
+
+. ${BD}/Common/test/checkFunctions.sh
+
+cd ${SD} || return 99
+
+warnMsg "skipped until fixed in #2050"
+return 0
+
 PA=$1
 SET=$2
-ANNOS=../../Common/test/Standard.annos
-
-. ../../Common/test/checkFunctions.sh
+ANNOS=${BD}/Common/test/Standard.annos
 
 #extra test
-runchecker Terms ../../Common/test/MixIds.casl MixIds.casl.asTerms.output
-runchecker Terms ../../Common/test/WrongMixIds.casl WrongMixIds.casl.asTerms.output
-runchecker MixfixTerms Terms.casl Terms.casl.asMixfixTerms.output
-runchecker MixfixFormula Formula.casl Formula.casl.asMixfixFormula.output
+runchecker Terms ${BD}/Common/test/MixIds.casl \
+	MixIds.casl.asTerms.output || addErr
+runchecker Terms ${BD}/Common/test/WrongMixIds.casl \
+	WrongMixIds.casl.asTerms.output || addErr
+runchecker MixfixTerms Terms.casl \
+	Terms.casl.asMixfixTerms.output || addErr
+runchecker MixfixFormula Formula.casl \
+	Formula.casl.asMixfixFormula.output || addErr
 
-#don't take files starting with "Wrong"
-for j in [A-V]*.casl; 
-do
-    i=`basename $j .casl`
-    runmycheck $i casl
-    runwrongcheck $i casl
+# don't take files starting with "Wrong"
+for F in [A-V]*.casl ; do
+	T=${F%.casl}
+	T=${T##*/}
+	runmycheck "$T" casl || addErr
+	runwrongcheck "$T" casl || addErr
 done
 
-for j in [X-Z]*.casl; 
-do
-    runchecker sentences $j $j.output
+for F in [X-Z]*.casl ; do
+    runchecker sentences "$F" "${F}.output" || addErr
 done
 
-runchecker analysis BasicSpec.casl BasicSpec.analysis.output
-runchecker signature BasicSpec.casl BasicSpec.signature.output
-runchecker sentences BasicSpec.casl BasicSpec.sentences.output
+runchecker analysis BasicSpec.casl BasicSpec.analysis.output || addErr
+runchecker signature BasicSpec.casl BasicSpec.signature.output || addErr
+runchecker sentences BasicSpec.casl BasicSpec.sentences.output || addErr
+
+errorMsg ${ERR} "${.sh.file}"
+(( ! ERR ))

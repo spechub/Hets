@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs                      #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Persistence.Reasoning.PremiseSelectionSInE ( G_SInEResult (..)
                                                   , SInEParameters (..)
@@ -26,6 +27,7 @@ import Logic.Prover (toNamed)
 import Static.GTheory
 
 import Control.Monad.IO.Class (MonadIO (..))
+import qualified Control.Monad.Fail as Fail
 import Data.List as List hiding (insert)
 import Data.Map (Map)
 import qualified Data.Map as Map
@@ -139,7 +141,7 @@ computeSymbolCommonnesses gTheoryLid ExtSign{plainSign = sign}
                            -> Map symbol Int
                            -> G_SInEResult
                            -> G_SInEResult
-    withSymbolCommonnesses lid symbolCommonnesses' G_SInEResult{..} =
+    withSymbolCommonnesses lid symbolCommonnesses' _ =
       G_SInEResult gSineLogic parameters
         (coerceSymbolCommonnesses "withSymbolCommonnesses" lid gSineLogic symbolCommonnesses')
         premiseTriggers leastCommonSymbols selectedPremises selectedPremiseNames
@@ -184,7 +186,7 @@ computeLeastCommonSymbols gTheoryLid ExtSign{plainSign = sign}
                            -> Map (Named sentence) (symbol, Int)
                            -> G_SInEResult
                            -> G_SInEResult
-    withLeastCommonSymbols lid leastCommonSymbols' G_SInEResult{..} =
+    withLeastCommonSymbols lid leastCommonSymbols' _ =
       G_SInEResult gSineLogic parameters symbolCommonnesses premiseTriggers
         (coerceLeastCommonSymbols "withLeastCommonSymbols" lid gSineLogic leastCommonSymbols')
         selectedPremises selectedPremiseNames
@@ -238,7 +240,7 @@ computePremiseTriggers gTheoryLid ExtSign{plainSign = sign}
                         -> Map symbol [(Double, Named sentence)]
                         -> G_SInEResult
                         -> G_SInEResult
-    withPremiseTriggers lid premiseTriggers' G_SInEResult{..} =
+    withPremiseTriggers lid premiseTriggers' _ =
       G_SInEResult gSineLogic parameters symbolCommonnesses
         (coercePremiseTriggers "withPremiseTriggers" lid gSineLogic premiseTriggers')
         leastCommonSymbols selectedPremises selectedPremiseNames
@@ -335,13 +337,13 @@ selectPremise gTheoryLid triggeredSentence G_SInEResult{..} =
   in  G_SInEResult gTheoryLid parameters symbolCommonnesses' premiseTriggers'
         leastCommonSymbols' selectedPremises' selectedPremiseNames'
 
-saveToDatabase :: MonadIO m
+saveToDatabase :: (MonadIO m, Fail.MonadFail m)
                => HetcatsOpts
                -> G_SInEResult
                -> Entity LocIdBase
                -> SinePremiseSelectionId
                -> DBMonad m ()
-saveToDatabase opts G_SInEResult{..} omsEntity sinePremiseSelectionKey = do
+saveToDatabase _ G_SInEResult{..} omsEntity sinePremiseSelectionKey = do
   saveSymbolPremiseTriggers
   saveSymbolCommonnesses
   return ()
@@ -385,7 +387,7 @@ saveToDatabase opts G_SInEResult{..} omsEntity sinePremiseSelectionKey = do
         limit 1
         return loc_id_bases
       case sentenceL of
-        [] -> fail ("Persistence.Reasoning.saveToDatabase: Could not find " ++ kind ++ " " ++ locId)
+        [] -> Fail.fail ("Persistence.Reasoning.saveToDatabase: Could not find " ++ kind ++ " " ++ locId)
         Entity key _ : _ -> return key
 
 

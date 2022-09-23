@@ -1,3 +1,5 @@
+logic OWL serialization Manchester
+
 spec a = 
 
 Prefix: ns0: <http://cohse.semanticweb.org/ontologies/people#>

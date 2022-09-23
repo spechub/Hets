@@ -47,6 +47,7 @@ import qualified Data.Set as Set
 import Data.List
 import Data.Maybe
 import Control.Monad (foldM, zipWithM)
+import qualified Control.Monad.Fail as Fail
 
 mapTheory :: SimpKind -> Simplifier -> (Env, [Named Le.Sentence])
           -> Result (Isa.Sign, [Named Isa.Sentence])
@@ -85,7 +86,7 @@ transAssumps ga toks = foldM insertOps Map.empty . Map.toList where
 
 -- all possible tokens of mixfix identifiers that must not be used as variables
 getAssumpsToks :: Assumps -> Set.Set String
-getAssumpsToks = Map.foldWithKey (\ i ops s ->
+getAssumpsToks = Map.foldrWithKey (\ i ops s ->
     Set.union s $ Set.unions
         $ map (\ (_, o) -> getConstIsaToks i o baseSign)
                      $ number $ Set.toList ops) Set.empty
@@ -109,7 +110,7 @@ transSignature env toks = do
         { baseSig = baseSign
     -- translation of typeconstructors
         , tsig = emptyTypeSig
-             { arities = Map.foldWithKey extractTypeName Map.empty
+             { arities = Map.foldrWithKey extractTypeName Map.empty
                $ typeMap env }
         , constTab = ct }
 
@@ -205,7 +206,7 @@ transDataEntries env tyToks t@(dt, tys, cs) l = do
             ncs = concatMap (map fst . snd) des
             foldF str cnv = foldM ( \ s i ->
                    if Set.member i s then
-                       fail $ "duplicate " ++ str ++ cnv i
+                       Fail.fail $ "duplicate " ++ str ++ cnv i
                    else return $ Set.insert i s)
             Result d1 mrtys = foldF "datatype " id tys ntys
             Result d2 mrcs = foldF "constructor " new cs ncs
@@ -747,9 +748,9 @@ adjustArgType aTy ty = case (aTy, ty) of
     (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2 -> do
       l <- zipWithM adjustArgType l1 l2
       if any (isNotIdOp . invertConv) l
-        then fail "cannot adjust type application"
+        then Fail.fail "cannot adjust type application"
         else return IdOp
-    _ -> fail $ "cannot adjust argument type\n" ++ show (aTy, ty)
+    _ -> Fail.fail $ "cannot adjust argument type\n" ++ show (aTy, ty)
 
 unpackOp :: Isa.Term -> Bool -> Bool -> FunType -> ConvFun -> Isa.Term
 unpackOp fTrm isPf pfTy ft fConv = let isaF = convFun None fConv in
@@ -811,7 +812,7 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
         ((_, aF), (aT, aC)) <- adjustTypes b c a
         ((cB, cF), (dT, dC)) <- adjustTypes c rTy d
         if cB || isNotIdOp cF
-          then fail "cannot adjust result types of function type"
+          then Fail.fail "cannot adjust result types of function type"
           else return ((False, IdOp), (FunType aT dT,
                  mkCompFun aF $ mkCompFun (mkResFun dC) $ mkArgFun aC))
     (TypeVar _, _) -> return ((False, IdOp), (ty, IdOp))
@@ -819,9 +820,9 @@ adjustTypes aTy rTy ty = case (aTy, ty) of
     (ApplType i1 l1, ApplType i2 l2) | i1 == i2 && length l1 == length l2 -> do
       l <- mapM (\ (a, b) -> adjustTypes a rTy b) $ zip l1 l2
       if any (fst . fst) l || any (isNotIdOp . snd . snd) l
-        then fail "cannot adjust type application"
+        then Fail.fail "cannot adjust type application"
         else return ((False, IdOp), (ApplType i1 $ map (fst . snd) l, IdOp))
-    _ -> fail $ "cannot adjust types\n" ++ show (aTy, ty)
+    _ -> Fail.fail $ "cannot adjust types\n" ++ show (aTy, ty)
 
 adjustMkAppl :: Isa.Term -> Cond -> Bool -> FunType -> FunType
              -> IsaTermCond -> Result IsaTermCond

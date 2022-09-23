@@ -12,6 +12,8 @@
 # the corresponding tool as is: GHC_PKG_FLAGS (ghc-pkg), GHC_FLAGS (ghc).
 # For profiling, call make with PROFILE=on 
 
+## dummy line to re-trigger CI runs like GHA, travic-ci, etc.
+
 include var.mk
 
 NO_BIND_WARNING := -fno-warn-unused-do-bind
@@ -22,6 +24,23 @@ HC_OPTS += $(HC_WARN) $(HC_PROF) $(GHC_FLAGS)
 # uncomment the above line to generate .imports files for displayDependencyGraph
 
 .DEFAULT_GOAL := hets
+
+# GHA 16 color pallete is junk. So use 256 colors (i.e. BG >= 16). That's much
+# closer to what *x terminals would show.
+#	bold, black, cyan
+COLOR_INFO := \E[1;38;5;0;48;5;80m
+#	bold, red, yellow
+COLOR_WARN := \E[1;38;5;1;48;5;226m
+#	bold, yellow, red
+COLOR_ERROR := \E[1;38;5;226;48;5;196m
+#	# bold, black, green
+COLOR_OK := \E[1;38;5;0;48;5;82m
+COLOR_END := \E[0m
+
+# Testing:
+# If != 0 'make check' and related scripts stop immediately if an error occurs.
+# Otherwise continues until all test have been run and finally the target fails.
+FAIL_EARLY ?= 1
 
 .NOTPARALLEL:
 
@@ -105,20 +124,21 @@ logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
     CoCASL COL CspCASL CASL_DL RigidCASL HPAR \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2 RDF CSMOF QVTR TPTP
+    FreeCAD OWL2 RDF CSMOF QVTR TPTP NeSyPatterns
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
-    Common/ATerm/ATermDiffMain.hs Common/annos.hs \
+    Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/testxmldiff.hs \
     SoftFOL/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
     Comorphisms/test/sublogicGraph.hs PGIP/ParseProofScript.hs \
     Common/testxupdate.hs Common/testxpath.hs \
-    SoftFOL/dfg.hs Adl/adl.hs GUI/displayDependencyGraph.hs
+    SoftFOL/dfg.hs Adl/adl.hs GUI/displayDependencyGraph.hs \
+	OWL2/scripts/runTest.hs
 
 ### list of directories to run checks in
 TESTDIRS += Common CASL Fpl/test HasCASL test ExtModal/Tries \
-    CommonLogic/TestData
+    CommonLogic/TestData OWL2/tests
 
 hs_clean_files = Haskell/TiATC.hs Haskell/TiDecorateATC.hs \
     Haskell/TiPropATC.hs Haskell/ATC_Haskell.der.hs
@@ -348,6 +368,9 @@ OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
   OWL2/Morphism.hs OWL2/ProfilesAndSublogics.hs OWL2/Sublogic.hs \
   OWL2/Profiles.hs Common/IRI.hs
 
+NeSyPatterns_files = NeSyPatterns/AS.hs NeSyPatterns/Symbol.hs \
+  NeSyPatterns/Sign.hs NeSyPatterns/Morphism.hs
+
 RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
   RDF/Sublogic.hs Common/IRI.hs
 
@@ -461,6 +484,10 @@ FreeCAD/ATC_FreeCAD.der.hs: $(FreeCAD_files) $(GENRULES)
 OWL2/ATC_OWL2.der.hs: $(OWL2_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(OWL2_files)
 
+NeSyPatterns/ATC_NeSyPatterns.der.hs: $(NeSyPatterns_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.Result -i NeSyPatterns.ATC_Relation \
+		-i ATC.AS_Annotation -o $@ $(NeSyPatterns_files)
+
 RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(RDF_files)
 
@@ -521,9 +548,9 @@ check_cgi:
 %-opt: HC_OPTS += -O
 
 # the variant without GUI
-hets_server hets_server-opt: HASKELINE_PACKAGE :=
-hets_server hets_server-opt: GLADE_PACKAGE :=
-hets_server hets_server-opt: UNI_PACKAGE :=
+hets_server hets_server-opt check $(TESTTARGETS): HASKELINE_PACKAGE :=
+hets_server hets_server-opt check $(TESTTARGETS): GTK_PACKAGE :=
+hets_server hets_server-opt check $(TESTTARGETS): UNI_PACKAGE :=
 hets_server hets_server-opt: check_server $(derived_sources)
 	@touch .hets_server
 	$(HC) --make $(HC_OPTS) -o hets_server hets.hs
@@ -542,7 +569,12 @@ hets_cgi hets_cgi-opt: check_cgi GUI/hets_cgi.hs $(derived_sources)
 	$(HC) --make $(HC_OPTS) -o hets.cgi GUI/hets_cgi.hs
 	@ln -f hets.cgi hets_cgi.bin
 
-derivedSources: $(derived_sources)
+# For tests: Usually hets_server as well as hets[_desktop] are ok for testing.
+# Thus we avoid re-building one or the other by not adding a hard dep here.
+hets_available:
+	@[[ ! -x hets ]] && { [[ -x hets_server ]] && ln -s hets_server hets ; } \
+		|| true
+	@[[ ! -x hets ]] && { echo 'Build hets_server first' && return 1 ; } || true
 
 TEX_FILES := $(wildcard doc/*.tex doc/*.png doc/*.dot doc/*.sty doc/*.eps)
 doc/UserGuide.pdf: $(TEX_FILES)
@@ -583,9 +615,7 @@ docs: $(derived_sources) $(STACK_UPGRADE_TARGET)
 $(DRIFT): $(DRIFT_deps)
 	cd utils/DrIFT-src; $(HC) --make -o ../DrIFT DrIFT.hs
 
-$(DTD2HS): $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell.hs
-	@mkdir -p utils/DtdToHaskell-src/DtdToHaskell
-	@cp -f $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell
+$(DTD2HS): utils/DtdToHaskell-src/DtdToHaskell.hs
 	$(HC) --make $(HC_OPTS) -iutils/DtdToHaskell-src -o $@ \
             utils/DtdToHaskell-src/DtdToHaskell.hs
 
@@ -641,8 +671,11 @@ clean_pretty:
 			pretty/generated_words.tex \
 		test/*/*.{thy,pp.dol,pp.tex,th,dfg.c,xml,log,dvi,aux,sty} \
 			test/*/log */test/temp* ToHaskell/test/*.{out,output} \
-			ExtModal/Tries/*.{pp.dol,th} Fpl/test/*.{pp.dol,th} \
-			CommonLogic/TestData/*.{pp.dol,th} Common/testxmldiff \
+		ExtModal/Tries/*.{pp.dol,th} Fpl/test/*.{pp.dol,th} \
+		CommonLogic/TestData/*.{pp.dol,th} Common/testxmldiff \
+		OWL2/tests/*.pp* OWL2/tests/*_*.omn OWL2/tests/*_*.th \
+		Static/test/*.xupdate3* Static/test/*.{dol.bak,xh,xhi,xml} \
+			Static/test/patch \
 		doc/UserGuide.{log,aux,bbl,blg,out,fdb_latexmk,fls} doc/hs2isa.ps \
 			$(USER_GUIDE) log.haddock \
 		debian/{root,files,hets-*,tmp} \
@@ -662,7 +695,6 @@ distclean: clean_stack realclean clean_genRules
 		utils/appendHaskellPreludeString \
 		utils/DrIFT utils/genRules \
 		$(DTD2HS) \
-		utils/DtdToHaskell-src/DtdToHaskell \
 		utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log \
 		docs
 
@@ -703,9 +735,18 @@ h2h: Haskell/h2h
 ### test program to check the known provers
 showKP: Comorphisms/test/showKP
 
-### run tests in other directories
-check: $(TESTTARGETS)
-	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done
+### run tests in other directories. No deps to $(TESTTARGETS) because
+### Makefile in the subdirs would re-make them anyway
+check: hets_available
+	@FAIL=; \
+	for i in $(TESTDIRS) ; do \
+		printf "Test: ${COLOR_INFO}  $(MAKE) -C $$i check  ${COLOR_END}\n"; \
+		FAIL_EARLY=$(FAIL_EARLY) $(MAKE) -C $$i check && \
+			printf "${COLOR_OK}  OK  ${COLOR_END}\n" && continue ; \
+		(( $(FAIL_EARLY) )) && return 99 ; \
+		printf "${COLOR_ERROR}  FAILED  ${COLOR_END}\n" && FAIL=1 ; \
+	done ; \
+	[[ -n $${FAIL} ]] && return 1 || return 0
 
 test:
 	yes X | $(MAKE) check
@@ -825,8 +866,6 @@ archive: $(USER_GUIDE)
 	rm -rf HolLight/OcamlTools/*/*dmtcp OWL2/java/lib/native \
 		MMT/hets-mmt-standalone.jar ; \
 	rm -rf GMP mini .gitignore utils/{nightly,debian,macports,ubuntu} ; \
-	zip -d OWL2/java/lib/owlapi-osgidistribution-3.5.2.jar \
-		lib/guava-18.0.jar lib/trove4j-3.0.3.jar ; \
 	printf 'Done.\n' ; \
 	cd .. ; $(TAR) cJf $(ARC_BNAME).tar.xz $(ARC_BNAME) || exit 4 ; \
 	cd .. ; \
@@ -885,8 +924,6 @@ install-owl-tools: jars
 	rm -rf $(BASEDIR)/lib/native/*/*.dll lib \
 		$(BASEDIR)/lib/`basename $$X` ; \
 	jar cMf $(BASEDIR)/lib/`basename $$X` *
-	-zip -d $(BASEDIR)/lib/owlapi-osgidistribution-3.5.2.jar \
-		lib/guava-18.0.jar lib/trove4j-3.0.3.jar
 	@printf 'Sources:\n\t%s\n\t%s\n\t%s\n' \
 		'https://bitbucket.org/trove4j/trove/downloads'\
 		'https://github.com/google/guava' \
@@ -1015,4 +1052,4 @@ binary-arch: build-arch install-hets install-hets_server $(CHANGELOG)
 binary: binary-indep binary-arch
 	@[ -f debian/changelog ] || ln -s changelog.tmp debian/changelog
 
-# vim: ts=4 sw=4 filetype=make
+# vim: ts=4 sw=4 noet nosta filetype=make

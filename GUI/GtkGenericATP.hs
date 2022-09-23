@@ -23,6 +23,7 @@ import Interfaces.GenericATPState
 import Control.Concurrent (forkIO, killThread, yield)
 import Control.Concurrent.MVar
 import Control.Monad (unless, when)
+import qualified Control.Monad.Fail as Fail
 
 import Common.AS_Annotation as AS_Anno
 import Common.GtkGoal
@@ -281,7 +282,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
 
   -- waiting for results
   res <- takeMVar result
-  maybe (fail "reverse translation of names failed") return res
+  maybe (Fail.fail "reverse translation of names failed") return res
 
   where
     prepareLP prS s g' inclProven =

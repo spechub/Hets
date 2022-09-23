@@ -30,7 +30,7 @@ import ATerm.Lib
 import Text.ParserCombinators.Parsec
 
 import Data.List
-import Data.Monoid
+import Data.Monoid ()
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Typeable
@@ -48,10 +48,11 @@ instance Pretty Text where
 
 -- use generic Category instance from Logic.Logic
 
+instance Semigroup Text where
+    (Text l1) <> (Text l2) = Text
+      . unlines $ lines l1 ++ lines l2
 instance Monoid Text where
     mempty = Text ""
-    mappend (Text l1) (Text l2) = Text
-      . unlines $ lines l1 ++ lines l2
 
 instance Syntax DMU Text () () () where
   parse_basic_spec DMU = Just (\ _ -> fmap Text $ many1 anyChar)

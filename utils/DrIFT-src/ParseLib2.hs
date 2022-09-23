@@ -45,6 +45,7 @@ module ParseLib2
 import Data.Char
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Fail
 
 infixr 5 +++
 
@@ -70,7 +71,6 @@ instance Monad Parser where
    -- >>=         :: Parser a -> (a -> Parser b) -> Parser b
    (P p) >>= f = P (\ pos inp -> concat [papply (f v) pos out
                                                 | (v, out) <- p pos inp])
-   fail _ = P (\ _ _ -> [])
 
 instance Alternative Parser where
    (<|>) = mplus
@@ -82,6 +82,11 @@ instance MonadPlus Parser where
    mzero = P (\ _ _ -> [])
    -- mplus            :: Parser a -> Parser a -> Parser a
    (P p) `mplus` (P q) = P (\ pos inp -> (p pos inp ++ q pos inp))
+
+instance MonadFail Parser where
+   fail _ = P (\ _ _ -> [])
+
+
 
 -- bits which donn't fit into Haskell's type classes just yet :-(
 

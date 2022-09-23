@@ -55,6 +55,7 @@ import Common.IRI
 import Common.DocUtils
 import qualified Common.Unlit as Unlit
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 import Driver.Options
 import Driver.ReadFn
@@ -103,10 +104,10 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
   fname' <- getContentAndFileType opts fname
   dir <- getCurrentDirectory
   case fname' of
-    Left err -> return $ fail err
+    Left err -> return $ Fail.fail err
     Right (mr, _, file, inputLit) ->
         if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
-          return . fail $ "no matching source file for '" ++ fname ++ "' found."
+          return . Fail.fail $ "no matching source file for '" ++ fname ++ "' found."
         else let
         input = (if unlit opts then Unlit.unlit else id) inputLit
         libStr = if isAbsolute fname
@@ -127,7 +128,7 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
             else do
               res <- anaTwelfFile opts file
               return $ case res of
-                Nothing -> fail $ "failed to analyse file: " ++ file
+                Nothing -> Fail.fail $ "failed to analyse file: " ++ file
                 Just (lname, lenv) -> return (lname, Map.union lenv libenv)
 
 -- | parsing of input string (content of file)
@@ -143,7 +144,7 @@ anaString mln lgraph opts topLns libenv initDG input file mr = do
           _ -> if checkUri file then file else realFileName
   lift $ putIfVerbose opts 2 $ "Reading file " ++ file
   libdefns <- readLibDefn lgraph opts mr file posFileName input
-  when (null libdefns) . fail $ "failed to read contents of file: " ++ file
+  when (null libdefns) . Fail.fail $ "failed to read contents of file: " ++ file
   foldM (anaStringAux mln lgraph opts topLns initDG mr file posFileName)
         (error "Static.AnalysisLibrary.anaString", libenv)
     $ case analysis opts of
@@ -156,7 +157,7 @@ anaStringAux :: Maybe LibName -- ^ suggested library name
   -> FilePath -> (LibName, LibEnv) -> LIB_DEFN -> ResultT IO (LibName, LibEnv)
 anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
              (Lib_defn pln is' ps ans) = do
-  let pm = fst $ partPrefixes ans
+  let pm = Map.union (fst $ partPrefixes ans) (prefixes lgraph)
       expnd i = fromMaybe i $ expandCurie pm i
       spNs = Set.unions . map (Set.map expnd . getSpecNames)
         $ concatMap (getSpecDef . item) is'
@@ -187,7 +188,7 @@ anaStringAux mln lgraph opts topLns initDG mt file posFileName (_, libenv)
           lift $ writeLibDefn lgraph ga file opts ast
           liftR mzero
       _ -> do
-          let libstring = libToFileName ln
+          let libstring = libToString ln
           unless (isSuffixOf libstring (dropExtension file)
               || not emptyFilePath) . lift . putIfVerbose opts 1
               $ "### file name '" ++ file ++ "' does not match library name '"
@@ -328,7 +329,7 @@ anaLibItemAux opts topLns ln q@(libItems', dg1, libenv1, lg, eo) libItem = let
              Nothing -> Just q
       if outputToStdout opts then
          if hasErrors diags2 then
-            fail "Stopped due to errors"
+            Fail.fail "Stopped due to errors"
             else runResultT $ liftR $ Result [] mRes
          else runResultT $ liftR $ Result diags2 mRes
 
@@ -433,12 +434,13 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
                (alreadyDefined asstr) pos
       else do
             let aName = show asn
-                dg'' = updateNodeNameRT dg'
-                       (refSource $ getPointerFromRef archSig)
+                rSource = refSource $ getPointerFromRef archSig
+                dg'' = updateNodeNameRT dg' rSource
                        True aName
-                dg3 = dg'' { archSpecDiags =
-                           Map.insert aName diag
-                           $ archSpecDiags dg''}
+                dg3 = dg'' { 
+                        archSpecDiags = Map.insert aName diag $ archSpecDiags dg''
+                       , specRoots = Map.insert aName [rSource] $ specRoots dg''
+                      }
             return (asd', dg3
               { globalEnv = Map.insert asn
                             (ArchOrRefEntry True archSig) genv }
@@ -470,11 +472,17 @@ anaLibItem lg opts topLns currLn libenv dg eo itm =
     analyzing opts $ "ref spec " ++ rnstr
     let rsd' = Ref_spec_defn rn rsp' pos
         genv = globalEnv dg'
+        getSources p = 
+          case p of
+           NPComp f -> concatMap getSources $ Map.elems f
+           _ -> [refSource p]
+        sources = getSources $ getPointerFromRef rsig
     if Map.member rn genv
       then liftR $ plain_error (itm, dg', libenv, lg, eo)
                (alreadyDefined rnstr) pos
       else return ( rsd', dg'
-        { globalEnv = Map.insert rn (ArchOrRefEntry False rsig) genv }
+        { globalEnv = Map.insert rn (ArchOrRefEntry False rsig) genv
+        , specRoots = Map.insert rnstr sources $ specRoots dg' }
         , libenv, lg, eo)
   Logic_decl logN pos -> do
     putMessageIORes opts 1 . show $ prettyLG lg itm
@@ -610,7 +618,7 @@ symbolsOf lg gs1@(G_sign l1 (ExtSign sig1 sys1) _)
                    showDoc rs2 "\n" ++
                    showDoc ll2 "\n") 
                   nullRange
-        _ -> fail $ "non-unique raw symbols"
+        _ -> Fail.fail $ "non-unique raw symbols"
       ps <- symbolsOf lg gs1 gs2 corresps'
       return $ Set.insert p ps
 
@@ -643,8 +651,8 @@ anaEntailmentDefn lg ln libEnv dg opts eo en et pos = do
                   globalEnv = Map.insert en (ViewOrStructEntry True vsig)
                               $ globalEnv dg3},
                 libEnv, lg, eo)
-      _ -> fail "entailment between networks not supported yet"
-   _ -> fail "omsinnetwork entailment not supported yet"
+      _ -> Fail.fail "entailment between networks not supported yet"
+   _ -> Fail.fail "omsinnetwork entailment not supported yet"
 
 
 -- | analyse genericity and view type and construct gmorphism

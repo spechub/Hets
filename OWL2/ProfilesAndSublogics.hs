@@ -15,13 +15,14 @@ References  :  <http://www.w3.org/TR/owl2-profiles/>
 
 module OWL2.ProfilesAndSublogics where
 
-import OWL2.MS
+import OWL2.AS
 import OWL2.Profiles
 import OWL2.Sublogic
 import OWL2.Sign
 import OWL2.Morphism
 
 import Data.Data
+import Data.Set (empty)
 
 data ProfSub = ProfSub
     { profiles :: Profiles
@@ -29,24 +30,29 @@ data ProfSub = ProfSub
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 allProfSubs :: [[ProfSub]]
-allProfSubs = map (map (`ProfSub` slBottom)) allProfiles
-  ++ map (map (ProfSub topProfile)) allSublogics
+allProfSubs = 
+    [ [ProfSub p sl | sl <- sls, p <- ps]
+    | sls <- allSublogics, ps <- allProfiles ]
 
 bottomS :: ProfSub
-bottomS = ProfSub topProfile slBottom
+bottomS = ProfSub bottomProfile slBottom
 
 topS :: ProfSub
-topS = ProfSub bottomProfile slTop
+topS = ProfSub topProfile slTop
+
+-- | OWL2 DL Sublogic
+dlS :: ProfSub
+dlS = ProfSub topProfile slDL
 
 maxS :: ProfSub -> ProfSub -> ProfSub
-maxS ps1 ps2 = ProfSub (andProfileList [profiles ps1, profiles ps2])
+maxS ps1 ps2 = ProfSub (profileMax [profiles ps1, profiles ps2])
     (slMax (sublogic ps1) (sublogic ps2))
 
 nameS :: ProfSub -> String
 nameS ps = printProfile (profiles ps) ++ "-" ++ slName (sublogic ps)
 
 psAxiom :: Axiom -> ProfSub
-psAxiom ax = ProfSub (axiom ax) (slAxiom ax)
+psAxiom ax = ProfSub (axiom ax) (slAxiom empty ax)
 
 sSig :: Sign -> ProfSub
 sSig s = bottomS {sublogic = slSig s}

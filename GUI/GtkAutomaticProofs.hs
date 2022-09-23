@@ -45,6 +45,7 @@ import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
 import Control.Monad (foldM_, join, when)
 import Control.Monad.Trans
+import qualified Control.Monad.Fail as Fail
 
 import Proofs.AbstractState
 
@@ -258,7 +259,7 @@ performAutoProof gi inclThms timeout update (Finder _ pr cs i) listNodes nodes =
                             (fst b) (Just (pr, c)) (snd b) (name fn)
                             (True, timeout)
                           return a)
-                    maybe (fail $ showRelDiags 1 ds) (return . Just . fst) ms)
+                    maybe (Fail.fail $ showRelDiags 1 ds) (return . Just . fst) ms)
                   $ globalTheory $ snd $ node fn
            case res of
              Just gt -> postGUISync $ listStoreSetValue listNodes row

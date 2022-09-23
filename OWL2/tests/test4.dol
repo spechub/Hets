@@ -1,3 +1,5 @@
+logic OWL serialization Manchester
+
 spec emptyontology =  
 
 Prefix: pizza: <http://www.co-ode.org/ontologies/pizza/pizza.owl#>

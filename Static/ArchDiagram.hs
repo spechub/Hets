@@ -35,6 +35,7 @@ import Control.Monad (foldM)
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
 import Common.IRI
+import qualified Control.Monad.Fail as Fail
 
 
 import Static.GTheory
@@ -393,7 +394,7 @@ homogeniseDiagram targetLid diag =
                = if isIdComorphism (Comorphism cid) then
                  do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
                     return (n1, n2, (nr, mor'))
-                 else fail $
+                 else Fail.fail $
                   "Trying to coerce a morphism between different logics.\n" ++
                   "Heterogeneous specifications are not fully supported yet."
            convertNodes cDiag [] = return cDiag

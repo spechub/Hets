@@ -30,6 +30,7 @@ import Static.GTheory
 import Control.Exception (catch)
 import Control.Exception.Base (SomeException)
 import Control.Monad.IO.Class (MonadIO (..))
+import qualified Control.Monad.Fail as Fail
 import Data.Char (toLower)
 import Data.Maybe as Maybe (fromJust, fromMaybe, isNothing)
 import Data.List (elemIndex, isPrefixOf, isInfixOf, maximumBy)
@@ -129,7 +130,7 @@ performPremiseSelection opts gTheory
         SInE.perform opts gTheory premiseSelectionParameters goalName
       return (premisesM, timeTaken, SineResult sineResult)
 
-createReasoningAttempt :: forall m . MonadIO m
+createReasoningAttempt :: forall m . (MonadIO m, Fail.MonadFail m)
                        => HetcatsOpts
                        -> String
                        -> ReasoningCacheGoal
@@ -231,7 +232,7 @@ createReasoningAttempt opts location reasoningCacheGoal = do
       reasoningAttemptKey <- insert reasoningAttemptValue
       return (Entity reasoningAttemptKey reasoningAttemptValue)
 
-createPremiseSelection :: MonadIO m
+createPremiseSelection :: (MonadIO m, Fail.MonadFail m)
                        => HetcatsOpts
                        -> Entity ReasoningAttempt
                        -> ReasoningParameters.PremiseSelection
@@ -346,7 +347,7 @@ postprocessReasoning opts reasoningCacheGoal premisesM
               chooseProofStatus proofStatusesSZS
       return ()
   where
-    getOmsFromConsistencyCheckAttempt :: MonadIO m
+    getOmsFromConsistencyCheckAttempt :: (MonadIO m, Fail.MonadFail m)
                                       => DatabaseSchema.ReasoningAttemptId
                                       -> DBMonad m (Entity LocIdBase)
     getOmsFromConsistencyCheckAttempt reasoningAttemptKey = do
@@ -362,10 +363,10 @@ postprocessReasoning opts reasoningCacheGoal premisesM
           limit 1
           return loc_id_bases
       case omsL of
-        [] -> fail "Persistence.Reasoning.postprocessReasoning: could not find OMS"
+        [] -> Fail.fail "Persistence.Reasoning.postprocessReasoning: could not find OMS"
         omsEntity : _ -> return omsEntity
 
-    getOmsFromProofAttempt :: MonadIO m
+    getOmsFromProofAttempt :: (MonadIO m, Fail.MonadFail m)
                            => DatabaseSchema.ReasoningAttemptId
                            -> DBMonad m (Entity LocIdBase)
     getOmsFromProofAttempt reasoningAttemptKey = do
@@ -384,10 +385,10 @@ postprocessReasoning opts reasoningCacheGoal premisesM
           limit 1
           return loc_id_bases_oms
       case omsL of
-        [] -> fail "Persistence.Reasoning.postprocessReasoning: could not find OMS"
+        [] -> Fail.fail "Persistence.Reasoning.postprocessReasoning: could not find OMS"
         omsEntity : _ -> return omsEntity
 
-    getConjectureFromReasoningAttempt :: MonadIO m
+    getConjectureFromReasoningAttempt :: (MonadIO m, Fail.MonadFail m)
                                       => DatabaseSchema.ReasoningAttemptId
                                       -> DBMonad m (Entity LocIdBase)
     getConjectureFromReasoningAttempt reasoningAttemptKey = do
@@ -403,7 +404,7 @@ postprocessReasoning opts reasoningCacheGoal premisesM
           limit 1
           return loc_id_bases
       case conjectureL of
-        [] -> fail "Persistence.Reasoning.postprocessReasoning: could not find Conjecture"
+        [] -> Fail.fail "Persistence.Reasoning.postprocessReasoning: could not find Conjecture"
         conjectureEntity : _ -> return conjectureEntity
 
     getUsedSentencesIds :: MonadIO m
@@ -564,7 +565,7 @@ chooseProofStatus statuses =
              compare (elemIndex a ordering) (elemIndex b ordering)
        in  maximumBy fixOrdering statuses
 
-setOmsEvaluationState :: MonadIO m
+setOmsEvaluationState :: (MonadIO m, Fail.MonadFail m)
                       => Entity DatabaseSchema.LocIdBase
                       -> EvaluationStateType.EvaluationStateType
                       -> DBMonad m ()
@@ -575,12 +576,12 @@ setOmsEvaluationState (Entity omsKey _) evaluationState = do
     limit 1
     return actions
   (Entity actionKey _) <- case actionL of
-    [] -> fail "Persistence.Reasoning.setOmsEvaluationState: Could not find Action"
+    [] -> Fail.fail "Persistence.Reasoning.setOmsEvaluationState: Could not find Action"
     actionEntity : _ -> return actionEntity
   update actionKey [ActionEvaluationState =. evaluationState]
   return ()
 
-setConjectureEvaluationState :: MonadIO m
+setConjectureEvaluationState :: (MonadIO m, Fail.MonadFail m)
                              => Entity DatabaseSchema.LocIdBase
                              -> EvaluationStateType.EvaluationStateType
                              -> DBMonad m ()
@@ -591,7 +592,7 @@ setConjectureEvaluationState (Entity conjectureKey _) evaluationState = do
     limit 1
     return actions
   (Entity actionKey _) <- case actionL of
-    [] -> fail "Persistence.Reasoning.setConjectureEvaluationState: Could not find Action"
+    [] -> Fail.fail "Persistence.Reasoning.setConjectureEvaluationState: Could not find Action"
     actionEntity : _ -> return actionEntity
   update actionKey [ActionEvaluationState =. evaluationState]
   return ()
@@ -616,13 +617,13 @@ setConjectureProofStatus (Entity conjectureKey _) proofStatus = do
     where_ $ coerceId (conjectures ^. ConjectureId) ==. val conjectureKey
   return ()
 
-findDocument :: MonadIO m
+findDocument :: (MonadIO m, Fail.MonadFail m)
              => HetcatsOpts -> String -> DBMonad m (Entity LocIdBase)
 findDocument opts location = do
   let locId = locIdOfDocument opts (Just location) ""
   findLocIdBase "Document" [Enums.Library, Enums.NativeDocument] locId
 
-findOMS :: MonadIO m
+findOMS :: (MonadIO m, Fail.MonadFail m)
         => Entity LocIdBase
         -> DGNodeLab
         -> DBMonad m (Entity LocIdBase)
@@ -630,7 +631,7 @@ findOMS documentEntity nodeLabel = do
   let locId = locIdOfOMS documentEntity nodeLabel
   findLocIdBase "OMS" [Enums.OMS] locId
 
-findConjecture :: MonadIO m
+findConjecture :: (MonadIO m, Fail.MonadFail m)
                => Entity LocIdBase
                -> String
                -> DBMonad m (Entity LocIdBase)
@@ -641,7 +642,7 @@ findConjecture omsEntity name = do
                              , Enums.CounterTheorem
                              ] locId
 
-findPremise :: MonadIO m
+findPremise :: (MonadIO m, Fail.MonadFail m)
             => Entity LocIdBase
             -> String
             -> DBMonad m (Entity LocIdBase)
@@ -676,7 +677,7 @@ createReasonerOutput reasoningAttemptKey reasonerKey text =
     , reasonerOutputText = Text.pack text
     }
 
-findLocIdBase :: MonadIO m
+findLocIdBase :: (MonadIO m, Fail.MonadFail m)
               => String
               -> [Enums.LocIdBaseKindType]
               -> String
@@ -684,10 +685,12 @@ findLocIdBase :: MonadIO m
 findLocIdBase entityKind kinds locId = do
   omsL <-
     select $ from $ \ loc_id_bases -> do
-      where_ (loc_id_bases ^. LocIdBaseLocId ==. val locId &&. loc_id_bases ^. LocIdBaseKind `in_` valList kinds)
+      where_ (loc_id_bases ^. LocIdBaseLocId ==. val locId &&. loc_id_bases
+              ^. LocIdBaseKind `in_` valList kinds)
       return loc_id_bases
   case omsL of
-    [] -> fail ("Could not save reasoning results to database: " ++ entityKind ++ " not found in database.")
+    [] -> Fail.fail ("Could not save reasoning results to database: "
+                     ++ entityKind ++ " not found in database.")
     entity : _ -> return entity
 
 convertTime :: TimeOfDay -> Int

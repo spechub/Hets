@@ -27,6 +27,7 @@ import Common.Id
 import Common.Result
 import Common.AS_Annotation
 import qualified Common.Lib.Rel as Rel
+import qualified Control.Monad.Fail as Fail
 
 import Common.DocUtils
 
@@ -126,7 +127,7 @@ instance AsOMConstant (String, SymbType) where
     toOMConstant e (n, st) =
         case st of
           SortAsItemType -> toOMConstant e n
-          SubsortAsItemType _ -> fail "AsOMConstant.SubsortAsItemType"
+          SubsortAsItemType _ -> Fail.fail "AsOMConstant.SubsortAsItemType"
           OpAsItemType ot -> toOMConstant e (n, ot)
           PredAsItemType pt -> toOMConstant e (n, pt)
 

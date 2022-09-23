@@ -79,6 +79,7 @@ import org.semanticweb.owlapi.reasoner.BufferingMode;
 import org.semanticweb.owlapi.reasoner.Node;
 import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.SimpleConfiguration;
+import org.semanticweb.owlapi.search.EntitySearcher;
 
 import uk.ac.manchester.cs.factplusplus.FaCTPlusPlusException;
 import uk.ac.manchester.cs.factplusplus.owlapiv3.FaCTPlusPlusReasoner;
@@ -349,19 +350,19 @@ public class FactProver {
 			OWLFunctionalDataPropertyAxiom g =
 				(OWLFunctionalDataPropertyAxiom) goal;
 			OWLDataProperty prop = g.getProperty().asOWLDataProperty();
-			return prop.isFunctional(reasoner.getRootOntology());
+			return EntitySearcher.isFunctional(prop, reasoner.getRootOntology());
 		}
 		if (goal instanceof OWLFunctionalObjectPropertyAxiom) {
 			OWLFunctionalObjectPropertyAxiom g =
 				(OWLFunctionalObjectPropertyAxiom) goal;
 			OWLObjectProperty prop = g.getProperty().asOWLObjectProperty();
-			return prop.isFunctional(reasoner.getRootOntology());
+			return EntitySearcher.isFunctional(prop, reasoner.getRootOntology());
 		}
 		if (goal instanceof OWLInverseFunctionalObjectPropertyAxiom) {
 			OWLInverseFunctionalObjectPropertyAxiom g =
 				(OWLInverseFunctionalObjectPropertyAxiom) goal;
 			OWLObjectProperty prop = g.getProperty().asOWLObjectProperty();
-			return prop.isInverseFunctional(reasoner.getRootOntology());
+			return EntitySearcher.isInverseFunctional(prop, reasoner.getRootOntology());
 		}
 		if (goal instanceof OWLInverseObjectPropertiesAxiom) {
 			OWLInverseObjectPropertiesAxiom g =
@@ -379,8 +380,8 @@ public class FactProver {
 		if (goal instanceof OWLIrreflexiveObjectPropertyAxiom) {
 			OWLIrreflexiveObjectPropertyAxiom g =
 				(OWLIrreflexiveObjectPropertyAxiom) goal;
-			return g.getProperty().asOWLObjectProperty()
-				.isIrreflexive(reasoner.getRootOntology());
+			return EntitySearcher.isIrreflexive(g.getProperty().asOWLObjectProperty(),
+				reasoner.getRootOntology());
 		}
 		if (goal instanceof OWLNegativeDataPropertyAssertionAxiom) {
 			OWLNegativeDataPropertyAssertionAxiom g =
@@ -457,19 +458,19 @@ public class FactProver {
 			OWLReflexiveObjectPropertyAxiom g =
 				(OWLReflexiveObjectPropertyAxiom) goal;
 			OWLObjectProperty prop = g.getProperty().asOWLObjectProperty();
-			return prop.isReflexive(reasoner.getRootOntology());
+			return EntitySearcher.isReflexive(prop, reasoner.getRootOntology());
 		}
 		if (goal instanceof OWLSymmetricObjectPropertyAxiom) {
 			OWLSymmetricObjectPropertyAxiom g =
 				(OWLSymmetricObjectPropertyAxiom) goal;
 			OWLObjectProperty prop = g.getProperty().asOWLObjectProperty();
-			return prop.isSymmetric(reasoner.getRootOntology());
+			return EntitySearcher.isSymmetric(prop, reasoner.getRootOntology());
 		}
 		if (goal instanceof OWLTransitiveObjectPropertyAxiom) {
 			OWLTransitiveObjectPropertyAxiom g =
 				(OWLTransitiveObjectPropertyAxiom) goal;
 			OWLObjectProperty prop = g.getProperty().asOWLObjectProperty();
-			return prop.isTransitive(reasoner.getRootOntology());
+			return EntitySearcher.isTransitive(prop, reasoner.getRootOntology());
 		}
 		System.out.println(goal);
 		throw new FaCTPlusPlusException("No reasoner found, sorry!");

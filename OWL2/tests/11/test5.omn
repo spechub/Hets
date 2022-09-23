@@ -1,0 +1,40 @@
+#SUBLOGIC=sRIx
+Prefix: : <http://example.com/>
+Ontology:
+    Class: Annotations: rdfs:label "CLASS A" :a
+
+    Class: :b
+    Class: :c
+    Individual: :i
+    Individual: :j
+    DataProperty: :prop1
+    DataProperty: :prop2
+    DataProperty: :prop3
+    ObjectProperty: :oprop1
+    ObjectProperty: :oprop2
+
+    Class: :a and :b
+        SubClassOf: c
+        HasKey: :prop1
+
+    ObjectProperty: inverse :oprop1
+        SubPropertyOf: :oprop2
+        Characteristics:
+            InverseFunctional,
+            Reflexive,
+            Irreflexive,
+            Functional,
+            Transitive,
+            Symmetric,
+            Asymmetric
+        InverseOf: :oprop2
+        Range: :a
+        Domain: :a
+    
+    Individual: :i
+        Facts:
+            not :oprop1 :j,
+            :oprop1 :j
+
+    ObjectProperty: inverse :oprop2
+        SubPropertyChain: :oprop1

@@ -2,6 +2,7 @@
 *.DS_Store
 *.hi
 *.o
+*.p_o
 *.dyn_hi
 *.dyn_o
 .*.swp
@@ -170,7 +171,6 @@ VSE/ATC_VSE.der.hs
 VSE/ATC_VSE.hs
 utils/DrIFT
 utils/DtdToHaskell
-utils/DtdToHaskell-src/DtdToHaskell/
 utils/appendHaskellPreludeString
 utils/genRules
 Hybrid/ATC_Hybrid.hs
@@ -189,3 +189,10 @@ TPTP/ATC_TPTP.hs
 test/*/*.th
 test/*/*.xml
 /_dependencies
+stack.yaml.lock
+consoleHistory.tmp
+/stack.yaml.lock
+/.old.stack-work
+NeSyPatterns/AS.hs
+NeSyPatterns/ATC_NeSyPatterns.der.hs
+NeSyPatterns/ATC_NeSyPatterns.hs

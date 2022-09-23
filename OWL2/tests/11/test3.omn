@@ -1,0 +1,11 @@
+#SUBLOGIC=ALC
+Prefix: : <http://example.org/>
+
+Ontology: 
+
+AnnotationProperty: Annotations: rdfs:label "annotationproperty ap" ap
+Class: Annotations: rdfs:label "class A" A
+Datatype: Annotations: rdfs:label "datatype T" T
+DataProperty: Annotations: rdfs:label "dataproperty dp" dp
+Individual: Annotations: rdfs:label "individual i" i
+ObjectProperty: Annotations: rdfs:label "objectproperty op" op

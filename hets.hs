@@ -21,6 +21,7 @@ module Main where
 import System.Environment (getArgs)
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Driver.Options
 import Driver.AnaLib
@@ -90,7 +91,7 @@ main =
              "option -G is illegal together with file arguments (use -g)"
 
 noUniPkg :: IO ()
-noUniPkg = fail $ "No graph display interface; \n"
+noUniPkg = Fail.fail $ "No graph display interface; \n"
             ++ "UNI_PACKAGE option has been "
             ++ "disabled during compilation of Hets"
 

@@ -18,6 +18,7 @@ import Common.Id
 import Common.Utils
 import Common.LibName
 import Common.Consistency
+import qualified Control.Monad.Fail as Fail
 
 import Data.Data
 import Data.List
@@ -46,14 +47,14 @@ instance Ord NodeName where
 instance Eq NodeName where
   n1 == n2 = compare n1 n2 == EQ
 
-readXPath :: Monad m => String -> m [XPathPart]
+readXPath :: Fail.MonadFail m => String -> m [XPathPart]
 readXPath = mapM readXPathComp . splitOn '/'
 
-readXPathComp :: Monad m => String -> m XPathPart
+readXPathComp :: Fail.MonadFail m => String -> m XPathPart
 readXPathComp s = case splitAt 5 s of
   ("Spec[", s') -> case readMaybe $ takeWhile (/= ']') s' of
         Just i -> return $ ChildIndex i
-        Nothing -> fail "cannot read nodes ChildIndex"
+        Nothing -> Fail.fail "cannot read nodes ChildIndex"
   _ -> return $ ElemName s
 
 isInternal :: NodeName -> Bool
@@ -352,7 +353,7 @@ compPointer (NPBranch n1 f1) (NPComp f2) =
        NPBranch n1 (Map.unionWith (\ _ y -> y) f1 f2 )
 compPointer (NPComp f1) (NPComp f2) =
        NPComp (Map.unionWith (\ _ y -> y) f1 f2)
-compPointer x y = error $ "compPointer:" ++ show x ++ " " ++ show y
+compPointer x y = error $ "compPointer:" ++ show x ++ " composed with " ++ show y
 
 -- sources
 

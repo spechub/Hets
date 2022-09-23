@@ -19,10 +19,14 @@ Build-Depends:
  libghc-persistent-sqlite-dev (>= 2.6.2),
  libghc-persistent-mysql-dev,
  libghc-hexpat-dev, libghc-aterm-dev,
- libghc-uni-udrawgraph-dev, libghc-glade-dev
+ libghc-uni-udrawgraph-dev, libghc-gtk-dev,
 # Previous two packages are only required to build the desktop version.
-# For Ubuntu >= 18.04 one may add:
-#	,libghc-http-client-dev (>= 0.5.7.1), libghc-http-client-tls-dev (>= 0.3.5.1)
+ libghc-http-client-dev (>= 0.5.7.1), libghc-http-client-tls-dev (>= 0.3.5.1),
+# Since focal/jammy (0.107.0)
+ libghc-network-bsd-dev,
+# For testing the build, but not required to build.
+ vampire, darwin, eprover
+Build-Conflicts: libghc-gtk3-dev
 Standards-Version: 3.9.3
 Homepage: https://github.com/spechub/Hets
 
@@ -41,10 +45,11 @@ Depends: hets-common, hets-libs,
  owltools, darwin, eprover, spass,
  ksh, graphviz, wget, patch, file, perl,
  udrawgraph [i386] | udrawgraph:i386 [amd64],
- libatk1.0-0, libc6, libcairo2, libexpat1, libffi6, libfontconfig1,
- libfreetype6, libgtk2.0-0, libgdk-pixbuf2.0-0, libglib2.0-0, libglade2-0,
- libgmp10, libpango-1.0-0, libpangocairo-1.0-0, libpangoft2-1.0-0,
- libsqlite3-0, libtinfo5, libxml2, libyaml-0-2, zlib1g
+ libatk1.0-0, libatomic1, libc6, libcairo2, libexpat1, libffi7, libfontconfig1,
+ libfreetype6, libgdk-pixbuf2.0-0, libglib2.0-0, libgmp10,
+ libgtk2.0-0, libpango-1.0-0, libpangocairo-1.0-0, libpangoft2-1.0-0, libpcre3,
+ libsqlite3-0, libssl1.1, libtinfo6, libyaml-0-2, zlib1g
+Recommends: tk
 Description: The Heterogeneous Tool Set (hets) - desktop version.
  This package contains the desktop version of the Heterogeneous Tool Set (hets).
  Hets is a parsing, static analysis and proof management tool combining
@@ -60,8 +65,8 @@ Architecture: amd64
 Depends: hets-common, hets-libs,
  owltools, darwin, eprover, spass,
  ksh, graphviz, wget, patch, file, perl,
- libc6, libexpat1, libffi6, libgmp10, libyaml-0-2, zlib1g,
- libmysqlclient20, libpq5, libsqlite3-0
+ libatomic1, libc6, libexpat1, libffi7, libgmp10, libpcre3, libyaml-0-2, zlib1g,
+ libpq5, libsqlite3-0, libssl1.1
 Description: The Heterogeneous Tool Set (hets) - server version.
  This package contains the server version of the Heterogeneous Tool
  Set (hets).  Hets is a parsing, static analysis and proof management
@@ -106,3 +111,4 @@ Description: The Heterogeneous Tool Set (hets) - server plus.
  This is a meta-package which pulls in the hets-server as well as all any
  other known non-GUI package, which might be helpful when using hets as a
  service.
+# HC_OPTS='   -DNOHTTP  -DUNIX  -DHASKELINE     -DWARP1   -DHAXML_COMPAT -DRDFLOGIC -DCASLEXTENSIONS   -Wall -fwarn-tabs -fwarn-unrecognised-pragmas -fno-warn-orphans -fno-warn-unused-do-bind  '

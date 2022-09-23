@@ -17,7 +17,7 @@ module RelationalScheme.Logic_Rel where
 import Common.DocUtils
 import Common.Id
 
-import Data.Monoid
+import Data.Monoid ()
 import qualified Data.Set as Set
 
 import Logic.Logic
@@ -52,19 +52,22 @@ instance Sentences RelScheme Sentence Sign RSMorphism RSSymbol where
     map_sen RelScheme = map_rel
     symKind RelScheme = show . pretty . sym_kind
 
+instance Semigroup RSRelationships where
+    (RSRelationships l1 r1) <> (RSRelationships l2 r2) =
+        RSRelationships (l1 ++ l2) $ appRange r1 r2
 instance Monoid RSRelationships where
     mempty = RSRelationships [] nullRange
-    mappend (RSRelationships l1 r1) (RSRelationships l2 r2) =
-        RSRelationships (l1 ++ l2) $ appRange r1 r2
 
+instance Semigroup RSTables where
+    (RSTables s1) <> (RSTables s2) = RSTables $ Set.union s1 s2
 instance Monoid RSTables where
     mempty = emptyRSSign
-    mappend (RSTables s1) (RSTables s2) = RSTables $ Set.union s1 s2
 
+instance Semigroup RSScheme where
+    (RSScheme l1 s1 r1) <> (RSScheme l2 s2 r2) = RSScheme
+      (l1 <> l2) (s1 <> s2) $ appRange r1 r2
 instance Monoid RSScheme where
     mempty = RSScheme mempty mempty nullRange
-    mappend (RSScheme l1 s1 r1) (RSScheme l2 s2 r2) = RSScheme
-      (mappend l1 l2) (mappend s1 s2) $ appRange r1 r2
 
 -- | Syntax of Rel
 instance Syntax RelScheme RSScheme RSSymbol () () where

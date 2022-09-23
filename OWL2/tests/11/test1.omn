@@ -1,0 +1,11 @@
+#SUBLOGIC=ALC
+Prefix: : <http://example.org/>
+
+Ontology: 
+
+Class: A
+Class: B
+Class: C
+
+Class: A and B
+    SubClassOf: C

@@ -41,6 +41,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 instance TermExtension EM_FORMULA where
   freeVarsOfExt sign frm = case frm of
@@ -82,7 +83,7 @@ checkConstr sig sens =
   let cs = interOpMapSet
         (Set.fold (uncurry addOpTo) MapSet.empty $ getConstructors sens)
         $ flexOps $ extendedInfo sig
-  in unless (MapSet.null cs) $ fail $ "constructors must not be flexible:\n"
+  in unless (MapSet.null cs) $ Fail.fail $ "constructors must not be flexible:\n"
          ++ show (printSetMap empty empty $ MapSet.toMap cs)
 
 frmTypeAna :: Min EM_FORMULA EModalSign

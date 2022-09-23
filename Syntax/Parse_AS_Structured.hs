@@ -57,6 +57,7 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 import Data.Maybe
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 expandCurieM :: LogicGraph -> IRI -> GenParser Char st IRI
 expandCurieM lG i =
@@ -96,7 +97,7 @@ lookupLogicM i = if isSimple i
                  then return l
                  else case lookupLogicName l of
                    Just s -> return s
-                   Nothing -> fail $ "logic " ++ show i ++ " not found"
+                   Nothing -> Fail.fail $ "logic " ++ show i ++ " not found"
   where l = iriToStringUnsecure i
 
 {- keep these identical in order to
@@ -104,13 +105,11 @@ decide after seeing ".", ":" or "->" what was meant -}
 logicName :: LogicGraph -> AParser st Logic_name
 logicName l = do
       i <- hetIriCurie >>= expandCurieMConservative l
-      let (ft, rt) = if isSimple i
-                     then break (== '.') $ show $ iriPath i -- DOL
-                     else (show $ iriPath i, [])
+      let (ft, rt) = if isSimple i then break (== '.') $ iFragment i else ( iFragment i, [])
       (e, ms) <- if null rt then return (i, Nothing)
          else do
            s <- sublogicChars -- try more sublogic characters
-           return (i { iriPath = stringToId ft},
+           return (i { iFragment = ft},
                    Just . mkSimpleId $ tail rt ++ s)
       skipSmart
       -- an optional spec name for a sublogic based on a theory #171
@@ -210,7 +209,7 @@ callSymParser :: Bool -> Maybe (AParser st a) -> String -> String ->
                  AParser st ([a], [Token])
 callSymParser oneOnly p name itemType = case p of
     Nothing ->
-        fail $ "no symbol" ++ itemType ++ " parser for language " ++ name
+        Fail.fail $ "no symbol" ++ itemType ++ " parser for language " ++ name
     Just pa -> if oneOnly then do
         s <- pa
         return ([s], [])
@@ -232,14 +231,14 @@ parseMapOrHide :: String -> (Logic_code -> a) -> (t -> a)
                -> AParser st ([a], [Token])
 parseMapOrHide altKw constrLogic constrMap pa lG =
     do (n, nLg) <- parseLogic altKw lG
-       do optional anComma
+       do anComma
           (gs, ps) <- parseMapOrHide altKw constrLogic constrMap pa nLg
           return (constrLogic n : gs, ps)
         <|> return ([constrLogic n], [])
     <|> do
       l <- lookupCurrentLogic "parseMapOrHide" lG
       (m, ps) <- pa l
-      do optional anComma
+      do anComma
          (gs, qs) <- parseMapOrHide altKw constrLogic constrMap pa lG
          return (constrMap m : gs, ps ++ qs)
         <|> return ([constrMap m], ps)
@@ -600,7 +599,7 @@ corr1 l = do
     (mrRef, mconf, toer) <- corr2 l
     cids <- annotations
     if not (null cids || null (tail cids))
-      then fail "more than one correspondence id"
+      then Fail.fail "more than one correspondence id"
       else return (listToMaybe cids, eRef, mrRef, mconf, toer)
 
 corr2 :: LogicGraph

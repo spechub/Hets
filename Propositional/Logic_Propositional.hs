@@ -51,7 +51,7 @@ import Common.Id
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.Monoid
+import Data.Monoid ()
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show
@@ -101,9 +101,10 @@ instance Sentences Propositional FORMULA
         in if Set.member pId noms then (True, Just pId) else (False, Nothing)
       _ -> (False, Nothing)
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- - | Syntax of Propositional logic
 instance Syntax Propositional BASIC_SPEC

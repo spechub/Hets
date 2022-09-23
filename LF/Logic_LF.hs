@@ -29,7 +29,7 @@ import Common.Result
 import Common.ExtSign
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 data LF = LF deriving Show
 
@@ -43,9 +43,10 @@ instance Category Sign Morphism where
    composeMorphisms = compMorph
    isInclusion = Map.null . symMap . canForm
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 instance Syntax LF BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
    parse_basic_spec LF = Just basicSpec

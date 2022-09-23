@@ -17,7 +17,7 @@ module OWL2.Function where
 import OWL2.AS
 import Common.IRI
 import Common.Id (stringToId)
-import OWL2.MS
+import qualified Common.GlobalAnnotations as GA (PrefixMap)
 import OWL2.Sign
 import OWL2.Symbols
 
@@ -64,6 +64,16 @@ instance Function PrefixMap where
             Expand -> oldPs
         _ -> err
 
+instance Function GA.PrefixMap where
+    function a m oldPs = case m of
+        StringMap mp -> case a of
+            Rename ->
+                foldl (\ ns (pre, ouri) ->
+                    Map.insert (Map.findWithDefault pre pre mp) ouri ns)
+                    Map.empty $ Map.toList oldPs
+            Expand -> oldPs
+        _ -> err
+
 instance Function IRI where
   function a m iri = case m of
     StringMap pm -> case a of
@@ -74,11 +84,8 @@ instance Function IRI where
           lp = show $ iriPath iri
           iRi = if hasFullIRI iri then let
                   ex = np ++ ":" ++ lp
-                  res = let x = expandCurie (Map.map mkIRI pm) iri in
-                         case x of
-                          Just y -> y
-                          Nothing -> error $ "could not expand:" ++ showIRI iri 
-                in if elem np ["http", "https"] then -- abbreviate
+                  res = expandIRI' pm iri
+                in if elem np ["http", "https"] && not (isAbbrev iri) then -- abbreviate
                         case Map.lookup "" pm of
                           Just ep | length ep > 5 -> case stripPrefix ep ex of
                             Just rl@(_ : _) -> res
@@ -88,21 +95,9 @@ instance Function IRI where
                             _ -> res
                           _ -> res
                       else res
-               else if isBlankNode iri then iri else   
-                    let iriMap = foldl (\pm' (kp, vp) -> 
-                                case parseIRI vp of
-                                  Just i -> Map.insert kp i pm'
-                                  Nothing -> if null kp then 
-                                               Map.insert kp 
-                                                 ((mkIRI vp)) 
-                                                 pm'
-                                              else pm') 
-                              Map.empty $  
-                              Map.toList $ Map.union pm predefPrefixes
-                        x = expandCurie iriMap iri 
-                    in case x of
-                        Just y -> y
-                        Nothing -> error $ "could not expand curie:" ++ showIRI iri
+               else if isBlankNode iri then iri
+               else let iriMap = Map.union pm predefPrefixes
+                    in expandIRI' iriMap iri
       in setReservedPrefix iRi
     _ -> iri
 
@@ -156,8 +151,8 @@ instance Function ClassExpression where
         ObjectHasSelf op -> ObjectHasSelf $ function t s op
         ObjectCardinality (Cardinality ct i op mce) -> ObjectCardinality
             $ Cardinality ct i (function t s op) $ maybeDo t s mce
-        DataValuesFrom qt dp dr -> DataValuesFrom qt
-            (cutWith DataProperty t s dp) $ function t s dr
+        DataValuesFrom qt dps dr -> DataValuesFrom qt
+            (cutWith DataProperty t s <$> dps) $ function t s dr
         DataHasValue dp l -> DataHasValue (cutWith DataProperty t s dp)
             $ function t s l
         DataCardinality (Cardinality ct i dp mdr) -> DataCardinality
@@ -171,80 +166,294 @@ instance Function AnnotationValue where
     function t s av = case av of
         AnnValue anIri -> AnnValue $ function t s anIri
         AnnValLit l -> AnnValLit $ function t s l
+        AnnAnInd i -> AnnAnInd $ function t s i
 
-instance Function Annotations where
-    function t pm = map (function t pm)
+instance Function AnnotationSubject where
+    function t s av = case av of
+        AnnSubIri i -> AnnSubIri $ function t s i
+        AnnSubAnInd i -> AnnSubAnInd $ function t s i
 
--- | only for non-IRI AnnotatedLists
-instance Function a => Function (AnnotatedList a) where
-    function t s = map (\ (ans, a) -> (map (function t s) ans, function t s a))
 
--- | only for IRI AnnotatedLists
-mapAnnList :: EntityType -> Action -> AMap -> AnnotatedList IRI
-    -> AnnotatedList IRI
-mapAnnList ty t m anl =
-    let ans = map fst anl
-        l = map snd anl
-    in zip (map (function t m) ans) $ map (cutWith ty t m) l
-
-instance Function Fact where
-    function t s f = case f of
-        ObjectPropertyFact pn op i -> ObjectPropertyFact pn
-            (function t s op) $ cutWith NamedIndividual t s i
-        DataPropertyFact pn dp l -> DataPropertyFact pn
-            (cutWith DataProperty t s dp) $ function t s l
-
-instance Function ListFrameBit where
-    function t s lfb = case lfb of
-        AnnotationBit al -> AnnotationBit $ mapAnnList AnnotationProperty t s al
-        ExpressionBit al -> ExpressionBit $ function t s al
-        ObjectBit al -> ObjectBit $ function t s al
-        DataBit al -> DataBit $ mapAnnList DataProperty t s al
-        IndividualSameOrDifferent al ->
-            IndividualSameOrDifferent $ mapAnnList NamedIndividual t s al
-        DataPropRange al -> DataPropRange $ function t s al
-        IndividualFacts al -> IndividualFacts $ function t s al
-        _ -> lfb
-
-instance Function AnnFrameBit where
-    function t s afb = case afb of
-        DatatypeBit dr -> DatatypeBit $ function t s dr
-        ClassDisjointUnion cel -> ClassDisjointUnion $ map (function t s) cel
-        ClassHasKey opl dpl -> ClassHasKey (map (function t s) opl)
-            $ map (cutWith DataProperty t s) dpl
-        ObjectSubPropertyChain opl ->
-            ObjectSubPropertyChain $ map (function t s) opl
-        _ -> afb
-
-instance Function FrameBit where
-    function t s fb = case fb of
-        ListFrameBit mr lfb -> ListFrameBit mr $ function t s lfb
-        AnnFrameBit ans afb -> AnnFrameBit (function t s ans)
-            (function t s afb)
-
-instance Function Extended where
-    function t mp ex = case ex of
-        Misc ans -> Misc $ function t mp ans
-        SimpleEntity ent -> SimpleEntity $ function t mp ent
-        ClassEntity ce -> ClassEntity $ function t mp ce
-        ObjectEntity op -> ObjectEntity $ function t mp op
-
-instance Function Frame where
-    function t mp (Frame ex fbl) = Frame (function t mp ex)
-        (map (function t mp) fbl)
+instance Function AnnotationAxiom where
+    function t mp (AnnotationAssertion anno p s v) = AnnotationAssertion
+        (function t mp anno)
+        (function t mp p)
+        (function t mp s)
+        (function t mp v)
+    function t mp (SubAnnotationPropertyOf anno subP supP) = SubAnnotationPropertyOf
+        (function t mp anno)
+        (function t mp subP)
+        (function t mp supP)
+    function t mp (AnnotationPropertyDomain anno p i) = AnnotationPropertyDomain
+        (function t mp anno)
+        (function t mp p)
+        (function t mp i)
+    function t mp (AnnotationPropertyRange anno p i) = AnnotationPropertyRange
+        (function t mp anno)
+        (function t mp p)
+        (function t mp i)
 
 instance Function Axiom where
-    function t mp (PlainAxiom ex fb) = PlainAxiom (function t mp ex)
-        (function t mp fb)
+    function t mp (Declaration anns e) = Declaration (function t mp anns)
+        (function t mp e)
+    function t mp (ClassAxiom c) = ClassAxiom (function t mp c)
+    function t mp (ObjectPropertyAxiom opAx) =
+        ObjectPropertyAxiom (function t mp opAx)
+    function t mp (DataPropertyAxiom d) =
+        DataPropertyAxiom (function t mp d)
+    function t mp  (DatatypeDefinition anns dt dr) =
+        DatatypeDefinition (function t mp anns) (function t mp dt)
+            (function t mp dr)
+    function t mp (HasKey anns c o d) = HasKey
+        (function t mp anns)
+        (function t mp c)
+        (function t mp <$> o)
+        (function t mp <$> d)
+
+    function t mp (Assertion assertion) = Assertion (function t mp assertion)   
+    function t mp (AnnotationAxiom a) = AnnotationAxiom (function t mp a)
+    function t mp (Rule r) = Rule (function t mp r)
+    function t mp (DGAxiom anns dgName dgNodes dgEdges mainClasses) =
+        DGAxiom (function t mp anns) (function t mp dgName)
+            (function t mp dgNodes) (function t mp dgEdges)
+            (function t mp mainClasses)
+
+instance Function ClassAxiom where
+    function t mp (SubClassOf anns subClExpr supClExpr) =
+        SubClassOf (function t mp anns) (function t mp subClExpr)
+            (function t mp supClExpr)
+
+    function t mp (EquivalentClasses anns clExprs) =
+        EquivalentClasses (function t mp anns)
+            (function t mp <$> clExprs)
+    
+    function t mp (DisjointClasses anns clExprs) =
+        DisjointClasses (function t mp anns)
+            (function t mp <$> clExprs)
+
+    function t mp (DisjointUnion anns clIri clExprs) = 
+        DisjointUnion (function t mp anns) (function t mp clIri)
+            (function t mp <$> clExprs)
+
+
+instance Function SubObjectPropertyExpression where
+    function t mp (SubObjPropExpr_obj e) = SubObjPropExpr_obj
+        (function t mp e)
+    function t mp (SubObjPropExpr_exprchain e) = SubObjPropExpr_exprchain
+        (function t mp e)
+
+instance Function ObjectPropertyAxiom where
+    function t mp (SubObjectPropertyOf anns subExpr supExpr) = 
+        SubObjectPropertyOf (function t mp anns)
+            (function t mp subExpr)
+            (function t mp supExpr)
+            
+    function t mp (EquivalentObjectProperties anns exprs) = 
+        EquivalentObjectProperties (function t mp anns)
+            (function t mp <$> exprs)
+
+    function t mp (DisjointObjectProperties anns exprs) = 
+        DisjointObjectProperties (function t mp anns)
+            (function t mp <$> exprs)
+
+    function t mp (InverseObjectProperties anns expr1 expr2) = 
+        InverseObjectProperties (function t mp anns)
+            (function t mp expr1) (function t mp expr2)
+
+    function t mp (ObjectPropertyDomain anns opExpr clExpr) = 
+        ObjectPropertyDomain (function t mp anns)
+            (function t mp opExpr) (function t mp clExpr)
+
+    function t mp (ObjectPropertyRange anns opExpr clExpr) = 
+        ObjectPropertyRange (function t mp anns)
+            (function t mp opExpr) (function t mp clExpr)
+            
+    function t mp (FunctionalObjectProperty anns opExpr) =
+        FunctionalObjectProperty (function t mp anns)
+            (function t mp opExpr)
+
+    function t mp (InverseFunctionalObjectProperty anns opExpr) = 
+        InverseFunctionalObjectProperty (function t mp anns)
+            (function t mp opExpr)
+            
+    function t mp (ReflexiveObjectProperty anns opExpr) =
+        ReflexiveObjectProperty (function t mp anns)
+            (function t mp opExpr)
+            
+    function t mp (IrreflexiveObjectProperty anns opExpr) =
+        IrreflexiveObjectProperty (function t mp anns)
+            (function t mp opExpr)
+
+    function t mp (SymmetricObjectProperty anns opExpr) =
+        SymmetricObjectProperty (function t mp anns)
+            (function t mp opExpr)
+
+    function t mp (AsymmetricObjectProperty anns opExpr) =
+        AsymmetricObjectProperty (function t mp anns)
+            (function t mp opExpr)
+
+    function t mp (TransitiveObjectProperty anns opExpr) =
+        TransitiveObjectProperty (function t mp anns)
+            (function t mp opExpr)
+
+instance Function DataPropertyAxiom where
+    function t mp (SubDataPropertyOf anns subD supD) =
+        SubDataPropertyOf (function t mp anns)
+            (function t mp subD) (function t mp supD)
+    
+    function t mp (EquivalentDataProperties anns dpExprs) =
+        EquivalentDataProperties (function t mp anns)
+            (function t mp <$> dpExprs)
+            
+    function t mp (DisjointDataProperties anns dpExprs) =
+        DisjointDataProperties (function t mp anns)
+            (function t mp dpExprs)
+
+    function t mp (DataPropertyDomain anns dpExpr clExpr) =
+        DataPropertyDomain (function t mp anns)
+            (function t mp dpExpr) (function t mp clExpr)
+    
+    function t mp (DataPropertyRange anns dpExpr dr) =
+        DataPropertyRange (function t mp anns)
+            (function t mp dpExpr) (function t mp dr)
+
+    function t mp (FunctionalDataProperty anns dpExpr) = 
+        FunctionalDataProperty (function t mp anns)
+            (function t mp dpExpr)
+
+instance Function Assertion where
+    function t mp (SameIndividual anns is) = SameIndividual
+        (function t mp anns)
+        (function t mp <$> is)
+    function t mp (DifferentIndividuals anns is) = DifferentIndividuals
+        (function t mp anns)
+        (function t mp <$> is)
+    function t mp (ClassAssertion anns c i) = ClassAssertion
+        (function t mp anns)
+        (function t mp c)
+        (function t mp i)
+    function t mp (ObjectPropertyAssertion anns o s t_) = ObjectPropertyAssertion
+        (function t mp anns)
+        (function t mp o)
+        (function t mp s)
+        (function t mp t_)
+    function t mp (NegativeObjectPropertyAssertion anns o s t_) = NegativeObjectPropertyAssertion
+        (function t mp anns)
+        (function t mp o)
+        (function t mp s)
+        (function t mp t_)
+    function t mp (DataPropertyAssertion anns d s t_) = DataPropertyAssertion
+        (function t mp anns)
+        (function t mp d)
+        (function t mp s)
+        (function t mp t_)
+    function t mp (NegativeDataPropertyAssertion anns d s t_) = NegativeDataPropertyAssertion
+        (function t mp anns)
+        (function t mp d)
+        (function t mp s)
+        (function t mp t_)
+
+
+instance (Function a) => Function [a] where
+    function t mp l = function t mp <$> l
+
+instance (Function a) => Function (Maybe a) where
+    function _ _ Nothing = Nothing
+    function t mp (Just l) = Just (function t mp l)
+
+instance Function Rule where
+    function t mp (DLSafeRule anns b h) = DLSafeRule
+        (function t mp anns)
+        (function t mp b)
+        (function t mp h)
+    function t mp (DGRule anns b h) = DGRule
+        (function t mp anns)
+        (function t mp b)
+        (function t mp h)
+
+instance Function DataArg where
+    function t mp (DArg l) = DArg (function t mp l)
+    function t mp (DVar v) = DVar (function t mp v)
+
+instance Function IndividualArg where
+    function t mp (IArg i) = IArg (function t mp i)
+    function t mp (IVar v) = IVar (function t mp v)
+
+instance Function UnknownArg   where
+    function t mp (IndividualArg i) = IndividualArg (function t mp i)
+    function t mp (DataArg d) = DataArg (function t mp d)
+    function t mp (Variable v) = Variable (function t mp v)
+    
+instance Function Atom where
+    function t mp (ClassAtom c arg) = ClassAtom
+        (function t mp c)
+        (function t mp arg)
+    function t mp (DataRangeAtom d arg) = DataRangeAtom
+        (function t mp d)
+        (function t mp arg)
+    function t mp (ObjectPropertyAtom oexpr arg1 arg2) = ObjectPropertyAtom
+        (function t mp oexpr)
+        (function t mp arg1)
+        (function t mp arg2)
+    function t mp (DataPropertyAtom d arg1 arg2) = DataPropertyAtom
+        (function t mp d)
+        (function t mp arg1)
+        (function t mp arg2)
+    function t mp (BuiltInAtom i args) = BuiltInAtom
+        (function t mp i)
+        (function t mp <$> args)
+    function t mp (SameIndividualAtom arg1 arg2) = SameIndividualAtom
+        (function t mp arg1)
+        (function t mp arg2)
+    function t mp (DifferentIndividualsAtom arg1 arg2) = DifferentIndividualsAtom
+        (function t mp arg1)
+        (function t mp arg2)
+    function t mp (UnknownUnaryAtom i arg) = UnknownUnaryAtom
+        (function t mp i)
+        (function t mp arg)
+    function t mp (UnknownBinaryAtom i arg1 arg2) = UnknownBinaryAtom
+        (function t mp i)
+        (function t mp arg1)
+        (function t mp arg2)
+    
+
+instance Function DGAtom where
+    function t mp (DGClassAtom c arg) = DGClassAtom
+        (function t mp c)
+        (function t mp arg)
+    function t mp (DGObjectPropertyAtom e a1 a2) = DGObjectPropertyAtom
+        (function t mp e)
+        (function t mp a1)
+        (function t mp a2)
+
+instance Function DGEdgeAssertion where
+    function t mp (DGEdgeAssertion o v1 v2) = DGEdgeAssertion
+        (function t mp o)
+        (function t mp v1)
+        (function t mp v2)
+
+instance Function DGNodeAssertion where
+    function t mp (DGNodeAssertion c node) = DGNodeAssertion
+        (function t mp c)
+        (function t mp node)
+
 
 instance Function Ontology where
-  function t mp (Ontology ouri impList anList f) =
-      Ontology (function t mp ouri) (map (function t mp) impList)
-         (map (function t mp) anList) (map (function t mp) f)
+    function t mp (Ontology n version imp anns ax) = Ontology
+        (function t mp n)
+        (function t mp version)
+        (function t mp imp)
+        (function t mp anns)
+        (function t mp ax)
+
+instance Function PrefixDeclaration where
+    function t mp (PrefixDeclaration n i) = PrefixDeclaration
+        n
+        (function t mp i)
 
 instance Function OntologyDocument where
-  function t mp (OntologyDocument pm onto) =
-      OntologyDocument (function t mp pm) (function t mp onto)
+  function t mp (OntologyDocument m pm onto) =
+      OntologyDocument m (function t mp pm) (function t mp onto)
 
 instance Function RawSymb where
   function t mp rs = case rs of

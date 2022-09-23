@@ -48,6 +48,7 @@ import Common.DocUtils
 import qualified Common.Result as Result
 
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
 
 {- | The datatype for morphisms in propositional logic as
 maps of sets -}
@@ -72,7 +73,7 @@ isLegalMorphism pmor =
         pdom = Map.keysSet $ propMap pmor
         pcodom = Set.map (applyMorphism pmor) psource
     in unless (Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource) $
-        fail "illegal Propositional morphism"
+        Fail.fail "illegal Propositional morphism"
 
 -- | Application funtion for morphisms
 applyMorphism :: Morphism -> Id -> Id

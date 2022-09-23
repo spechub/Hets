@@ -17,8 +17,9 @@ Control.Monad.State, but now Control.Monad.Trans.State can be used instead.
 
 module Common.Lib.State where
 
-import Control.Applicative
+import Control.Applicative ()
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 -- | Our fixed state monad
 newtype State s a = State { runState :: s -> (a, s) }
@@ -37,6 +38,9 @@ instance Monad (State s) where
         return a = State $ \ s -> (a, s)
         State f >>= k = State $ \ s ->
                 let (a, s') = f s in runState (k a) s'
+
+instance Fail.MonadFail (State s) where
+  fail str = State $ \_ -> error str
 
 -- put and get are non-overloaded here!
 

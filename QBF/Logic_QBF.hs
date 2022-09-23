@@ -47,7 +47,7 @@ import ATC.ProofTree ()
 import Common.ProofTree
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 -- | Lid for propositional logic
 data QBF = QBF deriving Show
@@ -90,9 +90,10 @@ instance Sentences QBF FORMULA
     -- there is nothing to leave out
     simplify_sen QBF _ = simplify
 
+instance Semigroup BASICSPEC where
+    (BasicSpec l1) <> (BasicSpec l2) = BasicSpec $ l1 ++ l2
 instance Monoid BASICSPEC where
     mempty = BasicSpec []
-    mappend (BasicSpec l1) (BasicSpec l2) = BasicSpec $ l1 ++ l2
 
 -- | Syntax of Propositional logic
 instance Syntax QBF BASICSPEC Symbol

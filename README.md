@@ -57,6 +57,10 @@ sudo apt-get install hets-desktop
 
 * for using Hets as a server providing a RESTful interface, use hets-server. This is a smaller version without GUI dependencies. Note that also hets-desktop can be used as as server.
 
+#### Get the latest binaries
+
+From [here](http://hets.eu/latest) you can get the latest Hets binaries (always freshly compiled from the master branch). 
+
 #### Hets development
 For Hets development additionally type in
 ```
@@ -161,16 +165,29 @@ If you wish to make larger changes we generally recommend [forking](https://help
     ```
 * [Install Stack](https://docs.haskellstack.org/en/stable/install_and_upgrade) (use the generic Linux option if you are on Ubuntu).
 * Install build- and GUI-dependencies
-  * Ubuntu:
-    ```
-    sudo apt install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
-    sudo apt install postgresql postgresql-server-dev-9.5
-    ```
-  * macOS:
-    ```
-    brew cask install xquartz
-    brew install binutils glib libglade cairo gtk fontconfig freetype gettext spechub/hets/udrawgraph
-    ```
+  * Ensure a JDK is installed (version >= 1.7)
+  * Automatically install dependencies with
+  ```
+  ./install_dependencies.sh
+  ```
+  * Manual install
+    * Ubuntu:
+      ```
+      sudo apt install libglib2.0-dev libcairo2-dev libpango1.0-dev libgtk2.0-dev libglade2-dev libncurses-dev
+      sudo apt install postgresql postgresql-server-dev-9.5
+      sudo apt install ant
+      ```
+    * macOS:
+      ```
+      brew cask install xquartz
+      brew install binutils glib libglade cairo gtk fontconfig freetype gettext spechub/hets/udrawgraph
+      brew install ant
+      ```
+* If you work with OWL ontologies, build OWL tools before running hets. Warnings produced by stack (like "You are not the owner of '/.stack-work/'. Aborting to protect file permissions")
+  can be ignored as the script doesn't use ghc or stack in general.
+  ```
+  sudo make install-owl-tools
+  ```
 * Setup Stack for Hets (this needs to be done only once after every time the stack.yaml has changed):
   ```
   stack setup

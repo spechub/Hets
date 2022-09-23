@@ -22,12 +22,13 @@ import Persistence.Utils
 import Database.Esqueleto
 
 import Control.Monad.IO.Class (MonadIO (..))
+import Control.Monad.Fail
 
 resolve :: HetcatsOpts -> Cache -> String -> IO (Maybe GraphQLResult.Result)
-resolve opts sessionReference locIdVar =
+resolve opts _ locIdVar =
   onDatabase (databaseConfig opts) $ resolveDB locIdVar
 
-resolveDB :: MonadIO m => String -> DBMonad m (Maybe GraphQLResult.Result)
+resolveDB :: (MonadIO m, MonadFail m) => String -> DBMonad m (Maybe GraphQLResult.Result)
 resolveDB locIdVar = do
   omsL <-
     select $ from $ \(oms `InnerJoin` loc_id_bases
@@ -74,7 +75,7 @@ resolveDB locIdVar = do
            consistencyCheckAttemptResults mappingSourceResults mappingTargetResults
            sentenceResults serializationResult
 
-resolveConsistencyChecks :: MonadIO m
+resolveConsistencyChecks :: (MonadIO m, MonadFail m)
                          => LocIdBaseId -- of the OMS
                          -> DBMonad m [GraphQLResultReasoningAttempt.ReasoningAttempt]
 resolveConsistencyChecks omsKey = do
@@ -139,7 +140,7 @@ getReasonerOutput reasoningAttemptKey = do
     [] -> Nothing
     reasonerOutputEntity : _ -> Just reasonerOutputEntity
 
-resolveReasoningAttempt :: MonadIO m
+resolveReasoningAttempt :: (MonadIO m, MonadFail m)
                         => ( Entity DatabaseSchema.ReasoningAttempt
                            , Maybe (Entity DatabaseSchema.Reasoner)
                            , Entity DatabaseSchema.ReasonerConfiguration
@@ -154,14 +155,14 @@ resolveReasoningAttempt (reasoningAttemptEntity, reasonerEntityM, reasonerConfig
   return $ reasoningAttemptToResult reasoningAttemptEntity reasonerOutputEntityM
     reasonerEntityM actionResult reasonerConfigurationResult
 
-resolveAction :: MonadIO m
+resolveAction :: (MonadIO m, MonadFail m)
               => DatabaseSchema.ActionId
               -> DBMonad m GraphQLResultAction.Action
 resolveAction actionKey = do
   Just actionValue <- get actionKey
   return $ actionToResult $ Entity actionKey actionValue
 
-resolveSentences :: MonadIO m
+resolveSentences :: (MonadIO m, MonadFail m)
                  => LocIdBaseId -> DBMonad m [GraphQLResultSentence.Sentence]
 resolveSentences omsKey = do
   sentenceL <-
@@ -182,7 +183,7 @@ resolveSentences omsKey = do
               locIdBaseEntity fileRangeM conjectureEntity symbolResults
        ) sentenceL
 
-resolveConjecture :: MonadIO m
+resolveConjecture :: (MonadIO m, MonadFail m)
                   => Entity DatabaseSchema.Sentence
                   -> Entity DatabaseSchema.LocIdBase
                   -> Maybe (Entity DatabaseSchema.FileRange)
@@ -195,7 +196,7 @@ resolveConjecture sentenceEntity locIdBaseEntity fileRangeM conjectureEntity sym
   return $ conjectureToResult sentenceEntity locIdBaseEntity fileRangeM
     conjectureEntity actionResult symbolResults proofAttemptResults
 
-resolveProofAttempts :: MonadIO m
+resolveProofAttempts :: (MonadIO m, MonadFail m)
                      => LocIdBaseId
                      -> DBMonad m [GraphQLResultReasoningAttempt.ReasoningAttempt]
 resolveProofAttempts conjectureKey = do

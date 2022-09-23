@@ -12,6 +12,8 @@ generate ShATermConvertible instances
 
 module UserRulesHetCATS (hetcatsrules) where
 
+import Prelude hiding ((<>))
+
 import RuleUtils -- gives some examples
 import DataP
 import Text.PrettyPrint.HughesPJ

@@ -1,0 +1,701 @@
+###############################################################################
+# NOTE: Resource limits for public repos (last update: Dec. 2021)
+#       (see also on Github: Settings | Account/Org | Billing & plans):
+#	- 2000 min/month (== 16 US$)
+#		- linux devisor: 1
+#		- macosx devisor: 10 => 200 min/month
+#		- windows devisor: 2 => 1000 min/month
+#	- 10 GB cache storage
+#		- delete on demand: FIFO
+#		- max. retention: 90 days (if a file gets downloaded, counter restarts)
+#	- package/action storage: 500 MB
+#	- total concurent jobs:
+#		- linux: 20
+#		- macos: 5
+#	- max job execution time: 6 h (sieht aber eher wie 24h aus)
+#	- max workflow execution time: 72 h
+#	- API requests: 1000 req/h
+#	- matrix generated jobs/workflow: max. 256
+#	- max. workflows: 500 every 10 s
+#
+#	- max. 1.000 organization secrets, 100 repository secrets, 100 env secrets.
+#	- per workflow: 100 repo, the first 100 org, 100 env secrets.
+#   - max. 64 KiB/secret
+#
+#   VM:
+#   - 14 GB SSD local disk
+#   - 2 CPUs
+#   - 7 GB RAM
+#
+# Also note, that the jobs contain a lot of code duplication and thus one needs
+# to take care to keep all jobs in sync (GHA provides no proper alternatives).
+# So the only way to reduce the bloat and make stuff consistent is to move it
+# to the utils/gha-helper.sh script. (Forget re-using workflows - buggy as hell)
+#
+# Last but not least take care wrt. conditional expressions - very bogus and
+# often do not, what the actual intention is (e.g. GHA formats an expr as text
+# if it encounters a '${{' and compares this literal with null|'' to decide
+# between true or false. Other wiered stuff: tags a logical not ('!') as syntax
+# error, ...). So one should really test this stuff before using it. Testing
+# should be done in the developers forked repository to avoid hitting the
+# the resource limits of the Hets repo.
+
+# NOTE wrt. 'stack':
+# Stack is not POSIX compatible wrt. passing arguments to called utils. So at
+# least on [re]make/update stack, make sure POSIXLY_CORRECT is unset.
+
+# Rule of thumb:
+# Down/Upload speed seen: ~10..30+ MB/s for AWS ("intern"), 5 MB/s extern (IKS).
+###############################################################################
+
+
+# Build hets and run related tests for CI
+name: CI
+
+env:
+  # Dir cannot be directly in /tmp or /var/tmp because Microsoft does not
+  # understand dir mode 01777 and errors out with dumb messages. /dev/shm/
+  # does not work for stack - not enough space. /tmp as well as /var/tmp are on
+  # /dev/sd*.
+  STACK_ROOT: /var/tmp/hets/stack
+  GHAH: utils/gha-helper.sh
+  MISSING_GUI_PKGS: 'libpango1.0-dev libgtk2.0-dev'
+  HETS_ARC: hets.tzst
+  PREFIX: /var/tmp/hets/hets-install
+  HETS_LIB: /var/tmp/hets/hets-install/lib/hets/hets-lib
+  HETS_LIB_REPO: https://github.com/spechub/Hets-lib.git
+  HETS_PPA: http://ppa.launchpad.net/hets/hets/ubuntu
+  # URL to use to skip hets builds and download the artifacts hets-server.tzst
+  # + hets-desktop.tzst instead. Similar for docs: Try to download the docs.tgz
+  # from the same URL. Saves a lot of time when troubleshooting tests.
+  #FAKE_URL: http://stats.iks.cs.ovgu.de/tmp
+  # If set to true, upload initial stack and hets src tree as stack0 and hets0
+  # as well as the final stack (stack1) to the artifact storage, too. Note that
+  # the post build Hets dir gets always uploaded to the artifact repo and thus
+  # can be downloaded via the related GHA pages of the workflow for one day.
+  DEBUG: 'false'
+  # Where to push generated docs. Comment out to disable pushing docs.
+  PUSH_URL: http://theo.cs.ovgu.de/cgi-bin/ghapush
+
+# When to trigger this workflow. Since expression handling is absolutely
+# brain damaged (typical Microsoft crap) and buggy, one can't simple set an env
+# var above and exec jobs wrt. to its value. So to disable this workflow either
+# remove this file from this directory OR rename master e.g. to never_happens in
+# on.push.branches and append '**' to the on.pull_request.paths-ignore, etc..
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    paths-ignore:
+      - '.github/**'				# re-run the job manually if needed
+      - '.gitignore'
+      - '.travis.yml'
+      - 'LICENSE.txt'
+      - 'LIZENZ.txt'
+      - 'README*'
+      - '_parameters'
+      - 'debian/**'
+      - 'doc/**'
+      - 'ideas'
+      - 'pretty/**'
+      - 'sample-ghci-script'
+      - 'stack.yaml'
+      - 'todo*'
+      - '**.tex'
+      - '**.pdf'
+      - 'utils/**'
+      - '!utils/gha-helper.sh'
+      - '!utils/check*'
+      - 'Docker/**'
+      - 'GMP/CoLoSS/data/GMP.tar.gz'
+      - 'GMP/papers/**'
+      - 'HolLight/OcamlTools/**'
+
+# Run this workflow for the latest commit in a branch, only. I.e. if there is
+# any instance for an older commit still running, stop it and kill its jobs.
+concurrency:
+  group: pr-build-and-test-${{ github.head_ref }}
+  cancel-in-progress: true
+
+# A workflow is made up of one or more jobs that can run seq. or in parallel but
+# always in a separate, fresh container. So each job needs to fetch the work
+# from previous jobs and checkout the repo again, if needed.
+jobs:
+
+  ################################ PREPARE ###################################
+  # This workflow uses 'stack' to build Hets and related tests. To avoid
+  # building it agaian and again within each job, we build it once, upload the
+  # build named stack to the github cache store and fetch it on demand for
+  # each job.
+  ############################################################################
+  job_1:
+    # Takes ~ 21 min | 35 s.
+    name: Build Stack
+    runs-on: ubuntu-18.04
+    # If the job takes longer than 30 min, something is going wrong and we want
+    # GHA to kill the job to save build time. E.g. stack sometimes goes in an
+    # endless loop if compilation fails.
+    timeout-minutes: 30
+    steps:
+      # Info about the running environment makes troubleshooting easier. < 1s
+      - name: Dump GitHub context
+        env:
+          GITHUB_CTX: ${{ toJSON(github) }}
+          MY_ENV: ${{ toJSON(env) }}
+          RUNNER_CTX: ${{ toJSON(runner) }}
+        run: |
+          mkdir -p ${{ env.STACK_ROOT }}
+          printf "github:\n$GITHUB_CTX\n"
+          printf "env:\n$MY_ENV\n"
+          printf "env:\n$RUNNER_CTX\n"
+          df -h
+          mount
+
+      # Actually we only need stack.yml to calculate the hash. But the checkout
+      # takes ~ 5s, only => not worth to optimize/add complexity.
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # If stack.yaml has not been changed, we use the cached copy if available,
+      # which saves ~ 20 min. On hit (~ 495 MiB) it takes ~ 25 ± 5s.
+      # NOTE: There is no way to remove or update a cached file. So one needs
+      # to modify stack.yaml to create a new cache entry =8-( . The action/cache
+      # automagically uploads the stack before job completion, _if there is no_
+      # copy cached yet.
+      - name: Fetch stack cache
+        id: stack_cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.STACK_ROOT }}
+          key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml') }}
+
+      # Install missing packages. Since it is not a minimal server image, almost
+      # everything is already installed. Usually GUI stuff is missing, only.
+      # ~ 24 s.
+      - name: Install packages
+        if: steps.stack_cache.outputs.cache-hit != 'true'
+        run: |
+          echo 'man-db man-db/auto-update boolean false' | \
+              sudo debconf-set-selections
+          sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get update
+          sudo apt-get install ksh93 || sudo apt-get install ksh
+          sudo apt-get install ${{ env.MISSING_GUI_PKGS }}
+
+      # ~ 20 min
+      - name: Build
+        if: steps.stack_cache.outputs.cache-hit != 'true'
+        run: |
+          ${{ env.GHAH }} -c showEnv
+          cp -pL `which ksh93` ${{ env.STACK_ROOT }}/
+          unset POSIXLY_CORRECT
+          make stack && \
+              rm -rf ${{ env.STACK_ROOT }}/programs/x86_64-linux/*/share/doc ||\
+              mv ${{ env.STACK_ROOT }} ${{ env.STACK_ROOT }}.fail
+          rm -f ${{ env.STACK_ROOT }}/programs/x86_64-linux/*.tar.xz
+          ls -al ${{ github.workspace }}
+          ls -al ${{ env.STACK_ROOT }} && du -sh ${{ env.STACK_ROOT }}
+
+      - name: Version
+        run: |
+          stack --version
+          stack exec -- ghc -V
+
+
+  ################################# BUILD ####################################
+  # Build Hets desktop and server version in parallel using the cached stack
+  # and preserve the build dir for later testing.
+  ############################################################################
+  job_2a:
+    # Takes ~ 18 min | 45 s.
+    name: Build Hets Server
+    #if: github.event_name == 'pull_request'
+    runs-on: ubuntu-18.04
+    needs: job_1
+    steps:
+      - name: Checkout
+        if: startsWith(env.FAKE_URL, 'http') == false
+        uses: actions/checkout@v2
+
+        # Stack blindly links in all extra-deps, no matter, what flags.Hets say
+        # (or what is really needed) =8-( - so need to strip off the GUI stuff.
+        # We need to do it here, otherwise the hash changes => no cached stack.
+      - name: Adjust stack.yaml
+        if: startsWith(env.FAKE_URL, 'http') == false
+        run: sed -i.orig -e '/gtk-/ d' -e '/gtkglade/ s/true/false/' stack.yaml
+
+      - name: Fetch stack cache
+        if: startsWith(env.FAKE_URL, 'http') == false
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.STACK_ROOT }}
+          key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml.orig') }}
+
+      - name: Archive cached stack
+        if: env.DEBUG == 'true'
+        run: |
+          tar -H posix -I zstd \
+              -cplf ${{ runner.temp }}/stack0.tzst -C ${{ env.STACK_ROOT }} .
+          tar -H posix -I zstd \
+              --exclude=.git --exclude=OcamlTools --exclude=doc \
+              --exclude=hets-mmt-standalone.jar --exclude=Termination \
+              -cplf ${{ runner.temp }}/hets0.tzst .
+
+      # ~ 496 MiB, 20 s
+      - name: Upload cached stack
+        if: env.DEBUG == 'true'
+        uses: actions/upload-artifact@v2
+        with:
+          name: stack0
+          path: ${{ runner.temp }}/stack0.tzst
+          retention-days: 1
+
+      # ~ 9 MiB
+      - name: Upload Hets source dir
+        if: env.DEBUG == 'true'
+        uses: actions/upload-artifact@v2
+        with:
+          name: hets0
+          path: ${{ runner.temp }}/hets0.tzst
+          retention-days: 1
+
+      - name: Environment
+        if: startsWith(env.FAKE_URL, 'http') == false
+        run: |
+          sudo cp -p ${{ env.STACK_ROOT }}/ksh93 /bin/ksh93
+          ${{ env.GHAH }} -c showEnv
+          stack --version
+          stack exec -- ghc -V
+          ls -al . ${{ runner.temp }}
+
+      - name: Fake Build
+        if: startsWith(env.FAKE_URL, 'http')
+        run: |
+          wget --progress=dot -O ${{ runner.temp }}/${{ env.HETS_ARC }} \
+              ${{ env.FAKE_URL }}/hets-server.tzst
+
+      - name: Build
+        if: startsWith(env.FAKE_URL, 'http') == false
+        run: |
+          unset POSIXLY_CORRECT
+          make restack
+          make hets_server.bin || true
+          ln -s hets_server.bin hets
+          cp -pL /bin/ksh93 .
+          tar -H posix -I zstd \
+              --exclude=.git --exclude=OcamlTools --exclude=doc \
+              --exclude=hets-mmt-standalone.jar --exclude=Termination \
+              -cplf ${{ runner.temp }}/${{ env.HETS_ARC }} .
+          # gives us a proper exit code, too.
+          ./hets -V
+
+      # 28s
+      - name: Compress Binary
+        continue-on-error: true
+        #if: github.event_name == 'push'
+        run: |
+          xz -c -T0 --x86 --lzma2 hets_server.bin >hets-server.xz
+          ls -l hets-server.xz
+
+      # 14.1 MiB, 2s
+      - name: Upload Binary
+        continue-on-error: true
+        #if: github.event_name == 'push'
+        uses: actions/upload-artifact@v2
+        with:
+          name: hets server binary
+          path: hets-server.xz
+          retention-days: 90
+
+      # ~ 125 MiB , 15s
+      - name: Upload Hets build dir
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v2
+        with:
+          name: hets-server
+          path: ${{ runner.temp }}/${{ env.HETS_ARC }}
+          retention-days: 1
+
+      - name: Archive post build stack
+        if: env.DEBUG == 'true'
+        run: |
+          tar -H posix -I zstd -cplf ${{ runner.temp }}/stack1.tzst \
+              -C ${{ env.STACK_ROOT }} .
+
+      # ~ 496 MiB, 20 s
+      - name: Upload post build stack
+        if: env.DEBUG == 'true'
+        uses: actions/upload-artifact@v2
+        with:
+          name: stack1
+          path: ${{ runner.temp }}/stack1.tzst
+          retention-days: 1
+
+
+  job_2b:
+    # Takes ~ 19 min | 45 s.
+    name: Build Hets Desktop
+    #if: github.event_name == 'pull_request'
+    runs-on: ubuntu-18.04
+    needs: job_1
+    steps:
+      # The desktop version needs additional GUI packages usually not installed.
+      # ~ 27 s
+      - name: Install packages
+        if: startsWith(env.FAKE_URL, 'http') == false
+        run: |
+          echo 'man-db man-db/auto-update boolean false' | \
+              sudo debconf-set-selections
+          sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get update
+          sudo apt-get install ${{ env.MISSING_GUI_PKGS }}
+
+      - name: Checkout
+        if: startsWith(env.FAKE_URL, 'http') == false
+        uses: actions/checkout@v2
+
+      - name: Fetch stack cache
+        if: startsWith(env.FAKE_URL, 'http') == false
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.STACK_ROOT }}
+          key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml') }}
+
+      - name: Environment
+        if: startsWith(env.FAKE_URL, 'http') == false
+        run: |
+          sudo cp -p ${{ env.STACK_ROOT }}/ksh93 /bin/ksh93
+          ${{ env.GHAH }} -c showEnv
+          stack --version
+          stack exec -- ghc -V
+          ls -al . ${{ runner.temp }}
+
+      - name: Fake Build
+        if: startsWith(env.FAKE_URL, 'http')
+        run: |
+          wget --progress=dot -O ${{ runner.temp }}/${{ env.HETS_ARC }} \
+              ${{ env.FAKE_URL }}/hets-desktop.tzst
+
+      # ~ 18 min
+      - name: Build
+        if: startsWith(env.FAKE_URL, 'http') == false
+        run: |
+          cp stack.yaml stack.yaml.orig
+          unset POSIXLY_CORRECT
+          make restack
+          make hets.bin
+          cp -pL /bin/ksh93 .
+          tar -H posix -I zstd \
+              --exclude=.git --exclude=OcamlTools --exclude=doc \
+              --exclude=hets-mmt-standalone.jar --exclude=Termination \
+              -cplf ${{ runner.temp }}/${{ env.HETS_ARC }} .
+          # gives us a proper exit code, too.
+          ./hets -V
+
+      # 28..37s
+      - name: Compress Binary
+        continue-on-error: true
+        #if: github.event_name == 'push'
+        run: |
+          xz -c -T0 --x86 --lzma2 hets.bin >hets.xz
+          ls -l hets.xz
+
+      # 14.1 MiB, 2..3s
+      - name: Upload Binary
+        continue-on-error: true
+        #if: github.event_name == 'push'
+        uses: actions/upload-artifact@v2
+        with:
+          name: hets desktop binary
+          path: hets.xz
+          retention-days: 90
+
+      # ~ 17 s
+      - name: Upload Hets build dir
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v2
+        with:
+          name: hets-desktop
+          path: ${{ runner.temp }}/${{ env.HETS_ARC }}
+          retention-days: 1
+
+
+  ############################### TESTING ####################################
+  # We prefer the server build because it is more or less a subset of the
+  # desktop version. So if server binary works, desktop binary should work
+  # as well. This also frees us from installing missing GUI deps.
+  ############################################################################
+  job_3a:
+    # Takes about 12 min.
+    name: Test components
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-18.04
+    needs: job_2a
+    steps:
+      # ~ 30 s
+      - name: Install packages
+        run: |
+          # The less package repos, the less time it takes to update.
+          sudo rm -f /etc/apt/sources.list.d/{ondrej-ubuntu-php,ubuntu-toolchain-r-ubuntu-test}-bionic.list
+          printf "deb ${HETS_PPA} `lsb_release -sc`  main\n" | \
+              sudo tee /etc/apt/sources.list.d/hets.list
+          sudo apt-key adv --keyserver keyserver.ubuntu.com \
+              --recv-keys 3FF4B01F2A2314D8
+          for F in /etc/apt/sources.list.d/*.list ; do
+              printf "\n################## $F ##################\n"
+              cat $F
+          done
+          sudo apt-get update
+          echo 'man-db man-db/auto-update boolean false' | \
+              sudo debconf-set-selections
+          sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get install spass darwin vampire eprover \
+              texlive-latex-base texlive-fonts-recommended
+
+      # Unfortunately utils/checkChangedSourceGit.sh uses 'git diff' - so need
+      # to fetch the dropped .git/ bloat.
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download Hets build dir
+        uses: actions/download-artifact@v2
+        with:
+          name: hets-server
+          path: ${{ runner.temp }}
+
+      - name: Extract Hets
+        run: |
+          tar -H posix -I zstd -xf ${{ runner.temp }}/${{ env.HETS_ARC }}
+          sudo cp -p ksh93 /bin/ksh93
+
+      - name: Fetch stack cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.STACK_ROOT }}
+          key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml.orig') }}
+
+      # Takes ~ 3s  -  not worth to optimze.
+      - name: Checkout Hets-lib
+        run: git clone --depth=1 ${{ env.HETS_LIB_REPO }} ${{ env.HETS_LIB }}
+
+      - name: Environment
+        run: |
+          ${{ env.GHAH }} -c showEnv
+          stack --version
+          stack exec -- ghc -V
+          ls -al . ./OWL2 ${{ runner.temp }}
+
+      # ~ 10 min
+      - name: Test
+        run: |
+          unset POSIXLY_CORRECT
+          make restack
+          FAIL_EARLY=0  make check
+
+  job_3b:
+    # Takes ~ 2 min.
+    name: Test Hets-Lib
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-18.04
+    needs: job_2a
+    steps:
+      - name: Download Hets build dir
+        uses: actions/download-artifact@v2
+        with:
+          name: hets-server
+          path: ${{ runner.temp }}
+
+      # stack is not needed
+      - name: Extract Hets
+        run: |
+          tar -H posix -I zstd -xf ${{ runner.temp }}/${{ env.HETS_ARC }}
+          sudo cp -p ksh93 /bin/ksh93
+
+      # Just setting env vars is not sufficient. So install ;-). ~ 11 s
+      - name: Install OWL tools
+        run: |
+          sed -i -e '/^STACK / s/^.*/STACK :=/' var.mk
+          make install-owl-tools
+
+      - name: Checkout Hets-lib
+        run: git clone --depth=1 ${{ env.HETS_LIB_REPO }} ${{ env.HETS_LIB }}
+
+      - name: Environment
+        run: |
+          ${{ env.GHAH }} -c showEnv
+          ls -al . ${{ runner.temp }}
+
+      - name: Test
+        run: |
+          HETS_OWL_TOOLS=${{ env.PREFIX }}/lib/hets/hets-owl-tools \
+          ./test/hets-lib-check.sh all
+
+  job_3c:
+    # Takes ~ 14 min.
+    name: Test PostgreSQL DB
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-18.04
+    needs: job_2a
+    steps:
+      - name: Download Hets build dir
+        uses: actions/download-artifact@v2
+        with:
+          name: hets-server
+          path: ${{ runner.temp }}
+
+      # stack is not needed
+      - name: Extract Hets
+        run: |
+          tar -H posix -I zstd -xf ${{ runner.temp }}/${{ env.HETS_ARC }}
+          sudo cp -p ksh93 /bin/
+
+      - name: Checkout Hets-lib
+        run: git clone --depth=1 ${{ env.HETS_LIB_REPO }} ${{ env.HETS_LIB }}
+
+      - name: Environment
+        run: |
+          ${{ env.GHAH }} -c showEnv
+          ls -al . ${{ runner.temp }}
+
+      - name: Test
+        run: |
+          sudo systemctl stop postgresql || true
+          ln -s hets hets-server
+          HETS_MAGIC=${{ github.workspace }}/magic/hets.magic \
+          PATH=${{ github.workspace }}:${PATH} \
+          ./test/hets-lib-database-check.sh -a 'PostgreSQL'
+
+  job_3d:
+    # Same as 3c but for SQlite
+    # Takes ~ 5 min.
+    name: Test SQLite DB
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-18.04
+    needs: job_2a
+    steps:
+      - name: Download Hets build dir
+        uses: actions/download-artifact@v2
+        with:
+          name: hets-server
+          path: ${{ runner.temp }}
+
+      # stack is not needed
+      - name: Extract Hets
+        run: |
+          tar -H posix -I zstd -xf ${{ runner.temp }}/${{ env.HETS_ARC }}
+          sudo cp -p ksh93 /bin/
+
+      - name: Checkout Hets-lib
+        run: git clone --depth=1 ${{ env.HETS_LIB_REPO }} ${{ env.HETS_LIB }}
+
+      - name: Environment
+        run: |
+          ${{ env.GHAH }} -c showEnv
+          ls -al . ${{ runner.temp }}
+
+      - name: Test
+        run: |
+          HETS_MAGIC=${{ github.workspace }}/magic/hets.magic \
+          PATH=${{ github.workspace }}:${PATH} \
+          ./test/hets-lib-database-check.sh -a 'SQLite'
+
+
+  ################################ MISC ######################################
+  # Other jobs, which need to be done and should re-use stuff from this wflow.
+  ############################################################################
+
+  job_4a:
+    # Takes ~ 20 min | 18 s.
+    name: Build docs
+    runs-on: ubuntu-18.04
+    needs: job_1
+    steps:
+      - name: Fake Build
+        id: download
+        if: startsWith(env.FAKE_URL, 'http')
+        continue-on-error: true
+        run: |
+          wget --progress=dot -O ${{ runner.temp }}/docs.tgz \
+              ${{ env.FAKE_URL }}/docs.tgz
+
+      # ~ 45 s
+      - name: Install packages
+        if: startsWith(env.FAKE_URL, 'http') == false
+          || steps.download.outcome == 'failure'
+        run: |
+          echo 'man-db man-db/auto-update boolean false' | \
+              sudo debconf-set-selections
+          sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get update
+          sudo apt-get install latexmk texlive-fonts-recommended \
+              texlive-latex-extra
+
+      - name: Checkout
+        if: startsWith(env.FAKE_URL, 'http') == false
+          || steps.download.outcome == 'failure'
+        uses: actions/checkout@v2
+
+      - name: Fetch stack cache
+        if: startsWith(env.FAKE_URL, 'http') == false
+          || steps.download.outcome == 'failure'
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.STACK_ROOT }}
+          key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml') }}
+
+      - name: Environment
+        run: |
+          if [[ ! -e ${{ runner.temp }}/docs.tgz ]]; then
+              sudo cp -p ${{ env.STACK_ROOT }}/ksh93 /bin/ksh93
+              ${{ env.GHAH }} -c showEnv
+              stack --version
+              stack exec -- ghc -V
+          fi
+          ls -al . ${{ runner.temp }}
+
+      - name: Build docs
+        if: startsWith(env.FAKE_URL, 'http') == false
+          || steps.download.outcome == 'failure'
+        run: |
+          unset POSIXLY_CORRECT
+          make restack
+          # export TMPDIR=/var/tmp	# if haddock fails with no space left
+          make docs
+          make doc && mv doc/UserGuide.pdf docs/
+          rmdir docs || true
+          if [[ -d docs ]]; then
+              # Can't do it in 'Install packages': cache copy doesn't contain it
+              npm install --only=production --no-optional \
+                  marked@0.7.0 commander@6.2.1
+              npm list
+              utils/md2html.js -t 'Hets (The heterogeneous tool set)' \
+                  -i README.md  -o docs/README.html
+              [[ -s docs/README.html ]] || rm -f docs/README.html
+              printf '%s %s %s/actions/runs/%s\n' \
+                  ${{ github.ref_name }} ${{ github.event_name }} \
+                  ${{ github.event.repository.html_url }} ${{ github.run_id }} \
+                  >docs/event
+          fi
+          tar cplzf ${{ runner.temp }}/docs.tgz docs
+
+      - name: Upload docs to artifacts
+        if: startsWith(env.FAKE_URL, 'http')
+          && steps.download.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/upload-artifact@v2
+        with:
+          name: docs
+          path: ${{ runner.temp }}/docs.tgz
+          retention-days: 1
+
+      - name: Upload docs to home
+        if: startsWith(env.PUSH_URL, 'http')
+        continue-on-error: true
+        env:
+          THEO_API: ${{ secrets.THEO_PUSH_API }}
+        run: |
+          curl -q --no-remote-time -F "job=${{ github.run_number }}.0" \
+              -F 'button=1' -F "upfile=@${{ runner.temp }}/docs.tgz" \
+              -F 'api=${{ env.THEO_API }}' \
+              ${{ env.PUSH_URL }}
