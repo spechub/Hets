@@ -19,12 +19,13 @@ import Logic.Logic
 
 import OWL2.Logic_OWL2
 
-import NeSyPatterns.Sign
-import NeSyPatterns.Morphism
+import NeSyPatterns.Analysis
 import NeSyPatterns.AS
+import NeSyPatterns.Morphism
+import NeSyPatterns.Sign
 import NeSyPatterns.Symbol as Symbol
 import NeSyPatterns.Parse
-import NeSyPatterns.Analysis
+import NeSyPatterns.Taxonomy
 
 import Common.ProofTree
 import ATC.ProofTree ()
