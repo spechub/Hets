@@ -20,7 +20,7 @@ import Logic.Logic
 -- import Logic.SemConstr
 import Logic.HDef
 
-import Data.Monoid
+import Data.Monoid ()
 
 import Common.DefaultMorphism
 
@@ -31,6 +31,9 @@ data Hyb = Hyb deriving Show
 
 instance Language Hyb where
    description _ = "Dummy logic for dynamic generation of hybridized logics."
+
+instance Semigroup HLogicDef where
+ _ <> _ = error "GenHyb.Logic_Hyb: Semigroup HLogicDef"
 
 instance Monoid HLogicDef where
    mempty = error "GenHyb.Logic_Hyb: Monoid HLogicDef"

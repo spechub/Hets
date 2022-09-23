@@ -48,9 +48,11 @@ data MOD_ITEM = Mod_item [Id.Token] Int Id.Range
 newtype H_BASIC_SPEC = Basic_spec [AS_Anno.Annoted H_BASIC_ITEMS]
                   deriving (Show, Typeable, Data)
 
+instance Semigroup H_BASIC_SPEC where 
+  (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
+
 instance Monoid H_BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 data H_BASIC_ITEMS =
       PAR_decl (CASLBasic.BASIC_ITEMS () PARBasic.R_SIG_ITEM ())
