@@ -50,7 +50,6 @@ import NeSyPatterns.Print()
 
 import OWL2.AS
 import OWL2.Pretty
-import Debug.Trace (trace)
 
 
 data ResolvedNode = ResolvedNode {
@@ -175,4 +174,4 @@ sigDiff sig1 sig2 = Sign
 
 {- | union of Signatures, using Result -}
 sigUnion :: Sign -> Sign -> Result Sign
-sigUnion s1 s2 = trace ("----sigUnion: s1: " ++ show s1 ++ ", s2: " ++ show s2) $ return $ unite s1 s2
+sigUnion s1 s2 = return $ unite s1 s2
