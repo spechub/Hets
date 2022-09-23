@@ -53,7 +53,7 @@ instance Syntax HPAR H_BASIC_SPEC HSym.HSymbol H_SYMB_ITEMS CBasic.SYMB_MAP_ITEM
 
 instance Sentences HPAR HFORMULA HSign HMorphism HSym.HSymbol where
       map_sen HPAR = error "map_sen nyi" -- return . mapSen map_H_FORMULA h
-      sym_of HPAR = HSym.symOf -- $ baseSig s -- TODO:this loses modalities and nominals!!!
+      sym_of HPAR = HSym.symOf -- TODO:this loses modalities and nominals!!!
       symmap_of HPAR hmor = Map.mapKeys (\x -> HSym.BSymbol x) $ Map.map (\x -> HSym.BSymbol x) $ CMor.morphismToSymbMap $ baseMor hmor -- TODO: this loses modalities and nominals
       sym_name HPAR = HSym.symName
       simplify_sen HPAR = simplifyHPARSen

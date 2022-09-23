@@ -61,7 +61,7 @@ instance Pretty HMorphism where
 
 isInclusionMor :: HMorphism -> Bool
 isInclusionMor hmor = CASL_Mor.isInclusionMorphism (const True) $ baseMor hmor
-                                                   -- ^ this might have to change if baseMor also changes
+   -- the const might have to change if baseMor also changes
 
 
 -- | Constructs an id-morphism
