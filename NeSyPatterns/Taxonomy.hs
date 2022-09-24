@@ -15,8 +15,6 @@ module NeSyPatterns.Taxonomy ( nesy2Tax ) where
 
 import NeSyPatterns.Sign
 
-import Common.Id
-
 import Common.AS_Annotation
 import Common.Result
 import Taxonomy.MMiSSOntology
@@ -24,8 +22,6 @@ import Common.Taxonomy
 
 import qualified Data.Foldable as Fold
 import qualified Data.Relation as Rel
-
-import qualified Data.Map as Map
 
 import qualified Data.Set as Set
 
