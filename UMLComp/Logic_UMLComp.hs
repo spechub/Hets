@@ -16,11 +16,11 @@ The construction and the reasons behind it are explained in:
   Rosenberger, T., Knapp, A., & Roggenbach, M. (2022). An Institutional Approach to Communicating UML State Machines. In International Conference on Fundamental Approaches to Software Engineering (pp. 205-224). Springer, Cham. DOI: https://doi.org/10.1007/978-3-030-99429-7
 
 However, these Composite Structures can be used more generally. We recommend composing with them through CASL.
-All you need for this are compatible 'initP' and 'transP' predicates. Our precise interface in CASL can be seen below in the equations for 'sortRel', 'predMap' and 'opMap'. We also strongly recommend using our 'ap' function for applying operators and our 'pr' function for predication.
+All you need for this are compatible 'initP' and 'transP' predicates. Our precise interface in CASL can be seen in the 'translate' function, specifically, in the equations for 'sortRel', 'predMap' and 'opMap'. We also strongly recommend using our 'ap' function for applying operators and our 'pr' function for predication.
 
 The type 'BASIC_SPEC' is the entry point for the abstract syntax, the function 'parse_BASIC_SPEC' for parsing and the function 'ana_BASIC_SPEC' for static analysis.
 
-An example file can be found in "test/UMLTests/atmmod.het".
+An example file can be found in @test\/UMLTests\/atmmod.het@.
 -}
 
 module UMLComp.Logic_UMLComp where
@@ -45,7 +45,7 @@ import Common.Lexer
 import Common.Lib.MapSet as MapSet
 import Common.Lib.Rel as Rel
 import Common.Parsec
-  hiding ( (<|>) ) -- ^ use the more general version from "Control.Applicative"
+  hiding ( (<|>) ) -- use the more general version from "Control.Applicative"
 import Common.ProofTree
 import Common.Result as R
 
