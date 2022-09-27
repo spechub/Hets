@@ -49,6 +49,7 @@ dtd2TypeDef = concatMap convert . reverse . database []
 
 -- -- Convert DTD record to typedef ----
 convert :: (QName, Record) -> [TypeDef]
+convert (QN _ _, R _ _) = [] -- TODO: mb change this stub later
 convert (N n, R as cs) =
     case cs of
       EMPTY -> modifier None []
@@ -57,10 +58,11 @@ convert (N n, R as cs) =
       (Mixed PCDATA) -> modifier None [[String]]
       (Mixed (PCDATAplus ns)) -> modifier Star ([StringMixed]
                                                 : map ((: []) . Defined . name
-                                                       . \ (N n) -> n)
+                                                       . \ (N n') -> n')
                                                        ns)
       (ContentSpec cp) ->
           case cp of
+            (TagName (QN _ _) _) -> [] -- TODO: mb change this stub later
             (TagName (N n') m) -> modifier m [[Defined (name n')]]
             (Choice cps m) -> modifier m (map ((: []) . inner) cps)
             (Seq cps m) -> modifier m [map inner cps]
@@ -76,6 +78,7 @@ convert (N n, R as cs) =
                           mkData sts [] True (name_ n)
 
     inner :: CP -> StructType
+    inner (TagName (QN _ _) _ ) = Any
     inner (TagName (N n') m) = modf m (Defined (name n'))
     inner (Choice cps m) = modf m (OneOf (map inner cps))
     inner (Seq cps None) = Tuple (map inner cps)
@@ -93,6 +96,7 @@ mkData tss fs aux n = [DataDef aux n fs (map (mkConstr n) tss)]
   where
     mkConstr m ts = (mkConsName m ts, ts)
     mkConsName (Name x m) sts = Name x (m ++ intercalate "_" (map flatten sts))
+    flatten (Defaultable _ _) = "" -- TODO: mb change this stub later
     flatten (Maybe st) = {- "Maybe_" ++ -} flatten st
     flatten (List st) = {- "List_" ++ -} flatten st
     flatten (List1 st) = {- "List1_" ++ -} flatten st
@@ -115,6 +119,7 @@ mkAttrDef (N e) (AttDef (N n) (EnumeratedType (NotationType nt)) _) =
 mkAttrDef (N e) (AttDef (N n) (EnumeratedType (Enumeration es)) _) =
     [EnumDef (name_a e n) (map (name_ac e n) es)]
         -- Default attribute values not handled here
+mkAttrDef _ _ = []
 
 mkAttrField :: QName -> AttDef -> (Name, StructType)
 mkAttrField (N e) (AttDef (N n) typ req) = (name_f e n, mkType typ req)
@@ -130,3 +135,5 @@ mkAttrField (N e) (AttDef (N n) typ req) = (name_f e n, mkType typ req)
     mkType (EnumeratedType _) IMPLIED = Maybe (Defined (name_a e n))
     mkType (EnumeratedType _) (DefaultTo v@(AttValue _) _) =
                 Defaultable (Defined (name_a e n)) (hName (name_ac e n (show v)))
+
+mkAttrField _ _ = (Name "" "", Any)
