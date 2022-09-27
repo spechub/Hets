@@ -51,7 +51,6 @@ import qualified CASL.Sublogic as CSL
 import CASL.Sign as CSign
 import CASL.Morphism as CMor
 
-import Control.Monad
 import qualified Control.Monad.Fail as Fail
 
 newtype CL2CFOL = CL2CFOL { fol :: CommonLogicSL } deriving Show
@@ -322,15 +321,6 @@ senForm b bndVars form = case form of
 quantSentForm :: CommonLogicSL -> QUANTIFIER -> Range -> Set.Set Cl.NAME
   -> [Cl.NAME_OR_SEQMARK] -> Cl.SENTENCE -> Result CBasic.CASLFORMULA
 quantSentForm b quantifier rn bndVars bs sen = do
-  ti <- colTiSen sen
-  bSs <- mapM nosString bs
-  let aF = arityFunc ti
-      aP = arityPred ti
-      predSs = filter
-          (\ n -> Map.member n $ MapSet.toMap aP) bSs
-      opSs = filter
-          (\ n -> Map.member n $ MapSet.toMap
-          $ MapSet.filter (/= 0) aF) bSs
   folSen <- if null bs
             then senForm b bndVars sen
             else do
@@ -338,8 +328,6 @@ quantSentForm b quantifier rn bndVars bs sen = do
               sf <- senForm b bndVarsSet sen
               bindSeq <- mapM bindingSeq bs
               return $ CBasic.Quantification quantifier bindSeq sf rn
-  unless (null predSs) $ Fail.fail $ "unsupported bound predicates: " ++ show predSs
-  unless (null opSs) $ Fail.fail $ "unsupported bound functions: " ++ show opSs
   return folSen
 
 opType :: Int -> CBasic.OP_TYPE

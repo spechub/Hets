@@ -89,8 +89,8 @@ instance Monoid BASIC_SPEC where
 instance Syntax CSL BASIC_SPEC Symbol
     SYMB_ITEMS SYMB_MAP_ITEMS where
          parse_basic_spec CSL = parseBasicSpec
-         parse_symb_items CSL = parseSymbItems
-         parse_symb_map_items CSL = parseSymbMapItems
+         parse_symb_items CSL = fmap const parseSymbItems
+         parse_symb_map_items CSL = fmap const parseSymbMapItems
 
 -- | Instance of Logic for reduce logc
 instance Logic CSL
