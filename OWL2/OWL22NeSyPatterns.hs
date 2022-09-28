@@ -17,38 +17,24 @@ import Logic.Logic as Logic
 import Logic.Comorphism
 import Common.AS_Annotation
 import Common.Result
-import Common.Id
-import Common.IRI
-import Control.Monad
 import qualified Data.Set as Set
-import qualified Data.Map as Map
-import qualified Data.List as List
-import qualified Common.Lib.MapSet as MapSet
-import qualified Common.Lib.Rel as Rel
 
 
 -- OWL = domain
 import OWL2.Logic_OWL2
 import OWL2.AS as AS
-import OWL2.Parse
-import OWL2.Print
 import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()
 import OWL2.Morphism
 import OWL2.Symbols
 import qualified OWL2.Sign as OS
-import qualified OWL2.Sublogic as SL
 -- NeSyPatterns = codomain
 import NeSyPatterns.Logic_NeSyPatterns
 import NeSyPatterns.Sign
 import NeSyPatterns.Morphism
 import NeSyPatterns.AS
 import NeSyPatterns.Symbol as Symbol
-import NeSyPatterns.Parse
-import NeSyPatterns.Print
 import NeSyPatterns.Analysis
-
-import Data.Maybe
 
 data OWL22NeSyPatterns = OWL22NeSyPatterns deriving Show
 
@@ -94,7 +80,7 @@ mapTheory (sig, sens) = return (emptySig{ owlClasses = OS.concepts sig
                                         , owlTaxonomy = subClassRelation $ map sentence sens}, [])
 
 mapMorphism :: OWLMorphism -> Result Morphism
-mapMorphism mor = fail "nyi"
+mapMorphism _ = fail "nyi"
 
 mapSymbol :: Entity -> Set.Set Symbol
-mapSymbol ent = Set.empty
+mapSymbol _ = Set.empty
