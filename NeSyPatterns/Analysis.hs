@@ -130,9 +130,9 @@ resolveNode sigM n@(AS.Node o mi r) = case mi of
 findId :: Foldable t => IRI -- ^ Ontology term which id should be found
   -> t ResolvedNode -- ^ List of nodes in which @o@ should be searched
   -> Maybe IRI
-findId o = foldr (\n' r -> case r of
-          Nothing | resolvedOTerm n' == o -> Just $ resolvedNeSyId n'
-          Just i | i /= resolvedNeSyId n' -> Nothing
+findId o = foldr (\n' r -> case (r, resolvedOTerm n' == o) of
+          (Nothing, True)  -> Just $ resolvedNeSyId n'
+          (Just i, True) | i /= resolvedNeSyId n' -> Nothing
           _ -> r) Nothing
 
 -- | Basic analysis 
@@ -295,7 +295,7 @@ nextGenId :: Sign.Sign -> Int
 nextGenId sig = foldr (\n genId -> fromMaybe genId $ do
       genId' <- genIdFromNode n
       return $ if genId' > genId then genId' else genId
-    ) 0 $ Sign.nodes sig
+    ) 0 (Sign.nodes sig) + 1
   where
     genIdFromNode :: Sign.ResolvedNode -> Maybe Int
     genIdFromNode n = do
