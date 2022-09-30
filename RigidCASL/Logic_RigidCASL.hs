@@ -47,8 +47,8 @@ instance Language RigidCASL where
 
 instance Syntax RigidCASL R_BASIC_SPEC RigidSymbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec RigidCASL = Just $ basicSpec [rigidS]
-    parse_symb_items RigidCASL = Just $ symbItems [rigidS] -- this could be wrong!
-    parse_symb_map_items RigidCASL = Just $ symbMapItems [rigidS]
+    parse_symb_items RigidCASL = Just . const $ symbItems [rigidS] -- this could be wrong!
+    parse_symb_map_items RigidCASL = Just . const $ symbMapItems [rigidS]
 
 -- Important convention: we use CASL syntax for quantifiers but variables are rigid! 
 -- This must be taken into account when writing translations.
