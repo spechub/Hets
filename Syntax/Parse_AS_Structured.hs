@@ -33,8 +33,6 @@ module Syntax.Parse_AS_Structured
     , logicName
     ) where
 
-import Debug.Trace
-
 import Logic.Logic
 import Logic.Comorphism
 import Logic.Grothendieck

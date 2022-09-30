@@ -144,5 +144,5 @@ rigidAddSymbToSign rsig rsym =
   CSym s -> do 
    bsig' <- addSymbToSign (caslSign rsig) s
    return $ toRSign bsig' $ extendedInfo rsig
-  RSym s -> error "nyi"
+  RSym _ -> error "nyi"
 

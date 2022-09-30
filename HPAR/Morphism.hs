@@ -31,20 +31,15 @@ module HPAR.Morphism
 
 import Data.Data
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 import qualified RigidCASL.Sign as PARSign
 import HPAR.Sign as Sign
-import qualified RigidCASL.AS_Rigid as Rigid_BASIC
 import qualified CASL.Morphism as CASL_Mor
 
 import Common.Id as Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
-import qualified Common.Result as Result
-
-import Control.Monad (unless)
 
 {- | The datatype for morphisms in propositional logic as
 maps of sets -}
@@ -109,7 +104,7 @@ applyMorphismNom mor = PMorphism.applyMap $ nomMap mor
 
 -- | Composition of morphisms in propositional Logic
 composeMor :: HMorphism -> HMorphism -> Result HMorphism
-composeMor f g = error "composeMor nyi"{-
+composeMor _ _ = error "composeMor nyi"{-
   let fSource = source f
       gTarget = target g
       fpMap = propMap f
@@ -132,7 +127,7 @@ composeMor f g = error "composeMor nyi"{-
 
 -- | Pretty printing for Morphisms
 printMorphism :: HMorphism -> Doc
-printMorphism m = error "printMorphism nyi"
+printMorphism _ = error "printMorphism nyi"
  {-pretty (source m) <> text "-->" <> pretty (target m)
   <> vcat (map ( \ (x, y) -> lparen <> pretty x <> text ","
   <> pretty y <> rparen) $ Map.assocs $ propMap m)

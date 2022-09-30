@@ -26,7 +26,6 @@ import Logic.Logic
 import Logic.Grothendieck
 import Logic.Coerce
 import Logic.Prover
-import Logic.HDef
 
 import Syntax.AS_Structured
 import Syntax.Print_AS_Structured

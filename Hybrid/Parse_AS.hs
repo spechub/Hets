@@ -22,7 +22,7 @@ import Common.Keywords
 import Common.Lexer
 import Common.Token
 import Hybrid.AS_Hybrid
-import Hybrid.Keywords
+import Hybrid.Keywords ()
 import Text.ParserCombinators.Parsec
 
 hybrid_reserved_words :: [String]

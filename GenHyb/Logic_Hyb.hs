@@ -13,7 +13,6 @@ Portability :  portable
 
 module GenHyb.Logic_Hyb where
 
-import Framework.AS
 import ATC.HDef ()
 
 import Logic.Logic

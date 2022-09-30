@@ -18,7 +18,6 @@ module HPAR.Symbol where
 import qualified CASL.Sign as CSign
 import qualified HPAR.Sign as HSign
 import Common.Id
-import Common.Doc
 import Common.DocUtils
 import Data.Data
 import qualified Data.Map as Map

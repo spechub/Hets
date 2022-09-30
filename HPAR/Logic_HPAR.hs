@@ -29,7 +29,7 @@ import qualified Data.Map as Map
 
 
 import qualified CASL.AS_Basic_CASL as CBasic
-import qualified CASL.Sign as CSign
+import qualified CASL.Sign as CSign ()
 import qualified CASL.Morphism as CMor
 import HPAR.SimplifySen
 import CASL.Logic_CASL ()

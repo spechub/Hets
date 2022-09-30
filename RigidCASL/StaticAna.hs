@@ -24,7 +24,7 @@ import CASL.StaticAna
 import CASL.AS_Basic_CASL
 import CASL.Overload
 import CASL.ColimSign
-import CASL.Logic_CASL
+import CASL.Logic_CASL ()
 
 import Common.AS_Annotation
 import Common.GlobalAnnotations

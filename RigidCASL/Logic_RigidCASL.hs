@@ -36,8 +36,6 @@ import CASL.Logic_CASL ()
 import CASL.MapSentence
 import CASL.SymbolMapAnalysis
 import Common.Keywords (rigidS)
-import qualified Common.Lib.Rel as Rel
-import qualified Data.Set as Set
 
 import CASL.SymbolParser
 

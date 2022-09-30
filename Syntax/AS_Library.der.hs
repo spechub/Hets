@@ -29,7 +29,6 @@ import Data.Typeable
 
 import Logic.Grothendieck
 import Logic.Logic
-import Logic.SemConstr
 import Logic.HDef
 
 import Syntax.AS_Architecture

@@ -12,16 +12,11 @@ Parser for rigid extension of CASL
 
 module RigidCASL.Parse_AS where
 
-import CASL.Formula
 import CASL.OpItem
 import CASL.SortItem
 
-import Common.AS_Annotation
 import Common.AnnoState
-import Common.Id
 import Common.Keywords
-import Common.Lexer
-import Common.Token
 import RigidCASL.AS_Rigid
 import Text.ParserCombinators.Parsec
 

@@ -39,7 +39,7 @@ import qualified HPAR.Symbol as HSym
 
 -- CASL
 import qualified CASL.AS_Basic_CASL as CBasic
-import qualified CASL.Sign as CSign
+import qualified CASL.Sign as CSign ()
 import qualified CASL.Morphism as CMor
 
 -- | The identity of the comorphism
