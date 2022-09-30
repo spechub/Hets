@@ -2,9 +2,14 @@
     FlexibleInstances, ExistentialQuantification, DeriveDataTypeable #-}
 {- |
 Module      :  ./GenHyb/WriteFile
-Description :  writes the new instance of hybrid logic
+Copyright   :  (c) R. Diaconescu, IMAR, 2018
+License     :  GPLv2 or higher, see LICENSE.txt
 
+Maintainer  :  mscodescu@gmail.com
+Stability   :  provisional
+Portability :  non-portable (imports Logic.Logic)
 
+Write the new Logic instance.
 -}
 
 module GenHyb.WriteFile where

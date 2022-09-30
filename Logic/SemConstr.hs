@@ -1,12 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  ./Logic/SemConstr.hs
-Description :  abstract syntax of DOL documents and CASL specification libraries
-Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2016
+Module      :  ./Logic/SemConstr.hss
+Copyright   :  (c) R. Diaconescu, IMAR, 2018
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
+
+Semantic constraints for hybridization of institutions.
 
 -}
 

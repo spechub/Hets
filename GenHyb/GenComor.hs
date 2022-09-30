@@ -1,10 +1,14 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable, FlexibleContexts #-}
 {- |
 Module      :  ./GenHyb/GenComor
-Description :  Instance of class Logic for rigid CASL
+Copyright   :  (c) R. Diaconescu, IMAR, 2018
+License     :  GPLv2 or higher, see LICENSE.txt
 
+Maintainer  :  mscodescu@gmail.com
+Stability   :  provisional
+Portability :  non-portable (imports Logic.Logic)
 
-Instance of class Logic for rigid logic.
+Generic methods for hybridisation of comorphisms.
 -}
 
 module GenHyb.GenComor where

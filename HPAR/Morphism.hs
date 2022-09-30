@@ -2,7 +2,7 @@
 {- |
 Module      :  ./HPAR/Morphism.hs
 Description :  Morphisms in HPAR
-Copyright   :  (c) Mihai Codescu, IMAR, 2017
+Copyright   :  (c) R. Diaconescu, IMAR, 2018
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  mscodescu@gmail.cm

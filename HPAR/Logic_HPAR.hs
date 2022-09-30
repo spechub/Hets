@@ -2,9 +2,15 @@
 {- |
 Module      :  ./HPAR/Logic_HPAR.hs
 Description :  Instance of class Logic for HPAR
+Copyright   :  (c) R. Diaconescu, IMAR, 2018
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  mscodescu@gmail.com
+Stability   :  experimental
+Portability :  portable
 
 
-Instance of class Logic for rigid logic.
+Instance of class Logic for HPAR.
 -}
 
 module HPAR.Logic_HPAR where

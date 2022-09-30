@@ -2,7 +2,7 @@
 {- |
 Module      :  ./Comorphisms/HPAR2CASL.hs
 Description :  encoding of HPAR to FOL
-Copyright   :  (c) M. Codescu, IMAR, 2018
+Copyright   :  (c) R. Diaconescu, IMAR, 2018
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  mscodescu@gmail.com

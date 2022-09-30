@@ -2,6 +2,12 @@
 {- |
 Module      :  ./RigidCASL/Logic_RigidCASL.hs
 Description :  Instance of class Logic for rigid CASL
+Copyright   :  (c) R. Diaconescu, IMAR, 2018
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :  mscodescu@gmail.com
+Stability   :  provisional
+Portability :  portable
 
 
 Instance of class Logic for rigid logic.

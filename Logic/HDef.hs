@@ -1,12 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  ./Logic/HDef.hs
-Description :  abstract syntax of DOL documents and CASL specification libraries
-Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2016
+Copyright   :  (c) R. Diaconescu, IMAR, 2018
 License     :  GPLv2 or higher, see LICENSE.txt
-Maintainer  :  till@informatik.uni-bremen.de
+Maintainer  :  mscodescu@gmail.com
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
+
+Definitions of hybridizations of logics and comorphisms, with their parameters.
 
 -}
 

@@ -2,7 +2,7 @@
 {- |
 Module      :  ./HPAR/AS_Basic_HPAR.der.hs
 Description :  Abstract syntax for hybrid partial algebras
-Copyright   :  (c) Mihai Codescu, IMAR, 2018
+Copyright   :  (c) R. Diaconescu, IMAR, 2018
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  mscodescu@gmail.com
