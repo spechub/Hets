@@ -1,4 +1,8 @@
-{-# LANGUAGE MultiParamTypeClasses , FlexibleContexts , TypeSynonymInstances , FlexibleInstances, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 
 {- |
 Module      : $Id$
@@ -23,36 +27,36 @@ It should probably be considered superseded by UMLStateO and removed before merg
 
 module UMLState.Logic_UMLState where
 
-import Logic.Logic
+import           Logic.Logic
 
-import qualified CASL.AS_Basic_CASL as C
-import qualified CASL.Formula as CF
+import qualified CASL.AS_Basic_CASL                 as C
+import qualified CASL.Formula                       as CF
 
-import Common.DocUtils
-import Common.ExtSign
-import Common.Id
-import ATerm.Conversion
-import Common.GlobalAnnotations
-import Common.AnnoState
-import Common.Lexer
-import Common.Parsec
-import Common.Result as R
+import           ATerm.Conversion
+import           Common.AnnoState
+import           Common.DocUtils
+import           Common.ExtSign
+import           Common.GlobalAnnotations
+import           Common.Id
+import           Common.Lexer
+import           Common.Parsec
+import           Common.Result                      as R
 
-import Data.Set as Set
-import Data.Map as Map
-import Data.List as List
-import Data.Functor.Identity
+import           Data.Functor.Identity
+import           Data.List                          as List
+import           Data.Map                           as Map
+import           Data.Set                           as Set
 
-import qualified Data.Data as D
+import qualified Data.Data                          as D
 
-import Control.Monad (when)
-import Control.Monad.Trans (lift)
-import Control.Monad.Trans.State as S
+import           Control.Monad                      (when)
+import           Control.Monad.Trans                (lift)
+import           Control.Monad.Trans.State          as S
 
-import Text.Parsec
-import Text.Parsec.Expr
-import Text.Parsec.String
-import Text.ParserCombinators.Parsec.Char
+import           Text.Parsec
+import           Text.Parsec.Expr
+import           Text.Parsec.String
+import           Text.ParserCombinators.Parsec.Char
 
 -- BEGIN AS (abstract syntax)
 type SPEC_NAME = Token
@@ -136,7 +140,7 @@ instance Category Library Morphism where
   cod f = f
   isInclusion f = True
   legal_mor f = return ()
-  
+
 
 instance Monoid BASIC_SPEC where
 
@@ -153,10 +157,10 @@ instance Language UMLState where
 
 -- namedSpec :: [t0] -> PrefixMap -> GenParser Char st NAMED_SPEC
 namedSpec bi foo = do
-  key "spec" 
+  key "spec"
   name <- str2Token <$> scanLetterWord << skipSmart
   asSeparator "="
-  contents <- basicSpec bi foo 
+  contents <- basicSpec bi foo
   return $ name := contents
 
 -- basicSpec :: [t0] -> PrefixMap -> GenParser Char st BASIC_SPEC
@@ -180,18 +184,24 @@ evtItem = do
   maybeArgs <- optionMaybe $ do
     oParenT >> (var << skipSmart) `sepBy` asSeparator "," << cParenT
   return $ EvtI evtName $ case maybeArgs of
-    Nothing -> []
+    Nothing       -> []
     Just varNames -> varNames
 
 basicItems :: Parsec [Char] st BASIC_ITEMS
 basicItems = do SigB <$> sigItems
          <|> do SenB . TransB <$> transItem
-         <|> do SenB <$> (key "init" >> (InitB  <$> (stateP  << asSeparator ":") <*> guardP))
+         <|> do SenB <$>
+                  ( key "init" >> ( InitB  <$> (stateP  << asSeparator ":")
+                                           <*> guardP
+                                  )
+                  )
          <|> do EvtB <$> evtItems
          <|> do VarB <$> varItems
 
 varItems :: Parsec [Char] st VAR_ITEMS
-varItems = VarIs <$> (pluralKeyword "var" >> ((var << skipSmart) `sepBy` asSeparator ","))
+varItems = VarIs <$> ( pluralKeyword "var" >>
+                       ((var << skipSmart) `sepBy` asSeparator ",")
+                     )
 
 sigItems :: Parsec [Char] st SIG_ITEMS
 sigItems = StateS <$> (statePS *> statePs)
@@ -260,7 +270,7 @@ term = buildExpressionParser ops simpTerm where
   simpTerm = do VarT <$> var
          <|> do ConstT <$> natLit
          <|> do oParenT >> term << cParenT
-    
+
 
 compOp :: Parsec [Char] st COMP_OP
 compOp = parseAlts [Less .. Greater]
@@ -279,16 +289,24 @@ key s = try (keyWord (string s) << skipSmart)
 
 -- parse helpers
 
-preWordOp :: String -> (a -> a) -> Operator [Char] st Data.Functor.Identity.Identity a
+preWordOp :: String
+          -> (a -> a)
+          -> Operator [Char] st Data.Functor.Identity.Identity a
 preWordOp w op = Prefix (key w >> return op)
 
-symOpL :: String -> (a -> a -> a) -> Operator [Char] st Data.Functor.Identity.Identity a
+symOpL :: String
+       -> (a -> a -> a)
+       -> Operator [Char] st Data.Functor.Identity.Identity a
 symOpL s op = Infix (asSeparator s >> return op) AssocLeft
 
-symOpR :: String -> (a -> a -> a) -> Operator [Char] st Data.Functor.Identity.Identity a
+symOpR :: String
+       -> (a -> a -> a)
+       -> Operator [Char] st Data.Functor.Identity.Identity a
 symOpR s op = Infix (asSeparator s >> return op) AssocRight
 
-wordOp :: String -> (a -> a -> a) -> Operator [Char] st Data.Functor.Identity.Identity a
+wordOp :: String
+       -> (a -> a -> a)
+       -> Operator [Char] st Data.Functor.Identity.Identity a
 wordOp w op = Infix (key w >> return op) AssocRight
 
 parseAlts :: Show a => [a] -> Parsec [Char] st a
@@ -304,7 +322,8 @@ instance Syntax UMLState BASIC_SPEC Token () () where
   parsersAndPrinters UMLState = makeDefault (basicSpec [], pretty)
 
 instance Sentences UMLState EDHML Library Morphism Token where
-instance StaticAnalysis UMLState BASIC_SPEC EDHML () () Library Morphism Token () where
+instance StaticAnalysis
+           UMLState BASIC_SPEC EDHML () () Library Morphism Token () where
   basic_analysis _ = Just $ \ (spec,sign,annos) -> do
     (spec',lib) <- runStateT (ana_BASIC_SPEC spec) mempty
     let sign   = lib
@@ -313,7 +332,8 @@ instance StaticAnalysis UMLState BASIC_SPEC EDHML () () Library Morphism Token (
         annos  = []
     return (spec', extSign, annos)
 
-instance Logic UMLState () BASIC_SPEC EDHML () () Library Morphism Token () () where
+instance Logic
+  UMLState () BASIC_SPEC EDHML () () Library Morphism Token () () where
 
 instance Pretty EDHML where
 instance Pretty Library where
@@ -388,7 +408,7 @@ ana_VAR_ITEM var = do
     attrL = var `Set.insert` vars
   }
   return var
-  
+
 ana_SIG_ITEMS :: SIG_ITEMS -> Check SIG_ITEMS
 ana_SIG_ITEMS (StateS items) = StateS <$> sequence (ana_STATE_ITEM <$> items)
 
@@ -412,7 +432,7 @@ ana_EVENT_ITEM e@(EvtI name vars) = do
   lib <- get
   put $ lib {actsL = Map.insert (name, length vars) e $ actsL lib}
   return e
-  
+
 
 ana_TRANS_ITEMS :: TRANS_ITEM -> Check TRANS_ITEM
 ana_TRANS_ITEMS (TransI st1 st2 (Label t@(EvtI ename evar) g a)) = do
@@ -420,7 +440,7 @@ ana_TRANS_ITEMS (TransI st1 st2 (Label t@(EvtI ename evar) g a)) = do
   let sts = statesL lib
       acts = actsL lib
       ekey = (ename, length evar)
-      insertVars [] set = set
+      insertVars [] set     = set
       insertVars (v:vs) set = insertVars vs (v `Set.insert` set)
       varsWithTvar = insertVars evar $ attrL lib
       actSkip   = Acts []
@@ -458,24 +478,41 @@ ana_TERM vars (a :- b) = ana_TERM vars a >> ana_TERM vars b
 ana_TERM vars (a :* b) = ana_TERM vars a >> ana_TERM vars b
 ana_TERM vars (a :/ b) = ana_TERM vars a >> ana_TERM vars b
 ana_TERM vars (a :& b) = ana_TERM vars a >> ana_TERM vars b
-  
+
 ana_STATE_ITEM :: STATE_ITEM -> Check STATE_ITEM
 ana_STATE_ITEM (StateI st) = do
   lib <- get
   put $ lib {
-    statesL = st `Set.insert` statesL lib 
+    statesL = st `Set.insert` statesL lib
   }
   return $ StateI st
 
 type EVENT_NAMES = C.TERM ()
 
-data EDHML = DtSen FORMULA
-           | St STATE
-           | Binding STATE EDHML
-           | At EVENT_NAMES STATE EDHML -- add F?
-           | Box EVENT_NAMES EDHML      -- add F?
-           | DiaEE EVENT_ITEM FORMULA EDHML -- exists valuation and transititon ...
-           | DiaAE EVENT_ITEM FORMULA FORMULA EDHML -- for each valuation satisfying phi there exists a transition ...
+-- | The type of sentences for the Event/Data Hybrid Modal Logic
+data EDHML = DtSen FORMULA  -- ^ A data sentence holds in the current state.
+           | St STATE       -- ^ We are at a particular control state.
+           | Binding STATE EDHML {- ^ An EDHML formula holds with the current
+                                      control state bound to a variable
+                                 -}
+
+             {- | Jumping to any configuration with the given control state,
+                  reachable via the given event names,
+                  the given EDHML formula holds
+             -}
+           | At EVENT_NAMES STATE EDHML
+
+             {- | In all configurations reachable via the given event names,
+                  the given EDHML formula holds.
+             -}
+           | Box EVENT_NAMES EDHML
+
+             -- | Exists valuation and transititon...
+           | DiaEE EVENT_ITEM FORMULA EDHML
+
+             -- | For each valuation satisfying phi there exists a transition...
+           | DiaAE EVENT_ITEM FORMULA FORMULA EDHML
+
            | Not EDHML
            | And EDHML EDHML
            | TrueE
@@ -491,12 +528,15 @@ initCASL lib = C.mkForall [C.mkVarDecl gTok confSort]  equiv
     gTok  = str2Token "g"
     gTerm = confVar gTok
     vars  = (attrL lib, gTok, prime gTok)
-    defForm = disjunctC [ (ctrl gTerm `C.mkStEq` mkState s0) `andC` stForm2CASL vars phi0
+    defForm = disjunctC [ (ctrl gTerm `C.mkStEq` mkState s0)
+                          `andC`
+                          stForm2CASL vars phi0
                         | (s0,phi0) <- initL lib
                         ]
-      
+
 lib2EDHML :: Library -> EDHML
-lib2EDHML lib = assert `seq` edhmlRmNotNot (computeEDHML allEvts c0 is vs bs im1 im2 es)
+lib2EDHML lib =
+    assert `seq` edhmlRmNotNot (computeEDHML allEvts c0 is vs bs im1 im2 es)
   where
     combineEvts (ename,_) _ enames = ename `cSetCons` enames
     allEvts = Map.foldrWithKey combineEvts cSetNil $ actsL lib
@@ -507,22 +547,24 @@ lib2EDHML lib = assert `seq` edhmlRmNotNot (computeEDHML allEvts c0 is vs bs im1
     acts2psi (Just (Acts as)) = conjunctF [ CompF (VarT $ prime v) Eq t
                                           | Assign v t <- as
                                           ]
-    im1 c = Map.findWithDefault id c (
-              Map.fromListWith (.) -- for equal keys: compose diff lists
-                [ ( c
-                  , ([(guard2phi guard, e, acts2psi acts, c')] ++) -- difference list
-                  )
-                | TransI c c' (Label e guard acts) <- transL lib
-                ] 
-            ) []
-    im2 ce = Map.findWithDefault id ce (
-               Map.fromListWith (.) -- for equal keys : compose diff lists
-                 [ ( (c, ename, length evars)
-                   , ([(guard2phi guard, acts2psi acts, c')] ++) -- difference list
-                   )
-                 | TransI c c' (Label (EvtI ename evars) guard acts) <- transL lib
-                 ]
-             ) []
+    im1 c =
+      Map.findWithDefault id c (
+        Map.fromListWith (.) -- for equal keys: compose diff lists
+          [ ( c
+            , ([(guard2phi guard, e, acts2psi acts, c')] ++) -- difference list
+            )
+          | TransI c c' (Label e guard acts) <- transL lib
+          ]
+      ) []
+    im2 ce =
+      Map.findWithDefault id ce (
+        Map.fromListWith (.) -- for equal keys : compose diff lists
+          [ ( (c, ename, length evars)
+            , ([(guard2phi guard, acts2psi acts, c')] ++) -- difference list
+            )
+          | TransI c c' (Label (EvtI ename evars) guard acts) <- transL lib
+          ]
+      ) []
     vs = Set.toList states
     bs = c0 : vs
     is = im1 c0
@@ -582,8 +624,6 @@ fin allEvts bs im2 es = conjunctE
   | c <- bs
   ]
 
-          -- TODO use Set
-          -- problem: powerSet reported as not exported
 complements :: -- (Eq a, Ord t) =>
                STATE
             -> EVENT_ITEM
@@ -592,11 +632,11 @@ complements :: -- (Eq a, Ord t) =>
                )
             -> [([(FORMULA, FORMULA, STATE)], [(FORMULA, FORMULA, STATE)])]
 complements c (EvtI ename evars) im2 =
-  let xs = im2 (c, ename, length evars)
-  in [ ( ps
-       , xs List.\\ ps
+  let xs = Set.fromList $ im2 (c, ename, length evars)
+  in [ ( Set.toList ps
+       , Set.toList (xs Set.\\ ps)
        )
-     | ps <- subsequences xs 
+     | ps <- Set.toList $ powerSet xs
      ]
 
 
@@ -653,10 +693,11 @@ edhmlRmNotNot f                   = f
 edhml2CASL :: Vars -> EDHML -> C.FORMULA ()
 edhml2CASL vars (DtSen f) = stForm2CASL vars f
 edhml2CASL (_,g,_) (St s) = mkState s `C.mkStEq` ctrl (confVar g)
-edhml2CASL vars@(_,g,_) (Binding s f) = exCtrl s (
-                                                 mkState s `C.mkStEq` ctrl (confVar g)
-                                          `andC` edhml2CASL vars f
-                                        )
+edhml2CASL vars@(_,g,_) (Binding s f) =
+  exCtrl s (
+           mkState s `C.mkStEq` ctrl (confVar g)
+    `andC` edhml2CASL vars f
+  )
 edhml2CASL vars@(as,g,g') (At evts s f) =
   let newVars = (as,g',prime g')
   in univConf g' (
@@ -697,14 +738,14 @@ stForm2CASL vars (CompF x op y) =
   compOp2CASL op `C.mkPredication` [ term2CASLterm vars x
                                    , term2CASLterm vars y
                                    ]
-stForm2CASL vars TrueF        = C.trueForm
-stForm2CASL vars FalseF       = C.falseForm
-stForm2CASL vars (NotF f)     = notC $ stForm2CASL vars f
-stForm2CASL vars (f :/\ f')   = stForm2CASL vars f `andC`     stForm2CASL vars f'
-stForm2CASL vars (f :\/ f')   = stForm2CASL vars f `orC`      stForm2CASL vars f'
-stForm2CASL vars (f :=> f')   = stForm2CASL vars f `C.mkImpl` stForm2CASL vars f'
-stForm2CASL vars (f :<= f')   = stForm2CASL vars f'`C.mkImpl` stForm2CASL vars f
-stForm2CASL vars (f :<=> f')  = stForm2CASL vars f `C.mkEqv`  stForm2CASL vars f'
+stForm2CASL vars TrueF       = C.trueForm
+stForm2CASL vars FalseF      = C.falseForm
+stForm2CASL vars (NotF f)    = notC $ stForm2CASL vars f
+stForm2CASL vars (f :/\ f')  = stForm2CASL vars f `andC`     stForm2CASL vars f'
+stForm2CASL vars (f :\/ f')  = stForm2CASL vars f `orC`      stForm2CASL vars f'
+stForm2CASL vars (f :=> f')  = stForm2CASL vars f `C.mkImpl` stForm2CASL vars f'
+stForm2CASL vars (f :<= f')  = stForm2CASL vars f'`C.mkImpl` stForm2CASL vars f
+stForm2CASL vars (f :<=> f') = stForm2CASL vars f `C.mkEqv`  stForm2CASL vars f'
 
 term2CASLterm vars (VarT var)      = var2CASLterm vars var
 term2CASLterm vars (ConstT natLit) = natLit2CASL $ show natLit
@@ -725,8 +766,9 @@ d %% e = C.mkAppl (op (str2Token "__@@__") [natSort,natSort] natSort)
                   [d,e]
 
 translOp :: Vars -> String -> TERM -> TERM -> C.TERM ()
-translOp vars opName x y = C.mkAppl (op (str2Token opName) [natSort,natSort] natSort)
-                                    (term2CASLterm vars <$> [x,y])
+translOp vars opName x y =
+  C.mkAppl (op (str2Token opName) [natSort,natSort] natSort)
+           (term2CASLterm vars <$> [x,y])
 
 var2CASLterm :: Vars -> VAR_NAME -> C.TERM ()
 var2CASLterm  (attrs,g,g') var = if unprime var `Set.member` attrs
@@ -819,21 +861,26 @@ reach3 :: EVENT_NAMES -> C.VAR -> C.VAR -> C.FORMULA ()
 reach3 evts g g' = C.mkPredication reach3Pred [evts, confVar g, confVar g']
 
 cSetCons :: EVENT_NAME -> EVENT_NAMES -> EVENT_NAMES
-e `cSetCons` es = C.mkAppl (op (str2Token "__+__") [evtNameSort,evtNameSetSort] evtNameSetSort)
-                           [constTerm (prefixEvtName e) evtNameSort, es]
+e `cSetCons` es =
+  C.mkAppl (op (str2Token "__+__") [evtNameSort,evtNameSetSort] evtNameSetSort)
+           [constTerm (prefixEvtName e) evtNameSort, es]
 
 cSetNil :: EVENT_NAMES
 cSetNil = constTerm (str2Token "{}") evtNameSetSort
 
 initPred, transPred, reach2Pred, reach3Pred :: C.PRED_SYMB
-initPred   = C.mkQualPred (str2Id "init")
-                          (C.Pred_type [confSort] nullRange)
-transPred  = C.mkQualPred (str2Id "trans")
-                          (C.Pred_type [confSort,evtSort,confSort] nullRange)
-reach2Pred = C.mkQualPred (str2Id "reachable2")
-                          (C.Pred_type [evtNameSetSort,confSort] nullRange)
-reach3Pred = C.mkQualPred (str2Id "reachable3")
-                          (C.Pred_type [evtNameSetSort,confSort,confSort] nullRange)
+initPred   = C.mkQualPred
+               (str2Id "init")
+               (C.Pred_type [confSort] nullRange)
+transPred  = C.mkQualPred
+               (str2Id "trans")
+               (C.Pred_type [confSort,evtSort,confSort] nullRange)
+reach2Pred = C.mkQualPred
+               (str2Id "reachable2")
+               (C.Pred_type [evtNameSetSort,confSort] nullRange)
+reach3Pred = C.mkQualPred
+               (str2Id "reachable3")
+               (C.Pred_type [evtNameSetSort,confSort,confSort] nullRange)
 
 ctrlOp :: C.OP_SYMB
 ctrlOp = op (str2Token "ctrl") [confSort] ctrlSort
@@ -851,4 +898,4 @@ evtNameSetSort = str2Id "EvtNameSet"
 
 sepCASL :: C.FORMULA f -> [C.FORMULA f]
 sepCASL (C.Junction C.Con fs _) = concat (sepCASL <$> fs)
-sepCASL f = [f]
+sepCASL f                       = [f]

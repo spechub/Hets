@@ -1,9 +1,14 @@
-{-# LANGUAGE MultiParamTypeClasses , FlexibleContexts , TypeSynonymInstances , FlexibleInstances, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 
 {- |
 Module      : $Id$
 Description : Instance of class Logic for the UMLComp logic
-Copyright   :  (c) Tobias Rosenberger, Swansea University and Universit{'e} Grenoble Alpes 2022
+Copyright   :  (c) Tobias Rosenberger,
+                Swansea University and Universit&#233; Grenoble Alpes 2022
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  TRosenberger@gmx.de
@@ -25,51 +30,50 @@ An example file can be found in @test\/UMLTests\/atmmod.het@.
 
 module UMLComp.Logic_UMLComp where
 
-import ATerm.Conversion
+import           ATerm.Conversion
 
-import CASL.ToDoc -- just for ghci debugging
-import qualified CASL.AS_Basic_CASL as C
-import qualified CASL.Formula as CF
-import qualified CASL.Logic_CASL as CL
-import qualified CASL.Morphism as CM
-import qualified CASL.Sign as CS
-import qualified CASL.Sublogic as CSL
+import qualified CASL.AS_Basic_CASL                 as C
+import qualified CASL.Formula                       as CF
+import qualified CASL.Logic_CASL                    as CL
+import qualified CASL.Morphism                      as CM
+import qualified CASL.Sign                          as CS
+import qualified CASL.Sublogic                      as CSL
+import           CASL.ToDoc
 
-import Common.AnnoState
-import Common.AS_Annotation (Named,makeNamed,emptyAnno)
-import Common.DocUtils
-import Common.ExtSign
-import Common.GlobalAnnotations
-import Common.Id
-import Common.Lexer
-import Common.Lib.MapSet as MapSet
-import Common.Lib.Rel as Rel
-import Common.Parsec
-  hiding ( (<|>) ) -- use the more general version from "Control.Applicative"
-import Common.ProofTree
-import Common.Result as R
+import           Common.AnnoState
+import           Common.AS_Annotation               (Named, emptyAnno,
+                                                     makeNamed)
+import           Common.DocUtils
+import           Common.ExtSign
+import           Common.GlobalAnnotations
+import           Common.Id
+import           Common.Lexer
+import           Common.Lib.MapSet                  as MapSet
+import           Common.Lib.Rel                     as Rel
+import           Common.Parsec                      hiding ((<|>))
+import           Common.ProofTree
+import           Common.Result                      as R
 
-import Control.Applicative ( Alternative, (<|>) )
-import Control.Monad (when)
-import Control.Monad.Fail (MonadFail)
-import Control.Monad.Trans (lift)
-import Control.Monad.Trans.State as S
+import           Control.Applicative                (Alternative, (<|>))
+import           Control.Monad                      (when)
+import           Control.Monad.Fail                 (MonadFail)
+import           Control.Monad.Trans                (lift)
+import           Control.Monad.Trans.State          as S
 
-import Data.Set as Set
-import Data.Map as Map
-import Data.List as List
-import Data.Functor.Identity
+import           Data.Functor.Identity
+import           Data.List                          as List
+import           Data.Map                           as Map
+import           Data.Set                           as Set
 
-import qualified Data.Data as D
+import qualified Data.Data                          as D
 
-import Logic.Logic
-import Logic.Comorphism
+import           Logic.Comorphism
+import           Logic.Logic
 
-import Text.Parsec
-  hiding ( (<|>) ) -- use the more general version from "Control.Applicative"
-import Text.Parsec.Expr
-import Text.Parsec.String
-import Text.ParserCombinators.Parsec.Char
+import           Text.Parsec                        hiding ((<|>))
+import           Text.Parsec.Expr
+import           Text.Parsec.String
+import           Text.ParserCombinators.Parsec.Char
 
 type CSub     = CSL.CASL_Sublogics
 type CBasic   = CL.CASLBasicSpec
@@ -82,18 +86,23 @@ type CSym     = CS.Symbol
 type CRawSym  = CM.RawSymbol
 type CProof   = ProofTree
 
+-- | Typeclass argument to identify logic
+data UMLComp = UMLComp deriving (Eq,Ord,Show,D.Data)
 
-data UMLComp = UMLComp deriving (Eq,Ord,Show,D.Data) -- typeclass argument to identify logic
-type Morphism = Sign -- only identity morphisms
-data Sentence = TrueSen deriving (Eq,Ord,Show,D.Data) -- no nontrivial sentences
+type Morphism = Sign                                  -- ^ Only identity morphisms
+
+-- | No nontrivial sentences
+data Sentence = TrueSen deriving (Eq,Ord,Show,D.Data)
+
 data Sign = Sign
-  { nameS        :: [COMP_NAME]
-  , machinesS    :: Map MACHINE_NAME MACHINE_TYPE
-  , machineTysS  :: Set MACHINE_TYPE
-  , exportsS     :: Map PORT_NAME MACHINE_NAME
-  , connsS       :: Map PORT_NAME (MACHINE_NAME, MACHINE_NAME, PORT_NAME)
+  { nameS       :: [COMP_NAME]
+  , machinesS   :: Map MACHINE_NAME MACHINE_TYPE
+  , machineTysS :: Set MACHINE_TYPE
+  , exportsS    :: Map PORT_NAME MACHINE_NAME
+  , connsS      :: Map PORT_NAME (MACHINE_NAME, MACHINE_NAME, PORT_NAME)
   } deriving (Eq,Show,Ord)
 
+-- | Extract symbols from signature
 sign2SymSet sign = ( Set.fromList $ nameS     sign )
        `Set.union` ( Map.keysSet  $ machinesS sign )
        `Set.union` ( machineTysS  $           sign )
@@ -118,19 +127,21 @@ instance Language UMLComp where
 -- BEGIN parsing, grammar, AS
 
 type COMP_NAME    = Token
-parse_COMP_NAME = do string "name"
+parse_COMP_NAME = do
+                     string "name"
                      skipSmart
                      name <- str2Token <$> scanLetterWord
                      skipSmart
                      return name
 ana_COMP_NAME nameT@(Token name _) = do
   lib <- S.get
-  case nameS lib of []                   -> do S.put lib { nameS = [nameT] }
-                                               return nameT
-                    (Token oldName _: _) ->
-                       errC (    "Two name declarations for Composite Structure: '"
-                               ++ oldName ++ "' and '" ++ name ++ "'."
-                            )
+  case nameS lib of
+    []                   -> do S.put lib { nameS = [nameT] }
+                               return nameT
+    (Token oldName _: _) ->
+       errC (    "Two name declarations for Composite Structure: '"
+               ++ oldName ++ "' and '" ++ name ++ "'."
+            )
 type MACHINE_NAME = Token
 parse_MACHINE_NAME = str2Token <$> scanLetterWord
 
@@ -203,7 +214,7 @@ ana_EXPORT_DECL ex@(Export mach@(Token mname _) port@(Token pname _)) = do
               )
   S.put $ lib { exportsS = Map.insert port mach $ exportsS lib }
   return ex
-  
+
 
 data  CONN_DECL = Conn MACHINE_NAME PORT_NAME MACHINE_NAME PORT_NAME
                 deriving (Eq,Ord,Show,D.Data)
@@ -278,7 +289,7 @@ theEnd = optionMaybe (asSeparator ";") >> key "end"
 str2Token :: String -> Token
 str2Token name = Token name nullRange
 
-type Check = StateT Sign Result  
+type Check = StateT Sign Result
 errC :: String -> Check a
 errC s = lift $ fatal_error s nullRange
 
@@ -305,7 +316,7 @@ translate :: (Sign, [Named Sentence])
           -> Result (CSign, [Named CForm])
 translate (sign,sentences) = do
   justHint undefined "translating from UMLComp to CASL"
-  let 
+  let
       [composTy] = nameS sign  -- should just be one, checked at ana_COMP_NAME
       machTys    = Set.elems  $ machineTysS sign
       machs      = Map.toList $ machinesS   sign
@@ -314,8 +325,9 @@ translate (sign,sentences) = do
       portNames  = innerPorts ++ Map.keys (exportsS sign)
 
 
-      -- machOfPort, portOpposite and machOpposite MUST NOT be called with possibly nonexistant ports!
-      -- portOpposite and machOpposite MUST ONLY be called with internal ports!
+      {- machOfPort, portOpposite and machOpposite MUST NOT be called with possibly nonexistant ports!
+         portOpposite and machOpposite MUST ONLY be called with internal ports!
+      -}
       machOfPort port
         | Just (m1,m2,p2) <- Map.lookup port conns
         = m1
@@ -332,7 +344,7 @@ translate (sign,sentences) = do
         { CS.sortRel = transClosure $ Rel.fromMap $ Map.fromList
           (
             -- per machine type/composTy
-            [ (s tyName, Set.empty) 
+            [ (s tyName, Set.empty)
             | tyName <- composTy : machTys
             , s <- [ confSort
                    ]
@@ -348,7 +360,7 @@ translate (sign,sentences) = do
             ]
          )
         , CS.predMap = MapSet.fromMap $ Map.fromList
-            ( 
+            (
               -- per machine type/composTy
               [ (pname, Set.fromList [pty])
               | tyName <- composTy : machTys
@@ -381,10 +393,11 @@ translate (sign,sentences) = do
             )
         }
 
-      -- Constructors for free types.
-      -- Note that machine specific types,
-      --   as well as event types,
-      --   are not free as far as the composite structure is concerned.
+      {- Constructors for free types.
+         Note that machine specific types,
+           as well as event types,
+           are not free as far as the composite structure is concerned.
+      -}
       constructors = [ ( (confSort composTy)
                        , [confConOp composTy machs]
                        )
@@ -452,7 +465,7 @@ translate (sign,sentences) = do
                                           , confConOp composTy machs `ap` (var2Term <$> confQueueVars' machs)
                                           ]
                    )
-                 `C.mkEqv` 
+                 `C.mkEqv`
                    ( C.disjunct [ transP machType `pr` ( var2Term <$> [ confVar  mach
                                                                       , inVar
                                                                       , outVar
@@ -461,7 +474,7 @@ translate (sign,sentences) = do
                                                        )
                                   `andC`
                                   ( distP composTy (length machs) `pr` [ if    var == queueVar mach
-                                                                            && port `elem` innerPorts 
+                                                                            && port `elem` innerPorts
                                                                          then dequeueOp `ap` [var2Term var]
                                                                          else var2Term var
                                                                        | var <- distVars machs
@@ -564,7 +577,9 @@ var2Term decl = error (    "Can't turn VAR_DECL of several variables into term:"
 
 type SortName = Id
 
--- | The sort of configurations for the named machine type or composite structure type.
+{- | The sort of configurations
+     for the named machine type or composite structure type.
+-}
 confSort :: Token -> SortName
 confSort     tname = composeId ["Conf"     , token2Str tname]
 
@@ -584,7 +599,9 @@ portConOp portName = ( composeId ["port", token2Str portName]
                      , CS.OpType C.Total [] portSort
                      )
 
--- | A constructor for a configuration of the named machine type or composite structure type.
+{- | A constructor for a configuration
+     of the named machine type or composite structure type.
+-}
 confConOp :: Token -> [(t, Token)] -> (Id, CS.OpType)
 confConOp ctname machs = ( composeId ["con","Conf",token2Str ctname]
                          , CS.OpType
@@ -599,16 +616,17 @@ confConOp ctname machs = ( composeId ["con","Conf",token2Str ctname]
 msgConOp :: (Id, CS.OpType)
 msgConOp = ( composeId ["msg"]
            , CS.OpType C.Total
-                       [portSort, evtSort] 
+                       [portSort, evtSort]
                        msgSort
            )
 
 queueProjOp :: COMP_NAME -> MACHINE_TYPE -> (Id, CS.OpType)
-queueProjOp ctname mtname = ( composeId ["proj", "Queue", token2Str ctname, token2Str mtname]
-                            , CS.OpType C.Total
-                                        [confSort ctname]
-                                        msgQueueSort
-                            )
+queueProjOp ctname mtname =
+  ( composeId ["proj", "Queue", token2Str ctname, token2Str mtname]
+  , CS.OpType C.Total
+              [confSort ctname]
+              msgQueueSort
+  )
 
 emptyQueueOp, enqueueOp, dequeueOp :: (Id, CS.OpType)
 emptyQueueOp = ( composeId ["empty"]
@@ -671,25 +689,31 @@ andC, orC :: C.FORMULA f -> C.FORMULA f -> C.FORMULA f
 f `andC` g = C.conjunct [f,g]
 f `orC`  g = C.disjunct [f,g]
 
--- | The initial configuration predicate for the named composite structure type or machine type.
+{- | The initial configuration predicate
+     for the named composite structure type or machine type.
+-}
 initP :: Token -> (Id, CS.PredType)
 initP  tname = ( composeId ["init",token2Str tname]
                , CS.PredType [confSort tname]
                )
 
--- | The transition predicate for the named composite structure type or machine type.
+{- | The transition predicate
+     for the named composite structure type or machine type.
+-}
 transP :: Token -> (Id, CS.PredType)
-transP tname = ( composeId ["trans", token2Str tname]
-               , CS.PredType [confSort tname, msgSort, msgListSort,confSort tname]
-               )
+transP tname =
+  ( composeId ["trans", token2Str tname]
+  , CS.PredType [confSort tname, msgSort, msgListSort,confSort tname]
+  )
 
 -- | A CASL predicate for distributing outputs into message queues.
 distP :: COMP_NAME -> Int -> (Id, CS.PredType)
-distP ctname mcount = ( composeId ["dist", token2Str ctname]
-                      , CS.PredType (    [msgListSort]
-                                      ++ (take mcount $ repeat $ msgQueueSort)
-                                    )
-                      )
+distP ctname mcount =
+  ( composeId ["dist", token2Str ctname]
+  , CS.PredType (    [msgListSort]
+                  ++ (List.take mcount $ repeat $ msgQueueSort)
+                )
+  )
 
 token2Id :: Token -> Id
 token2Id tok   = Id [tok] [] nullRange
@@ -705,9 +729,12 @@ simpleId2Str (Id [Token s _] [] _) = s
 simpleId2Str _                     = "MIX"
 
 
--- | Define separator, as well as escaping s. t. separator does not occur in words.
---   Escape sequence will be part of CASL identifiers and must consist of ordinary letters.
---   Changing this requires changing 'escape' and 'unescape'.
+{- | Define 'separator',
+   as well as 'escape'ing s. t. 'separator' does not occur in words.
+     Escape sequence will be part of CASL identifiers
+       and must consist of ordinary letters.
+     Changing this requires changing 'escape' and 'unescape'.
+-}
 separator :: String
 separator = "Of"
 
@@ -718,9 +745,11 @@ escape (x:xs)           = x : escape xs
 escape []               = []
 
 unescape :: (Alternative m, MonadFail m) => String -> m String
-unescape ('E':'s':'c':xs) = do ('F':ys) <- return xs
+unescape ('E':'s':'c':xs) = do
+                               ('F':ys) <- return xs
                                ("Of"++)  <$> unescape ys
-                        <|> do ('C':ys) <- return xs
+                        <|> do
+                               ('C':ys) <- return xs
                                ("Esc"++) <$> unescape ys
 unescape (x:xs) = (x:) <$> unescape xs
 unescape []     = return []

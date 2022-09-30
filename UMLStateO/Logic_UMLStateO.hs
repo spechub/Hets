@@ -21,11 +21,10 @@ The entry point for the abstract Syntax is 'BASIC_SPEC', for parsing 'parse_BASI
 An example file can be found in "test/UMLTests/atmmod.het".
 -}
 
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE TypeSynonymInstances  #-}
-{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 -- sometimes we want to name unused arguments for context
 {-# OPTIONS_GHC -Wno-unused-matches #-}
@@ -33,51 +32,59 @@ An example file can be found in "test/UMLTests/atmmod.het".
 
 module UMLStateO.Logic_UMLStateO where
 
-import Debug.Trace
+import           Debug.Trace
 
-import Logic.Logic
+import           Logic.Logic
 
-import qualified CASL.AS_Basic_CASL as C
-import qualified CASL.Formula as CF
+import qualified CASL.AS_Basic_CASL                 as C
+import qualified CASL.Formula                       as CF
 
-import Common.DocUtils
-import Common.ExtSign
-import Common.Id
-import ATerm.Conversion
-import Common.GlobalAnnotations
-import Common.AnnoState
-import Common.Lexer
-import Common.Parsec
-import Common.Result as R
+import           ATerm.Conversion
+import           Common.AnnoState
+import           Common.DocUtils
+import           Common.ExtSign
+import           Common.GlobalAnnotations
+import           Common.Id
+import           Common.Lexer
+import           Common.Parsec
+import           Common.Result                      as R
 
-import qualified Data.Data as D
+import qualified Data.Data                          as D
 
-import Data.Set  as Set
-import Data.Map  as Map
-import Data.Functor.Identity
+import           Data.Functor                       (($>))
+import           Data.Functor.Identity
+import           Data.Map                           as Map
+import           Data.Maybe                         (fromMaybe)
+import           Data.Set                           as Set
 
-import Control.Monad (when)
-import Control.Monad.Trans (lift)
-import Control.Monad.Trans.State as S
+import           Control.Monad                      (when)
+import           Control.Monad.Trans                (lift)
+import           Control.Monad.Trans.State          as S
 
-import Text.Parsec
-import Text.Parsec.Expr
-import Text.Parsec.String
-import Text.ParserCombinators.Parsec.Char
+import           Text.Parsec
+import           Text.Parsec.Expr
+import           Text.Parsec.String
+import           Text.ParserCombinators.Parsec.Char
 
-import UMLComp.Logic_UMLComp ( composeTok , composeStr , composeId
-                             , token2Str
-                             , confSort, portSort, evtSort, msgSort, msgListSort
-                             )
+import           UMLComp.Logic_UMLComp              (composeId, composeStr,
+                                                     composeTok, confSort,
+                                                     evtSort, msgListSort,
+                                                     msgSort, portSort,
+                                                     token2Str)
 
 traceVal :: Show a => a -> a
 traceVal x = trace ("trace: " ++ show x) x
 
 
--- | The current module is all about this 'Logic', and the following instances for superclasses of 'Logic'.
-instance Logic UMLStateO StSub BASIC_SPEC Sentence StSyms StSymMaps Sign Morphism StSym StRawSym StProof
+{- | The current module is all about this 'Logic'
+     and the following instances for superclasses of 'Logic'.
+-}
+instance Logic UMLStateO StSub BASIC_SPEC Sentence StSyms StSymMaps Sign
+               Morphism StSym StRawSym StProof
 
--- | A type level identifier for the present logic, used for instance resolution.
+{- | A type level identifier for the present logic,
+     used for instance resolution.
+-}
 data UMLStateO = UMLStateO deriving (Eq,Ord,Show,D.Data)
 
 -- | We have no nontrivial signature morphisms.
@@ -98,13 +105,15 @@ instance Syntax UMLStateO BASIC_SPEC StSym StSyms StSymMaps where
 
 instance Sentences      UMLStateO Sentence Sign Morphism Token where
 
-instance StaticAnalysis UMLStateO BASIC_SPEC Sentence () () Sign Morphism Token () where
-  basic_analysis _ = Just $ \ (spec,sign,annos) -> do
-    (spec',sign) <- runStateT (ana_BASIC_SPEC spec) mempty
-    let symSet = sign2SymSet sign
-        extSign = ExtSign sign symSet
-        annos  = []
-    return (spec', extSign, annos)
+instance StaticAnalysis UMLStateO BASIC_SPEC Sentence
+                        () () Sign Morphism Token ()
+  where
+    basic_analysis _ = Just $ \ (spec,sign,annos) -> do
+      (spec',sign) <- runStateT (ana_BASIC_SPEC spec) mempty
+      let symSet = sign2SymSet sign
+          extSign = ExtSign sign symSet
+          annos  = []
+      return (spec', extSign, annos)
 
 instance Pretty Sign where
 
@@ -131,7 +140,7 @@ instance Category Sign Morphism where
   cod f = f
   isInclusion f = True
   legal_mor f = return ()
-  
+
 
 instance Monoid BASIC_SPEC where
 
@@ -149,13 +158,14 @@ data BASIC_ITEMS = SigB SIG_ITEMS
                  | MsgB MESSAGE_ITEMS
                  deriving (Eq,Ord,Show,D.Data)
 
-data VAR_ITEMS = VarIs [VAR_NAME] deriving (Eq,Ord,Show,D.Data)
+newtype VAR_ITEMS = VarIs [VAR_NAME] deriving (Eq,Ord,Show,D.Data)
 
 data SEN_ITEMS = TransB TRANS_ITEM
                | InitB STATE GUARD
                deriving (Eq,Ord,Show,D.Data)
 data Direction = In | Out deriving (Eq,Ord,Show,D.Data)
-data MESSAGE_ITEMS = MsgIs Direction [MESSAGE_ITEM] deriving (Eq,Ord,Show,D.Data)
+data MESSAGE_ITEMS = MsgIs Direction [MESSAGE_ITEM]
+                   deriving (Eq,Ord,Show,D.Data)
 data MESSAGE_ITEM = MsgI MESSAGE_NAME [VAR_NAME] deriving (Eq,Ord,Show,D.Data)
 data TERM = VarT VAR_NAME
           | ConstT NAT_LIT
@@ -169,9 +179,9 @@ type VAR_NAME = Token
 
 type NAT_LIT = Int
 
-data SIG_ITEMS = StateS [STATE_ITEM]
-               deriving (Eq,Ord,Show,D.Data)
-data STATE_ITEM = StateI STATE deriving (Eq,Ord,Show,D.Data)
+newtype SIG_ITEMS = StateS [STATE_ITEM]
+                  deriving (Eq,Ord,Show,D.Data)
+newtype STATE_ITEM = StateI STATE deriving (Eq,Ord,Show,D.Data)
 
 
 type STATE = Token
@@ -183,11 +193,12 @@ data TRANS_LABEL = Label (Maybe TRIGGER) (Maybe GUARD) (Maybe ACTIONS)
 type TRIGGER = MESSAGE_ITEM
 type GUARD = FORMULA
 
-data ACTIONS = Acts [ACTION] deriving (Eq,Ord,Show,D.Data)
+newtype ACTIONS = Acts [ACTION] deriving (Eq,Ord,Show,D.Data)
 data ACTION = Assign VAR_NAME TERM
             | Send MESSAGE_INSTANCE
             deriving (Eq,Ord,Show,D.Data)
-data MESSAGE_INSTANCE = MsgInst MESSAGE_NAME [TERM] deriving (Eq,Ord,Show,D.Data)
+data MESSAGE_INSTANCE = MsgInst MESSAGE_NAME [TERM]
+                      deriving (Eq,Ord,Show,D.Data)
 
 
 -- data formulae, used for guards and assignments
@@ -200,7 +211,8 @@ data FORMULA = CompF TERM COMP_OP TERM
              | FORMULA :<= FORMULA
              | FORMULA :<=> FORMULA
              deriving (Eq,Ord,Show,D.Data)
-data COMP_OP = Less | LessEq | Eq | GreaterEq | Greater deriving (Enum,Eq,Ord,D.Data)
+data COMP_OP = Less | LessEq | Eq | GreaterEq | Greater
+             deriving (Enum,Eq,Ord,D.Data)
 -- END Abstract Syntax
 
 instance Show COMP_OP where
@@ -214,20 +226,21 @@ instance Show COMP_OP where
 -- BEGIN parsing
 
 parse_BASIC_SPEC :: [t0] -> PrefixMap -> GenParser Char st BASIC_SPEC
-parse_BASIC_SPEC bi _ = Basic <$> parseName <*> (try parse_BASIC_ITEMS `sepBy` semiT << theEnd)
+parse_BASIC_SPEC bi _ =
+  Basic <$> parseName <*> (try parse_BASIC_ITEMS `sepBy` semiT << theEnd)
 
 parseName :: ParsecT [Char] st Identity Token
 parseName = do key "name"             << skipSmart
                name <- scanLetterWord << skipSmart
                asSeparator ";"
-               return $ str2Token $ name
+               return $ str2Token name
 
 theEnd :: Parsec [Char] st [Char]
 theEnd = optionMaybe (asSeparator ";") >> key "end"
 
 parse_MESSAGE_ITEMS :: Parsec [Char] st MESSAGE_ITEMS
 parse_MESSAGE_ITEMS = do
-        direction <- (inS *> return In) <|> (outS *> return Out)
+        direction <- (inS $> In) <|> (outS $> Out)
         msgItems  <- try parse_MESSAGE_ITEM `sepBy` asSeparator ","
         return $ MsgIs direction msgItems
   <?> "message items"
@@ -250,20 +263,25 @@ parse_MESSAGE_ITEM = do
   msgName <- parse_MESSAGE_NAME
   maybeArgs <- optionMaybe $ do
     oParenT >> (parse_VAR_NAME << skipSmart) `sepBy` asSeparator "," << cParenT
-  return $ MsgI msgName $ case maybeArgs of
-    Nothing -> []
-    Just varNames -> varNames
+  return $ MsgI msgName $ fromMaybe [] maybeArgs
 
 parse_BASIC_ITEMS :: Parsec [Char] st BASIC_ITEMS
 parse_BASIC_ITEMS =
       do SigB <$> parse_SIG_ITEMS
   <|> do SenB . TransB <$> parse_TRANS_ITEM
-  <|> do SenB <$> (key "init" >> (InitB  <$> (parse_STATE_ITEM  << asSeparator ":") <*> parse_GUARD))
+  <|> do SenB <$>
+           ( key "init" >> ( InitB  <$> (parse_STATE_ITEM  << asSeparator ":")
+                                    <*> parse_GUARD
+                           )
+           )
   <|> do MsgB <$> parse_MESSAGE_ITEMS
   <|> do VarB <$> parse_VAR_ITEMS
 
 parse_VAR_ITEMS :: Parsec [Char] st VAR_ITEMS
-parse_VAR_ITEMS = VarIs <$> (pluralKeyword "var" >> ((parse_VAR_NAME << skipSmart) `sepBy` asSeparator ","))
+parse_VAR_ITEMS =
+  VarIs <$> ( pluralKeyword "var" >>
+                ((parse_VAR_NAME << skipSmart) `sepBy` asSeparator ",")
+            )
 
 parse_SIG_ITEMS :: Parsec [Char] st SIG_ITEMS
 parse_SIG_ITEMS = StateS <$> (parse_STATE_ITEMS *> parse_STATE_ITEMs)
@@ -287,7 +305,9 @@ parse_TRANS_ITEM = do key "trans"
                       return $ TransI s1 s2 label
 
 parse_TRANS_LABEL :: Parsec [Char] st TRANS_LABEL
-parse_TRANS_LABEL = Label <$> optionMaybe parse_TRIGGER <*> optionMaybe parse_GUARD <*> optionMaybe parse_ACTIONS
+parse_TRANS_LABEL = Label <$> optionMaybe parse_TRIGGER
+                          <*> optionMaybe parse_GUARD
+                          <*> optionMaybe parse_ACTIONS
 
 parse_ACTIONS :: Parsec [Char] st ACTIONS
 parse_ACTIONS = do
@@ -305,10 +325,7 @@ parse_ACTION = do try $ do v <- try parse_VAR_NAME
            <|> do msgName <- parse_MESSAGE_NAME
                   maybeArgs <- optionMaybe $ do
                     oParenT >> parse_TERM `sepBy` asSeparator "," << cParenT
-                  return $ Send $ MsgInst msgName $ case maybeArgs of
-                    Nothing   -> []
-                    Just args -> args
-
+                  return $ Send $ MsgInst msgName $ fromMaybe [] maybeArgs
 parse_TRIGGER :: Parsec [Char] st MESSAGE_ITEM
 parse_TRIGGER = parse_MESSAGE_ITEM
 
@@ -338,7 +355,7 @@ parse_TERM = buildExpressionParser ops simpTerm <?> "term" where
   simpTerm = do VarT   <$> parse_VAR_NAME
          <|> do ConstT <$> parse_NAT_LIT
          <|> do oParenT >> parse_TERM << cParenT
-    
+
 
 parse_COMP_OP :: Parsec [Char] st COMP_OP
 parse_COMP_OP = parseOpFrom [Less .. Greater]
@@ -356,16 +373,24 @@ key :: String -> Parsec [Char] st String
 key s = try (keyWord (string s) << skipSmart)
 
 
-preWordOp :: String -> (a -> a) -> Operator [Char] st Data.Functor.Identity.Identity a
+preWordOp :: String
+          -> (a -> a)
+          -> Operator [Char] st Data.Functor.Identity.Identity a
 preWordOp w someOp = Prefix (key w >> return someOp)
 
-symOpL :: String -> (a -> a -> a) -> Operator [Char] st Data.Functor.Identity.Identity a
+symOpL :: String
+       -> (a -> a -> a)
+       -> Operator [Char] st Data.Functor.Identity.Identity a
 symOpL s someOp = Infix (asSeparator s >> return someOp) AssocLeft
 
-symOpR :: String -> (a -> a -> a) -> Operator [Char] st Data.Functor.Identity.Identity a
+symOpR :: String
+       -> (a -> a -> a)
+       -> Operator [Char] st Data.Functor.Identity.Identity a
 symOpR s someOp = Infix (asSeparator s >> return someOp) AssocRight
 
-wordOp :: String -> (a -> a -> a) -> Operator [Char] st Data.Functor.Identity.Identity a
+wordOp :: String
+       -> (a -> a -> a)
+       -> Operator [Char] st Data.Functor.Identity.Identity a
 wordOp w someOp = Infix (key w >> return someOp) AssocRight
 
 parseOpFrom :: Show a => [a] -> Parsec [Char] st a
@@ -423,9 +448,9 @@ ana_MACHINE_NAME name = do
   sign <- get
   let oldNames = nameS sign
   when (oldNames /= Set.empty && oldNames /= Set.singleton name)
-    $ errC (    "Two machine names defined."
-             ++ "This should not be possible according to the UMLStateO grammar."
-             ++ "Please report this as a bug."
+    $ errC (   "Two machine names defined."
+            ++ "This should not be possible according to the UMLStateO grammar."
+            ++ "Please report this as a bug."
            )
   put $ sign { nameS = Set.singleton name }
   return name
@@ -448,7 +473,7 @@ ana_VAR_ITEM var = do
     attrS = var `Set.insert` vars
   }
   return var
-  
+
 ana_SIG_ITEMS :: SIG_ITEMS -> Check SIG_ITEMS
 ana_SIG_ITEMS (StateS items) = StateS <$> sequence (ana_STATE_ITEM <$> items)
 
@@ -465,15 +490,18 @@ ana_SEN_ITEMS (InitB st g) = do
   else errC "Initial transition to undefined state."
 
 ana_MESSAGE_ITEMS :: MESSAGE_ITEMS -> Check MESSAGE_ITEMS
-ana_MESSAGE_ITEMS (MsgIs dir as) = MsgIs dir <$> sequence (ana_MESSAGE_ITEM dir <$> as)
+ana_MESSAGE_ITEMS (MsgIs dir as) =
+  MsgIs dir <$> sequence (ana_MESSAGE_ITEM dir <$> as)
 
 ana_MESSAGE_ITEM :: Direction -> MESSAGE_ITEM -> Check MESSAGE_ITEM
 ana_MESSAGE_ITEM dir e@(MsgI name vars) = do
   sign <- get
-  when (dir == In)  $ put $ sign {trigS = Map.insert (name, length vars) e $ trigS sign}
-  when (dir == Out) $ put $ sign {actsS = Map.insert (name, length vars) e $ actsS sign}
+  when (dir == In)
+    $ put $ sign {trigS = Map.insert (name, length vars) e $ trigS sign}
+  when (dir == Out)
+    $ put $ sign {actsS = Map.insert (name, length vars) e $ actsS sign}
   return e
-  
+
 ana_TRANS_ITEMS :: TRANS_ITEM -> Check TRANS_ITEM
 ana_TRANS_ITEMS (TransI st1 st2 (Label trig g a)) = do
   sign <- get
@@ -482,8 +510,8 @@ ana_TRANS_ITEMS (TransI st1 st2 (Label trig g a)) = do
       sts                      = statesS sign
       trigs                    = trigS sign
       ekey                     = (ename, length evars)
-      insertVars [] set        = set
-      insertVars (v:vs) set    = insertVars vs (v `Set.insert` set)
+      insertVars [] set     = set
+      insertVars (v:vs) set = insertVars vs (v `Set.insert` set)
       varsWithTvar             = insertVars evars $ attrS sign
       actSkip                  = Acts []
       checkWhenJust m res f    = maybe (return $ Just res) f m
@@ -543,12 +571,12 @@ ana_TERM vars (a :+ b) = foldl1 (:+) <$> (ana_TERM vars `traverse` [a,b])
 ana_TERM vars (a :- b) = foldl1 (:-) <$> (ana_TERM vars `traverse` [a,b])
 ana_TERM vars (a :* b) = foldl1 (:*) <$> (ana_TERM vars `traverse` [a,b])
 ana_TERM vars (a :/ b) = foldl1 (:/) <$> (ana_TERM vars `traverse` [a,b])
-  
+
 ana_STATE_ITEM :: STATE_ITEM -> Check STATE_ITEM
 ana_STATE_ITEM (StateI st) = do
   sign <- get
   put $ sign {
-    statesS = st `Set.insert` statesS sign 
+    statesS = st `Set.insert` statesS sign
   }
   ana_MESSAGE_ITEM In  $ complEvt sign st
   ana_MESSAGE_ITEM Out $ complEvt sign st
@@ -562,7 +590,7 @@ complEvt sign st = MsgI name []
                    }
 -- END static analysis
 machName :: Sign -> String
-machName sign 
+machName sign
   | [Token m _] <- Set.elems $ nameS sign
   = m
   | otherwise

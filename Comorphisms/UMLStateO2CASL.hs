@@ -13,8 +13,10 @@ The entry point for the translation is 'translate'.
 For more background information, see "UMLComp.Logic_UMLComp".
 -}
 
-{-# LANGUAGE MultiParamTypeClasses , RankNTypes , TypeSynonymInstances , FlexibleInstances #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RankNTypes            #-}
 
 -- Sometimes we want to name unused arguments for context.
 {-# OPTIONS_GHC -Wno-unused-matches #-}
@@ -24,34 +26,33 @@ For more background information, see "UMLComp.Logic_UMLComp".
 
 module Comorphisms.UMLStateO2CASL where
 
-import Common.Id
-import Common.ProofTree
-import Common.AS_Annotation (makeNamed,SenAttr)
-import Common.Lib.State ()
-import Common.Lib.MapSet as MapSet
-import Common.Lib.Rel as Rel
+import           Common.AS_Annotation      (SenAttr, makeNamed)
+import           Common.Id
+import           Common.Lib.MapSet         as MapSet
+import           Common.Lib.Rel            as Rel
+import           Common.Lib.State          ()
+import           Common.ProofTree
 
-import qualified Data.Data as D
+import qualified Data.Data                 as D
 
-import Data.List as List hiding (sort)
-import Data.Set as Set
-import Data.Map as Map
+import           Data.List                 as List hiding (sort)
+import           Data.Map                  as Map
+import           Data.Maybe                (fromMaybe)
+import           Data.Set                  as Set
 
-import Logic.Logic
-import Logic.Comorphism
+import           Logic.Comorphism
+import           Logic.Logic
 
-import UMLStateO.Logic_UMLStateO
-import UMLComp.Logic_UMLComp ( composeTok , composeStr , composeId
-                             , token2Str
-                             , confSort, portSort, evtSort, msgSort, msgListSort
-                             )
+import           UMLComp.Logic_UMLComp     (composeId, composeTok, confSort,
+                                            evtSort, msgListSort, msgSort,
+                                            portSort, token2Str)
+import           UMLStateO.Logic_UMLStateO
 
-import qualified CASL.Logic_CASL as CL
-import qualified CASL.AS_Basic_CASL as CA
-import qualified CASL.Sublogic as CSL
-import qualified CASL.Formula as CF
-import qualified CASL.Morphism as CM
-import qualified CASL.Sign as CS
+import qualified CASL.AS_Basic_CASL        as CA
+import qualified CASL.Logic_CASL           as CL
+import qualified CASL.Morphism             as CM
+import qualified CASL.Sign                 as CS
+import qualified CASL.Sublogic             as CSL
 
 
 type CSub     = CSL.CASL_Sublogics
@@ -80,11 +81,15 @@ instance Comorphism UMLStateO2CASL
     map_theory     UMLStateO2CASL (sign, _) = return $ translate sign
     map_sentence   UMLStateO2CASL _ _       = return CA.trueForm
 
-    -- state machine symbols don't map cleanly onto CASL ones,
-    -- although some could be handled
+    {- | State machine symbols don't map cleanly onto CASL ones,
+         although some could be handled.
+    -}
     map_symbol     UMLStateO2CASL lib tok   = Set.empty
 
-translate :: Sign -> (CS.Sign f (), [Common.AS_Annotation.SenAttr (CA.FORMULA ()) [Char]])
+-- | Core of the implementation of 'map_theory'
+translate :: Sign -> ( CS.Sign f ()
+                     , [Common.AS_Annotation.SenAttr (CA.FORMULA ()) [Char]]
+                     )
 translate sign = (csign, csentences) where
   eventsKeyVal = Map.toList (trigS sign `Map.union` actsS sign)
   events       = fst       <$> eventsKeyVal
@@ -113,7 +118,8 @@ translate sign = (csign, csentences) where
        ++ [ msgInstNilOp, msgInstConsOp  ]
        ++ sequence [confOp, ctrlOp] sign
   preds = sequence [reach2Pred, initPred, transPred] sign
-       ++ (compOp2CASL <$> [Less,LessEq,GreaterEq,Greater]) -- Eq not treated as predicate
+       ++ (compOp2CASL <$> [Less,LessEq,GreaterEq,Greater])
+            -- Eq not treated as predicate
 
   csign = (CS.emptySign ())
     { CS.sortRel = transClosure $ Rel.fromMap $ Map.fromList
@@ -152,7 +158,10 @@ translate sign = (csign, csentences) where
                                                      )
                                                    ]
                                                    msgSort
-                                   , CA.Constraint (confSort $ str2Token $ machName sign) [(confOp sign, [])] (confSort $ str2Token $ machName sign)
+                                   , CA.Constraint
+                                       (confSort $ str2Token $ machName sign)
+                                       [(confOp sign, [])]
+                                       (confSort $ str2Token $ machName sign)
                                    ]
                                    True
                 ]
@@ -180,9 +189,9 @@ opSymbType :: CA.OP_SYMB -> CS.OpType
 opSymbType (CA.Qual_op_name _ (CA.Op_type totality args res _) _)
   = CS.OpType totality args res
 opSymbType (CA.Op_name name)
-  = error (    "opSymbType should not have been called on an unqualified operation symbol.\n"
-            ++ "offending symbol: " ++ show name ++ "\n"
-            ++ "Please report this as a bug."
+  = error (   "opSymbType should not have been called on an unqualified operation symbol.\n"
+           ++ "offending symbol: " ++ show name ++ "\n"
+           ++ "Please report this as a bug."
           )
 
 
@@ -190,15 +199,25 @@ type MESSAGE_NAMES = CA.TERM ()
 
 -- | The Event Data Hybrid Modal Logic with Outputs.
 data EDHMLO = DtSen FORMULA       -- ^ @DtSen phi@: current config satisfies @phi@.
-            | St STATE            -- ^ @St s@: current control state is @s@ 
-            | Binding STATE EDHMLO -- ^ @Binding s f@: with current control state bound to s, f holds
-            | At  MESSAGE_NAMES MESSAGE_NAMES STATE EDHMLO -- ^ @At  ins outs s f@: jumping to any config with state @s@ reachable via transitions with labels over @ins@ and @outs@, @f@ holds.
-            | Box MESSAGE_NAMES MESSAGE_NAMES       EDHMLO -- ^ @Box ins outs   f@: 
-            -- ^ For all transitions with these sets of allow inputs/outputs...
-            | DiaEE MESSAGE_ITEM         [MESSAGE_INSTANCE] FORMULA EDHMLO 
+            | St STATE            -- ^ @St s@: current control state is @s@
+            | Binding STATE EDHMLO
+              -- ^ @Binding s f@: with current control state bound to s, f holds
+
+            | At MESSAGE_NAMES MESSAGE_NAMES STATE EDHMLO
+               {- ^ @At  ins outs s f@: jumping to any config with state @s@ reachable
+                   via transitions with labels over @ins@ and @outs@, @f@ holds.
+               -}
+
+            | Box MESSAGE_NAMES MESSAGE_NAMES       EDHMLO
+                {- ^ @Box ins outs   f@:
+                     For all transitions with these sets of allow inputs/outputs...
+                -}
+            | DiaEE MESSAGE_ITEM         [MESSAGE_INSTANCE] FORMULA EDHMLO
             -- ^ Exists valuation and transititon ...
+
             | DiaAE MESSAGE_ITEM FORMULA [MESSAGE_INSTANCE] FORMULA EDHMLO
             -- ^ For each valuation satisfying phi there exists a transition ...
+
             | Not EDHMLO
             | And EDHMLO EDHMLO
             | TrueE
@@ -215,18 +234,20 @@ initCASL sign = CA.mkForall [quant]  equiv
     gTok  = str2Token "g"
     gTerm = confVar sign gTok
     vars  = (gTok, prime gTok)
-    defForm = disjunctC [ (ctrl sign gTerm `CA.mkStEq` mkState sign s0) `andC` stForm2CASL sign vars phi0
+    defForm = disjunctC [        (ctrl sign gTerm `CA.mkStEq` mkState sign s0)
+                          `andC` stForm2CASL sign vars phi0
                         | (s0,phi0) <- initS sign
                         ]
-      
--- | Translate a state machine into EDHMLO.
--- | Uses 'computeEDHMLO' to recurse over all states and transitions.
--- The algorithm is based on Algorithm 1 in
--- Hennicker et. al.:"A Hybrid Dynamic Logic for Event/Data-Based Systems."
--- ( https://doi.org/10.1007/978-3-030-16722-6_5 )
--- as extended for output events in Algorithm 1 of
--- Rosenberger et. al.:"Institution-based Encoding and Verification of Simple UML State Machines in CASL/SPASS"
--- ( https://doi.org/10.1007/978-3-030-73785-6_7 ).
+
+{- | Translate a state machine into EDHMLO.
+   Uses 'computeEDHMLO' to recurse over all states and transitions.
+   The algorithm is based on Algorithm 1 in
+   Hennicker et. al.:"A Hybrid Dynamic Logic for Event/Data-Based Systems."
+   ( https:\/\/doi.org\/10.1007\/978-3-030-16722-6_5 )
+   as extended for output events in Algorithm 1 of
+   Rosenberger et. al.:"Institution-based Encoding and Verification of Simple UML State Machines in CASL/SPASS"
+   ( https:\/\/doi.org\/10.1007\/978-3-030-73785-6_7 ).
+-}
 lib2EDHMLO :: Sign -> EDHMLO
 lib2EDHMLO sign = assert `seq` edhmlRmNotNot (computeEDHMLO allIns allOuts c0 is vs bs im1 im2 es)
   where
@@ -234,7 +255,7 @@ lib2EDHMLO sign = assert `seq` edhmlRmNotNot (computeEDHMLO allIns allOuts c0 is
     allIns  = Map.foldrWithKey combinemsgs cSetNil $ trigS sign
     allOuts = Map.foldrWithKey combinemsgs cSetNil $ actsS sign
     (c0, states) = Set.deleteFindMin $ statesS sign
-    guard2phi = maybe TrueF id
+    guard2phi = fromMaybe TrueF
 
     acts2psi Nothing = TrueF
     acts2psi (Just (Acts as)) = conjunctF [ CompF (VarT $ prime v) Eq t
@@ -245,10 +266,11 @@ lib2EDHMLO sign = assert `seq` edhmlRmNotNot (computeEDHMLO allIns allOuts c0 is
                                     | Send msgInstance <- as
                                     ]
 
-    -- Handle completion events: where no explicit message is given,
-    -- create one with the comletion event for the current state.
+    {- Handle completion events: where no explicit message is given,
+       create one with the completion event for the current state.
+    -}
     handleCompl :: STATE -> Maybe MESSAGE_ITEM -> MESSAGE_ITEM
-    handleCompl c = maybe (complEvt sign c) id
+    handleCompl c = fromMaybe $ complEvt sign c
 
     -- transitions indexed by start state
     im1 c = Map.findWithDefault id c im1Map []
@@ -257,7 +279,7 @@ lib2EDHMLO sign = assert `seq` edhmlRmNotNot (computeEDHMLO allIns allOuts c0 is
                  , ([(guard2phi guard, handleCompl c e, acts2MsgList acts, acts2psi acts, c')] ++) -- difference list
                  )
                | TransI c c' (Label e guard acts) <- transS sign
-               ] 
+               ]
 
     -- transitions indexed by start state and label
     im2 ce = Map.findWithDefault id ce im2Map []
@@ -280,29 +302,45 @@ lib2EDHMLO sign = assert `seq` edhmlRmNotNot (computeEDHMLO allIns allOuts c0 is
              then error "Can't translate sign to EDHMLO: need at least one state"
              else ()
 
--- | Traverse transitions reachable from a list of control states, generating an EDHMLO formula.
--- | Used by 'lib2EDHMLO' to translate a state machine.by 'lib2EDHMLO' to translate a state machine.
+{- | Traverse transitions reachable from a list of control states,
+     generating an EDHMLO formula.
+     Used by 'lib2EDHMLO' to translate a state machine.by 'lib2EDHMLO'
+     to translate a state machine.
+-}
 computeEDHMLO :: MESSAGE_NAMES  -- ^ all input message names
               -> MESSAGE_NAMES  -- ^ all output message names
               -> STATE          -- ^ a control state @c@
-              -> [(FORMULA, MESSAGE_ITEM, [MESSAGE_INSTANCE], FORMULA, STATE)] -- list of transitions out of  @c@
+              -> [(FORMULA, MESSAGE_ITEM, [MESSAGE_INSTANCE], FORMULA, STATE)]
+                                -- ^ list of transitions out of  @c@
               -> [STATE]        -- ^ states still to be processed
               -> [STATE]        -- ^ all states
-              -> ( STATE -> [(FORMULA, MESSAGE_ITEM, [MESSAGE_INSTANCE], FORMULA, STATE)]
-                 )              -- ^ all transitions, indexed by start state
-              -> ( (STATE, MESSAGE_NAME, Arity) -> [(FORMULA, [MESSAGE_INSTANCE], FORMULA, STATE)]
-                 )              -- ^ all transitions, indexed by start state and message
-              -> [ (MESSAGE_ITEM, [MESSAGE_INSTANCE]) ]  -- ^ for each transition, the input message (name and formal parameters) and output messages (with full argument terms)
+              -> ( STATE -> [ ( FORMULA
+                              , MESSAGE_ITEM
+                              , [MESSAGE_INSTANCE]
+                              , FORMULA, STATE
+                              )
+                            ]
+                 )      -- ^ all transitions, indexed by start state
+              -> (    (STATE, MESSAGE_NAME, Arity)
+                   -> [(FORMULA, [MESSAGE_INSTANCE], FORMULA, STATE)]
+                 )      -- ^ all transitions, indexed by start state and message
+              -> [ (MESSAGE_ITEM, [MESSAGE_INSTANCE]) ]
+                        {- ^ for each transition, the input message
+                             (name and formal parameters)
+                             and output messages (with full argument terms)
+                        -}
               -> EDHMLO
 computeEDHMLO allIns allOuts c ((phi,e,outs,psi,c'):is) vs bs im1 im2 es =
-    (At allIns allOuts c $ DiaAE e phi outs psi $ St c')
+         At allIns allOuts c (DiaAE e phi outs psi $ St c')
   `andE` computeEDHMLO allIns allOuts c is vs bs im1 im2 es
 computeEDHMLO   allIns allOuts c  []       (c':vs) bs im1 im2 es =
   computeEDHMLO allIns allOuts c' (im1 c')     vs  bs im1 im2 es
 computeEDHMLO allIns allOuts c [] [] bs im1 im2 es =
   fin allIns allOuts bs im2 es `andE` pairsDiff allIns allOuts bs
 
--- | EDHMLO formulae to assert control states are semantically distinct iff sytactically distinct.
+{- | EDHMLO formulae to assert control states
+     are semantically distinct iff they are syntactically distinct.
+-}
 pairsDiff :: MESSAGE_NAMES -> MESSAGE_NAMES -> [Token] -> EDHMLO
 pairsDiff allIns allOuts bs = conjunctE [ Not $ At allIns allOuts c1 $ St c2
                                         | c1 <- bs
@@ -313,9 +351,10 @@ pairsDiff allIns allOuts bs = conjunctE [ Not $ At allIns allOuts c1 $ St c2
 boxAA :: MESSAGE_ITEM -> [MESSAGE_INSTANCE] -> FORMULA -> EDHMLO -> EDHMLO
 boxAA e outs phi f = Not $ DiaEE e outs phi $ Not f
 
--- | Finishing formula: from each configuration,
--- the semantically reachable configurations
--- are match those syntactically reachable via enabled transitions.
+{- | Finishing formula: from each configuration,
+   the semantically reachable configurations
+   are match those syntactically reachable via enabled transitions.
+-}
 fin :: MESSAGE_NAMES
     -> MESSAGE_NAMES
     -> [STATE]
@@ -343,23 +382,21 @@ fin allIns allOuts bs im2 es = conjunctE
   | c <- bs
   ]
 
--- TODO use Set here
--- problem: powerSet reported as not exported
--- probably need to wait for switch to newer GHC/libs
 complements :: STATE
             -> MESSAGE_ITEM
-            -> ( (STATE, MESSAGE_NAME, Arity) -> [(FORMULA, [MESSAGE_INSTANCE], FORMULA, STATE)]
+            -> (    (STATE, MESSAGE_NAME, Arity)
+                 -> [(FORMULA, [MESSAGE_INSTANCE], FORMULA, STATE)]
                )
             -> [ ( [(FORMULA, [MESSAGE_INSTANCE], FORMULA, STATE)]
                  , [(FORMULA, [MESSAGE_INSTANCE], FORMULA, STATE)]
                  )
                ]
 complements c (MsgI ename evars) im2 =
-  let xs = im2 (c, ename, length evars)
-  in [ ( ps
-       , xs List.\\ ps
+  let xs = Set.fromList $ im2 (c, ename, length evars)
+  in [ ( Set.toList ps
+       , Set.toList (xs Set.\\ ps)
        )
-     | ps <- subsequences xs
+     | ps <- Set.toList $ powerSet xs
      ]
 
 
@@ -442,7 +479,7 @@ edhml2CASL sign vars@(g,g') (DiaEE e@(MsgI _ evars) outs phi f) =
      )
 edhml2CASL sign vars@(g,g') (DiaAE e@(MsgI _ evars) phi outs psi f) =
   let newVars = (g',prime g')
-  in univEvtArgs evars $ (
+  in univEvtArgs evars (
        stForm2CASL sign vars phi `CA.mkImpl` exConf sign g' (
                 trans sign vars g e outs g'
          `andC` stForm2CASL sign vars psi
@@ -523,7 +560,7 @@ msgItem2CASLterm (MsgI name vars) =
 eventList2CASLterm :: Sign -> ConfigVars -> [MESSAGE_INSTANCE] -> CA.TERM ()
 eventList2CASLterm sign vars outs =
   List.foldr msgInstCons msgInstNil [ CA.mkAppl msgConOp
-                                               [ CA.mkAppl (portConOp $ portName $ ename)
+                                               [ CA.mkAppl (portConOp $ portName ename)
                                                           []
                                                , CA.mkAppl (evtConOp ename $ length args)
                                                           (term2CASLterm sign vars <$> args)
@@ -581,7 +618,7 @@ mkState :: Sign -> STATE -> CA.TERM ()
 mkState sign name = stateOp sign name `CA.mkAppl` []
 
 stateOp :: Sign -> STATE -> CA.OP_SYMB
-stateOp sign name = op (composeId (["st", token2Str name, machName sign]))
+stateOp sign name = op (composeId ["st", token2Str name, machName sign])
                        []
                        (ctrlSort sign)
 
@@ -634,14 +671,14 @@ transPred  sign = CA.mkQualPred ( str2Id "trans")
                                              , confSort $ str2Token $ machName sign
                                              ]
                                              nullRange
-                               ) 
+                               )
 reach2Pred sign = CA.mkQualPred ( str2Id "reachable2")
                                ( CA.Pred_type [ msgNameSetSort
                                              , msgNameSetSort
                                              , confSort $ str2Token $ machName sign
                                              ]
                                              nullRange
-                               ) 
+                               )
 reach3Pred sign = CA.mkQualPred ( str2Id "reachable3")
                                ( CA.Pred_type [ msgNameSetSort
                                              , msgNameSetSort
@@ -664,7 +701,7 @@ msgNameOp = op (composeId ["msgName"]) [msgSort] msgNameSort
 
 evtConOp :: MESSAGE_NAME -> Arity -> CA.OP_SYMB
 evtConOp name ar = op (token2Id $ prefixEvt $ str2Token $ evtName name)
-                      (take ar $ repeat natSort)
+                      (replicate ar natSort)
                       evtSort
 msgConOp :: CA.OP_SYMB
 msgConOp = op (composeId ["msg"]) [portSort,evtSort] msgSort
@@ -686,8 +723,13 @@ natLitOp :: Int -> CA.OP_SYMB
 natLitOp num = op (str2Id $ show num) [] natSort
 
 confOp :: Sign -> CA.OP_SYMB
+<<<<<<< HEAD
 confOp sign = op (composeId ["con","Conf",machName sign]) 
                  ([ctrlSort sign] ++ take (Set.size $ attrS sign) (repeat natSort))
+=======
+confOp sign = op (composeId ["con","Conf",machName sign])
+                 (ctrlSort sign : replicate (Set.size $ attrS sign) natSort)
+>>>>>>> 7abaf8e7b (UPSTREAMING: style check)
                  (confSort $ str2Token $ machName sign)
 
 ctrlSort :: Sign -> Id
@@ -701,5 +743,5 @@ natSort        = composeId ["Nat"       ]
 
 sepCASL :: CA.FORMULA f -> [CA.FORMULA f]
 sepCASL (CA.Junction CA.Con fs _) = concat (sepCASL <$> fs)
-sepCASL f = [f]
+sepCASL f                         = [f]
 
