@@ -99,8 +99,8 @@ instance Monoid BASICSPEC where
 instance Syntax QBF BASICSPEC Symbol
     SYMBITEMS SYMBMAPITEMS where
          parse_basic_spec QBF = Just basicSpec
-         parse_symb_items QBF = Just symbItems
-         parse_symb_map_items QBF = Just symbMapItems
+         parse_symb_items QBF = Just . const $ symbItems
+         parse_symb_map_items QBF = Just . const $ symbMapItems
 
 -- | Instance of Logic for propositional logc
 instance Logic QBF

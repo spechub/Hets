@@ -16,8 +16,9 @@ import Data.Maybe
 import Data.Pool (Pool)
 import Database.Persist.MySQL
 
-connection :: ( BaseBackend backend ~ SqlBackend
+connection :: ( backend ~ SqlBackend
               , IsPersistBackend backend
+              , IsSqlBackend backend
               , MonadIO m
               , MonadBaseControl IO m
               , MonadLogger m

@@ -173,7 +173,7 @@ queryDefn l = do
   e <- equalT
   s <- asKey selectS
   lg <- lookupCurrentLogic "query-defn" l
-  (vs, cs) <- parseItemsList lg
+  (vs, cs) <- parseItemsList lg (prefixes l)
   w <- asKey whereS
   Basic_spec bs _ <- lookupCurrentSyntax "query-defn" l >>= basicSpec l
   i <- asKey inS
@@ -191,7 +191,7 @@ substDefn l = do
   vt <- viewType l
   e <- equalT
   lg <- lookupCurrentLogic "subst-defn" l
-  (m, cs) <- parseItemsMap lg
+  (m, cs) <- parseItemsMap lg (prefixes l)
   o <- optEnd
   return . Subst_defn n vt m . catRange
     $ [q, c, e] ++ cs ++ maybeToList o
@@ -422,7 +422,7 @@ moduleType l = do
 restrictionSignature :: LogicGraph -> AParser st G_symb_items_list
 restrictionSignature lG = do
   l <- lookupCurrentLogic "restrictionSignature" lG
-  fmap fst $ parseItemsList l
+  fmap fst $ parseItemsList l (prefixes lG)
 
 
 simpleIdOrDDottedId :: GenParser Char st Token

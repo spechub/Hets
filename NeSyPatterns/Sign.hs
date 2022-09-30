@@ -1,4 +1,4 @@
-{-# LANGUAGE StandaloneDeriving, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  ./NeSyPatterns/Sign.hs
 Description :  Signatures for syntax for neural-symbolic patterns
@@ -82,7 +82,7 @@ instance Pretty Sign where
     pretty = printSign
 
 findNodeId :: IRI -> Set.Set ResolvedNode -> Set.Set ResolvedNode
-findNodeId t s = Set.filter (\(ResolvedNode _ t1 _) -> t == t1 ) s  
+findNodeId t = Set.filter (\(ResolvedNode _ t1 _) -> t == t1 )
 
 nesyIds :: Sign -> Set.Set IRI
 nesyIds = Set.map resolvedNeSyId . nodes
@@ -117,7 +117,7 @@ printEdge (node1, node2) = pretty node1 <+> text "->" <+> pretty node2 <> semi
 printSign :: Sign -> Doc
 printSign s = keyword dataS <+> (specBraces . toDocAsMS . getOntology $ s) $+$
     (vcat . map printEdge . Rel.toList . edges $ s) $+$
-    (vcat . map ((<> semi) . pretty) . Set.toList $ (nodes s Set.\\ (Set.union (Rel.dom . edges $ s) (Rel.ran . edges $ s))))
+    (vcat . map ((<> semi) . pretty) . Set.toList $ (nodes s Set.\\ Set.union (Rel.dom . edges $ s) (Rel.ran . edges $ s)))
 
 -- | Adds a node to the signature
 addToSig :: Sign -> ResolvedNode -> Sign
@@ -174,4 +174,4 @@ sigDiff sig1 sig2 = Sign
 
 {- | union of Signatures, using Result -}
 sigUnion :: Sign -> Sign -> Result Sign
-sigUnion s = return . unite s
+sigUnion s1 s2 = return $ unite s1 s2

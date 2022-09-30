@@ -270,11 +270,11 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          -- | parser for basic specifications
          parse_basic_spec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
          -- | parser for a single symbol returned as list
-         parseSingleSymbItem :: lid -> Maybe (AParser st symb_items)
+         parseSingleSymbItem :: lid -> Maybe (PrefixMap -> AParser st symb_items)
          -- | parser for symbol lists
-         parse_symb_items :: lid -> Maybe (AParser st symb_items)
+         parse_symb_items :: lid -> Maybe (PrefixMap -> AParser st symb_items)
          -- | parser for symbol maps
-         parse_symb_map_items :: lid -> Maybe (AParser st symb_map_items)
+         parse_symb_map_items :: lid -> Maybe (PrefixMap -> AParser st symb_map_items)
          toItem :: lid -> basic_spec -> Item
          symb_items_name :: lid -> symb_items -> [String]
          -- default implementations

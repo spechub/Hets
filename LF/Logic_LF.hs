@@ -50,8 +50,8 @@ instance Monoid BASIC_SPEC where
 
 instance Syntax LF BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
    parse_basic_spec LF = Just basicSpec
-   parse_symb_items LF = Just symbItems
-   parse_symb_map_items LF = Just symbMapItems
+   parse_symb_items LF = Just . const $ symbItems
+   parse_symb_map_items LF = Just . const $ symbMapItems
 
 instance Sentences LF
    Sentence

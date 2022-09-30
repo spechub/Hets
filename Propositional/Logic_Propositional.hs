@@ -112,8 +112,8 @@ instance Syntax Propositional BASIC_SPEC
          parsersAndPrinters Propositional =
            addSyntax "Hets" (basicSpec, pretty)
            $ makeDefault (basicSpec, pretty)
-         parse_symb_items Propositional = Just symbItems
-         parse_symb_map_items Propositional = Just symbMapItems
+         parse_symb_items Propositional = Just . const $ symbItems
+         parse_symb_map_items Propositional = Just . const $ symbMapItems
 
 -- | Instance of Logic for propositional logc
 instance Logic Propositional

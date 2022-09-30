@@ -50,8 +50,8 @@ instance Category Sgn_Wrap Mor where
 
 instance Syntax Hybridize Spc_Wrap Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
         parse_basic_spec Hybridize = Just $ \ _ -> thBasic getLogic
-        parse_symb_items Hybridize = Just $ error "parse_symb_items !"
-        parse_symb_map_items Hybridize = Just $ error "parse_symb_map_items !"
+        parse_symb_items Hybridize = Just . const $ error "parse_symb_items !"
+        parse_symb_map_items Hybridize = Just . const $ error "parse_symb_map_items !"
         toItem Hybridize = error "toItem !"
 
 instance Sentences Hybridize Frm_Wrap Sgn_Wrap Mor Symbol where

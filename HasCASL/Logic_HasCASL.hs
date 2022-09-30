@@ -74,8 +74,8 @@ instance Syntax HasCASL BasicSpec
                 Symbol SymbItems SymbMapItems
       where
          parse_basic_spec HasCASL = Just $ const basicSpec
-         parse_symb_items HasCASL = Just symbItems
-         parse_symb_map_items HasCASL = Just symbMapItems
+         parse_symb_items HasCASL = Just . const $ symbItems
+         parse_symb_map_items HasCASL = Just . const $ symbMapItems
          toItem HasCASL = bsToItem
 
 instance Category Env Morphism where

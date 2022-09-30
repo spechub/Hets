@@ -59,8 +59,8 @@ instance Monoid BASIC_SPEC where
 -- syntax for DFOL
 instance Syntax DFOL BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
    parse_basic_spec DFOL = Just basicSpec
-   parse_symb_items DFOL = Just symbItems
-   parse_symb_map_items DFOL = Just symbMapItems
+   parse_symb_items DFOL = Just . const $ symbItems
+   parse_symb_map_items DFOL = Just . const $ symbMapItems
 
 -- sentences for DFOL
 instance Sentences DFOL FORMULA Sign Morphism Symbol where
