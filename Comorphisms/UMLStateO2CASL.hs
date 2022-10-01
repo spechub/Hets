@@ -723,13 +723,8 @@ natLitOp :: Int -> CA.OP_SYMB
 natLitOp num = op (str2Id $ show num) [] natSort
 
 confOp :: Sign -> CA.OP_SYMB
-<<<<<<< HEAD
-confOp sign = op (composeId ["con","Conf",machName sign]) 
-                 ([ctrlSort sign] ++ take (Set.size $ attrS sign) (repeat natSort))
-=======
 confOp sign = op (composeId ["con","Conf",machName sign])
                  (ctrlSort sign : replicate (Set.size $ attrS sign) natSort)
->>>>>>> 7abaf8e7b (UPSTREAMING: style check)
                  (confSort $ str2Token $ machName sign)
 
 ctrlSort :: Sign -> Id

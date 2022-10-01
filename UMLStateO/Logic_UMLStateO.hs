@@ -142,7 +142,8 @@ instance Category Sign Morphism where
   legal_mor f = return ()
 
 
-instance Monoid BASIC_SPEC where
+instance Semigroup BASIC_SPEC where
+instance Monoid    BASIC_SPEC where
 
 instance Pretty BASIC_SPEC where
 instance GetRange BASIC_SPEC where
@@ -413,16 +414,18 @@ data Sign = Sign
 
 type Sentence = ()
 
+instance Semigroup Sign where
+  sign <> sign' = Sign { nameS   = nameS   sign <> nameS   sign'
+                       , statesS = statesS sign <> statesS sign'
+                       , attrS   = attrS   sign <> attrS   sign'
+                       , trigS   = trigS   sign <> trigS   sign'
+                       , actsS   = actsS   sign <> actsS   sign'
+                       , initS   = initS   sign <> initS   sign'
+                       , transS  = transS  sign <> transS  sign'
+                       }
 instance Monoid Sign where
   mempty = Sign mempty mempty mempty mempty mempty mempty mempty
-  sign `mappend` sign' = Sign { nameS   = nameS   sign `mappend` nameS   sign'
-                              , statesS = statesS sign `mappend` statesS sign'
-                              , attrS   = attrS   sign `mappend` attrS   sign'
-                              , trigS   = trigS   sign `mappend` trigS   sign'
-                              , actsS   = actsS   sign `mappend` actsS   sign'
-                              , initS   = initS   sign `mappend` initS   sign'
-                              , transS  = transS  sign `mappend` transS  sign'
-                              }
+  sign `mappend` sign' = sign <> sign'
 
 extractActs :: Map (MESSAGE_NAME, Arity) MESSAGE_ITEM -> Set Token
 extractActs = Set.map actSym . Map.keysSet where
