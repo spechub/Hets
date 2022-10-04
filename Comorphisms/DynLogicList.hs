@@ -14,7 +14,7 @@ module Comorphisms.DynLogicList where
 import Common.Id
 import Logic.Logic
 import Logic.HDef
-import Logic.SemConstr -- we need this import to be able to compile later
+import Logic.SemConstr
 
 dynLogicList :: [AnyLogic]
 dynLogicList = []

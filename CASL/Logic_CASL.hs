@@ -282,7 +282,7 @@ instance Logic CASL CASL_Sublogics
          stability CASL = Stable
          -- for Hybridization
          parse_basic_sen CASL = Just $ \ _ -> formula []
-         parse_prim_formula CASL = Just (primFormula [])
+         parse_prim_formula CASL = Just $ const (primFormula [])
 
          proj_sublogic_epsilon CASL = pr_epsilon ()
          all_sublogics CASL = sublogics_all []

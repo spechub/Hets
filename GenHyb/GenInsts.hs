@@ -548,9 +548,11 @@ printBasicItems (Axiom_items xs) = vcat $ map (addBullet . pretty) xs
 printBasicItems (Nom_decl x) = pretty x
 printBasicItems (Mod_decl x) = pretty x
 
+instance Semigroup (H_BASIC_SPEC sen symb_items raw_sym) where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
+
 instance Monoid (H_BASIC_SPEC sen symb_items raw_sym) where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- for H_symb_items
 

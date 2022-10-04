@@ -107,7 +107,7 @@ instance Logic RigidCASL ()
          empty_proof_tree _ = ()
          -- helpers for hybridization
          constr_to_sens RigidCASL = rigidConstrToSens
-         parse_prim_formula RigidCASL = Just (primFormula [])
+         parse_prim_formula RigidCASL = Just $ const (primFormula [])
            -- for each type, its name and the file where it is defined
          sublogicsTypeName RigidCASL = ("","")
          basicSpecTypeName RigidCASL = ("R_BASIC_SPEC","RigidCASL.AS_Rigid")

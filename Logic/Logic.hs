@@ -775,7 +775,7 @@ class (StaticAnalysis lid
 
          -- prim formula parser, for hybridization
 
-         parse_prim_formula :: lid -> Maybe (AParser st sentence)
+         parse_prim_formula :: lid -> Maybe (PrefixMap -> AParser st sentence)
          parse_prim_formula _ = Nothing
 
          {-
@@ -795,6 +795,7 @@ class (StaticAnalysis lid
          parse_q_formula :: lid ->
                             Maybe (Bool -> Bool -> Bool ->
                                    (GTypes.HQUANT, Token) ->
+                                   PrefixMap -> 
                                    AParser st sentence)
          parse_q_formula _ = Nothing
 

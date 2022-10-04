@@ -131,7 +131,7 @@ instance Logic Propositional
         -- hybridization
       parse_basic_sen Propositional = Just $ const impFormula
       parse_formula Propositional = Just $ impFormula
-      parse_prim_formula Propositional = Just $ primFormula
+      parse_prim_formula Propositional = Just $ const primFormula
       stability Propositional = Stable
       top_sublogic Propositional = Sublogic.top
       all_sublogics Propositional = sublogics_all
