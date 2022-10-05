@@ -16,7 +16,7 @@ Definition of abstract syntax for neural-symbolic patterns
   Ref.
   van Bekkum, M., de Boer, M., van Harmelen, F. et al.
   Modular design patterns for hybrid learning and reasoning systems.
-  Appl Intell 51, 6528–6546 (2021). https://doi.org/10.1007/s10489-021-02394-3
+  Appl Intell 51, 6528-6546 (2021). https://doi.org/10.1007/s10489-021-02394-3
 -}
 
 module NeSyPatterns.AS where

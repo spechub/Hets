@@ -37,6 +37,8 @@ COLOR_ERROR := \E[1;38;5;226;48;5;196m
 COLOR_OK := \E[1;38;5;0;48;5;82m
 COLOR_END := \E[0m
 
+OSR := $(shell [ -x /usr/bin/lsb_release ] && lsb_release -cs || uname -s )
+
 # Testing:
 # If != 0 'make check' and related scripts stop immediately if an error occurs.
 # Otherwise continues until all test have been run and finally the target fails.
@@ -100,17 +102,11 @@ DRIFT = utils/DrIFT
 HADDOCK = haddock
 
 DTD2HS = utils/DtdToHaskell
-ifneq ($(strip $(HAXML_PACKAGE_COMPAT)),)
-DTD2HS_src = utils/DtdToHaskell-src/pre-1.22/
-else
-DTD2HS_src = utils/DtdToHaskell-src/current/
-endif
 
 ifneq ($(strip $(HAXML_PACKAGE)),)
 derived_sources += Isabelle/IsaExport.hs
 endif
 
-DTD2HS_deps = $(DTD2HS_src)*.hs
 
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
@@ -213,7 +209,7 @@ drifted_files = Common/AS_Annotation.hs \
     RelationalScheme/AS.hs ATC/Grothendieck.hs \
     ExtModal/AS_ExtModal.hs QBF/AS_BASIC_QBF.hs \
     CommonLogic/AS_CommonLogic.hs Fpl/As.hs \
-	TPTP/AS.hs \
+	TPTP/AS.hs NeSyPatterns/AS.hs \
     $(gendrifted_files)
 
 # files to extract data types from to generate ShATermConvertible instances
@@ -595,7 +591,7 @@ docs: $(derived_sources) $(STACK_UPGRADE_TARGET)
 $(DRIFT): $(DRIFT_deps)
 	cd utils/DrIFT-src; $(HC) --make -o ../DrIFT DrIFT.hs
 
-$(DTD2HS): utils/DtdToHaskell-src/DtdToHaskell.hs
+$(DTD2HS): utils/DtdToHaskell-src/DtdToHaskell/*.hs utils/DtdToHaskell-src/DtdToHaskell.hs
 	$(HC) --make $(HC_OPTS) -iutils/DtdToHaskell-src -o $@ \
             utils/DtdToHaskell-src/DtdToHaskell.hs
 
@@ -985,9 +981,13 @@ debian/changelog.tmp: debian/control
 	cp -p debian/control.0 debian/control ; \
 	echo "# HC_OPTS='$(HC_OPTS)'" >> debian/control ; \
 	[[ "$(HC_OPTS)" =~ -DMYSQL ]] || \
-		$(SED) -i -e 's/libmysqlclient20, //' debian/control ; \
+		$(SED) -i -e 's/libmysqlclient21, //' debian/control ; \
 	[[ ! "$(HC_OPTS)" =~ -DNO_WGET ]] || \
 		$(SED) -i -e 's/wget, //' debian/control
+	-[[ $(OSR) == 'focal' ]] && sed -i -e 's/ksh,/ksh93,/' \
+		-e 's/ *libzstd1,//' -e 's/ *libharfbuzz0b,//' debian/control
+	-[[ $(OSR) == 'jammy' ]] && sed -i -r -e 's/libffi7/libffi8/' \
+		-e 's/libssl1.1/libssl3/' -e 's/ *libatomic1,//' debian/control
 	@SRCPKG=`grep ^Source: debian/control |awk '{ print $$2 ; }'` ; \
 	if [ -z "${FULL_DEBVERS}" ]; then \
 		LSB=`lsb_release -rs`; A="$${LSB%.*}"; B="$${LSB#*.}"; B="$${B##0}"; \
