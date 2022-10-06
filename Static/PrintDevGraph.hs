@@ -141,6 +141,31 @@ instance Pretty DGOrigin where
                    else text headr $+$ pretty syms
     in text (dgOriginHeader o) <+> pretty (dgOriginSpec o)
       $+$ case o of
+          v@DGEmpty -> text $ show v
+          v@DGBasic -> text $ show v
+          v@DGExtension -> text $ show v
+          v@DGLogicCoercion -> text $ show v
+          v@DGUnion -> text $ show v
+          v@DGIntersect -> text $ show v
+          v@DGExtract -> text $ show v
+          v@DGRevealTranslation -> text $ show v
+          DGFreeOrCofree forc -> text "FreeOrCofree:" <+> (text $ show forc)
+          v@DGLocal -> text $ show v
+          v@DGClosed -> text $ show v
+          v@DGLogicQual -> text $ show v
+          v@DGData -> text $ show v
+          v@DGFormalParams -> text $ show v
+          v@DGVerificationGeneric -> text $ show v
+          v@DGImports -> text $ show v
+          DGInst iri -> text "Inst:" <+> pretty iri
+          v@DGFitSpec -> text $ show v
+          DGFitView iri -> text "View:" <+> pretty iri
+          v@DGProof -> text $ show v
+          DGNormalForm node -> text "Node:" <+> (text $ show node)
+          v@DGintegratedSCC -> text $ show v
+          v@DGFlattening -> text $ show v
+          v@DGAlignment -> text $ show v
+          v@DGTest -> text $ show v
           DGBasicSpec mgbs _ syms -> case mgbs of
               Nothing -> Doc.empty
               Just gbs -> specBraces (pretty gbs)
@@ -151,7 +176,6 @@ instance Pretty DGOrigin where
               in case rst of
                 Restricted r -> pretty r $+$ prtS
                 NoRestriction -> prtS
-          _ -> Doc.empty
 
 instance Pretty DGNodeInfo where
   pretty c = case c of
