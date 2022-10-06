@@ -70,7 +70,7 @@ deleteHiddenSymbols syms gs@(G_sign lid (ExtSign sig _) _) = let
   str = trimLeft syms in if null str then return gs else
     case parse_symb_items lid of
       Nothing -> Fail.fail $ "no symbol parser for " ++ language_name lid
-      Just sbpa -> case runParser (sepBy1 sbpa anComma << eof)
+      Just sbpa -> case runParser (sepBy1 (sbpa mempty) anComma << eof)
                    (emptyAnnos ()) "" str of
         Left err -> Fail.fail $ show err
         Right sms -> do
@@ -89,7 +89,7 @@ getMorphism (G_sign lid (ExtSign sig _) _) syms =
     if null str then return $ mkG_morphism lid $ ide sig else
     case parse_symb_map_items lid of
       Nothing -> Fail.fail $ "no symbol map parser for " ++ language_name lid
-      Just smpa -> case runParser (sepBy1 smpa anComma << eof)
+      Just smpa -> case runParser (sepBy1 (smpa mempty) anComma << eof)
                    (emptyAnnos ()) "" str of
         Left err -> Fail.fail $ show err
         Right sms -> do

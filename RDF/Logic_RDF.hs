@@ -73,8 +73,8 @@ instance Monoid TurtleDocument where
 
 instance Syntax RDF TurtleDocument RDFEntity SymbItems SymbMapItems where
     parse_basic_spec RDF = Just basicSpec
-    parse_symb_items RDF = Just rdfSymbItems
-    parse_symb_map_items RDF = Just rdfSymbMapItems
+    parse_symb_items RDF = Just . const $ rdfSymbItems
+    parse_symb_map_items RDF = Just . const $ rdfSymbMapItems
 
 instance Sentences RDF Axiom Sign RDFMorphism RDFEntity where
     -- map_sen RDF = mapSen

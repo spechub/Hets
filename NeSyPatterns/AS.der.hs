@@ -16,16 +16,13 @@ Definition of abstract syntax for neural-symbolic patterns
   Ref.
   van Bekkum, M., de Boer, M., van Harmelen, F. et al.
   Modular design patterns for hybrid learning and reasoning systems.
-  Appl Intell 51, 6528–6546 (2021). https://doi.org/10.1007/s10489-021-02394-3
+  Appl Intell 51, 6528-6546 (2021). https://doi.org/10.1007/s10489-021-02394-3
 -}
 
 module NeSyPatterns.AS where
 
 import Common.IRI
 import Common.Id as Id
-import Common.Doc
-import Common.DocUtils
-import Common.Keywords
 import Common.AS_Annotation as AS_Anno
 
 import Data.Data
@@ -49,7 +46,7 @@ data BASIC_ITEM = Path {
     deriving (Show, Typeable, Data)
 
 
-newtype SYMB = Symb_id IRI
+newtype SYMB = Symb_id Node
             deriving (Show, Eq, Ord, Typeable, Data)
 
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range

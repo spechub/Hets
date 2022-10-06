@@ -150,7 +150,7 @@ mapG_theory lossy (Comorphism cid) (G_theory lid _ (ExtSign sign _)
 -- | Embedding of GTCs as Grothendieck sig mors
 gEmbedGTC :: AnyComorphism -> G_theory -> Result GMorphism
 gEmbedGTC (Comorphism cid) gth@(G_theory lid _ ssig _ _ _) = do 
-  gth'@(G_theory lid' _ tsig ind _ _) <- mapG_theory False (Comorphism cid) gth
+  (G_theory lid' _ tsig ind _ _) <- mapG_theory False (Comorphism cid) gth
   ssig' <- coerceSign lid (sourceLogic cid) "can't convert sigs" ssig
   (ExtSign s _) <- coerceSign lid' (targetLogic cid) "can't convert sigs" tsig
   return $ GMorphism cid ssig' ind (ide s) startMorId

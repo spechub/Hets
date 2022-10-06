@@ -51,7 +51,6 @@ import qualified CASL.Sublogic as CSL
 import CASL.Sign as CSign
 import CASL.Morphism as CMor
 
-import Control.Monad
 import qualified Control.Monad.Fail as Fail
 
 newtype CL2CFOL = CL2CFOL { fol :: CommonLogicSL } deriving Show

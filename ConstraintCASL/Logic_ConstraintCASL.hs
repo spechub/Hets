@@ -48,8 +48,8 @@ instance Syntax ConstraintCASL ConstraintCASLBasicSpec
                 Symbol SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parse_basic_spec ConstraintCASL = Just $ basicSpec constraintKeywords
-         parse_symb_items ConstraintCASL = Just $ symbItems []
-         parse_symb_map_items ConstraintCASL = Just $ symbMapItems []
+         parse_symb_items ConstraintCASL = Just . const $ symbItems []
+         parse_symb_map_items ConstraintCASL = Just . const $ symbMapItems []
 
 -- lattices (for sublogics) is missing
 

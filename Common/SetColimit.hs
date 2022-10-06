@@ -119,7 +119,7 @@ instance SymbolName Id where
  addString (x, y) = appendString x y
 
 instance SymbolName IRI where
- addString (x, y) = x {iriPath  = appendString (iriPath x) y}
+ addString (x, y) = addSuffixToIRI y x
 
 addIntToSymbols :: (SymbolName a) =>
                (Set.Set (a, Node), Map.Map Node (Map.Map a (a, Node))) ->

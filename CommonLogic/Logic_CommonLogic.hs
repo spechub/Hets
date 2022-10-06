@@ -80,8 +80,8 @@ instance Syntax CommonLogic
         addSyntax "KIF" (KIF.basicSpec, Print_KIF.printBasicSpec)
         $ addSyntax "CLIF" (CLIF.basicSpec, pretty)
         $ makeDefault (CLIF.basicSpec, pretty)
-      parse_symb_items CommonLogic = Just CLIF.symbItems
-      parse_symb_map_items CommonLogic = Just CLIF.symbMapItems
+      parse_symb_items CommonLogic = Just . const $ CLIF.symbItems
+      parse_symb_map_items CommonLogic = Just . const $ CLIF.symbMapItems
 
 instance Logic CommonLogic
     CommonLogicSL     -- Sublogics

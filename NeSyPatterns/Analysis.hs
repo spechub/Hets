@@ -23,20 +23,27 @@ module NeSyPatterns.Analysis
     )
     where
 
-import Common.ExtSign
-import Common.Lib.Graph
-import Common.SetColimit
-import qualified Data.Graph.Inductive.Graph as Gr
-import Data.Maybe (catMaybes)
-import Data.Foldable (foldrM, foldlM)
-import NeSyPatterns.Sign as Sign
 
+import Data.Maybe (fromMaybe)
+import Data.Foldable (foldrM, foldlM)
+import Data.List (stripPrefix)
+import Data.Bifunctor (bimap, Bifunctor (second))
+
+import Control.Applicative
+import Common.ExtSign
 import Common.IRI
+import Common.Lib.Graph
+import Common.Result (resultToMaybe)
+import Common.SetColimit
+import Common.Utils
+
+import NeSyPatterns.Sign as Sign
 
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.GlobalAnnotations as GlobalAnnos
 import qualified Common.Id as Id
 import qualified Common.Result as Result
+import qualified Data.Graph.Inductive.Graph as Gr
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.Relation as Rel
@@ -68,12 +75,15 @@ genIds :: AS.BASIC_SPEC -> [AS.BASIC_ITEM]
 genIds (AS.Basic_spec paths) = snd $ foldr genIdsPath (0, []) $ AS_Anno.item <$> paths
 
 genIdsPath :: AS.BASIC_ITEM -> (Int, [AS.BASIC_ITEM]) -> (Int, [AS.BASIC_ITEM])
-genIdsPath (AS.Path ns) (genId, agg) = ((: agg) . AS.Path <$> foldr genIdsNode (genId, []) ns)
+genIdsPath (AS.Path ns) (genId, agg) = (: agg) . AS.Path <$> foldr genIdsNode (genId, []) ns
 
 genIdsNode :: AS.Node -> (Int, [AS.Node]) -> (Int, [AS.Node])
-genIdsNode node (genId, agg) = case AS.nesyId node of
-  Nothing -> (genId + 1, node { AS.nesyId = Just $ idToIRI $ Id.mkId [ Id.genNumVar "nesy" genId ] } : agg)
-  _ -> (genId, node : agg)
+genIdsNode node (genId, agg) = (: agg) <$> genIdNode genId node
+
+genIdNode :: Int -> AS.Node -> (Int, AS.Node)
+genIdNode genId node = case AS.nesyId node of
+  Nothing -> (genId + 1, node { AS.nesyId = Just . idToIRI . Id.mkId $ [ Id.genNumVar "nesy" genId ] })
+  Just _ -> (genId, node)
 
 
 -- Helper for makeSig
@@ -94,18 +104,38 @@ retrieveBasicItem x sig = let sigM = Just sig in case x of
         return sig''
 
 
-resolveNode :: Maybe Sign -> AS.Node -> Result.Result ResolvedNode
+{- | @resolveNode sm n@ converts @n@ to a @ResolvedNode@ if it's ontology term
+  is declared in the data ontology @owlClasses s@. If @n@ does not contain an id,
+  @findId@ is used to try to match it.
+   -}
+resolveNode :: Maybe Sign -- ^ 
+  -> AS.Node -- ^ 
+  -> Result.Result ResolvedNode
 resolveNode sigM n@(AS.Node o mi r) = case mi of
     Just i -> case sigM of
       Just sig -> if Set.member o (owlClasses sig) then
           return $ ResolvedNode o i r
         else
-          Result.mkError "Undefined class" o
+          Result.mkError "Undefined class" n
 
       Nothing -> return $ ResolvedNode o i r
-    Nothing -> Result.mkError "Unset nesyid." n
+    Nothing -> case sigM of
+      Just sig -> case findId o $ nodes sig of
+        Just i -> return $ ResolvedNode o i r
+        Nothing -> Result.mkError "Cannot uniquely resolve unset nesyid." n
+      Nothing -> Result.mkError "Unset nesyid." n
 
--- Basic analysis 
+{- | @findId o f@ finds a the id used to refer to @o@ in @f@ if there is exactly
+  one id used in @f@ to refer to @o@ -}
+findId :: Foldable t => IRI -- ^ Ontology term which id should be found
+  -> t ResolvedNode -- ^ List of nodes in which @o@ should be searched
+  -> Maybe IRI
+findId o = foldr (\n' r -> case (r, resolvedOTerm n' == o) of
+          (Nothing, True)  -> Just $ resolvedNeSyId n'
+          (Just i, True) | i /= resolvedNeSyId n' -> Nothing
+          _ -> r) Nothing
+
+-- | Basic analysis 
 basicNeSyPatternsAnalysis
   :: (AS.BASIC_SPEC, Sign.Sign, GlobalAnnos.GlobalAnnos)
   -> Result.Result (AS.BASIC_SPEC,
@@ -114,46 +144,45 @@ basicNeSyPatternsAnalysis
 basicNeSyPatternsAnalysis (spec, sig, _) = do
   let idm = extractIdMap spec
   sign <- makeSig spec sig { idMap = idm }
-  return (spec, ExtSign sign (Set.map (Symbol.Symbol . resolved2Node) $ Sign.nodes sign), [])
+  return (spec, ExtSign sign (Set.map Symbol.Symbol $ Sign.nodes sign), [])
 
 -- | Static analysis for symbol maps
 mkStatSymbMapItem :: Sign -> Maybe Sign -> [AS.SYMB_MAP_ITEMS]
                   -> Result.Result (Map.Map Symbol.Symbol Symbol.Symbol)
-mkStatSymbMapItem _ _ = return . foldr
-  (\(AS.Symb_map_items sitem _) -> Map.union $ statSymbMapItem sitem)
+mkStatSymbMapItem sig sigM = return . foldr 
+  (\(AS.Symb_map_items sitem _) -> Map.union $ statSymbMapItem sig sigM sitem)
   Map.empty
 
-statSymbMapItem :: [AS.SYMB_OR_MAP]
+statSymbMapItem :: Sign.Sign -> Maybe Sign -> [AS.SYMB_OR_MAP]
                  -> Map.Map Symbol.Symbol Symbol.Symbol
-statSymbMapItem = foldl (\mmap x ->
+statSymbMapItem sig sigM = let s = fromMaybe sig sigM in foldr (\x mmap ->
          case x of
-           AS.Symb sym -> Map.insert (symbToSymbol sym) (symbToSymbol sym) mmap
+           AS.Symb sym -> Map.insert (symbToSymbol sig sym) (symbToSymbol sig sym) mmap
            AS.Symb_map s1 s2 _ ->
-               Map.insert (symbToSymbol s1) (symbToSymbol s2) mmap
+               Map.insert (symbToSymbol sig s1) (symbToSymbol s s2) mmap
     ) Map.empty
 
 -- | Retrieve raw symbols
 mkStatSymbItems :: Sign.Sign -> [AS.SYMB_ITEMS] -> Result.Result [Symbol.Symbol]
-mkStatSymbItems sig a = let
-    tokens = [(t, Map.lookup t (Sign.idMap sig), r) | (AS.Symb_items symbs r) <- a, (AS.Symb_id t) <- symbs]
-    errors =  [ Result.mkDiag Result.Error "Unknown symbol" t | (t, Nothing, _) <- tokens]
-  in Result.Result errors (Just [ Symbol.Symbol $ AS.Node t o r | (t, o, r) <- tokens])
+mkStatSymbItems sig a = do
+    resolvedSymbols <- mapM (resolveNode (Just sig)) [t | (AS.Symb_items r _) <- a, (AS.Symb_id t) <- r]
+    return $ Symbol.Symbol <$> resolvedSymbols
 
-symbToSymbol :: AS.SYMB -> Symbol.Symbol
-symbToSymbol (AS.Symb_id tok) =
-    Symbol.Symbol $ AS.Node tok Nothing (Id.getRange tok)
+symbToSymbol :: Sign.Sign -> AS.SYMB -> Symbol.Symbol
+symbToSymbol sig (AS.Symb_id node) = let
+    resolved = resolveNode (Just sig) node
+    nextId = nextGenId sig
+    (_, newId) = genIdNode nextId node
+    nodeM = resultToMaybe $ resolved <|> resolveNode (Just sig) newId
+  in case nodeM of
+  Just n -> Symbol.Symbol n
+  Nothing -> error "NeSyPatterns.Analysis.symbToSymbol: Cannot convert symbol"
 
 
-symbol2ResolvedNode :: (Symbol.Symbol, Symbol.Symbol) -> Maybe (ResolvedNode, ResolvedNode)
-symbol2ResolvedNode (sk, sv) = do
-  k <- Result.resultToMaybe $ resolveNode Nothing $ Symbol.node sk
-  v <- Result.resultToMaybe $ resolveNode Nothing $ Symbol.node sv
-  return (k, v)
-  
 
 makePMapR :: Map.Map Symbol.Symbol Symbol.Symbol
   -> Map.Map ResolvedNode ResolvedNode
-makePMapR imap = Map.fromList . catMaybes . fmap symbol2ResolvedNode . Map.toList $ imap
+makePMapR = Map.fromList . fmap (bimap Symbol.node Symbol.node) . Map.toList
 
 -- | Induce a signature morphism from a source signature and a raw symbol map
 inducedFromMorphism :: Map.Map Symbol.Symbol Symbol.Symbol
@@ -197,68 +226,78 @@ subClassRelation :: [OWL2.Axiom] -> Rel.Relation IRI IRI
 subClassRelation axs = Rel.fromList [ (cl1, cl2) | OWL2.ClassAxiom (OWL2.SubClassOf _ (OWL2.Expression cl1) (OWL2.Expression cl2)) <- axs]
 
 computeGLB :: (Ord a, Show a) => Rel.Relation a a -> Set.Set a -> Maybe a
-computeGLB r s =    
- let getAllBounds aSet = 
-      let aBounds = Set.unions $ map (\x -> Rel.lookupRan x r) $ Set.toList aSet
-      in if Set.isSubsetOf aBounds aSet 
-            then aSet 
+computeGLB r s =
+ let getAllBounds aSet =
+      let aBounds = Set.unions $ map (`Rel.lookupRan` r) $ Set.toList aSet
+      in if Set.isSubsetOf aBounds aSet
+            then aSet
             else getAllBounds $ Set.union aBounds aSet
-     bounds = map getAllBounds $ map (\x -> Set.union (Set.singleton x) $ Rel.lookupRan x r) $ Set.toList s
+     bounds = map (getAllBounds . (\x -> Set.union (Set.singleton x) $ Rel.lookupRan x r)) (Set.toList s)
  in case bounds of
       [] -> Nothing
-      aSet : sets -> 
+      aSet : sets ->
         let intBounds = foldl Set.intersection aSet sets
-        in if null intBounds then Nothing 
-           else let isLB y = let notR = Set.filter (\x -> (Rel.notMember x y r) && x /= y ) intBounds 
+        in if null intBounds then Nothing
+           else let isLB y = let notR = Set.filter (\x -> Rel.notMember x y r && x /= y ) intBounds
                               in Set.null notR
                     gbs = Set.filter isLB intBounds
-                in case Set.toList gbs of 
+                in case Set.toList gbs of
                     [x] -> Just x
-                    _ -> Nothing 
+                    _ -> Nothing
 
 allLabels :: [(Int, Set.Set ResolvedNode)] -- the graph nodes
           -> Map.Map Int (Map.Map IRI IRI) -- the structural morphisms f of the colimit on nodeIds
           -> IRI -- the nodeId N in the colimit 
-          -> Set.Set ResolvedNode 
+          -> Set.Set ResolvedNode
           -- all resolved nodes in the graph whose nodeId is mapped to N 
           -- along the corresponding morphism in f
-allLabels nSets tMaps cId = 
-  foldl (\aSet (iMap, s) -> Set.union aSet $ 
-                            Set.filter (\(ResolvedNode _ nId _) -> cId == Map.findWithDefault nId nId iMap) s) 
-        Set.empty $ map (\(i, s) -> (Map.findWithDefault (error "missing index") i tMaps, s))nSets          
+allLabels nSets tMaps cId =
+  foldl (\aSet (iMap, s) -> Set.union aSet $
+                            Set.filter (\(ResolvedNode _ nId _) -> cId == Map.findWithDefault nId nId iMap) s)
+        Set.empty $ map (\(i, s) -> (Map.findWithDefault (error "missing index") i tMaps, s))nSets
 
 signatureColimit :: Gr Sign.Sign (Int, Morphism.Morphism)
                  -> Result.Result (Sign.Sign, Map.Map Int Morphism.Morphism)
 signatureColimit graph = do
-  let owlGraph = Gr.nmap Sign.owlClasses $ 
-                 Gr.emap (\(x,y) -> (x, Morphism.owlMap y)) graph
+  let owlGraph = Gr.nmap Sign.owlClasses $
+                 Gr.emap (Data.Bifunctor.second Morphism.owlMap) graph
       (owlC, owlMors) = addIntToSymbols $ computeColimitSet owlGraph
-      owlR = colimitRel ( map(\(i, sig) -> (i, Sign.owlTaxonomy sig)) $ Gr.labNodes graph) owlMors
-      graph1 = Gr.nmap (\s -> Set.map Sign.resolvedNeSyId $ Sign.nodes s) $ 
-               Gr.emap (\ (x, m) -> (x, Morphism.morphism2TokenMap m)) graph
+      owlR = colimitRel ( map(second owlTaxonomy) $ Gr.labNodes graph) owlMors
+      graph1 = Gr.nmap (Set.map Sign.resolvedNeSyId . Sign.nodes) $
+               Gr.emap (second Morphism.morphism2TokenMap) graph
       (nodeSet, maps) = addIntToSymbols $ computeColimitSet graph1
   resSet <- foldlM (\aSet aNode -> do
-                        let labSet = Set.map Sign.resolvedOTerm $ 
-                                     allLabels (map (\(i, s) -> (i, Sign.nodes s)) $ Gr.labNodes graph) maps aNode
+                        let labSet = Set.map Sign.resolvedOTerm $
+                                     allLabels (map (second nodes) $ Gr.labNodes graph) maps aNode
                         case computeGLB owlR labSet of
-                          Nothing -> fail "couldn't compute greatest lower bound" 
-                          Just glb -> return $ Set.insert (ResolvedNode glb aNode Id.nullRange) aSet    
+                          Nothing -> fail "couldn't compute greatest lower bound"
+                          Just glb -> return $ Set.insert (ResolvedNode glb aNode Id.nullRange) aSet
                      ) Set.empty nodeSet
   nMaps <- foldlM (\f (i, sig) -> do
                     let fi = Map.findWithDefault (error "missing morphism") i maps
-                    gi <- Morphism.tokenMap2NodeMap (Sign.nodes sig) resSet fi 
-                    return $ Map.insert i gi f  
-                  ) 
+                    gi <- Morphism.tokenMap2NodeMap (Sign.nodes sig) resSet fi
+                    return $ Map.insert i gi f
+                  )
            Map.empty $ Gr.labNodes graph
-  let edgesC = colimitRel ( map(\(i, sig) -> (i, Sign.edges sig)) $ Gr.labNodes graph) nMaps
+  let edgesC = colimitRel ( map(second edges) $ Gr.labNodes graph) nMaps
       colimSig = Sign{ owlClasses = owlC
                      , owlTaxonomy = owlR
                      , nodes = resSet
                      , edges = edgesC
                      , idMap = nesyIdMap resSet}
-      colimMors = Map.fromList $ 
+      colimMors = Map.fromList $
                   map (\(i, sig) -> let oi = Map.findWithDefault (error "owl map") i owlMors
                                         ni = Map.findWithDefault (error "node map") i nMaps
-                                   in (i, Morphism.Morphism sig colimSig oi ni) ) $ Gr.labNodes graph 
+                                   in (i, Morphism.Morphism sig colimSig oi ni) ) $ Gr.labNodes graph
   return (colimSig, colimMors)
 
+nextGenId :: Sign.Sign -> Int
+nextGenId sig = foldr (\n genId -> fromMaybe genId $ do
+      genId' <- genIdFromNode n
+      return $ if genId' > genId then genId' else genId
+    ) 0 (Sign.nodes sig) + 1
+  where
+    genIdFromNode :: Sign.ResolvedNode -> Maybe Int
+    genIdFromNode n = do
+      num <- stripPrefix (Id.genNamePrefix ++ "nesy") . iFragment . Sign.resolvedNeSyId $ n
+      readMaybe num

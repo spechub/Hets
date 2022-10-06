@@ -15,26 +15,26 @@ import Data.Maybe (isJust, catMaybes)
 
 import Text.ParserCombinators.Parsec
 
-symb :: AParser st SYMB
-symb = Symb_id <$> name mempty
+symb :: GA.PrefixMap -> AParser st SYMB
+symb = fmap Symb_id . node
 
-symbItems :: AParser st SYMB_ITEMS
-symbItems = do
-    is <- fst <$> symb `separatedBy` anComma
+symbItems :: GA.PrefixMap -> AParser st SYMB_ITEMS
+symbItems pm = do
+    is <- fst <$> symb pm `separatedBy` anComma
     let range = concatMapRange getRange is
     return $ Symb_items is range
 
-symbOrMap :: AParser st SYMB_OR_MAP
-symbOrMap = do
-    s1 <- symb
-    s2M <- optionMaybe (asKey mapsTo >> symb)
+symbOrMap :: GA.PrefixMap -> AParser st SYMB_OR_MAP
+symbOrMap pm = do
+    s1 <- symb pm
+    s2M <- optionMaybe (asKey mapsTo >> symb pm)
     case s2M of
         Nothing -> return $ Symb s1
         Just s2 -> return $ Symb_map s1 s2 (concatMapRange getRange [s1, s2])
 
-symbMapItems :: AParser st SYMB_MAP_ITEMS
-symbMapItems = do
-    is <- fst <$> symbOrMap `separatedBy` anComma
+symbMapItems :: GA.PrefixMap -> AParser st SYMB_MAP_ITEMS
+symbMapItems pm = do
+    is <- fst <$> symbOrMap pm `separatedBy` anComma
     let range = concatMapRange getRange is
     return $ Symb_map_items is range
 
@@ -51,8 +51,7 @@ uriP :: CharParser st IRI
 uriP = try $ do
   startsWithColon <- isJust <$> (optionMaybe . try . lookAhead $ char ':')
   checkWithUsing (\i -> "keyword \"" ++ showIRI i ++ "\"") uriQ $ \ q -> let p = prefixName q in
-    if not (isAbbrev q) || startsWithColon then True
-    else not (null p) || (iFragment q) `notElem` nesyKeywords
+    (not (isAbbrev q) || startsWithColon) || (not (null p) || iFragment q `notElem` nesyKeywords)
 
 name :: GA.PrefixMap -> AParser st IRI
 name pm = wrapAnnos $ expUriP pm
