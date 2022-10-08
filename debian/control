@@ -3,7 +3,7 @@ Section: misc
 Priority: optional
 Maintainer: Hets packaging team Uni Bremen/Magdeburg <hets-devel@informatik.uni-bremen.de>
 Build-Depends:
- dpkg-dev,
+ dpkg-dev, lsb-release,
  openjdk-7-jdk | openjdk-8-jdk-headless, ant,
  ksh, perl-base, tar, xz-utils, zip,
  texlive-latex-base, texlive-latex-extra, texlive-fonts-recommended, latexmk,
@@ -24,7 +24,7 @@ Build-Depends:
 # Previous two packages are only required to build the desktop version.
  libghc-http-client-dev (>= 0.5.7.1), libghc-http-client-tls-dev (>= 0.3.5.1),
 # Since focal/jammy (0.107.0)
- libghc-network-bsd-dev,
+ libghc-network-bsd-dev, libghc-relation-dev,
 # For testing the build, but not required to build.
  vampire, darwin, eprover
 Build-Conflicts: libghc-gtk3-dev
@@ -85,7 +85,7 @@ Description: The Heterogeneous Tool Set (hets) - server version.
 ############################################################################
 Package: hets-provers
 Architecture: amd64
-Depends:     cvc-47, darwin, e-darwin, e-krhyper, eprover, fact++, hol-light, leo2, maude, minisat, satallax, spass, vampire, yices, z3, zchaff
+Depends:     cvc-47, darwin, e-darwin, e-krhyper, eprover, fact++, hol-light, leo2, maude, minisat, pellet, satallax, spass, vampire, yices, z3, zchaff
 # 	Optional: kodkodi (n/a), twelf (n/a)
 Description: Provers for Hets.
  This meta-package bundles all known provers which might be useful in hets
@@ -94,7 +94,7 @@ Description: Provers for Hets.
 
 Package: hets-desktop-all
 Architecture: amd64
-Depends: hets-desktop, hets-provers, pellet
+Depends: hets-desktop, hets-provers
 #	Optional: isabelle-installer
 # TBD: protege4 (n/a), protege4-plugins (n/a)
 Description: The Heterogeneous Tool Set (hets) - desktop plus.
@@ -103,7 +103,7 @@ Description: The Heterogeneous Tool Set (hets) - desktop plus.
 
 Package: hets-server-all
 Architecture: amd64
-Depends: hets-server, hets-provers, pellet
+Depends: hets-server, hets-provers
 #	Optional: isabelle-installer
 Description: The Heterogeneous Tool Set (hets) - server plus.
  This is a meta-package which pulls in the hets-server as well as all any
