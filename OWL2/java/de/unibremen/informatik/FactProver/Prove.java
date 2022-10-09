@@ -1,6 +1,7 @@
 package de.unibremen.informatik.FactProver;
 
 import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.reasoner.InconsistentOntologyException;
 
 public class Prove {
 
@@ -25,6 +26,9 @@ public class Prove {
 				System.out.println("disproved");
 				System.exit(20);
 			}
+		} catch (InconsistentOntologyException e) {
+			System.out.println("inconsistent");
+			System.exit(30);
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
 			System.exit(1);
