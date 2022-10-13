@@ -261,6 +261,8 @@ analyseOutput err outp =
             (ATPSuccess, Just False, to)
           "Usage:" : "java" : "Pellet" : _ -> (ATPError line, Nothing, to)
           "ERROR:" : _ -> (ATPError line, Nothing, to)
+          "Exception" : "in" : "thread" : "\"main\"" : "org.mindswap.pellet.exceptions.InconsistentOntologyException:" : _ ->
+              (ATPSuccess, Just True, to)
           tm : num : _ | isPrefixOf "Time" tm && all isDigit num ->
             (atp, exCode, read num)
           _ -> (atp, exCode, to)

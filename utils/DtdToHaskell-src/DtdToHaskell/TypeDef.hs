@@ -192,6 +192,7 @@ elementname_at n  = Name n (mangle n ++ "_Attrs") -}
 
 -- | Convert an XML name to a Haskell conid.
 mangle :: String -> String
+mangle [] = []
 mangle (n : ns)
     | isLower n = notPrelude (toUpper n : map decolonify ns)
     | isDigit n = 'I' : n : map decolonify ns
@@ -235,6 +236,7 @@ notPrelude n = n
 
 -- | Convert an XML name to a Haskell varid.
 manglef :: String -> String
+manglef [] = []
 manglef (n : ns)
     | isUpper n = toLower n : map decolonify ns
     | isDigit n = '_' : n : map decolonify ns
