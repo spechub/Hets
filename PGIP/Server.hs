@@ -1147,8 +1147,8 @@ getDGraph opts sessRef dgQ = do
             case Map.lookup q lm of
             Just sess -> increaseUsage sessRef sess -- Return result from cache.
             Nothing -> do
-              (ln, le1) <- if isDgXmlFile opts f cont
-                then readDGXmlR opts f Map.empty
+              (ln, le1) <- if isDgXmlFile opts (filePath f) cont
+                then readDGXmlR opts (filePath f) Map.empty
                 else anaSourceFile logicGraph opts
                   { outputToStdout = False }
                   Set.empty emptyLibEnv emptyDG absolutPathToFile
