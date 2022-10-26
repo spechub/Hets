@@ -497,11 +497,13 @@ derived_sources += $(drifted_files) $(hs_der_files)
 ####################################################################
 .PHONY: all hets-opt hets-optimized hets_server-opt doc docs jars \
 	clean o_clean clean_pretty bin_clean java_clean realclean distclean \
-	annos check test capa hacapa h2h h2hf showKP clean_genRules genRules \
+	annos check test capa hacapa h2h h2hf showKP clean_genRules genRules derived \
     count fromKif release cgi ghci build-hets callghc \
 	get-programatica check_desktop check_server check_cgi \
 	install install-common install-owl-tools archive \
 	build-indep build-arch build binary-indep binary-arch binary
+
+
 
 .SECONDARY: $(generated_rule_files)
 
@@ -509,6 +511,8 @@ derived_sources += $(drifted_files) $(hs_der_files)
 
 # dummy target to force ghc invocation
 callghc:
+
+derived: $(derived_sources)
 
 # some trickery to trigger a full clean if the main target (hets, hets_server)
 # changed since last call
