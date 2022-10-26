@@ -20,7 +20,7 @@ OSVERS := $(shell uname -v 2>/dev/null)
 # what makes comparing version numbers much easier. If any part in the version
 # string is not a number, it gets replaced by '0'.
 # This macro requires features found in shells like ksh93 or bash.
-version = $(shell X="$(1)"; X="$${X##*-}"; A=( $${X//./ } 0 0 0 ); \
+version = $(shell X="$(1)"; X="$${X\#\#*-}"; A=( $${X//./ } 0 0 0 ); \
 	A=( $$( printf "%d %d %d" "$${A[0]}" "$${A[1]}" "$${A[2]}" )); \
 	echo $$(( $${A[0]} * 1000000 + $${A[1]} * 1000 + $${A[2]} )) \
 )
