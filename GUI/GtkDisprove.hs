@@ -108,8 +108,8 @@ disproveAtNode gInfo descr dgraph = do
     Just (dg, lbl, le) -> do
       acquired <- tryLockLocal lbl
       if acquired then do
-      showDisproveGUI gInfo le dg (descr, lbl)
-      unlockLocal lbl
+        showDisproveGUI gInfo le dg (descr, lbl)
+        unlockLocal lbl
       else errorDialogExt "Error" "Proof or disproof window already open"
 
 {- | after results have been collected, this function is called to store

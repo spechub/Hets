@@ -33,6 +33,7 @@ defaultPoolSize = 4
 getConnection :: ( MonadIO m
                  , MonadBaseControl IO m
                  , MonadLogger m
+                 , MonadLoggerIO m
                  , MonadUnliftIO m
                  )
               => DBConfig -> IO ((Pool SqlBackend -> m a) -> m a)
