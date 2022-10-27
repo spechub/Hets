@@ -67,90 +67,88 @@ flag mysql
 
 -- Common shared-properties
 
-Executable hets
+-- Executable hets
+--   -- import: shared-properties
+--   Main-is: hets.hs
+--   default-language: Haskell2010
+--   build-depends:
+--       HTTP >= 4000.2.4
+--     , array >= 0.1.0.0
+--     , aterm >= 0.1.0.1
+--     , base >= 4.0.0.0
+--     , containers >= 0.1.0.1
+--     , directory >= 1.0.0.0
+--     , fgl >= 5.4.1.1
+--     , filepath
+--     , ghc-prim
+--     , transformers >= 0.2.0.0
+--     , mtl >= 2.0.0.0
+--     , network >= 2.1.0.0
+--     , old-time >= 1.0.0.0
+--     , parsec >= 2.1.0.0
+--     , pretty >= 1.0.0.0
+--     , process >= 1.0.1.1
+--     , split >= 0.1.2.3
+--     , time >= 1.1.3
+--     , utf8-string
+--     , bytestring >= 0.9
+--     , xml >= 1.3.7 && < 1.4
+--     , relation
+--   cpp-options: -DCASLEXTENSIONS -DRDFLOGIC
+--   ghc-options: -threaded -fcontext-stack=31
+
+--   if flag(httpclient)
+--     build-depends:
+--         http-client >= 0.5.7.0
+--       , http-client-tls >= 0.3.5.1
+--       , connection >= 0.2.8
+--     cpp-options: -DNO_WGET
+
+--   if flag(uniform)
+--     build-depends:
+--          uni-events
+--        , uni-graphs >= 2.0 && < 3.0
+--        , uni-htk >= 2.0 && < 3.0
+--        , uni-reactor
+--        , uni-uDrawGraph >= 2.0 && < 3.0
+--        , uni-util >= 2.0 && < 3.0
+--     cpp-options: -DUNI_PACKAGE
+
+--   if flag(haxml)
+--     build-depends: HaXml >= 1.24 && < 2
+--     cpp-options: -DHAXML
+
+--   if flag(tar)
+--     build-depends: tar >= 0.3 && < 0.6
+--     cpp-options: -DTAR_PACKAGE
+
+--   if flag(unix)
+--     build-depends: unix >= 2.3.0.0
+--     cpp-options: -DUNIX
+
+--   if flag(haskeline)
+--     build-depends:
+--         haskeline >= 0.6 && < 0.8
+--     cpp-options: -DHASKELINE
+
+--   if flag(hexpat)
+--     build-depends:
+--         hexpat >= 0.11 && < 0.21
+--     cpp-options: -DHEXPAT
+
+--   if flag(gtkglade)
+--     build-depends:
+--         gtk >= 0.11.2
+--     cpp-options: -DGTKGLADE
+
+--   if flag(mysql)
+--     build-depends:
+--       persistent-mysql >= 2.6.1
+--     cpp-options: -DMYSQL
+
+
+Library
   -- import: shared-properties
-  Main-is: hets.hs
-  default-language: Haskell2010
-  build-depends:
-      HTTP >= 4000.2.4
-    , array >= 0.1.0.0
-    , aterm >= 0.1.0.1
-    , base >= 4.0.0.0
-    , containers >= 0.1.0.1
-    , directory >= 1.0.0.0
-    , fgl >= 5.4.1.1
-    , filepath
-    , ghc-prim
-    , transformers >= 0.2.0.0
-    , mtl >= 2.0.0.0
-    , network >= 2.1.0.0
-    , old-time >= 1.0.0.0
-    , parsec >= 2.1.0.0
-    , pretty >= 1.0.0.0
-    , process >= 1.0.1.1
-    , split >= 0.1.2.3
-    , time >= 1.1.3
-    , utf8-string
-    , bytestring >= 0.9
-    , xml >= 1.3.7 && < 1.4
-    , relation
-    , xeno
-  cpp-options: -DCASLEXTENSIONS -DRDFLOGIC
-  ghc-options: -threaded -fcontext-stack=31
-
-  if flag(httpclient)
-    build-depends:
-        http-client >= 0.5.7.0
-      , http-client-tls >= 0.3.5.1
-      , connection >= 0.2.8
-    cpp-options: -DNO_WGET
-
-  if flag(uniform)
-    build-depends:
-         uni-events
-       , uni-graphs >= 2.0 && < 3.0
-       , uni-htk >= 2.0 && < 3.0
-       , uni-reactor
-       , uni-uDrawGraph >= 2.0 && < 3.0
-       , uni-util >= 2.0 && < 3.0
-    cpp-options: -DUNI_PACKAGE
-
-  if flag(haxml)
-    build-depends: HaXml >= 1.24 && < 2
-    cpp-options: -DHAXML
-
-  if flag(tar)
-    build-depends: tar >= 0.3 && < 0.6
-    cpp-options: -DTAR_PACKAGE
-
-  if flag(unix)
-    build-depends: unix >= 2.3.0.0
-    cpp-options: -DUNIX
-
-  if flag(haskeline)
-    build-depends:
-        haskeline >= 0.6 && < 0.8
-    cpp-options: -DHASKELINE
-
-  if flag(hexpat)
-    build-depends:
-        hexpat >= 0.11 && < 0.21
-    cpp-options: -DHEXPAT
-
-  if flag(gtkglade)
-    build-depends:
-        gtk >= 0.11.2
-    cpp-options: -DGTKGLADE
-
-  if flag(mysql)
-    build-depends:
-      persistent-mysql >= 2.6.1
-    cpp-options: -DMYSQL
-
-
-Library hets-api
-  -- import: shared-properties
-  exposed-modules: Driver.Api
   default-language: Haskell2010
   build-depends:
       HTTP >= 4000.2.4
@@ -269,8 +267,9 @@ Library hets-api
       , random >= 1.0
     cpp-options: -DSERVER -DWARP3
     
-  other-modules:
-          ATC.AS_Annotation
+  exposed-modules:
+        Driver.Api
+        ATC.AS_Annotation
         ATC.AS_Architecture
         ATC.AS_Library
         ATC.AS_Structured
