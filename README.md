@@ -48,10 +48,8 @@ or install it easily in a [docker container](https://github.com/spechub/Hets/wik
 
 #### The basic system
 ```
-sudo apt-get install software-properties-common
 sudo dpkg --add-architecture i386			# not needed for hets-server
 sudo apt-add-repository ppa:hets/hets
-sudo apt-get update
 sudo apt-get install hets-desktop
 ```
 
