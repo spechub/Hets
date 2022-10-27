@@ -459,7 +459,7 @@ import Proofs.Global (globSubsume, globDecomp,
 import Proofs.HideTheoremShift
     (interactiveHideTheoremShift, automaticHideTheoremShift,
      automaticHideTheoremShiftFromList)
-import Proofs.InferBasic (basicInferenceNode)
+-- import Proofs.InferBasic (basicInferenceNode)
 import Proofs.Local
     (localInference, locDecomp, locDecompFromList, localInferenceFromList)
 import Proofs.NormalForm
@@ -471,3 +471,6 @@ import Proofs.TheoremHideShift
 import Proofs.TriangleCons 
 import Proofs.VSE 
 import Static.GTheory (BasicProof (..))
+
+
+-- add prove command
