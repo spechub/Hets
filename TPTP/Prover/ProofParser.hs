@@ -18,13 +18,6 @@ module TPTP.Prover.ProofParser ( axiomsFromProofObject
 import TPTP.AS ( Annotated_formula (..)
                , Formula_role (..)
                , Annotations (..)
-               , THF_annotated (..)
-               , TFX_annotated (..)
-               , TFF_annotated (..)
-               , TCF_annotated (..)
-               , FOF_annotated (..)
-               , CNF_annotated (..)
-               , TPI_annotated (..)
                , Source (..)
                , DAG_source (..)
                , External_source (..)
@@ -62,12 +55,14 @@ axiomsFromProofObject =
         Right formula -> (getAxiomName formula ++ axiomNames, parserErrors)
 
     getAxiomName :: Annotated_formula -> [String]
-    getAxiomName formula = case (formulaRole formula, annotations formula) of
-      (Axiom, (Annotations mAnnos)) -> case mAnnos of
-        Just (Source_external (ExtSrc_file (File_source _ (Just fileInfo))),_) ->
-          [show $ pretty fileInfo]
-        _ -> []
-      _ -> []
+    getAxiomName formula
+      | Axiom <- formulaRole formula
+      , Annotations (Just (Source_external (ExtSrc_file (File_source _ (Just fileInfo))),_)) <- annotations formula
+      = [show $ pretty fileInfo]
+      | Axiom <- formulaRole formula
+      = [show $ pretty $ name formula]
+      | otherwise
+      = []
 
 splitFormulae :: String -> [String]
 splitFormulae = init . map (\ s -> s ++ ").\n") . splitOn ").\n"
@@ -80,30 +75,24 @@ parseFormulae text = case runParser annotated_formula () "" text of
                     "Error: " ++ show err ++ "\n")
 
 graphFromProofObject :: [String] -> ProofTree
-graphFromProofObject =
-  ProofGraph . uncurry mkGraph . fst . foldl addNode (([], []), (0, Map.empty)) . map parseFormulae . splitFormulae . unlines
+graphFromProofObject l = case (foldl addNode (([], []), (0, Map.empty,[])) . map parseFormulae . splitFormulae . unlines) l of
+  ((ns, es),(_,_,[])) -> ProofGraph $ mkGraph ns es
+  _ -> ProofTree $ unlines l
   where
     strName :: Name -> String
     strName (NameString t ) = tokStr t
     strName (NameInteger i) = show i
     strSentence :: Annotated_formula -> String
-    strSentence a = case a of
-      AF_THF_Annotated (THF_annotated _ _ f _) -> show f
-      AF_TFX_Annotated (TFX_annotated _ _ f _) -> show f
-      AF_TFF_Annotated (TFF_annotated _ _ f _) -> show f
-      AF_TCF_Annotated (TCF_annotated _ _ f _) -> show f
-      AF_FOF_Annotated (FOF_annotated _ _ f _) -> show f
-      AF_CNF_Annotated (CNF_annotated _ _ f _) -> show f
-      AF_TPI_Annotated (TPI_annotated _ _ f _) -> show f
-
-    addNode :: (([(Int, ProofGraphNode)], [(Int, Int, Int)]), (Int, Map.HashMap String Int))
+    strSentence = show . pretty
+    addNode :: (([(Int, ProofGraphNode)], [(Int, Int, Int)]), (Int, Map.HashMap String Int,[String]))
             -> Either String Annotated_formula
-            -> (([(Int, ProofGraphNode)], [(Int, Int, Int)]), (Int, Map.HashMap String Int))
-    addNode args@((nodeList, edgeList), (index, keyIdMap)) formulaOrError =
-      case formulaOrError of
-        Right formula -> let forName = strName (name formula)
-                             forSentence = strSentence formula
-                             (anons,infrs,newEdges) = extractParentEdges (annotations formula) in
+            -> (([(Int, ProofGraphNode)], [(Int, Int, Int)]), (Int, Map.HashMap String Int,[String]))
+    addNode ((_,_),(_,_,errs)) (Left err) = (([],[]),(0,Map.empty,err:errs))
+    addNode args@((nodeList,edgeList),(index,keyIdMap,[])) (Right formula) =
+      let forName = strName (name formula)
+          forSentence = strSentence formula
+          (anons,infrs,newEdges) = extractParentEdges (annotations formula) in
+          if forName `Map.member` keyIdMap then args else
           -- every formula introduces one sentence node but *at least* one inference node, i.e. its own origin inference and potential anonymous intermediates' inferences
           ((map (\(i,infr)->(i,Left infr)) infrs ++ (index, Right (forName,forSentence)) : nodeList
           -- the origin inference of a sentence with index i has index -i-1
@@ -111,8 +100,8 @@ graphFromProofObject =
           -- the anonymous sentences don't appear as nodes but their respective origin inferences have indices that need to be skipped nonetheless
           ,(index + anons + 1
           -- collecting formula names this way makes it necessary to fold left!
-          , Map.insert forName index keyIdMap ))
-        _ -> args
+          , Map.insert forName index keyIdMap
+          , [] ))
       where
         extractParentEdges :: Annotations -> (Int,[(Int,String)],[(Int, Int, Int)])
         -- Computes number of nameless ancestors, list of all inference nodes and list of all origin relations described in annotation's source record,…
@@ -124,7 +113,7 @@ graphFromProofObject =
         walkInferences (Source_many srcs) child start _ =
           foldr collectInferences (0,[],[]) (zip [0..] srcs)
             where
-              collectInferences :: (Int,Source) (Int,[(Int,String)],[(Int,Int,Int)]) -> (Int,[(Int,String)],[(Int,Int,Int)])
+              collectInferences :: (Int,Source) -> (Int,[(Int,String)],[(Int,Int,Int)]) -> (Int,[(Int,String)],[(Int,Int,Int)])
               -- Collect inferences for each source in the list while letting them know of their legacy (child is theirs), the index from which they may count new intermediate inferences and their place in the argument list
               collectInferences (i,s) (oAnons,oInfr,oEdges) =
                 let (nAnons,nInfr,nEdges) = walkInferences s child (start + oAnons) (Just i)
@@ -148,6 +137,7 @@ graphFromProofObject =
            in (anon+nAnons,(-nextNode-1, tokStr infrule):nInfr,aEdge++nEdges)
         -- If the source is of any other shape, simply record it as origin of child
         walkInferences src child _ _ = (0,[(-child-1,show (toConstr src))],[])
+    addNode a _ = a
 
 -- Find the SZS status line
 findSZS :: [String] -> String
