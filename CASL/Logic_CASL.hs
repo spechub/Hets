@@ -51,6 +51,7 @@ import CASL.Formula (formula)
 
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
+import CASL.Zipperposition
 #endif
 
 import Common.ProofTree
@@ -294,5 +295,9 @@ instance Logic CASL CASL_Sublogics
          addOmdocToTheory CASL = OMI.addOmdocToTheory
          syntaxTable CASL = Just . getSyntaxTable
 #ifdef UNI_PACKAGE
-         provers CASL = [quickCheckProver]
+         provers CASL =
+           [ quickCheckProver
+           , zipperpositionFreeFolProver
+           , zipperpositionCFolProver
+           ]
 #endif
