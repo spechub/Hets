@@ -339,7 +339,6 @@ Library
         CASL.Project
         CASL.Qualify
         CASL.Quantification
-        CASL.QuickCheck
         CASL.ShowMixfix
         CASL.Sign
         CASL.Simplify
@@ -425,7 +424,6 @@ Library
         Common.AnalyseAnnos
         Common.AnnoParser
         Common.AnnoState
-        Common.AutoProofUtils
         Common.Consistency
         Common.ConvertGlobalAnnos
         Common.ConvertLiteral
@@ -440,7 +438,6 @@ Library
         Common.FileType
         Common.GlobalAnnotations
         Common.GraphAlgo
-        Common.GtkGoal
         Common.Http
         Common.IO
         Common.IRI
@@ -487,7 +484,6 @@ Library
         Common.Utils
         Common.XPath
         Common.XUpdate
-        Common.XmlDiff
         Common.XmlExpat
         Common.XmlParser
         CommonLogic.AS_CommonLogic
@@ -549,7 +545,6 @@ Library
         Comorphisms.HasCASL2IsabelleHOL
         Comorphisms.HasCASL2PCoClTyConsHOL
         Comorphisms.HasCASL2THFP_P
-        Comorphisms.HetLogicGraph
         Comorphisms.HolLight2Isabelle
         Comorphisms.Hybrid2CASL
         Comorphisms.KnownProvers
@@ -651,33 +646,8 @@ Library
         FreeCAD.Translator
         FreeCAD.VecTools
         FreeCAD.XMLPrinter
+        GUI.ConsoleUtils
         GUI.GenericATP
-        GUI.Glade.GenericATP
-        GUI.Glade.NodeChecker
-        GUI.Glade.ProverGUI
-        GUI.Glade.TextField
-        GUI.Glade.Utils
-        GUI.GraphAbstraction
-        GUI.GraphDisplay
-        GUI.GraphLogic
-        GUI.GraphMenu
-        GUI.GraphTypes
-        GUI.GtkAddSentence
-        GUI.GtkAutomaticProofs
-        GUI.GtkConsistencyChecker
-        GUI.GtkDisprove
-        GUI.GtkGenericATP
-        GUI.GtkProverGUI
-        GUI.GtkUtils
-        GUI.HTkProofDetails
-        GUI.HTkUtils
-        GUI.ProverGUI
-        GUI.ShowGraph
-        GUI.ShowLibGraph
-        GUI.ShowLogicGraph
-        GUI.ShowRefTree
-        GUI.Taxonomy
-        GUI.UDGUtils
         GUI.Utils
         HasCASL.ATC_HasCASL
         HasCASL.As
@@ -777,7 +747,6 @@ Library
         Logic.Logic
         Logic.Modification
         Logic.Morphism
-        Logic.PrintLogics
         Logic.Prover
         MMT.Hets2mmt
         Maude.AS_Maude
@@ -875,8 +844,6 @@ Library
         OWL2.XML
         OWL2.XMLConversion
         OWL2.XMLKeywords
-        PGIP.XMLparsing
-        PGIP.XMLstate
         Persistence.DBConfig
         Persistence.Database
         Persistence.DatabaseConnection
@@ -886,6 +853,7 @@ Library
         Persistence.FileVersion
         Persistence.LogicGraph
         Persistence.MySQL
+        Persistence.PostgreSQL
         Persistence.Range
         Persistence.SQLite
         Persistence.Schema
@@ -909,7 +877,6 @@ Library
         Proofs.Freeness
         Proofs.Global
         Proofs.HideTheoremShift
-        Proofs.InferBasic
         Proofs.Local
         Proofs.NormalForm
         Proofs.QualifyNames
@@ -1001,7 +968,6 @@ Library
         Static.ArchDiagram
         Static.CheckGlobalContext
         Static.ComputeTheory
-        Static.ConsInclusions
         Static.DGTranslation
         Static.DevGraph
         Static.DgUtils
@@ -1075,9 +1041,7 @@ Library
         TPTP.StaticAnalysis
         TPTP.Sublogic
         TPTP.Translate
-        Taxonomy.AbstractGraphView
         Taxonomy.MMiSSOntology
-        Taxonomy.MMiSSOntologyGraph
         Temporal.AS_BASIC_Temporal
         Temporal.ATC_Temporal
         Temporal.Logic_Temporal

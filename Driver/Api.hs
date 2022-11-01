@@ -238,7 +238,7 @@ data BasicProof =
 {- | applies basic inference to a given node. The result is a theory which is
      either a model after a consistency check or a new theory for the node
      label -}
- , basicInferenceNode -- :: LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
+--  , basicInferenceNode -- :: LogicGraph -> LibName -> DGraph -> LNode DGNodeLab
                       --     -> LibEnv -> IORef IntState
                       --     -> IO (Result G_theory)
 -- | applies basic inference with VSE to a given node and whole import tree above
