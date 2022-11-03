@@ -470,7 +470,7 @@ import Proofs.TheoremHideShift
     (theoremHideShift, theoremHideShiftFromList)
 import Proofs.TriangleCons 
 import Proofs.VSE 
-import Static.GTheory (BasicProof (..))
+import Static.GTheory (BasicProof)
 
 
 -- add prove command

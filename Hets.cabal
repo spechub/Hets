@@ -974,7 +974,6 @@ Library
         Static.DotGraph
         Static.FromXml
         Static.FromXmlUtils
-        Static.GTheory
         Static.History
         Static.PrintDevGraph
         Static.ToJson
@@ -1064,3 +1063,5 @@ Library
         VSE.Parse
         VSE.Prove
         VSE.ToSExpr
+  other-modules:
+        Static.GTheory
