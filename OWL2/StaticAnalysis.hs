@@ -38,7 +38,6 @@ import Control.Monad
 import qualified Control.Monad.Fail as Fail
 
 import Logic.Logic
-import Debug.Trace
 
 -- | Error messages for static analysis
 failMsg :: AS.Entity -> AS.ClassExpression -> Result a
@@ -621,9 +620,7 @@ noDecl ax = case ax of
 -- | corrects the axioms according to the signature
 createAxioms :: Sign -> [AS.Axiom] -> Result ([Named AS.Axiom], [AS.Axiom])
 createAxioms s fl = do
-    traceM "-- createAxioms"
     cf <- correctFrames s $ map (function Expand $ StringMap $ prefixMap s) fl
-    traceM "-- after correctFrames"
     return (map anaAxiom . filter noDecl $ cf, cf)
 
 check1Prefix :: Maybe IRI -> IRI -> Bool
@@ -660,11 +657,8 @@ basicOWL2Analysis (inOnt, inSign, ga) = do
         axs = AS.axioms $ AS.ontology odoc
         accSign = execState (createSign axs) inSign { prefixMap = AS.changePrefixMapTypeToString pm }
         syms = Set.difference (symOf accSign) $ symOf inSign
-    traceM "-- basicOWL2Analysis"
     (axl, nfl) <- createAxioms accSign axs
-    traceM "-- after createAxioms"
     newdoc <- newODoc odoc nfl
-    traceM "-- after newODoc"
     return (newdoc
       , ExtSign accSign {labelMap = generateLabelMap accSign nfl} syms, axl)
 
