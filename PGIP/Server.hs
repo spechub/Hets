@@ -716,9 +716,11 @@ mkFiletypeResponse opts libIri respond = do
   res <- liftIO $ getContentAndFileType opts libIri
   respond $ case res of
     Left err -> mkResponse textC status422 err
-    Right (mr, _, fn, _) -> case mr of
-      Nothing -> mkResponse textC status422 $ fn ++ ": unknown file type"
-      Just r -> mkOkResponse textC $ fn ++ ": " ++ r
+    Right (mr, _, fInfo, _) -> 
+      let fn = filePath fInfo in
+      case mr of
+        Nothing -> mkResponse textC status422 $ fn ++ ": unknown file type"
+        Just r -> mkOkResponse textC $ fn ++ ": " ++ r
 
 menuTriple :: String -> String -> String -> Element
 menuTriple q d c = unode "triple"
@@ -1145,8 +1147,8 @@ getDGraph opts sessRef dgQ = do
             case Map.lookup q lm of
             Just sess -> increaseUsage sessRef sess -- Return result from cache.
             Nothing -> do
-              (ln, le1) <- if isDgXmlFile opts f cont
-                then readDGXmlR opts f Map.empty
+              (ln, le1) <- if isDgXmlFile opts (filePath f) cont
+                then readDGXmlR opts (filePath f) Map.empty
                 else anaSourceFile logicGraph opts
                   { outputToStdout = False }
                   Set.empty emptyLibEnv emptyDG absolutPathToFile

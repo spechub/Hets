@@ -139,8 +139,7 @@ computeLabelTheory le ln dg (n, lbl) = let
   localTh = dgn_theory lbl 
   lblName = dgn_libname lbl 
   lblNode = dgn_node lbl 
- in
-    fmap reduceTheory . maybeResult $ if isDGRef lbl then
+ in fmap reduceTheory . maybeResult $ if isDGRef lbl then
         case Map.lookup lblName le of
           Nothing -> return localTh -- do not crash here
           Just dg' -> do
