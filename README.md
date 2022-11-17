@@ -48,12 +48,17 @@ or install it easily in a [docker container](https://github.com/spechub/Hets/wik
 
 #### The basic system
 ```
-sudo apt-get install software-properties-common
 sudo dpkg --add-architecture i386			# not needed for hets-server
 sudo apt-add-repository ppa:hets/hets
-sudo apt-get update
 sudo apt-get install hets-desktop
 ```
+#### The basic system (Ubuntu jammy 22.04)
+```
+sudo dpkg --add-architecture i386			# not needed for hets-server
+sudo apt-add-repository -S "deb [trusted=yes] http://pkg.cs.ovgu.de/LNF/linux/ubuntu 22.04/"
+sudo apt-get install hets-desktop
+```
+
 
 * for using Hets as a server providing a RESTful interface, use hets-server. This is a smaller version without GUI dependencies. Note that also hets-desktop can be used as as server.
 
