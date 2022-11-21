@@ -268,7 +268,10 @@ Library
     cpp-options: -DSERVER -DWARP3
     
   exposed-modules:
-        Driver.Api
+        Hets
+        -- Hets.Api
+        Hets.Commands
+        Hets.ProveCommand
         ATC.AS_Annotation
         ATC.AS_Architecture
         ATC.AS_Library
