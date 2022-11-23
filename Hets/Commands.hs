@@ -1,8 +1,37 @@
-module Hets.Commands where
+module Hets.Commands (
+   automatic
+   , globalSubsume
+   , globalDecomposition
+   , localInference
+   , localDecomposition
+   , compositionProveEdges
+   , conservativity
+   , automaticHideTheoremShift
+   , theoremHideShift
+   , computeColimit
+   , normalForm
+   , triangleCons
+   , freeness
+   , libFlatImports
+   , libFlatDUnions
+   , libFlatRenamings
+   , libFlatHiding
+   , libFlatHeterogen
+   , qualifyLibEnv
+   , loadLibrary
+   , getGraphForLibrary
+   , getNodesFromDevelopmentGraph
+   , getLNodesFromDevelopmentGraph
+
+   -- Hets.ProveCommands
+   , usableProvers
+   , autoProveNode
+   , proveNode 
+) where
 
 import qualified Data.Map as Map
 
-import Control.Monad.Trans
+import Control.Monad.Trans (lift)
 
 import Common.Result (Result(..), fatal_error, maybeToResult, justHint)
 import Common.Id(nullRange)
@@ -12,13 +41,12 @@ import Common.ResultT
 import Interfaces.CmdAction
 import Interfaces.Command (GlobCmd(..), SelectCmd (Lib))
 
+import Hets.ProveCommands
 
 import Driver.AnaLib (anaLib)
 import Driver.Options (HetcatsOpts)
 
-import Static.DevGraph (LibEnv)
-
-import Hets.ProveCommand
+import Static.DevGraph (LibEnv, DGraph, lookupDGraph, DGNodeLab, labNodesDG)
 
 err :: String -> Result a
 err s = fatal_error s nullRange
@@ -101,14 +129,28 @@ qualifyLibEnv :: LibName -> LibEnv -> Result LibEnv
 qualifyLibEnv = globalCommandR QualifyNames
 
 
-loadLibrary :: FilePath -> HetcatsOpts -> ResultT IO (LibName, LibEnv)
-loadLibrary file opts = do
+loadLibrary :: FilePath -> HetcatsOpts -> IO (Result (LibName, LibEnv))
+loadLibrary file opts = runResultT $ do
    analysisResult <- lift $ anaLib opts file
    case analysisResult of
     Nothing -> liftR $ err ("Unable to load library " ++ file)
     Just lib -> return lib
 
+-- | @getDevelopmentGraphByName name env@ returns the development graph for the
+--   library @name@ in the environment @env@.
+getGraphForLibrary :: LibName -> LibEnv -> DGraph
+getGraphForLibrary = lookupDGraph
 
+-- | @getNodesFromDevelopmentGraph graph@ returns the nodes of the development
+--   graph @graph@
+getNodesFromDevelopmentGraph :: DGraph -> [DGNodeLab]
+getNodesFromDevelopmentGraph = fmap snd . labNodesDG
+
+
+-- | @getNodesFromDevelopmentGraph graph@ returns the nodes of the development
+--   graph @graph@
+getLNodesFromDevelopmentGraph :: DGraph -> [LNode DGNodeLab]
+getLNodesFromDevelopmentGraph = labNodesDG
 
 
 
