@@ -49,8 +49,10 @@ import Hets.ProveCommands
 import Driver.AnaLib (anaLib)
 import Driver.Options (HetcatsOpts)
 
+import Logic.Comorphism (AnyComorphism)
 import Static.DevGraph (LibEnv, DGraph, lookupDGraph, DGNodeLab, labNodesDG)
 import Static.GTheory (G_theory, translateG_theory)
+
 
 err :: String -> Result a
 err s = fatal_error s nullRange
