@@ -2,6 +2,7 @@ module Hets.ProveCommands (
     usableProvers
     , autoProveNode
     , proveNode
+    , checkConsistency
 ) where
 
 import Data.Functor ()
@@ -16,9 +17,21 @@ import Comorphisms.LogicGraph (logicGraph)
 import Logic.Comorphism (AnyComorphism)
 import Logic.Prover (ProofStatus, ProverKind (..))
 import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, getUsableProvers, G_cons_checker (..), getProverName, getConsCheckers)
-import Static.DevGraph (LibEnv, DGraph, lookupDGraph, DGNodeLab, labNodesDG)
+import Static.DevGraph (LibEnv, DGraph, lookupDGraph, DGNodeLab, labNodesDG, ProofHistory)
 import Static.GTheory (G_theory (..), sublogicOfTh, proveSens)
 import Data.Graph.Inductive (LNode)
+import Proofs.ConsistencyCheck (ConsistencyStatus, consistencyCheck)
+import Logic.Logic (Logic(cons_checkers))
+import Interfaces.Utils (checkConservativityNode)
+
+-- TODO: How to
+availableComorphisms :: G_theory -> [AnyComorphism]
+availableComorphisms _ = []
+
+-- TODO: How to
+usableConsistencyCheckers :: [AnyComorphism] -> IO [(G_cons_checker, AnyComorphism)]
+usableConsistencyCheckers = getConsCheckers
+
 -- | @usableProvers theory@ checks for usable provers available on the machine
 usableProvers :: G_theory -> IO [(G_prover, AnyComorphism)]
 usableProvers th = getUsableProvers ProveCMDLautomatic (sublogicOfTh th) logicGraph
@@ -66,3 +79,10 @@ proveNode sub timeout goals axioms theory pc = snd <$>
     autoProofAtNode sub timeout goals axioms theory pc
 
 
+checkConsistency :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
+                 -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
+checkConsistency = consistencyCheck
+
+checkConservativityNode ::LNode DGNodeLab -> LibEnv -> LibName
+  -> IO (String, LibEnv, ProofHistory)
+checkConservativityNode = Interfaces.Utils.checkConservativityNode False
