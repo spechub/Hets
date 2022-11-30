@@ -30,6 +30,7 @@ module Hets.Commands (
 ) where
 
 import qualified Data.Map as Map
+import Data.Graph.Inductive.Graph (LNode)
 
 import Control.Monad.Trans (lift)
 
