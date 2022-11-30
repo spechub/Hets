@@ -269,7 +269,7 @@ Library
     
   exposed-modules:
         Hets
-        -- Hets.Api
+        Hets.Python
         Hets.Commands
         Hets.ProveCommands
         ATC.AS_Annotation
