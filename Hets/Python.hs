@@ -41,6 +41,8 @@ module Hets.Python (
 
 where
 
+import Data.Functor
+
 import qualified Hets.Commands as HC
 import qualified Hets.ProveCommands as HP
 
@@ -52,7 +54,6 @@ import Logic.Comorphism (AnyComorphism)
 import Common.ResultT (ResultT (runResultT))
 import Logic.Prover (ProofStatus)
 import Common.Result (Result)
-import qualified OMDoc.OMDocInterface as HC
 
 -- TODO: Wrap all function calls that require existential datatypes like G_theory
 
@@ -93,5 +94,5 @@ autoProveNode :: PyTheory -> Maybe PyProver -> Maybe PyComorphism -> IO (Result 
 autoProveNode (PyTheory theory) prover comorphism = runResultT $
     HP.autoProveNode theory ((\(PyProver p) -> p) <$> prover) ((\(PyComorphism c) -> c) <$> comorphism)
 
-translateTheory :: PyTheory -> PyComorphism -> Result PyTheory
-translateTheory (PyTheory theory) (PyComorphism comorphism) = fmap PyTheory . HC.translateTheory
+translateTheory :: PyComorphism -> PyTheory -> Result PyTheory
+translateTheory (PyComorphism comorphism) (PyTheory theory) = HC.translateTheory comorphism theory <&> PyTheory
