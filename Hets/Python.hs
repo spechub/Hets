@@ -6,6 +6,7 @@ module Hets.Python (
     , getTheoryFromNode
     , usableProvers
     , autoProveNode
+    , translateTheory
 
     -- Unchanged re-export from Hets.ProveCommands
     , HP.proveNode
@@ -35,6 +36,7 @@ module Hets.Python (
     , HC.getGraphForLibrary
     , HC.getNodesFromDevelopmentGraph
     , HC.getLNodesFromDevelopmentGraph
+    , HC.showTheory
 )
 
 where
@@ -45,16 +47,34 @@ import qualified Hets.ProveCommands as HP
 import qualified Static.GTheory as GT
 import Static.DevGraph (DGNodeLab (dgn_theory))
 import Proofs.AbstractState (G_prover, ProofState, G_proof_tree)
+import qualified Proofs.AbstractState
 import Logic.Comorphism (AnyComorphism)
 import Common.ResultT (ResultT (runResultT))
 import Logic.Prover (ProofStatus)
 import Common.Result (Result)
+import qualified OMDoc.OMDocInterface as HC
 
 -- TODO: Wrap all function calls that require existential datatypes like G_theory
 
 data PyTheory = PyTheory GT.G_theory
 data PyProver = PyProver G_prover
 data PyComorphism = PyComorphism AnyComorphism
+
+instance Show PyTheory where
+    show (PyTheory t) = "PyTheory "++ show t
+
+instance Show PyProver where
+    show (PyProver p) = "PyProver "++ show p
+
+instance Show PyComorphism where
+    show (PyComorphism c) = "PyComorphism "++ show c
+
+getProverName :: PyProver -> String
+getProverName (PyProver p) = Proofs.AbstractState.getProverName p
+
+
+getComorphismName :: PyComorphism -> String
+getComorphismName (PyComorphism c) = show c
 
 getTheoryFromNode :: DGNodeLab -> PyTheory
 getTheoryFromNode = PyTheory . dgn_theory
@@ -72,3 +92,6 @@ usableProvers (PyTheory th) = do
 autoProveNode :: PyTheory -> Maybe PyProver -> Maybe PyComorphism -> IO (Result (ProofState, [ProofStatus G_proof_tree]))
 autoProveNode (PyTheory theory) prover comorphism = runResultT $
     HP.autoProveNode theory ((\(PyProver p) -> p) <$> prover) ((\(PyComorphism c) -> c) <$> comorphism)
+
+translateTheory :: PyTheory -> PyComorphism -> Result PyTheory
+translateTheory (PyTheory theory) (PyComorphism comorphism) = fmap PyTheory . HC.translateTheory

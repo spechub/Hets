@@ -22,6 +22,8 @@ module Hets.Commands (
    , getGraphForLibrary
    , getNodesFromDevelopmentGraph
    , getLNodesFromDevelopmentGraph
+   , translateTheory
+   , showTheory
 
    -- Hets.ProveCommands
    , usableProvers
@@ -48,6 +50,7 @@ import Driver.AnaLib (anaLib)
 import Driver.Options (HetcatsOpts)
 
 import Static.DevGraph (LibEnv, DGraph, lookupDGraph, DGNodeLab, labNodesDG)
+import Static.GTheory (G_theory, translateG_theory)
 
 err :: String -> Result a
 err s = fatal_error s nullRange
@@ -153,8 +156,11 @@ getNodesFromDevelopmentGraph = fmap snd . labNodesDG
 getLNodesFromDevelopmentGraph :: DGraph -> [LNode DGNodeLab]
 getLNodesFromDevelopmentGraph = labNodesDG
 
+translateTheory :: AnyComorphism -> G_theory -> Result G_theory
+translateTheory = mapG_theory False
 
-
+showTheory :: G_theory -> String
+showTheory = showDoc
 
 
 
