@@ -51,7 +51,8 @@ import Driver.Options (HetcatsOpts)
 
 import Logic.Comorphism (AnyComorphism)
 import Static.DevGraph (LibEnv, DGraph, lookupDGraph, DGNodeLab, labNodesDG)
-import Static.GTheory (G_theory, translateG_theory)
+import Static.GTheory (G_theory, mapG_theory)
+import Common.DocUtils (Pretty(pretty))
 
 
 err :: String -> Result a
@@ -162,7 +163,7 @@ translateTheory :: AnyComorphism -> G_theory -> Result G_theory
 translateTheory = mapG_theory False
 
 showTheory :: G_theory -> String
-showTheory = showDoc
+showTheory = show . pretty
 
 
 
