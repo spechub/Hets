@@ -20,6 +20,7 @@ module CommonLogic.Analysis
     , inducedFromMorphism
     , inducedFromToMorphism
     , signColimit
+    , convertBasicTheory
     )
     where
 
@@ -397,3 +398,9 @@ signColimit diag = do
                            }
                             in Map.insert x m Map.empty) $ labNodes diag
  return (sig, mors)
+
+convertBasicTheory :: (Sign.Sign, [AS_Anno.Named AS.TEXT_META]) -> AS.BASIC_SPEC
+convertBasicTheory (_, l) =
+  AS.Basic_spec $
+    map AS_Anno.emptyAnno $
+      [AS.Axiom_items $ map (AS_Anno.emptyAnno . AS_Anno.sentence) $ l]
