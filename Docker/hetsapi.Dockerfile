@@ -30,15 +30,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y openjdk-8-jdk-headless ant cab
  libghc-persistent-mysql-dev\
  libghc-hexpat-dev\
  libghc-aterm-dev
-# libghc-uni-udrawgraph-dev\
-# libghc-gtk-dev
 
-#RUN apt install -y libpcre3-dev
-#RUN cabal update
-#RUN sed -i '199 i \ \ \ \ , gtk' /hets/Hets.cabal
-#RUN head -n 271 Hets.cabal > Hets.cabal.tmp && mv Hets.cabal.tmp Hets.cabal
+ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
+
 RUN git pull origin
 RUN make derived
-#RUN cabal build hets-api
 RUN cabal install --enable-shared --verbose --package-db=/lib/ghc/package.conf.d
-#RUN ghc --make -dynamic -shared -fPIC -DGTKGLADE Driver/Api.hs -ohi -o libhets.so -c
