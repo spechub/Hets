@@ -1,8 +1,11 @@
 module Hets.ProveCommands (
-    usableProvers
+    availableComorphisms
+    , usableProvers
+    , usableConsistencyCheckers
     , autoProveNode
     , proveNode
     , checkConsistency
+    , checkConservativityNode
 ) where
 
 import Data.Functor ()
@@ -22,15 +25,17 @@ import Static.GTheory (G_theory (..), sublogicOfTh, proveSens)
 import Data.Graph.Inductive (LNode)
 import Proofs.ConsistencyCheck (ConsistencyStatus, consistencyCheck)
 import Logic.Logic (Logic(cons_checkers))
-import Interfaces.Utils (checkConservativityNode)
+import qualified Interfaces.Utils (checkConservativityNode)
+import Logic.Grothendieck (findComorphismPaths)
 
--- TODO: How to
+-- | @availableComorphisms theory@ yields all available comorphisms for @theory@
 availableComorphisms :: G_theory -> [AnyComorphism]
-availableComorphisms _ = []
+availableComorphisms = findComorphismPaths logicGraph . sublogicOfTh
 
--- TODO: How to
-usableConsistencyCheckers :: [AnyComorphism] -> IO [(G_cons_checker, AnyComorphism)]
-usableConsistencyCheckers = getConsCheckers
+-- | @usableConsistencyCheckers theory@ checks for usable consistencey checkers  
+--   for @theory@ available on the machine
+usableConsistencyCheckers :: G_theory -> IO [(G_cons_checker, AnyComorphism)]
+usableConsistencyCheckers = getConsCheckers . availableComorphisms
 
 -- | @usableProvers theory@ checks for usable provers available on the machine
 usableProvers :: G_theory -> IO [(G_prover, AnyComorphism)]
@@ -38,8 +43,8 @@ usableProvers th = getUsableProvers ProveCMDLautomatic (sublogicOfTh th) logicGr
 
 -- | @proveNode theory prover comorphism@ proves all goals in @theory@ using all
 --   all axioms in @theory@. If @prover@ or @comorphism@ is @Nothing@ the first
---   usable prover or comorphism is used. 
-autoProveNode :: G_theory -> Maybe G_prover -> Maybe AnyComorphism -> ResultT IO (ProofState, [ProofStatus G_proof_tree])
+--   usable prover or comorphism, respectively, is used. 
+autoProveNode :: G_theory -> Maybe G_prover -> Maybe AnyComorphism -> ResultT IO (G_theory, ProofState, [ProofStatus G_proof_tree])
 autoProveNode theory proverM comorphismM = do
     (prover, comorphism) <- case (proverM, comorphismM) of
         (Just prover, Just comorphism) -> return (prover, comorphism)
@@ -54,7 +59,8 @@ autoProveNode theory proverM comorphismM = do
             return (prover, comorphism)
         (Nothing, Nothing) -> head <$> lift (usableProvers theory)
 
-    snd <$> autoProofAtNode True 600 [] [] theory (prover, comorphism)
+    ((th, out), (state, steps)) <- autoProofAtNode True 600 [] [] theory (prover, comorphism)
+    return (th, state, steps)
 
 -- | @proveNode sub timeout goals axioms theory (prover, comorphism)@ proves
 --   @goals@ with @prover@ after applying @comorphism@. If @goals@ is empty all
@@ -78,10 +84,15 @@ proveNode ::
 proveNode sub timeout goals axioms theory pc = snd <$>
     autoProofAtNode sub timeout goals axioms theory pc
 
-
+-- | @checkConsistency includeTheorems cc comorphism libname libenv 
+--   dg node timeout@ first applies the comorphism @cc@ to the theory at @node@
+--   in the developmentGraph @dg@ inside the library @libname@ in the environment
+--   @libenv@, then checks the consistency using the consistency checker @cc@ 
+--   with a timeout of @timeout@ seconds.
 checkConsistency :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
 checkConsistency = consistencyCheck
+
 
 checkConservativityNode ::LNode DGNodeLab -> LibEnv -> LibName
   -> IO (String, LibEnv, ProofHistory)
