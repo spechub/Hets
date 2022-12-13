@@ -26,9 +26,13 @@ module Hets.Commands (
    , showTheory
 
    -- Hets.ProveCommands
-   , usableProvers
-   , autoProveNode
-   , proveNode 
+   , HPC.availableComorphisms
+   , HPC.usableProvers
+   , HPC.usableConsistencyCheckers
+   , HPC.autoProveNode
+   , HPC.proveNode
+   , HPC.checkConsistency
+   , HPC.checkConservativityNode 
 ) where
 
 import qualified Data.Map as Map
@@ -39,12 +43,12 @@ import Control.Monad.Trans (lift)
 import Common.Result (Result(..), fatal_error, maybeToResult, justHint)
 import Common.Id(nullRange)
 import Common.LibName (LibName)
-import Common.ResultT
+import Common.ResultT (runResultT, liftR)
 
-import Interfaces.CmdAction
+import Interfaces.CmdAction (globLibAct, globLibResultAct)
 import Interfaces.Command (GlobCmd(..), SelectCmd (Lib))
 
-import Hets.ProveCommands
+import qualified Hets.ProveCommands as HPC
 
 import Driver.AnaLib (anaLib)
 import Driver.Options (HetcatsOpts)
