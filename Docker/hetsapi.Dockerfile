@@ -35,4 +35,9 @@ ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 
 RUN git pull origin
 RUN make derived
-RUN cabal install --enable-shared --verbose --package-db=/lib/ghc/package.conf.d
+
+RUN runhaskell Setup.hs configure --ghc --disable-profiling --disable-shared --package-db=/var/lib/ghc/package.conf.d --libdir=./Hets --disable-benchmarks lib:hets-api
+RUN runhaskell Setup.hs build
+RUN runhaskell Setup.hs register --gen-pkg-config=/var/lib/ghc/package.conf.d/hets-api-0.100.0
+
+# RUN cabal install --enable-shared --verbose --package-db=/lib/ghc/package.conf.d
