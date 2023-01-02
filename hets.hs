@@ -94,7 +94,7 @@ processFile opts file =
                 st <- cmdlProcessFile doExit opts file
                 liftM (getMaybeLib . intState)
                  $ (if interactive opts then cmdlRunShell else return) st
-           else read_and_analyse file opts
+           else readAndAnalyse file opts
     case res of
       Just (ln, nEnv) ->
         writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv

@@ -141,11 +141,11 @@ qualifyLibEnv = globalCommandR QualifyNames
 
 
 loadLibrary :: FilePath -> HetcatsOpts -> IO (Result (LibName, LibEnv))
-loadLibrary file opts = runResultT $ do
-   analysisResult <- lift $ anaLib opts file
+loadLibrary file opts = do
+   analysisResult <- readAndAnalyse file opts
    case analysisResult of
-    Nothing -> liftR $ err ("Unable to load library " ++ file)
-    Just lib -> return lib
+    Nothing -> return $ fail  ("Unable to load library " ++ file)
+    Just lib -> return $ return lib
 
 -- | @getDevelopmentGraphByName name env@ returns the development graph for the
 --   library @name@ in the environment @env@.

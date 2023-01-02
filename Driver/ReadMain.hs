@@ -31,8 +31,8 @@ import HolLight.HolLight2DG (anaHolLightFile)
 import Isabelle.Isa2DG (anaIsaFile, anaThyFile)
 #endif
 
-read_and_analyse :: String -> HetcatsOpts -> IO (Maybe (LibName, LibEnv))
-read_and_analyse file opts = 
+readAndAnalyse :: FilePath -> HetcatsOpts -> IO (Maybe (LibName, LibEnv))
+readAndAnalyse file opts = 
     let doExit = guiType opts == UseGui in case guess file (intype opts) of
 #ifdef PROGRAMATICA
       HaskellIn -> putStr "this is HaskellIn" >> anaHaskellFile opts file
