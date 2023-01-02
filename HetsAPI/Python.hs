@@ -1,4 +1,4 @@
-module Hets.Python (
+module HetsAPI.Python (
     PyTheory
     , PyComorphism
     , PyProver
@@ -46,8 +46,8 @@ where
 
 import Data.Functor
 
-import qualified Hets.Commands as HC
-import qualified Hets.ProveCommands as HP
+import qualified HetsAPI.Commands as HC
+import qualified HetsAPI.ProveCommands as HP
 
 import qualified Static.GTheory as GT
 import Static.DevGraph (DGNodeLab (dgn_theory), LibEnv, DGraph)

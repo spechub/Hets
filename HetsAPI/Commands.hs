@@ -1,4 +1,4 @@
-module Hets.Commands (
+module HetsAPI.Commands (
    automatic
    , globalSubsume
    , globalDecomposition
@@ -48,7 +48,7 @@ import Common.ResultT (runResultT, liftR)
 import Interfaces.CmdAction (globLibAct, globLibResultAct)
 import Interfaces.Command (GlobCmd(..), SelectCmd (Lib))
 
-import qualified Hets.ProveCommands as HPC
+import qualified HetsAPI.ProveCommands as HPC
 
 import Driver.AnaLib (anaLib)
 import Driver.Options (HetcatsOpts)
