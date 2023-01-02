@@ -1,4 +1,4 @@
-module Hets.ProveCommands (
+module HetsAPI.ProveCommands (
     availableComorphisms
     , usableProvers
     , usableConsistencyCheckers

@@ -1,5 +1,5 @@
-module Hets (
-    -- Hets.Commands
+module HetsAPI (
+    -- HetsAPI.Commands
     automatic
    , globalSubsume
    , globalDecomposition
@@ -28,4 +28,4 @@ module Hets (
    , proveNode 
 ) where
 
-import Hets.Commands
+import HetsAPI.Commands

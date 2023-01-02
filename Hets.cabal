@@ -268,10 +268,10 @@ Library hets-api
     cpp-options: -DSERVER -DWARP3
     
   exposed-modules:
-        Hets
-        Hets.Python
-        Hets.Commands
-        Hets.ProveCommands
+        HetsAPI
+        HetsAPI.Python
+        HetsAPI.Commands
+        HetsAPI.ProveCommands
         ATC.AS_Annotation
         ATC.AS_Architecture
         ATC.AS_Library
