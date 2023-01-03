@@ -1,5 +1,5 @@
 
-FROM ubuntu:22.04
+FROM ubuntu:lts
 
 RUN apt update
 RUN apt upgrade -y

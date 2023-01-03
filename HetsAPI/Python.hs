@@ -49,18 +49,25 @@ import Data.Functor
 import qualified HetsAPI.Commands as HC
 import qualified HetsAPI.ProveCommands as HP
 
-import qualified Static.GTheory as GT
-import Static.DevGraph (DGNodeLab (dgn_theory), LibEnv, DGraph)
-import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, G_cons_checker)
-import qualified Proofs.AbstractState
-import Logic.Comorphism (AnyComorphism)
-import Common.ResultT (ResultT (runResultT))
-import Logic.Prover (ProofStatus)
-import Common.Result (Result)
-import Data.Bifunctor (bimap)
+import Common.DocUtils (pretty)
+import Common.ExtSign (plainSign)
 import Common.LibName (LibName)
-import Proofs.ConsistencyCheck (ConsistencyStatus)
+import Common.Result (Result)
+import Common.ResultT (ResultT (runResultT))
+
 import Data.Graph.Inductive (LNode)
+import Data.Bifunctor (bimap)
+
+import Logic.Comorphism (AnyComorphism)
+import Logic.Logic (sym_of)
+import Logic.Prover (ProofStatus)
+import Static.DevGraph (DGNodeLab (dgn_theory), LibEnv, DGraph)
+import qualified Static.GTheory as GT
+import Proofs.ConsistencyCheck (ConsistencyStatus)
+import qualified Proofs.AbstractState
+import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, G_cons_checker)
+
+
 
 -- Datatypes used for wrapping existential datatypes for an easier use in hyphen
 
@@ -70,7 +77,8 @@ data PyConsChecker = PyConsChecker G_cons_checker
 data PyComorphism = PyComorphism AnyComorphism
 
 instance Show PyTheory where
-    show (PyTheory t) = "PyTheory "++ show t
+    show (PyTheory (GT.G_theory { GT.gTheoryLogic = lid, GT.gTheorySign = extSign })) =
+        "PyTheory "++ show (pretty <$> sym_of lid (plainSign extSign))
 
 instance Show PyProver where
     show (PyProver p) = "PyProver "++ show p

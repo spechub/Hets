@@ -52,6 +52,7 @@ import qualified HetsAPI.ProveCommands as HPC
 
 import Driver.AnaLib (anaLib)
 import Driver.Options (HetcatsOpts)
+import Driver.ReadMain (readAndAnalyse)
 
 import Logic.Comorphism (AnyComorphism)
 import Static.DevGraph (LibEnv, DGraph, lookupDGraph, DGNodeLab, labNodesDG)
