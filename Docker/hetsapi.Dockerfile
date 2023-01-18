@@ -27,19 +27,25 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y openjdk-8-jdk-headless ant cab
  libghc-aterm-dev
 
 
-RUN git clone -b 1790_API https://github.com/spechub/Hets.git /hets
+# RUN git clone -b 1790_API https://github.com/spechub/Hets.git /hets
+## OR
+COPY ./ /hets
 
 WORKDIR /hets
 
-ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
-
-RUN git config --global user.email "root@localhost"
-RUN git config --global user.name "root"
-RUN git pull origin
 RUN make derived
 
-RUN runhaskell Setup.hs configure --ghc --disable-profiling --disable-shared --package-db=/var/lib/ghc/package.conf.d --libdir=./HetsAPI --disable-benchmarks lib:hets-api
+RUN runhaskell Setup.hs configure \
+    --ghc --prefix=/ \
+    --disable-executable-stripping \
+    --disable-benchmarks \
+    --libdir=/lib/haskell-packages/ghc/lib/x86_64-linux-ghc-8.6.5 \
+    --libsubdir=hets-api-0.100.0 \
+    --datadir=share \
+    --datasubdir=hets-api \
+    --haddockdir=/lib/ghc-doc/haddock/hets-api-0.100.0 \
+    --docdir=share/doc/hets-api-doc \
+    --package-db=/var/lib/ghc/package.conf.d \
+    --disable-profiling
 RUN runhaskell Setup.hs build
-RUN runhaskell Setup.hs register --gen-pkg-config=/var/lib/ghc/package.conf.d/hets-api-0.100.0
-
-# RUN cabal install --enable-shared --verbose --package-db=/lib/ghc/package.conf.d
+RUN runhaskell Setup.hs install
