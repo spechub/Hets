@@ -1,4 +1,4 @@
-{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable #-}
+{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable, StandaloneDeriving #-}
 {- |
 Module      :  ./Proofs/AbstractState.hs
 Description :  State data structure used by the goal management GUI.
@@ -44,10 +44,12 @@ module Proofs.AbstractState
     , getAllProvers
     , getUsableProvers
     , getConsCheckers
+    , getListOfConsCheckers
     , getAllConsCheckers
     , lookupKnownProver
     , lookupKnownConsChecker
     , autoProofAtNode
+    , usableCC
     ) where
 
 import qualified Data.Map as Map
@@ -76,6 +78,7 @@ import Logic.Comorphism
 import Logic.Coerce
 
 import Comorphisms.KnownProvers
+import Comorphisms.LogicGraph (logicGraph)
 
 import Static.GTheory
 
@@ -124,6 +127,9 @@ data G_cons_checker =
   => G_cons_checker lid
        (ConsChecker sign sentence sublogics morphism proof_tree)
   deriving (Typeable)
+
+instance Eq G_cons_checker where
+  G_cons_checker _ cc1 == G_cons_checker _ cc2 = ccName cc1 == ccName cc2
 
 instance Show G_cons_checker where
  show _ = "G_cons_checker "
@@ -365,9 +371,28 @@ getConsCheckers :: [AnyComorphism] -> IO [(G_cons_checker, AnyComorphism)]
 getConsCheckers = filterM (usableCC . fst) . getAllConsCheckers
 
 getAllConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
-getAllConsCheckers = concatMap (\ cm@(Comorphism cid) ->
-    map (\ cc -> (G_cons_checker (targetLogic cid) cc, cm))
-      $ cons_checkers $ targetLogic cid)
+getAllConsCheckers lst =
+  snd $
+    foldr
+      ( \el@(G_cons_checker _ cc, _) (s, l) ->
+          if not $ Set.member (ccName cc) s
+            then (Set.insert (ccName cc) s, el : l)
+            else (s, l)
+      )
+      (Set.empty, [])
+      $
+      concatMap
+        ( \cm@(Comorphism cid) ->
+            map
+              ( \cc ->
+                  (G_cons_checker (targetLogic cid) cc, cm)
+              )
+              $ cons_checkers $ targetLogic cid
+        )
+        $ lst
+
+getListOfConsCheckers :: [G_cons_checker]
+getListOfConsCheckers = concatMap (\(Logic lid) -> map (\cc -> G_cons_checker lid cc) $ cons_checkers lid) (logics logicGraph)
 
 lookupKnownConsChecker :: Fail.MonadFail m => ProofState
     -> m (G_cons_checker, AnyComorphism)

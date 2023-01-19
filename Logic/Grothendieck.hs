@@ -890,7 +890,7 @@ findComorphismPaths lg (G_sublogics lid sub) =
   coMors = Map.elems $ comorphisms lg
   -- compute possible compositions, but only up to depth 4
   iterateComp n l =
-    if n > 2 || l == newL then newL else iterateComp (n + 1) newL
+    if n > 0 || l == newL then newL else iterateComp (n + 1) newL
     where
     newL = nubOrd $ l ++ concatMap extend l
     -- extend comorphism list in all directions, but no cylces
