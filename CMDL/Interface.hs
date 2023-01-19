@@ -86,8 +86,8 @@ cmdlComplete st (left, _) = do
                  $ findComorphismPaths logicGraph $ sublogicOfTheory z
                stateConsCheckList = consCheckers state
                filteredConsCheckerList =
-                 filter (\cc -> elem cc stateConsCheckList) fullConsCheckList
-               shortConsCList = nub $ map getCcName filteredConsCheckList
+                 filter (\cc -> elem cc stateConsCheckList) fullConsCheckerList
+               shortConsCList = nub $ map getCcName filteredConsCheckerList
 
            showCmdComplete state shortConsCList comps left
         [] -> showCmdComplete state [] comps left
