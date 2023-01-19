@@ -19,10 +19,11 @@ module CMDL.Interface where
 import System.Console.Haskeline
 import Interfaces.DataTypes
 import Comorphisms.LogicGraph (logicGraph)
-import Proofs.AbstractState (getAllConsCheckers, sublogicOfTheory, getCcName
-                            , getListOfConsCheckers, usableCC)
 import Logic.Grothendieck
 #endif
+
+import Proofs.AbstractState (getAllConsCheckers, sublogicOfTheory, getCcName
+                            , getListOfConsCheckers, usableCC)
 
 import System.IO
 
