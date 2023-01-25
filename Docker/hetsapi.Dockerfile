@@ -3,11 +3,6 @@ FROM hyphen:20.04
 ENV TZ=Europe/Berlin
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-
-RUN git clone -b 1790_API https://github.com/spechub/Hets.git /hets
-
-WORKDIR /hets
-
 RUN apt update
 RUN apt install -y software-properties-common apt-utils make
 RUN apt-add-repository -y ppa:hets/hets
@@ -31,13 +26,27 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y openjdk-8-jdk-headless ant cab
  libghc-hexpat-dev\
  libghc-aterm-dev
 
-ADD "https://www.random.org/cgi-bin/randbyte?nbytes=10&format=h" skipcache
 
-RUN git pull origin
+# RUN git clone -b 1790_API https://github.com/spechub/Hets.git /hets
+## OR
+COPY ./ /hets
+
+WORKDIR /hets
+
 RUN make derived
 
-RUN runhaskell Setup.hs configure --ghc --disable-profiling --disable-shared --package-db=/var/lib/ghc/package.conf.d --libdir=./Hets --disable-benchmarks lib:hets-api
-RUN runhaskell Setup.hs build
-RUN runhaskell Setup.hs register --gen-pkg-config=/var/lib/ghc/package.conf.d/hets-api-0.100.0
-
-# RUN cabal install --enable-shared --verbose --package-db=/lib/ghc/package.conf.d
+RUN runhaskell Setup.hs configure \
+    --ghc --prefix=/ \
+    --disable-executable-stripping \
+    --disable-benchmarks \
+    --libdir=/lib/haskell-packages/ghc/lib/x86_64-linux-ghc-8.6.5 \
+    --libsubdir=hets-api-0.100.0 \
+    --datadir=share \
+    --datasubdir=hets-api \
+    --haddockdir=/lib/ghc-doc/haddock/hets-api-0.100.0 \
+    --docdir=share/doc/hets-api-doc \
+    --package-db=/var/lib/ghc/package.conf.d \
+    --disable-profiling \
+    lib:Hets
+RUN runhaskell Setup.hs build lib:Hets
+RUN runhaskell Setup.hs install
