@@ -11,6 +11,14 @@ module HetsAPI.Python (
     , usableConsistencyCheckers
     , checkConsistency
     , proveNode
+    , getAllSentences
+    , getAllAxioms
+    , getAllGoals
+    , getProvenGoals
+    , getUnprovenGoals
+    , getConsCheckerName
+    , getComorphismName
+    , getProverName
 
     -- Unchanged re-export from Hets.ProveCommands
     , HP.checkConservativityNode
@@ -36,10 +44,10 @@ module HetsAPI.Python (
     , HC.libFlatHeterogen
     , HC.qualifyLibEnv
     , HC.loadLibrary
-    , HC.getGraphForLibrary
-    , HC.getNodesFromDevelopmentGraph
-    , HC.getLNodesFromDevelopmentGraph
     , HC.showTheory
+    , HI.getGraphForLibrary
+    , HI.getNodesFromDevelopmentGraph
+    , HI.getLNodesFromDevelopmentGraph
 )
 
 where
@@ -48,6 +56,7 @@ import Data.Functor
 
 import qualified HetsAPI.Commands as HC
 import qualified HetsAPI.ProveCommands as HP
+import qualified HetsAPI.InfoCommands as HI
 
 import Common.DocUtils (pretty)
 import Common.ExtSign (plainSign)
@@ -59,13 +68,15 @@ import Data.Graph.Inductive (LNode)
 import Data.Bifunctor (bimap)
 
 import Logic.Comorphism (AnyComorphism)
-import Logic.Logic (sym_of)
+import Logic.Logic (sym_of, PrintTypeConv)
 import Logic.Prover (ProofStatus)
 import Static.DevGraph (DGNodeLab (dgn_theory), LibEnv, DGraph)
 import qualified Static.GTheory as GT
 import Proofs.ConsistencyCheck (ConsistencyStatus)
 import qualified Proofs.AbstractState
 import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, G_cons_checker)
+import ATerm.AbstractSyntax (ATermTable)
+import HetsAPI.DataTypes (SentenceByName)
 
 
 
@@ -75,9 +86,10 @@ data PyTheory = PyTheory GT.G_theory
 data PyProver = PyProver G_prover
 data PyConsChecker = PyConsChecker G_cons_checker
 data PyComorphism = PyComorphism AnyComorphism
+data PySentence = PySentence (ATermTable, Int)
 
 instance Show PyTheory where
-    show (PyTheory (GT.G_theory { GT.gTheoryLogic = lid, GT.gTheorySign = extSign })) =
+    show (PyTheory GT.G_theory { GT.gTheoryLogic = lid, GT.gTheorySign = extSign }) =
         "PyTheory "++ show (pretty <$> sym_of lid (plainSign extSign))
 
 instance Show PyProver where
@@ -92,6 +104,9 @@ getProverName (PyProver p) = Proofs.AbstractState.getProverName p
 
 getComorphismName :: PyComorphism -> String
 getComorphismName (PyComorphism c) = show c
+
+getConsCheckerName :: PyConsChecker -> String
+getConsCheckerName (PyConsChecker cc) = Proofs.AbstractState.getCcName cc
 
 getTheoryFromNode :: DGNodeLab -> PyTheory
 getTheoryFromNode = PyTheory . dgn_theory
@@ -130,5 +145,20 @@ proveNode :: Bool -> Int -> [String] -> [String] -> PyTheory
     -> ResultT IO (ProofState, [ProofStatus G_proof_tree])
 proveNode sub timeout goals axioms
     (PyTheory theory)
-    (PyProver prover, PyComorphism com) = 
+    (PyProver prover, PyComorphism com) =
         HP.proveNode sub timeout goals axioms theory (prover, com)
+
+getAllSentences :: PyTheory -> SentenceByName
+getAllSentences (PyTheory theory) = HI.getAllSentences theory
+
+getAllAxioms :: PyTheory -> SentenceByName
+getAllAxioms (PyTheory theory) = HI.getAllAxioms theory
+
+getAllGoals :: PyTheory -> SentenceByName
+getAllGoals (PyTheory theory) = HI.getAllGoals theory
+
+getProvenGoals :: PyTheory -> SentenceByName
+getProvenGoals (PyTheory theory) = HI.getProvenGoals theory
+
+getUnprovenGoals :: PyTheory -> SentenceByName
+getUnprovenGoals (PyTheory theory) = HI.getUnprovenGoals theory

@@ -19,9 +19,6 @@ module HetsAPI.Commands (
    , libFlatHeterogen
    , qualifyLibEnv
    , loadLibrary
-   , getGraphForLibrary
-   , getNodesFromDevelopmentGraph
-   , getLNodesFromDevelopmentGraph
    , translateTheory
    , showTheory
 
@@ -147,22 +144,6 @@ loadLibrary file opts = do
    case analysisResult of
     Nothing -> return $ fail  ("Unable to load library " ++ file)
     Just lib -> return $ return lib
-
--- | @getDevelopmentGraphByName name env@ returns the development graph for the
---   library @name@ in the environment @env@.
-getGraphForLibrary :: LibName -> LibEnv -> DGraph
-getGraphForLibrary = lookupDGraph
-
--- | @getNodesFromDevelopmentGraph graph@ returns the nodes of the development
---   graph @graph@
-getNodesFromDevelopmentGraph :: DGraph -> [DGNodeLab]
-getNodesFromDevelopmentGraph = fmap snd . labNodesDG
-
-
--- | @getNodesFromDevelopmentGraph graph@ returns the nodes of the development
---   graph @graph@
-getLNodesFromDevelopmentGraph :: DGraph -> [LNode DGNodeLab]
-getLNodesFromDevelopmentGraph = labNodesDG
 
 translateTheory :: AnyComorphism -> G_theory -> Result G_theory
 translateTheory = mapG_theory False
