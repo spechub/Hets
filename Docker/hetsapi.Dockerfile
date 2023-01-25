@@ -13,6 +13,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y openjdk-8-jdk-headless ant cab
  libmysqlclient-dev\
  ghc-haddock libghc-missingh-dev\
  ghc>=7.10.3 happy\
+ libghc-mutable-containers-dev\
  libghc-haxml-dev libghc-tar-dev libghc-random-dev libghc-parsec3-dev\
  libghc-fgl-dev libghc-xml-dev\
  libghc-http-dev libghc-warp-dev libghc-wai-extra-dev\
