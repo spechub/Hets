@@ -3,10 +3,10 @@ FROM hyphen:20.04
 ENV TZ=Europe/Berlin
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt update
-RUN apt install -y software-properties-common apt-utils make
+RUN apt-get update
+RUN apt-get install -y software-properties-common apt-utils make
 RUN apt-add-repository -y ppa:hets/hets
-RUN apt update
+RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt install -y openjdk-8-jdk-headless ant cabal-install\
  ksh perl-base tar xz-utils zip\
  texlive-latex-base texlive-latex-extra texlive-fonts-recommended latexmk\
@@ -24,7 +24,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y openjdk-8-jdk-headless ant cab
  libghc-utf8-string-dev libghc-relation-dev\
  libghc-persistent-mysql-dev\
  libghc-hexpat-dev\
- libghc-aterm-dev
+ libghc-aterm-dev\
+ libghc-xeno-dev
 
 
 # RUN git clone -b 1790_API https://github.com/spechub/Hets.git /hets

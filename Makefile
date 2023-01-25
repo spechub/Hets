@@ -587,7 +587,7 @@ docs: $(derived_sources) $(STACK_UPGRADE_TARGET)
 	@$(RM) -r docs && mkdir docs && \
 		printf '\nCheck log.haddock for results ...\n'
 	$(STACK) exec -- haddock --html \
-            $(filter-out Scratch.hs, $(wildcard *.hs)) \
+            $(filter-out Setup.hs Scratch.hs, $(wildcard *.hs)) \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
 	    --hyperlinked-source --odir=docs \

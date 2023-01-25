@@ -135,7 +135,9 @@ common shared-properties
 Executable hets
   import: shared-properties
   Main-is: hets.hs
-  ghc-options: -threaded 
+  ghc-options: 
+    - -threaded 
+    - -main-is Main
 
   if flag(uniform)
     build-depends:
