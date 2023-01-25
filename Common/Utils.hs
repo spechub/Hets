@@ -60,6 +60,7 @@ module Common.Utils
   , verbMsgLn
   , verbMsgIO
   , verbMsgIOLn
+  , FileInfo(..)
   ) where
 
 import Data.Char
@@ -90,6 +91,11 @@ import System.IO.Unsafe (unsafeInterleaveIO)
 #endif
 
 import Control.Monad
+
+data FileInfo = FileInfo {
+    wasDownloaded :: Bool,
+    filePath :: FilePath
+  }
 
 {- | Writes the message to the given handle unless the verbosity is less than
 the message level. -}

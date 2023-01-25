@@ -46,6 +46,7 @@ RUN runhaskell Setup.hs configure \
     --haddockdir=/lib/ghc-doc/haddock/hets-api-0.100.0 \
     --docdir=share/doc/hets-api-doc \
     --package-db=/var/lib/ghc/package.conf.d \
-    --disable-profiling
-RUN runhaskell Setup.hs build
+    --disable-profiling \
+    lib:Hets
+RUN runhaskell Setup.hs build lib:Hets
 RUN runhaskell Setup.hs install
