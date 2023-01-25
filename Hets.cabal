@@ -1,4 +1,4 @@
-cabal-version:  >= 1.10
+cabal-version: 2.2
 name: Hets
 version: 0.100.0
 Description: The Heterogeneous Tool Set
@@ -64,10 +64,7 @@ flag httpclient
 flag mysql
   description: enable persistent support for MySQL
 
-
-Executable hets
-  -- import: shared-properties
-  Main-is: hets.hs
+common shared-properties
   default-language: Haskell2010
   build-depends:
       HTTP >= 4000.2.4
@@ -93,7 +90,7 @@ Executable hets
     , xml >= 1.3.7 && < 1.4
     , relation
   cpp-options: -DCASLEXTENSIONS -DRDFLOGIC
-  ghc-options: -threaded -fcontext-stack=31
+  ghc-options: -freduction-depth=31
 
   if flag(httpclient)
     build-depends:
@@ -101,16 +98,6 @@ Executable hets
       , http-client-tls >= 0.3.5.1
       , connection >= 0.2.8
     cpp-options: -DNO_WGET
-
-  if flag(uniform)
-    build-depends:
-         uni-events
-       , uni-graphs >= 2.0 && < 3.0
-       , uni-htk >= 2.0 && < 3.0
-       , uni-reactor
-       , uni-uDrawGraph >= 2.0 && < 3.0
-       , uni-util >= 2.0 && < 3.0
-    cpp-options: -DUNI_PACKAGE
 
   if flag(haxml)
     build-depends: HaXml >= 1.24 && < 2
@@ -144,9 +131,24 @@ Executable hets
       persistent-mysql >= 2.6.1
     cpp-options: -DMYSQL
 
+Executable hets
+  import: shared-properties
+  Main-is: hets.hs
+  ghc-options: -threaded 
+
+  if flag(uniform)
+    build-depends:
+         uni-events
+       , uni-graphs >= 2.0 && < 3.0
+       , uni-htk >= 2.0 && < 3.0
+       , uni-reactor
+       , uni-uDrawGraph >= 2.0 && < 3.0
+       , uni-util >= 2.0 && < 3.0
+    cpp-options: -DUNI_PACKAGE
+
 
 Library
-  -- import: shared-properties
+  import: shared-properties
   default-language: Haskell2010
   build-depends:
       HTTP >= 4000.2.4
