@@ -64,8 +64,8 @@ genRules flags files =
        if null ds then Fail.fail "no data types left" else
            writeFile outf . unlines $
              "{-# OPTIONS -w -O0 #-}"
-             : [ "{-# LANGUAGE CPP, StandaloneDeriving, DeriveDataTypeable #-}"
-               | elem "Typeable" rules ]
+             : [ "{-# LANGUAGE CPP, StandaloneDeriving, DeriveDataTypeable, DeriveGeneric #-}"
+               |  not . null $ rules \\ ["Typeable", "Json"] ]
              ++ ["{- |"
              , "Module      :  " ++ outf
              , "Description :  generated " ++ rule ++ " instances"
@@ -93,7 +93,7 @@ genRules flags files =
              , "module " ++ toModule outf ++ " () where"
              , "" ]
              ++ map ("import " ++)
-                     (Set.toList . Set.fromList $ imports ++ is)
+                     (Set.toList . Set.fromList $ imports ++ is ++ [ "Common.Json.Instances" | "Json" `elem` rules])
              ++ concatMap (\ r -> "" :
                 map (\ d -> "{-! for " ++ d ++ " derive : " ++ r ++ " !-}") ds
                           ) rules

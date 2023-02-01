@@ -93,7 +93,8 @@ GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs
 
 PERL = perl
 GENRULES = utils/genRules
-GENRULECALL = $(GENRULES) -r ShATermConvertible \
+GENRULECALL = $(GENRULES) -r ShATermConvertible -r Json \
+	-i "GHC.Generics(Generic)" -i "Data.Aeson(ToJSON, FromJSON)" \
     -i ATerm.Lib
 
 GENRULECALL2 = $(GENRULES) -r ShATermLG \
@@ -246,16 +247,16 @@ ATC/ProofTree.der.hs: Common/ProofTree.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
 
 ATC/AS_Annotation.der.hs: Common/AS_Annotation.der.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -o $@ $<
+	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $<
 
 ATC/Consistency.der.hs: Common/Consistency.hs $(GENRULES)
 	$(GENRULECALL) -x Common.Consistency.ConservativityChecker -o $@ $<
 
 ATC/LibName.der.hs: Common/LibName.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -o $@ $<
+	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $<
 
 ATC/ExtSign.der.hs: Common/ExtSign.hs $(GENRULES)
-	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $<
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $<
 
 ATC/DefaultMorphism.der.hs: Common/DefaultMorphism.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
@@ -349,7 +350,7 @@ THF_files = THF/As.hs THF/Cons.hs THF/Sign.hs THF/Sublogic.hs
 
 FreeCAD_files = FreeCAD/As.hs
 
-OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
+OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs \
   OWL2/Morphism.hs OWL2/ProfilesAndSublogics.hs OWL2/Sublogic.hs \
   OWL2/Profiles.hs Common/IRI.hs
 
@@ -455,7 +456,7 @@ THF/ATC_THF.der.hs: $(THF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Id -i ATC.GlobalAnnotations -o $@ $(THF_files)
 
 FreeCAD/ATC_FreeCAD.der.hs: $(FreeCAD_files) $(GENRULES)
-	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(FreeCAD_files)
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $(FreeCAD_files)
 
 OWL2/ATC_OWL2.der.hs: $(OWL2_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(OWL2_files)
@@ -468,10 +469,10 @@ RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(RDF_files)
 
 CSMOF/ATC_CSMOF.der.hs: $(CSMOF_files) $(GENRULES)
-	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(CSMOF_files)
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $(CSMOF_files)
 
 QVTR/ATC_QVTR.der.hs: $(QVTR_files) CSMOF/ATC_CSMOF.hs $(GENRULES)
-	$(GENRULECALL) -i CSMOF.ATC_CSMOF -i Common.ATerm.ConvInstances \
+	$(GENRULECALL) -i CSMOF.ATC_CSMOF -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances \
  -o $@ $(QVTR_files)
 
 TPTP/ATC_TPTP.der.hs: $(TPTP_files) $(GENRULES)

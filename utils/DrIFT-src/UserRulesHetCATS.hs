@@ -29,6 +29,7 @@ hetcatsrules =
   , ("Binary", binaryfn False, "", "", Nothing)
   , ("BinaryLG", binaryfn True, "", "", Nothing)
   , ("Typeable", typeablefn, "", "", Nothing)
+  , ("Json", jsonfn, "", "", Nothing)
   , ("XmlPickler", xmlpicklerfn, "", "", Nothing)
   , ("GetRange", getrangefn, "", "", Nothing)]
 
@@ -365,3 +366,16 @@ typeablefn dat =
        text "#if __GLASGOW_HASKELL__ < 708" $$
        text ("deriving instance " ++ ntext "Typeable" ++ " " ++ dn)
        $$ text "#else" $$ stext $$ text "#endif"
+
+
+jsonfn :: Data ->Doc
+jsonfn dat =
+    let vs = vars dat
+        dn = strippedName dat
+        typ = if null vs then text dn else parens . hsep . fmap text $ (dn : vs)
+        gen = text "deriving instance GHC.Generics.Generic" <+> typ
+
+        datC s = dat { constraints = constraints dat ++ map (\x -> (s, x)) vs }
+    in gen
+      $+$ instanceSkeleton "Data.Aeson.ToJSON" [] dat
+      $+$ instanceSkeleton "Data.Aeson.FromJSON" [] dat
