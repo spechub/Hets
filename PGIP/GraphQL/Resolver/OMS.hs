@@ -22,7 +22,7 @@ import Persistence.Utils
 import Database.Esqueleto
 
 import Control.Monad.IO.Class (MonadIO (..))
-import Control.Monad.Fail
+import Control.Monad.Fail ()
 
 resolve :: HetcatsOpts -> Cache -> String -> IO (Maybe GraphQLResult.Result)
 resolve opts _ locIdVar =
