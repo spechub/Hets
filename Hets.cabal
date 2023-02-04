@@ -90,6 +90,7 @@ Executable hets
     , xml >= 1.3.7 && < 1.4
     , relation
     , xeno
+    , heap
   cpp-options: -DCASLEXTENSIONS -DRDFLOGIC
   ghc-options: -threaded -fcontext-stack=31
 

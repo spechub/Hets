@@ -90,6 +90,7 @@ module Logic.Grothendieck
   , ginclusion
   , compInclusion
   , findComorphismPaths
+  , findComorphismPathsNewAlgo
   , logicGraph2Graph
   , findComorphism
   , isTransportable
@@ -107,8 +108,11 @@ import Logic.ExtSign
 import Logic.Logic
 import Logic.Modification
 import Logic.Morphism
+-- import Logic.SearchComorphismCompositions
 
 import ATerm.Lib
+
+import Debug.Trace
 
 import Common.Doc
 import Common.DocUtils
@@ -129,6 +133,11 @@ import Data.Maybe
 import Data.Typeable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.HashMap.Strict as HMap
+import qualified Data.HashSet as HSet
+import qualified Data.Heap as Heap
+
+import Text.Printf
 
 import Text.ParserCombinators.Parsec (Parser, parse, eof, (<|>))
 -- for looking up modifications
@@ -901,6 +910,11 @@ findComorphismPaths lg (G_sublogics lid sub) =
               Just c1 -> Just (c1, c : cmps)
         in mapMaybe addCoMor $ filter (not . (`elem` cmps)) coMors
 
+-- | Find compositions of comorphisms starting from a give logic
+-- | use wheted graph of logics to optimize search
+findComorphismPathsNewAlgo :: LogicGraph -> G_sublogics -> [AnyComorphism]
+findComorphismPathsNewAlgo lg gsubl = findComorphismCompositions lg gsubl
+
 -- | graph representation of the logic graph
 logicGraph2Graph :: LogicGraph
                     -> Graph (G_sublogics, Maybe AnyComorphism) AnyComorphism
@@ -1009,3 +1023,275 @@ lookupSquare com1 com2 lg = maybe (Fail.fail "lookupSquare") return $ do
   sqL2 <- Map.lookup (com2, com1) $ squares lg
   return $ nubOrd $ sqL1 ++ map mirrorSquare sqL2
   -- maybe adjusted if comparing AnyModifications change
+
+-- | algo for searching possible comorphism compositions
+weight_limit :: Int
+weight_limit = 500
+
+data SearchNode = SearchNode
+  { nodeId :: Int,
+    parentId :: Int,
+    logicName :: String,
+    -- way to check logic already used in comorphism composition
+    logicsInBranch :: HSet.HashSet String,
+    -- comorphisms composition for current node
+    cComposition :: Maybe AnyComorphism,
+    searchNodeWeight :: Int
+  }
+  deriving (Show)
+
+data SearchState = SearchState
+  {
+    searchNodes :: HMap.HashMap Int SearchNode,
+    -- ids of nodes who are currently leaves in search tree
+    leaves :: HSet.HashSet Int,
+    -- priority queue of nodes according their distances: higher distance - higher priority
+    pQueue :: Heap.MaxPrioHeap Int Int,
+    -- we don't repeat already used comorphism in search tree
+    usedComorphisms :: HSet.HashSet (String, String),
+    totalWeightUsed :: Int
+  }
+
+initState :: G_sublogics -> SearchState
+initState (G_sublogics lid sub) =
+  SearchState
+    { leaves = HSet.empty,
+      searchNodes =
+        HMap.fromList
+          [ ( 0,
+              SearchNode
+                0
+                (-1)
+                (language_name lid)
+                HSet.empty
+                (Just (Comorphism $ mkIdComorphism lid sub))
+                0
+            )
+          ],
+      pQueue = Heap.fromList [(0, 0)],
+      usedComorphisms = HSet.empty,
+      totalWeightUsed = 0
+    }
+
+findComorphismCompositions :: LogicGraph -> G_sublogics -> [AnyComorphism]
+findComorphismCompositions lg gsubl =
+  processSearchState lg (initState gsubl)
+
+processSearchState :: LogicGraph -> SearchState -> [AnyComorphism]
+processSearchState lg state@(SearchState ns ls pq uc twu) = case Heap.view pq of
+  -- Nothing -> trace "-- finish because priority queue is empty" $ getComorphismCompositions ns ls
+  Nothing -> getComorphismCompositions ns ls
+  Just ((w, nId), pq') ->
+    if isComorphismUsed nId ns uc
+      then -- then trace (printf "-- comorphism used, nId=%d" nId) $ processSearchState lg (state {pQueue = pq'})
+        processSearchState lg (state {pQueue = pq'})
+      else
+        let curNode = updateNode lg nId ns
+            ns' = HMap.insert nId curNode ns
+            -- remove parent node from leaves and put there current node
+            ls' = HSet.insert nId $ HSet.delete (parentId curNode) ls
+            uc' = addIntoUsedComorphisms nId ns uc
+            -- condition to continue or stop search at this point
+            twu' = twu + w
+         in if twu' > weight_limit
+              then -- then trace "-- finish because of weight limit" $ getComorphismCompositions ns ls
+                getComorphismCompositions ns ls
+              else -- trace (printf "-- put node in tree, id=%d, parent=%d, name=%s" nId (parentId curNode) (logicName curNode)) $
+                processSearchState lg $
+                  processNeighbours
+                    nId
+                    ( state
+                        { leaves = ls',
+                          searchNodes = ns',
+                          pQueue = pq',
+                          usedComorphisms = uc',
+                          totalWeightUsed = twu'
+                        }
+                    )
+
+getComorphismCompositions ::
+  HMap.HashMap Int SearchNode -> -- nodes of search graph
+  HSet.HashSet Int -> -- leaves in this graph
+  [AnyComorphism]
+getComorphismCompositions sNodes lvs =
+  -- trace (printf "-- getComorphismCompositions\n\tsNodes.keys: %s\n\tlvs: %s" (show $ HMap.keys sNodes) (show $ HSet.toList lvs)) $
+  let res =
+        map
+          ( \i ->
+              fromJust $
+                cComposition $
+                  fromMaybe
+                    ( error $
+                        printf "getComorphismComositions, incorrect i=%d key for HashMap" i
+                    )
+                    $ HMap.lookup i sNodes
+          )
+          $ HSet.toList $ lvs
+   in res
+
+isComorphismUsed ::
+  Int -> -- node id
+  HMap.HashMap Int SearchNode -> -- nodes
+  HSet.HashSet (String, String) -> -- set of used comorphisms
+  Bool
+isComorphismUsed nId sNodes ucs =
+  let curNode =
+        fromMaybe (error $ printf "isComorphismUsed, incorrect nId=%d key for HashMap" nId) $
+          HMap.lookup nId sNodes
+      pId = parentId curNode
+      pNode =
+        fromMaybe (error $ printf "isComorphismUsed, incorrect pId=%d key for HashMap" pId) $
+          HMap.lookup pId sNodes
+      lName = logicName curNode
+      pName = logicName pNode
+   in if pId == (-1)
+        then False
+        else HSet.member (pName, lName) ucs
+
+addIntoUsedComorphisms ::
+  Int -> -- node id
+  HMap.HashMap Int SearchNode -> -- nodes
+  HSet.HashSet (String, String) -> -- set of used comorphisms
+  HSet.HashSet (String, String) -- new set of used comorphisms
+addIntoUsedComorphisms nId sNodes ucs =
+  let curNode =
+        fromMaybe (error $ printf "addIntoUsedComorphisms, incorrect nId=%d key for HashMap" nId) $
+          HMap.lookup nId sNodes
+      pId = parentId curNode
+      lName = logicName curNode
+      pNode =
+        fromMaybe (error $ printf "addIntoUsedComorphisms, incorrect pId=%d key for HashMap" pId) $
+          HMap.lookup pId sNodes
+      pName = logicName pNode
+   in if pId == (-1)
+        then ucs
+        else HSet.insert (pName, lName) ucs
+
+-- update fields logicsInBranch and cComposition
+updateNode :: LogicGraph -> Int -> HMap.HashMap Int SearchNode -> SearchNode
+updateNode lg nId sNodes =
+  let node =
+        fromMaybe (error $ printf "updateNode, incorrect nId=%d key for HashMap" nId) $
+          HMap.lookup nId sNodes
+   in if parentId node == (-1)
+        then node
+        else
+          let parentNode =
+                fromMaybe (error $ printf "updateNode, incorrect (parentId node)=$d key for HashMap" (parentId node)) $
+                  HMap.lookup (parentId node) sNodes
+              usedLogics = logicsInBranch parentNode
+              cc =
+                compComorphism (fromJust $ cComposition parentNode) $
+                  getComorphism lg (logicName parentNode) (logicName node)
+           in node
+                { logicsInBranch = HSet.insert (logicName parentNode) usedLogics,
+                  cComposition = cc
+                }
+
+getComorphism :: LogicGraph -> String -> String -> AnyComorphism
+getComorphism lg l1Name l2Name =
+  let comorphismName = l1Name ++ "2" ++ l2Name
+      comorphism = fromMaybe (error (printf "getComorphism, incorrect comorphismName=%s key for HashMap" comorphismName)) $ Map.lookup comorphismName (comorphisms lg)
+   in comorphism
+
+processNeighbours :: Int -> SearchState -> SearchState
+processNeighbours nId state@(SearchState ns _ pq _ _) =
+  -- trace (printf "-- processNeighbours, nId=%d" nId) $
+  let nNodes = HMap.size ns
+      curNode =
+        fromMaybe (error $ printf "processNeighbours, incorrect nId=%d key for HashMap" nId) $
+          HMap.lookup nId ns
+      lName = logicName curNode
+      -- select children nodes
+      children =
+        filter (\(name, _) -> not . or $ [name == lName, HSet.member name $ logicsInBranch curNode]) $
+          fromMaybe [] $ HMap.lookup lName weightedGraphOfLogics
+      -- create SearchNodes of children
+      childrenNodes = map (\((name, w), i) -> SearchNode i nId name HSet.empty Nothing w) $ zip children [nNodes .. nNodes + (length children) - 1]
+      -- update map of nodes by adding newly created nodes
+      ns' = foldl (\_ns sn -> HMap.insert (nodeId sn) sn _ns) ns childrenNodes
+      -- update priority queue
+      pq' = foldl (\_pq sn -> Heap.insert (searchNodeWeight sn, nodeId sn) _pq) pq childrenNodes
+   in state {searchNodes = ns', pQueue = pq'}
+
+-- | hardcoded graph with weights
+weightedGraphOfLogics :: HMap.HashMap String [(String, Int)]
+weightedGraphOfLogics =
+  HMap.fromList
+    [ ( "CASL",
+        [ ("CoCASL", 5),
+          ("CspCASL", 5),
+          ("ExtModal", 5),
+          ("HasCASL", 5),
+          ("Hybrid", 5),
+          ("Modal", 5),
+          ("VSE", 5),
+          ("VSEImport", 5),
+          ("VSERefine", 5),
+          ("Propositional", 4),
+          ("OWL", 4),
+          ("Isabelle", 2),
+          ("NNF", 1),
+          ("PCFOL", 1),
+          ("PCFOLTopSort", 1),
+          ("Prenex", 1),
+          ("Skolem", 1),
+          ("SoftFOL", 1),
+          ("SoftFOLInduction", 1),
+          ("SoftFOLInduction2", 1),
+          ("SubCFOL", 1),
+          ("SubCFOLNoMembershipOrCast", 1),
+          ("SubCFOLSubsortBottoms", 1),
+          ("TPTP_FOF", 1)
+        ]
+      ),
+      ( "HasCASL",
+        [ ("IsabelleDeprecated", 5),
+          ("IsabelleOption", 2),
+          ("HasCASLNoSubtypes", 1),
+          ("HasCASLPrograms", 1),
+          ("THFP_P", 1)
+        ]
+      ),
+      ( "OWL2",
+        [("NeSyPatterns", 5), ("CommonLogic", 4), ("CASL", 2)]
+      ),
+      ("CASL_DL", [("CASL", 4)]),
+      ( "Propositional",
+        [ ("CommonLogic", 4),
+          ("OWL2", 4),
+          ("QBF", 4),
+          ("CASL", 2)
+        ]
+      ),
+      ("CoCASL", [("Isabelle", 2), ("CoPCFOL", 1), ("CoSubCFOL", 1)]),
+      ("SoftFOL", [("CommonLogic", 4)]),
+      ("THFP_P", [("HasCASL", 3), ("THFP", 3)]),
+      ("CspCASL", [("Modal", 3), ("CspCASL_Failure", 2), ("CspCASL_Trace", 2)]),
+      ("CommonLogic", [("Isabelle", 2) -- ("ModuleElimination", 2) --
+                      ]),
+      ("THFP", [("THF0", 2)]),
+      ("Adl", [("CASL", 1)]),
+      ("CLFol", [("CFOL", 1)]),
+      ("CLFull", [("CFOL", 1)]),
+      ("CLImp", [("CFOL", 1)]),
+      ("CLSeq", [("CLSeq", 1)]),
+      ("CSMOF", [("CSMOF", 1)]),
+      ("DFOL", [("CASL", 1)]),
+      ("DMU", [("DMU", 1)]),
+      ( "ExtModal",
+        [ ("CASL", 1),
+          ("ExtModalNoSubsorts", 1),
+          ("ExtModalTotal", 1),
+          ("HasCASL", 1),
+          ("OWL", 1)
+        ]
+      ),
+      ("HolLight", [("Isabelle", 1)]),
+      ("Hybrid", [("CASL", 1)]),
+      ("Maude", [("CASL", 1)]),
+      ("Modal", [("CASL", 1)]),
+      ("QBF", [("Propositional", 1)]),
+      ("QVTR", [("QVTR", 1)]),
+      ("RelScheme", [("CASL", 1)])
+    ]
