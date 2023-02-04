@@ -44,6 +44,9 @@ import Data.IORef
 import Control.Monad
 import Control.Monad.Trans (MonadIO (..))
 
+import Debug.Trace
+import Text.Printf
+
 #ifdef HASKELINE
 shellSettings :: IORef CmdlState -> Settings IO
 shellSettings st =
@@ -83,13 +86,18 @@ cmdlComplete st (left, _) = do
        case elements pS of
         Element z _ : _ ->
           do
-           let fullConsCheckerList = map fst $ getAllConsCheckers
-                 $ findComorphismPaths logicGraph $ sublogicOfTheory z
+           let paths = findComorphismPathsNewAlgo logicGraph $ sublogicOfTheory z
+               fullConsCheckerList = map fst $ getAllConsCheckers $ paths
                stateConsCheckList = consCheckers state
                filteredConsCheckerList =
                  filter (\cc -> elem cc stateConsCheckList) fullConsCheckerList
                shortConsCList = nub $ map getCcName filteredConsCheckerList
 
+           -- traceM "-- comorphisms logicGraph:"
+           -- forM_ (Map.elems $ comorphisms logicGraph) (putStrLn . show)
+           -- traceM $ printf "-- length paths: %d" (length paths)
+           -- traceM "-- paths:"
+           -- forM_ paths (putStrLn . show)
            showCmdComplete state shortConsCList comps left
         [] -> showCmdComplete state [] comps left
      Nothing -> showCmdComplete state [] comps left
