@@ -86,7 +86,7 @@ cmdlComplete st (left, _) = do
        case elements pS of
         Element z _ : _ ->
           do
-           let paths = findComorphismPathsNewAlgo logicGraph $ sublogicOfTheory z
+           let paths = findComorphismPaths logicGraph $ sublogicOfTheory z
                fullConsCheckerList = map fst $ getAllConsCheckers $ paths
                stateConsCheckList = consCheckers state
                filteredConsCheckerList =
