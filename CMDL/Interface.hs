@@ -97,7 +97,7 @@ cmdlComplete st (left, _) = do
            -- forM_ (Map.elems $ comorphisms logicGraph) (putStrLn . show)
            -- traceM $ printf "-- length paths: %d" (length paths)
            -- traceM "-- paths:"
-           -- forM_ paths (putStrLn . show)
+           -- forM_ paths print
            showCmdComplete state shortConsCList comps left
         [] -> showCmdComplete state [] comps left
      Nothing -> showCmdComplete state [] comps left

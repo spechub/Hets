@@ -1025,10 +1025,10 @@ lookupSquare com1 com2 lg = maybe (Fail.fail "lookupSquare") return $ do
 
 -- | algo for searching comorphism paths
 weight_limit :: Int
-weight_limit = 3000
+weight_limit = 500
 
 times_logic_in_branch :: Int
-times_logic_in_branch = 3
+times_logic_in_branch = 10
 
 data SearchNode = SearchNode
   { nodeId :: Int,
@@ -1042,8 +1042,8 @@ data SearchNode = SearchNode
     cCompositions :: [AnyComorphism],
     -- name of comorphism though wich we get this node from parent
     comName :: String,
-    -- weight of node in priority queue according to corresponding comorphism
-    searchNodeWeight :: Int
+    -- weight of comorphism leading to that node
+    comWeight :: Int
   }
   deriving (Show)
 
@@ -1052,8 +1052,10 @@ data SearchState = SearchState
     searchNodes :: HMap.HashMap Int SearchNode,
     -- ids of nodes who are currently leaves in search tree
     leaves :: HSet.HashSet Int,
+    -- distances of nodes in priority queues to root node
+    distance :: HMap.HashMap Int Int,
     -- priority queue of nodes according their distances: higher distance - higher priority
-    pQueue :: Heap.MaxPrioHeap Int Int,
+    pQueue :: Heap.MinPrioHeap Int Int,
     -- map logic map to comorphis with it as source logic
     logicToComorphisms :: HMap.HashMap String [String],
     totalWeightUsed :: Int
@@ -1077,6 +1079,7 @@ initState lg (G_sublogics lid sub) =
                 0
             )
           ],
+      distance = HMap.fromList [(0, 0)],
       pQueue = Heap.fromList [(0, 0)],
       logicToComorphisms = mapLogicsToComorphisms lg,
       totalWeightUsed = 0
@@ -1087,10 +1090,10 @@ findComorphismCompositions lg gsubl =
   processSearchState lg (initState lg gsubl)
 
 processSearchState :: LogicGraph -> SearchState -> [AnyComorphism]
-processSearchState lg state@(SearchState ns ls pq _ twu) = case Heap.view pq of
+processSearchState lg state@(SearchState ns ls _ pq _ twu) = case Heap.view pq of
   Nothing -> trace "-- processSearchState, finish because priority queue is empty" $ getComorphismCompositions ns ls
   -- Nothing -> getComorphismCompositions ns ls
-  Just ((w, nId), pq') ->
+  Just ((dist, nId), pq') ->
     -- trace (printf "-- processSearchState, add node with id=%d, weight=%d, parentId=%d, comorphism=%s" nId w (parentId $ ns HMap.! nId) (comName $ ns HMap.! nId)) $
     let curNode =
           fromMaybe
@@ -1106,7 +1109,7 @@ processSearchState lg state@(SearchState ns ls pq _ twu) = case Heap.view pq of
               -- remove parent node from leaves and put there current node
                 ls' = HSet.insert nId $ HSet.delete (parentId curNode) ls
                 -- condition to continue or stop search at this point
-                twu' = twu + w
+                twu' = twu + (comWeight curNode)
              in if twu' > weight_limit
                   then trace "-- processSearchState, finish because of weight limit" $ getComorphismCompositions ns ls
                   else -- getComorphismCompositions ns ls
@@ -1116,6 +1119,7 @@ processSearchState lg state@(SearchState ns ls pq _ twu) = case Heap.view pq of
                       processNeighbours
                         lg
                         nId
+                        dist
                         ( state
                             { searchNodes = ns',
                               leaves = ls',
@@ -1166,8 +1170,8 @@ getTargetLogicName :: AnyComorphism -> String
 getTargetLogicName (Comorphism cid) = language_name $ targetLogic cid
 
 -- | given node in tree generate candidate nodes and put them in priority queue
-processNeighbours :: LogicGraph -> Int -> SearchState -> SearchState
-processNeighbours lg nId state@(SearchState ns _ pq ltcs _) =
+processNeighbours :: LogicGraph -> Int -> Int -> SearchState -> SearchState
+processNeighbours lg nId dist state@(SearchState ns _ ds pq ltcs _) =
   -- trace (printf "-- processNeighbours, nId=%d" nId) $
   let nNodes = HMap.size ns
       curNode =
@@ -1186,6 +1190,7 @@ processNeighbours lg nId state@(SearchState ns _ pq ltcs _) =
                     tlu = HMap.lookupDefault 0 (targetLogicName) (timesLogicUsed curNode)
                     newComposition =
                       compComorphism (head $ cCompositions curNode) c
+                    cw = HMap.lookupDefault (maxWeight + 1) name comorphismWeight
                  in if (isJust newComposition && tlu <= times_logic_in_branch)
                       then
                         Just $
@@ -1197,7 +1202,7 @@ processNeighbours lg nId state@(SearchState ns _ pq ltcs _) =
                               timesLogicUsed = HMap.empty,
                               cCompositions = (fromJust newComposition) : (cCompositions curNode),
                               comName = name,
-                              searchNodeWeight = HMap.lookupDefault 1 name comorphismWeight
+                              comWeight = cw
                             }
                       else Nothing
             )
@@ -1206,9 +1211,11 @@ processNeighbours lg nId state@(SearchState ns _ pq ltcs _) =
 
       -- update map of nodes
       ns' = foldl (\_ns sn -> HMap.insert (nodeId sn) sn _ns) ns childrenNodes
+      -- update distances in SearchState
+      ds' = foldl (\_ds sn -> HMap.insert (nodeId sn) (dist + comWeight sn) _ds) ds childrenNodes
       -- update priority queue
-      pq' = foldl (\_pq sn -> Heap.insert (searchNodeWeight sn, nodeId sn) _pq) pq childrenNodes
-   in state {searchNodes = ns', pQueue = pq'}
+      pq' = foldl (\_pq sn -> Heap.insert (dist + comWeight sn, nodeId sn) _pq) pq childrenNodes
+   in state {searchNodes = ns', distance = ds', pQueue = pq'}
 
 mapLogicsToComorphisms :: LogicGraph -> HMap.HashMap String [String]
 mapLogicsToComorphisms lg =
@@ -1267,78 +1274,82 @@ simpleBFS' lg l2cs lvlN lvlState =
        in simpleBFS' lg l2cs (lvlN + 1) $ concat newLvl
 
 -- | assign weights to comorphisms
+
+maxWeight :: Int
+maxWeight = 5
+
 comorphismWeight :: HMap.HashMap String Int
 comorphismWeight =
   HMap.fromList
-    [ ("CASL2CoCASL", 6),
-      ("CASL2CspCASL", 6),
-      ("CASL2ExtModal", 6),
-      ("CASL2HasCASL", 6),
-      ("CASL2Hybrid", 6),
-      ("CASL2Modal", 6),
-      ("CASL2VSE", 6),
-      ("CASL2VSEImport", 6),
-      ("CASL2VSERefine", 6),
-      ("HasCASL2IsabelleDeprecated", 6),
-      ("OWL22NeSyPatterns", 6),
-      ("CASL_DL2CASL", 5),
-      ("CASL2Propositional", 5),
-      ("CASL2OWL", 5),
-      ("OWL22CommonLogic", 5),
-      ("Propositional2CommonLogic", 5),
-      ("Propositional2OWL2", 5),
-      ("Propositional2QBF", 5),
-      ("SoftFOL2CommonLogic", 5),
-      ("THFP_P2HasCASL", 4),
-      ("CspCASL2Modal", 4),
-      ("OWL22CASL", 3),
-      ("Propositional2CASL", 3),
-      ("CoCASL2Isabelle", 3),
-      ("CommonLogic2Isabelle", 3),
-      ("CASL2Isabelle", 3),
-      ("CommonLogicModuleElimination", 3),
-      ("CspCASL2CspCASL_Failure", 3),
-      ("CspCASL2CspCASL_Trace", 3),
-      ("HasCASL2IsabelleOption", 3),
-      ("THFP2THF0", 3),
-      ("THFP_P2THFP", 3),
-      ("Adl2CASL", 2),
-      ("CASL2NNF", 2),
-      ("CASL2PCFOL", 2),
-      ("CASL2PCFOLTopSort", 3),
-      ("CASL2Prenex", 2),
-      ("CASL2Skolem", 2),
-      ("CASL2SoftFOL", 2),
-      ("CASL2SoftFOLInduction", 2),
-      ("CASL2SoftFOLInduction2", 2),
-      ("CASL2SubCFOL", 2),
-      ("CASL2SubCFOLNoMembershipOrCast", 2),
-      ("CASL2SubCFOLSubsortBottoms", 2),
-      ("CASL2TPTP_FOF", 2),
-      ("CLFol2CFOL", 2),
-      ("CLFull2CFOL", 2),
-      ("CLImp2CFOL", 2),
-      ("CLSeq2CFOL", 2),
-      ("CoCASL2CoPCFOL", 2),
-      ("CoCASL2CoSubCFOL", 2),
-      ("CSMOF2CASL", 2),
-      ("DFOL2CASL", 2),
-      ("DMU2OWL2", 2),
-      ("ExtModal2CASL", 2),
-      ("ExtModal2ExtModalNoSubsorts", 2),
-      ("ExtModal2ExtModalTotal", 2),
-      ("ExtModal2HasCASL", 2),
-      ("ExtModal2OWL", 2),
-      ("ExtModal2OWL", 2),
-      ("HasCASL2HasCASLPrograms", 2),
-      ("HasCASL2THFP_P", 2),
-      ("HolLight2Isabelle", 2),
-      ("Hybrid2CASL", 2),
-      ("Maude2CASL", 2),
-      ("Modal2CASL", 2),
-      ("MonadicTranslation", 2),
-      ("NormalisingTranslation", 2),
-      ("QBF2Propositional", 2),
-      ("QVTR2CASL", 2),
-      ("RelScheme2CASL", 2)
+    [ ("CASL2CoCASL", 1),
+      ("CASL2CspCASL", 1),
+      ("CASL2ExtModal", 1),
+      ("CASL2HasCASL", 1),
+      ("CASL2Hybrid", 1),
+      ("CASL2Modal", 1),
+      ("CASL2VSE", 1),
+      ("CASL2VSEImport", 1),
+      ("CASL2VSERefine", 1),
+      ("HasCASL2IsabelleDeprecated", 1),
+      ("OWL22NeSyPatterns", 1),
+      ("CASL_DL2CASL", 2),
+      ("CASL2Propositional", 2),
+      ("CASL2OWL", 2),
+      ("OWL22CommonLogic", 2),
+      ("Propositional2CommonLogic", 2),
+      ("Propositional2OWL2", 2),
+      ("Propositional2QBF", 2),
+      ("SoftFOL2CommonLogic", 2),
+      ("THFP_P2HasCASL", 3),
+      ("CspCASL2Modal", 3),
+      ("OWL22CASL", 4),
+      ("Propositional2CASL", 4),
+      ("CoCASL2Isabelle", 4),
+      ("CommonLogic2Isabelle", 4),
+      ("CASL2Isabelle", 4),
+      ("CommonLogicModuleElimination", 4),
+      ("CspCASL2CspCASL_Failure", 4),
+      ("CspCASL2CspCASL_Trace", 4),
+      ("HasCASL2IsabelleOption", 4),
+      ("THFP2THF0", 4),
+      ("THFP_P2THFP", 4),
+      ("Adl2CASL", 5),
+      ("CASL2NNF", 5),
+      ("CASL2PCFOL", 5),
+      ("CASL2PCFOLTopSort", 5),
+      ("CASL2Prenex", 5),
+      ("CASL2Skolem", 5),
+      ("CASL2SoftFOL", 5),
+      ("CASL2SoftFOLInduction", 5),
+      ("CASL2SoftFOLInduction2", 5),
+      ("CASL2SubCFOL", 5),
+      ("CASL2SubCFOLNoMembershipOrCast", 5),
+      ("CASL2SubCFOLSubsortBottoms", 5),
+      ("CASL2TPTP_FOF", 5),
+      ("CLFol2CFOL", 5),
+      ("CLFull2CFOL", 5),
+      ("CLImp2CFOL", 5),
+      ("CLSeq2CFOL", 5),
+      ("CoCASL2CoPCFOL", 5),
+      ("CoCASL2CoSubCFOL", 5),
+      ("CSMOF2CASL", 5),
+      ("DFOL2CASL", 5),
+      ("DMU2OWL2", 5),
+      ("ExtModal2CASL", 5),
+      ("ExtModal2ExtModalNoSubsorts", 5),
+      ("ExtModal2ExtModalTotal", 5),
+      ("ExtModal2HasCASL", 5),
+      ("ExtModal2OWL", 5),
+      ("ExtModal2OWL", 5),
+      ("HasCASL2HasCASLPrograms", 5),
+      ("HasCASL2THFP_P", 5),
+      ("HolLight2Isabelle", 5),
+      ("Hybrid2CASL", 5),
+      ("Maude2CASL", 5),
+      ("Modal2CASL", 5),
+      ("MonadicTranslation", 5),
+      ("NormalisingTranslation", 5),
+      ("QBF2Propositional", 5),
+      ("QVTR2CASL", 5),
+      ("RelScheme2CASL", 5)
     ]
