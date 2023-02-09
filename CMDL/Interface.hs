@@ -93,8 +93,6 @@ cmdlComplete st (left, _) = do
                  filter (\cc -> elem cc stateConsCheckList) fullConsCheckerList
                shortConsCList = nub $ map getCcName filteredConsCheckerList
 
-           -- traceM "-- comorphisms logicGraph:"
-           -- forM_ (Map.elems $ comorphisms logicGraph) (putStrLn . show)
            -- traceM $ printf "-- length paths: %d" (length paths)
            -- traceM "-- paths:"
            -- forM_ paths print
