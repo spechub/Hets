@@ -249,3 +249,4 @@ keepOrigClifName opts origName file =
          CommonLogicIn _ -> origName
          _ -> origName ++ '.' : show ext
        _ -> file
+
