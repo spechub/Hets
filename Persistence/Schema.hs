@@ -12,6 +12,7 @@
 {-# LANGUAGE UndecidableInstances       #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DataKinds #-}
 
 {- |
 Module      :  ./Persistence.DevGraph.hs
@@ -27,6 +28,7 @@ module Persistence.Schema where
 
 import Database.Persist.Sql
 import Database.Persist.TH
+import Database.Persist.TH (mkDeleteCascade)
 
 import Data.Text (Text)
 

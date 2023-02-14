@@ -19,6 +19,7 @@ import Database.Persist.Sqlite
 connection :: ( MonadIO m
               , MonadBaseControl IO m
               , MonadLogger m
+              , MonadLoggerIO m
               , MonadUnliftIO m
               )
            => DBConfig -> Int -> (Pool SqlBackend -> m a) -> m a

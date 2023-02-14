@@ -22,6 +22,7 @@ connection :: ( backend ~ SqlBackend
               , MonadIO m
               , MonadBaseControl IO m
               , MonadLogger m
+              , MonadLoggerIO m
               , MonadUnliftIO m
               )
            => DBConfig -> Int -> (Pool backend -> m a) -> m a
