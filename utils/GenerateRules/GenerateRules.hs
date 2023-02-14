@@ -93,7 +93,10 @@ genRules flags files =
              , "module " ++ toModule outf ++ " () where"
              , "" ]
              ++ map ("import " ++)
-                     (Set.toList . Set.fromList $ imports ++ is ++ [ "Common.Json.Instances" | "Json" `elem` rules])
+                     (Set.toList . Set.fromList $
+                        [i |  i <- imports, not (toModule outf `isPrefixOf` i)]
+                        ++ is
+                        ++ [ "Common.Json.Instances" | "Json" `elem` rules])
              ++ concatMap (\ r -> "" :
                 map (\ d -> "{-! for " ++ d ++ " derive : " ++ r ++ " !-}") ds
                           ) rules
