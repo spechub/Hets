@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 Module      :  ./OWL2/Profiles.hs
 Copyright   :  (c) Felix Gabriel Mance
@@ -14,7 +14,7 @@ References  :  <http://www.w3.org/TR/owl2-profiles/>
 -}
 
 module OWL2.Profiles
-    ( Profiles
+    ( Profiles(..)
     , bottomProfile
     , topProfile
     , allProfiles
@@ -33,13 +33,11 @@ import qualified Data.Set as Set
 
 import Common.IRI(setPrefix, mkIRI)
 
-import GHC.Generics (Generic)
-
 data Profiles = Profiles
     { outsideEL :: Bool
     , outsideQL :: Bool
     , outsideRL :: Bool
-    } deriving (Show, Eq, Ord, Typeable, Data, Generic)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 allProfiles :: [[Profiles]]
 allProfiles = [[bottomProfile]

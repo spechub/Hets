@@ -16,6 +16,7 @@ Here is the place where the class Logic is instantiated for OWL2.
 module OWL2.Logic_OWL2 where
 
 import ATC.ProofTree ()
+import OWL2.ATC_OWL2 ()
 
 import Common.AS_Annotation as Anno
 import Common.Consistency
@@ -65,14 +66,6 @@ import ATerm.Conversion
 
 data OWL2 = OWL2
 
-instance ShATermConvertible SymbItems
-instance ShATermConvertible SymbMapItems
-instance ShATermConvertible Sign
-instance ShATermConvertible Axiom
-instance ShATermConvertible OntologyDocument
-instance ShATermConvertible OWLMorphism
-instance ShATermConvertible Entity
-instance ShATermConvertible ProfSub
 
 instance Show OWL2 where
   show _ = "OWL"

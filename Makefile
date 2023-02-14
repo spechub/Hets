@@ -352,13 +352,13 @@ FreeCAD_files = FreeCAD/As.hs
 
 OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs \
   OWL2/Morphism.hs OWL2/ProfilesAndSublogics.hs OWL2/Sublogic.hs \
-  OWL2/Profiles.hs Common/IRI.hs
+  OWL2/Profiles.hs
 
 NeSyPatterns_files = NeSyPatterns/AS.hs NeSyPatterns/Symbol.hs \
   NeSyPatterns/Sign.hs NeSyPatterns/Morphism.hs
 
-RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
-  RDF/Sublogic.hs Common/IRI.hs
+RDF_files = RDF/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
+  RDF/Sublogic.hs
 
 CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
@@ -459,7 +459,7 @@ FreeCAD/ATC_FreeCAD.der.hs: $(FreeCAD_files) $(GENRULES)
 	$(GENRULECALL) -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $(FreeCAD_files)
 
 OWL2/ATC_OWL2.der.hs: $(OWL2_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.Result -o $@ $(OWL2_files)
+	$(GENRULECALL) -i ATC.Result -i ATC.IRI -o $@ $(OWL2_files)
 
 NeSyPatterns/ATC_NeSyPatterns.der.hs: $(NeSyPatterns_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -i NeSyPatterns.ATC_Relation \
