@@ -260,7 +260,7 @@ makeSpanFn b =
 
 binaryfn :: Bool -> Data -> Doc
 binaryfn forLG dat =
-  let dn = strippedName dat
+  let dn = name dat
       cs = body dat
       moreCs = length cs > 1
       u = text "u"
@@ -297,7 +297,7 @@ makeGetBinary forLG moreCs b i =
 -- begin of ShATermConvertible derivation
 shatermfn :: Bool -> Data -> Doc
 shatermfn forLG dat =
-  let dn = strippedName dat
+  let dn = name dat
       cs = body dat
       u = text "u"
   in instanceSkeleton (if forLG then "ShATermLG" else "ShATermConvertible")
@@ -359,7 +359,7 @@ makeFromShATerm forLG b =
 typeablefn :: Data -> Doc
 typeablefn dat =
     let vs = vars dat
-        dn = strippedName dat
+        dn = name dat
         ntext str = str ++ if null vs then "" else show $ length vs
         stext = text ("deriving instance Typeable " ++ dn)
     in if null vs then stext else
@@ -371,7 +371,7 @@ typeablefn dat =
 jsonfn :: Data ->Doc
 jsonfn dat =
     let vs = vars dat
-        dn = strippedName dat
+        dn = name dat
         typ = if null vs then text dn else parens . hsep . fmap text $ (dn : vs)
         gen = text "deriving instance GHC.Generics.Generic" <+> typ
 
