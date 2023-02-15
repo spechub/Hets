@@ -1,4 +1,4 @@
-{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE ExistentialQuantification, OverloadedStrings #-}
 {- |
 Module      :  ./TopHybrid/StatAna.hs
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -31,6 +31,7 @@ import Data.List
 import Data.Set
 import Unsafe.Coerce
 import ATerm.Lib
+import Data.Aeson(FromJSON, ToJSON, parseJSON, toJSON, object, (.=), Value(Null))
 
 bimap :: (t1 -> t2) -> (s1 -> s2) -> (t1, s1) -> (t2, s2)
 bimap f g (a, b) = (f a, g b)
@@ -235,3 +236,21 @@ instance ShATermConvertible Spc_Wrap where
 instance ShATermConvertible Frm_Wrap where
         toShATermAux att (Frm_Wrap _ f) = toShATermAux att f
         fromShATermAux _ _ = error "I entered here"
+
+
+
+instance ToJSON Sgn_Wrap where
+  toJSON (Sgn_Wrap _ s) = toJSON s
+  toJSON EmptySign = Null
+instance FromJSON Sgn_Wrap where
+  parseJSON = error "fromJSON not implemented for Sgn_Wrap"
+
+instance ToJSON Spc_Wrap where
+  toJSON (Spc_Wrap _ spec sen) = object ["spec" .= spec, "sen" .= sen]
+instance FromJSON Spc_Wrap where
+  parseJSON = error "fromJSON not implemented for Spc_Wrap"
+
+instance ToJSON Frm_Wrap where
+  toJSON (Frm_Wrap _ f) = toJSON f
+instance FromJSON Frm_Wrap where
+  parseJSON = error "fromJSON not implemented for Frm_Wrap"

@@ -89,6 +89,7 @@ common shared-properties
     , bytestring >= 0.9
     , xml >= 1.3.7 && < 1.4
     , relation
+    , xeno
   cpp-options: -DCASLEXTENSIONS -DRDFLOGIC
   ghc-options: -freduction-depth=31
 
@@ -134,7 +135,9 @@ common shared-properties
 Executable hets
   import: shared-properties
   Main-is: hets.hs
-  ghc-options: -threaded 
+  ghc-options: 
+    - -threaded 
+    - -main-is Main
 
   if flag(uniform)
     build-depends:
@@ -477,7 +480,6 @@ Library
         Common.Utils
         Common.XPath
         Common.XUpdate
-        Common.XmlExpat
         Common.XmlParser
         CommonLogic.AS_CommonLogic
         CommonLogic.ATC_CommonLogic

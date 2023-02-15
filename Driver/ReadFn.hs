@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {- |
 Module      :  ./Driver/ReadFn.hs
 Description :  reading and parsing ATerms, CASL, DOL files
