@@ -44,9 +44,6 @@ import Data.IORef
 import Control.Monad
 import Control.Monad.Trans (MonadIO (..))
 
-import Debug.Trace
-import Text.Printf
-
 #ifdef HASKELINE
 shellSettings :: IORef CmdlState -> Settings IO
 shellSettings st =
@@ -92,10 +89,6 @@ cmdlComplete st (left, _) = do
                filteredConsCheckerList =
                  filter (\cc -> elem cc stateConsCheckList) fullConsCheckerList
                shortConsCList = nub $ map getCcName filteredConsCheckerList
-
-           -- traceM $ printf "-- length paths: %d" (length paths)
-           -- traceM "-- paths:"
-           -- forM_ paths print
            showCmdComplete state shortConsCList comps left
         [] -> showCmdComplete state [] comps left
      Nothing -> showCmdComplete state [] comps left
