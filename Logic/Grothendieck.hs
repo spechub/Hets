@@ -107,11 +107,8 @@ import Logic.ExtSign
 import Logic.Logic
 import Logic.Modification
 import Logic.Morphism
--- import Logic.SearchComorphismCompositions
 
 import ATerm.Lib
-
-import Debug.Trace
 
 import Common.Doc
 import Common.DocUtils
@@ -1093,47 +1090,43 @@ findComorphismCompositions lg gsubl =
 
 processSearchState :: LogicGraph -> SearchState -> [AnyComorphism]
 processSearchState lg state@(SearchState ns ls _ pq _ _) = case Heap.view pq of
-  -- Nothing -> trace "-- processSearchState, finish because priority queue is empty" $ getComorphismCompositions ns ls
   Nothing -> getComorphismCompositions ns ls
   Just ((dist, nId), pq') ->
-    -- trace (printf "-- processSearchState, add node with id=%d, dist=%d, parentId=%d, comorphism=%s" nId dist (parentId $ ns HMap.! nId) (comName $ ns HMap.! nId)) $
-      let curNode =
-            fromMaybe
-              ( error $
-                  printf "processSearchState, incorrect nId=%d" nId
-              )
-              $ HMap.lookup nId ns
-          -- remove parent node from global map of nodes
-          -- as we don't need it there anymore so GC can utilize
-          -- it if required
-          ns' = HMap.delete (parentId curNode) ns
-          -- remove parent node from set of leaves and put current node there
-          ls' = HSet.insert nId $ HSet.delete (parentId curNode) ls
-       in processSearchState lg $
-            processNeighbours
-              lg
-              nId
-              dist
-              ( state
-                  { searchNodes = ns',
-                    leaves = ls',
-                    pQueue = pq'
-                  }
-              )
+    let curNode =
+          fromMaybe
+            ( error $
+                printf "processSearchState, incorrect nId=%d" nId
+            )
+            $ HMap.lookup nId ns
+        -- remove parent node from global map of nodes
+        -- as we don't need it there anymore so GC can utilize
+        -- it if required
+        ns' = HMap.delete (parentId curNode) ns
+        -- remove parent node from set of leaves and put current node there
+        ls' = HSet.insert nId $ HSet.delete (parentId curNode) ls
+     in processSearchState lg $
+          processNeighbours
+            lg
+            nId
+            dist
+            ( state
+                { searchNodes = ns',
+                  leaves = ls',
+                  pQueue = pq'
+                }
+            )
 
 getComorphismCompositions ::
   HMap.HashMap Int SearchNode -> -- nodes of search graph
   HSet.HashSet Int -> -- leaves in this graph
   [AnyComorphism]
 getComorphismCompositions sNodes lvs =
-  -- trace (printf "-- getComorphismCompositions\n\tsNodes.keys: %s\n\tlvs: %s" (show $ HMap.keys sNodes) (show $ HSet.toList lvs)) $
   let res =
         concat $
           map
             ( \i ->
                 let leaf = HMap.lookup i sNodes
-                 in --trace (printf "-- leaf: %s" (show leaf)) $
-                    reverse $
+                 in reverse $
                       cCompositions $
                         fromMaybe
                           ( error $
@@ -1155,7 +1148,6 @@ getTargetLogicName (Comorphism cid) = language_name $ targetLogic cid
 -- | given node in tree generate candidate nodes and put them in priority queue
 processNeighbours :: LogicGraph -> Int -> Int -> SearchState -> SearchState
 processNeighbours lg nId dist state@(SearchState ns _ ds pq ltcs nni) =
-  -- trace (printf "-- processNeighbours, nId=%d" nId) $
   let curNode =
         fromMaybe (error $ printf "processNeighbours, incorrect nId=%d key for HashMap" nId) $
           HMap.lookup nId ns
