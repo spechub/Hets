@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Common/Lib/MapSet.hs
 Description :  Maps of sets
@@ -66,6 +66,8 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
 
+import GHC.Generics (Generic)
+
 -- * functions directly working over unwrapped maps of sets
 
 -- | remove empty elements from the map
@@ -124,7 +126,7 @@ imageSet m = Set.fromList . imageList m
 
 -- | a map to non-empty sets
 newtype MapSet a b = MapSet { toMap :: Map.Map a (Set.Set b) }
-  deriving (Eq, Ord, Typeable, Data)
+  deriving (Eq, Ord, Typeable, Data, Generic)
 
 instance (Show a, Show b) => Show (MapSet a b) where
     show = show . toMap

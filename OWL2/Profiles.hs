@@ -14,7 +14,7 @@ References  :  <http://www.w3.org/TR/owl2-profiles/>
 -}
 
 module OWL2.Profiles
-    ( Profiles
+    ( Profiles(..)
     , bottomProfile
     , topProfile
     , allProfiles

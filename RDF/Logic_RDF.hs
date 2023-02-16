@@ -40,16 +40,9 @@ import RDF.Morphism
 import RDF.Sublogic
 import RDF.StaticAnalysis
 import ATerm.Conversion
+import RDF.ATC_RDF ()
 
 data RDF = RDF deriving Show
-
-instance ShATermConvertible SymbItems
-instance ShATermConvertible SymbMapItems
-instance ShATermConvertible Sign
-instance ShATermConvertible Axiom
-instance ShATermConvertible TurtleDocument
-instance ShATermConvertible RDFMorphism
-instance ShATermConvertible RDFEntity
 
 instance Language RDF where
   language_name _ = "RDF"

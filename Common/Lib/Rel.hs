@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Common/Lib/Rel.hs
 Description :  Relations, based on maps
@@ -54,11 +54,13 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
 
+import GHC.Generics (Generic)
+
 import qualified Common.Lib.MapSet as MapSet
 
 -- | no invariant is ensured for relations!
 newtype Rel a = Rel { toMap :: Map.Map a (Set.Set a) }
-  deriving (Eq, Ord, Typeable, Data)
+  deriving (Eq, Ord, Typeable, Data, Generic)
 
 instance Show a => Show (Rel a) where
     show = show . toMap
