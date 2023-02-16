@@ -1028,7 +1028,7 @@ weight_limit :: Int
 weight_limit = 4
 
 times_logic_in_branch :: Int
-times_logic_in_branch = 2
+times_logic_in_branch = 3
 
 data SearchNode = SearchNode
   { nodeId :: Int,
