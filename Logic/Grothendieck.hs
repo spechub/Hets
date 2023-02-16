@@ -886,26 +886,6 @@ with intermediate inclusion -}
 compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
 compInclusion = genCompInclusion . inclusionAux False
 
--- | Find all (composites of) comorphisms starting from a given logic
--- findComorphismPaths :: LogicGraph -> G_sublogics -> [AnyComorphism]
--- findComorphismPaths lg (G_sublogics lid sub) =
---   nubOrd $ map fst $ iterateComp (0 :: Int) [(idc, [idc])]
---   where
---   idc = Comorphism (mkIdComorphism lid sub)
---   coMors = Map.elems $ comorphisms lg
---   -- compute possible compositions, but only up to depth 4
---   iterateComp n l =
---     if n > 0 || l == newL then newL else iterateComp (n + 1) newL
---     where
---     newL = nubOrd $ l ++ concatMap extend l
---     -- extend comorphism list in all directions, but no cylces
---     extend (coMor, cmps) =
---        let addCoMor c =
---             case compComorphism coMor c of
---               Nothing -> Nothing
---               Just c1 -> Just (c1, c : cmps)
---         in mapMaybe addCoMor $ filter (not . (`elem` cmps)) coMors
-
 -- | Find compositions of comorphisms starting from a give logic
 -- | use wheted graph of logics to optimize search
 findComorphismPaths :: LogicGraph -> G_sublogics -> [AnyComorphism]
