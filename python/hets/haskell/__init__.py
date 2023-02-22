@@ -1,6 +1,7 @@
 import hyphen
 
-hyphen.importing.EXPECTED_EMPTY += ["Driver", "Common", "Static", "Logic", "Proofs"]
+hyphen.importing.FORCED_EMPTY += ["Driver", "Common", "Static", "Logic", "Proofs", "HetsAPI"]
+hyphen.importing.EXPECTED_EMPTY += ["Driver", "Common", "Static", "Logic", "Proofs", "HetsAPI"]
 
 from hs.HetsAPI.Python import (PyTheory, PyComorphism, PyConsChecker, PyProver, autoProveNode, availableComorphisms,
                                getLNodesFromDevelopmentGraph, getTheoryFromNode, Sentence, SentenceByName,
@@ -12,14 +13,10 @@ from hs.HetsAPI.Python import (PyTheory, PyComorphism, PyConsChecker, PyProver, 
                                compositionProveEdges, conservativity, automaticHideTheoremShift, theoremHideShift,
                                computeColimit, normalForm, triangleCons, freeness, libFlatImports, libFlatDUnions,
                                libFlatRenamings, libFlatHiding, libFlatHeterogen, qualifyLibEnv)
-from hs.Prelude import Just, Nothing, fst, snd, show
+from hs.Prelude import Just, Nothing, fst, snd, show, String
 
-from hs.Data.Maybe import fromJust
-from hs.Common.Result import Result, resultToMaybe, Diagnosis
+from hs.HetsAPI.Internal import (fromJust, Result, resultToMaybe, Diagnosis, HetcatsOpts, defaultHetcatsOpts, DGraph,
+                                 DGNodeLab, ProofStatus, ProofState, ConsistencyStatus)
+
 import hs.Common.OrderedMap as OMap
-from hs.Driver.Options import HetcatsOpts, defaultHetcatsOpts
-from hs.Static.DevGraph import DGraph, DGNodeLab
-from hs.Logic.Prover import ProofStatus
-from hs.Proofs.AbstractState import ProofState
-from hs.Proofs.ConsistencyCheck import ConsistencyStatus
 

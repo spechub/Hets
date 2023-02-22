@@ -14,3 +14,6 @@ class Sentence:
 
     def __str__(self) -> str:
         return self._hsPrettyFn(self._hsSentence)
+
+    def __repr__(self):
+        return f"<{__name__} object representing sentence {self.name()} = '{str(self)}'>"

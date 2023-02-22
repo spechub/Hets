@@ -267,6 +267,11 @@ Library
         HetsAPI.DataTypes
         HetsAPI.InfoCommands
         HetsAPI.ProveCommands
+        HetsAPI.Internal
+
+        Common.OrderedMap
+
+  other-modules:
         ATC.AS_Annotation
         ATC.AS_Architecture
         ATC.AS_Library
@@ -460,7 +465,6 @@ Library
         Common.Lib.Tabular
         Common.LibName
         Common.LogicT
-        Common.OrderedMap
         Common.Parsec
         Common.Partial
         Common.Percent
@@ -1064,5 +1068,4 @@ Library
         VSE.Parse
         VSE.Prove
         VSE.ToSExpr
-  other-modules:
         Static.GTheory
