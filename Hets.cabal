@@ -264,6 +264,8 @@ Library
         HetsAPI
         HetsAPI.Python
         HetsAPI.Commands
+        HetsAPI.DataTypes
+        HetsAPI.InfoCommands
         HetsAPI.ProveCommands
         ATC.AS_Annotation
         ATC.AS_Architecture
@@ -441,6 +443,8 @@ Library
         Common.InjMap
         Common.Item
         Common.Json
+        Common.Json.ConvInstances
+        Common.Json.Instances
         Common.Keywords
         Common.LaTeX_funs
         Common.LaTeX_maps
@@ -794,6 +798,7 @@ Library
         OMDoc.XmlInterface
         OWL2.AS
         OWL2.ASKeywords
+        OWL2.ATC_OWL2
         OWL2.CASL2OWL
         OWL2.ColimSign
         OWL2.ColonKeywords
@@ -918,6 +923,7 @@ Library
         QVTR.Sign
         QVTR.StatAna
         RDF.AS
+        RDF.ATC_RDF
         RDF.Function
         RDF.Logic_RDF
         RDF.Morphism

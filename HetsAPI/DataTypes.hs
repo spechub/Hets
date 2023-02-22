@@ -1,12 +1,8 @@
 module HetsAPI.DataTypes (
-    Sentence (..)
-    , SentenceByName(..)) where
-import ATerm.AbstractSyntax (ATermTable)
-import Logic.Prover (ThSens)
-import Static.GTheory (BasicProof)
-import Logic.Comorphism (AnyComorphism)
+    Sentence
+  , SentenceByName) where
 import qualified Common.OrderedMap as OMap
-import Common.Json (Json)
+import Data.Aeson (Value)
 
-type Sentence = Json
+type Sentence = Value
 type SentenceByName = OMap.OMap String Sentence

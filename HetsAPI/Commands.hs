@@ -5,6 +5,7 @@ module HetsAPI.Commands (
    , localInference
    , localDecomposition
    , compositionProveEdges
+   , compositionCreateEdges
    , conservativity
    , automaticHideTheoremShift
    , theoremHideShift
@@ -30,35 +31,38 @@ module HetsAPI.Commands (
    , HPC.proveNode
    , HPC.checkConsistency
    , HPC.checkConservativityNode 
+
+   -- Hets.InfoCommands
+   , HIC.getGraphForLibrary
+   , HIC.getNodesFromDevelopmentGraph
+   , HIC.getLNodesFromDevelopmentGraph
+   , HIC.getAllSentences
+   , HIC.getAllAxioms
+   , HIC.getAllGoals
+   , HIC.getProvenGoals
+   , HIC.getUnprovenGoals
 ) where
 
 import qualified Data.Map as Map
-import Data.Graph.Inductive.Graph (LNode)
 
-import Control.Monad.Trans (lift)
 
-import Common.Result (Result(..), fatal_error, maybeToResult, justHint)
-import Common.Id(nullRange)
+import Common.Result (Result(..))
 import Common.LibName (LibName)
-import Common.ResultT (runResultT, liftR)
 
 import Interfaces.CmdAction (globLibAct, globLibResultAct)
-import Interfaces.Command (GlobCmd(..), SelectCmd (Lib))
+import Interfaces.Command (GlobCmd(..))
 
 import qualified HetsAPI.ProveCommands as HPC
+import qualified HetsAPI.InfoCommands as HIC
 
-import Driver.AnaLib (anaLib)
 import Driver.Options (HetcatsOpts)
 import Driver.ReadMain (readAndAnalyse)
 
 import Logic.Comorphism (AnyComorphism)
-import Static.DevGraph (LibEnv, DGraph, lookupDGraph, DGNodeLab, labNodesDG)
+import Static.DevGraph (LibEnv)
 import Static.GTheory (G_theory, mapG_theory)
 import Common.DocUtils (Pretty(pretty))
 
-
-err :: String -> Result a
-err s = fatal_error s nullRange
 
 globalCommands :: Map.Map GlobCmd (LibName -> LibEnv -> LibEnv)
 globalCommands = Map.fromList globLibAct

@@ -4,6 +4,7 @@ module HetsAPI.ProveCommands (
     , usableConsistencyCheckers
     , autoProveNode
     , proveNode
+    , autoCheckConsistency
     , checkConsistency
     , checkConservativityNode
 ) where
@@ -15,16 +16,14 @@ import Control.Monad.Trans ( MonadTrans(lift) )
 import Common.LibName (LibName)
 import Common.ResultT (ResultT)
 
-import Comorphisms.KnownProvers (knownProversWithKind)
 import Comorphisms.LogicGraph (logicGraph)
 import Logic.Comorphism (AnyComorphism)
 import Logic.Prover (ProofStatus, ProverKind (..))
-import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, getUsableProvers, G_cons_checker (..), getProverName, getConsCheckers)
-import Static.DevGraph (LibEnv, DGraph, lookupDGraph, DGNodeLab, labNodesDG, ProofHistory)
-import Static.GTheory (G_theory (..), sublogicOfTh, proveSens)
+import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, getUsableProvers, G_cons_checker (..), getProverName, getConsCheckers, getCcName)
+import Static.DevGraph (LibEnv, DGraph, DGNodeLab, ProofHistory, dgn_theory)
+import Static.GTheory (G_theory (..), sublogicOfTh)
 import Data.Graph.Inductive (LNode)
 import Proofs.ConsistencyCheck (ConsistencyStatus, consistencyCheck)
-import Logic.Logic (Logic(cons_checkers))
 import qualified Interfaces.Utils (checkConservativityNode)
 import Logic.Grothendieck (findComorphismPaths)
 
@@ -59,7 +58,7 @@ autoProveNode theory proverM comorphismM = do
             return (prover, comorphism)
         (Nothing, Nothing) -> head <$> lift (usableProvers theory)
 
-    ((th, out), (state, steps)) <- autoProofAtNode True 600 [] [] theory (prover, comorphism)
+    ((th, _), (state, steps)) <- autoProofAtNode True 600 [] [] theory (prover, comorphism)
     return (th, state, steps)
 
 -- | @proveNode sub timeout goals axioms theory (prover, comorphism)@ proves
@@ -92,6 +91,23 @@ proveNode sub timeout goals axioms theory pc = snd <$>
 checkConsistency :: Bool -> G_cons_checker -> AnyComorphism -> LibName -> LibEnv
                  -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
 checkConsistency = consistencyCheck
+
+autoCheckConsistency :: Bool -> Maybe G_cons_checker -> Maybe AnyComorphism -> LibName -> LibEnv
+                 -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
+autoCheckConsistency b ccM comorphismM libName libEnv dgraph lnode timeout =  do
+    let theory = dgn_theory . snd $ lnode
+    (cc, comorphism) <- case (ccM, comorphismM) of
+        (Just cc, Just comorphism) -> return (cc, comorphism)
+        (Just cc, Nothing) -> do
+            let ccName = getCcName cc
+            comorphism <-  (snd . head . filter ((== ccName) . getCcName . fst) <$> usableConsistencyCheckers theory)
+            return (cc, comorphism)
+        (Nothing, Just comorphism) -> do
+            cc <- (fst . head . filter ((== comorphism) . snd) <$> usableConsistencyCheckers theory)
+            return (cc, comorphism)
+        (Nothing, Nothing) -> head <$> (usableConsistencyCheckers theory)
+
+    checkConsistency b cc comorphism libName libEnv dgraph lnode timeout
 
 
 checkConservativityNode ::LNode DGNodeLab -> LibEnv -> LibName

@@ -2,6 +2,7 @@ module HetsAPI.Python (
     PyTheory
     , PyComorphism
     , PyProver
+    , PyConsChecker
     -- Wrapped with Py*
     , getTheoryFromNode
     , usableProvers
@@ -10,6 +11,7 @@ module HetsAPI.Python (
     , availableComorphisms
     , usableConsistencyCheckers
     , checkConsistency
+    , autoCheckConsistency
     , proveNode
     , getAllSentences
     , getAllAxioms
@@ -19,6 +21,7 @@ module HetsAPI.Python (
     , getConsCheckerName
     , getComorphismName
     , getProverName
+    , prettySentence
 
     -- Unchanged re-export from Hets.ProveCommands
     , HP.checkConservativityNode
@@ -45,9 +48,18 @@ module HetsAPI.Python (
     , HC.qualifyLibEnv
     , HC.loadLibrary
     , HC.showTheory
+    
     , HI.getGraphForLibrary
     , HI.getNodesFromDevelopmentGraph
     , HI.getLNodesFromDevelopmentGraph
+
+    , fstOf3
+    , sndOf3
+    , thd
+
+    -- Datatypes
+    , HDT.Sentence
+    , HDT.SentenceByName
 )
 
 where
@@ -57,6 +69,7 @@ import Data.Functor
 import qualified HetsAPI.Commands as HC
 import qualified HetsAPI.ProveCommands as HP
 import qualified HetsAPI.InfoCommands as HI
+import qualified HetsAPI.DataTypes as HDT
 
 import Common.DocUtils (pretty)
 import Common.ExtSign (plainSign)
@@ -68,17 +81,25 @@ import Data.Graph.Inductive (LNode)
 import Data.Bifunctor (bimap)
 
 import Logic.Comorphism (AnyComorphism)
-import Logic.Logic (sym_of, PrintTypeConv)
+import Logic.Logic (sym_of)
 import Logic.Prover (ProofStatus)
 import Static.DevGraph (DGNodeLab (dgn_theory), LibEnv, DGraph)
 import qualified Static.GTheory as GT
 import Proofs.ConsistencyCheck (ConsistencyStatus)
 import qualified Proofs.AbstractState
 import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, G_cons_checker)
-import ATerm.AbstractSyntax (ATermTable)
-import HetsAPI.DataTypes (SentenceByName)
+import HetsAPI.DataTypes (SentenceByName, Sentence)
+import Common.XPath (BasicType(String))
+import Static.GTheory (G_theory)
 
+fstOf3 :: (a,b,c) -> a
+fstOf3 (x, _, _) = x
 
+sndOf3 :: (a,b,c) -> b
+sndOf3 (_, x, _) = x
+
+thd :: (a, b, c) -> c
+thd (_, _, x) = x;
 
 -- Datatypes used for wrapping existential datatypes for an easier use in hyphen
 
@@ -86,7 +107,6 @@ data PyTheory = PyTheory GT.G_theory
 data PyProver = PyProver G_prover
 data PyConsChecker = PyConsChecker G_cons_checker
 data PyComorphism = PyComorphism AnyComorphism
-data PySentence = PySentence (ATermTable, Int)
 
 instance Show PyTheory where
     show (PyTheory GT.G_theory { GT.gTheoryLogic = lid, GT.gTheorySign = extSign }) =
@@ -135,9 +155,15 @@ usableConsistencyCheckers :: PyTheory -> IO [(PyConsChecker, PyComorphism)]
 usableConsistencyCheckers (PyTheory th) =
     fmap (bimap PyConsChecker PyComorphism) <$> HP.usableConsistencyCheckers th
 
-checkConsistency :: Bool -> PyConsChecker -> PyComorphism -> LibName -> LibEnv
-                 -> DGraph -> LNode DGNodeLab -> Int -> IO ConsistencyStatus
-checkConsistency u (PyConsChecker cc) (PyComorphism c) = HP.checkConsistency u cc c
+checkConsistency :: LibName -> LibEnv -> DGraph -> LNode DGNodeLab -> Int ->
+    Bool -> PyConsChecker -> PyComorphism -> IO ConsistencyStatus
+checkConsistency n e d l i b (PyConsChecker cc) (PyComorphism c) = HP.checkConsistency b cc c n e d l i
+
+
+autoCheckConsistency :: LibName -> LibEnv -> DGraph -> LNode DGNodeLab -> Int ->
+    Bool -> Maybe PyConsChecker -> Maybe PyComorphism -> IO ConsistencyStatus
+autoCheckConsistency n e d l i b ccM comorphismM =
+    HP.autoCheckConsistency b ((\(PyConsChecker cc) -> cc) <$> ccM) ((\(PyComorphism c) -> c) <$> comorphismM) n e d l i
 
 
 proveNode :: Bool -> Int -> [String] -> [String] -> PyTheory
@@ -162,3 +188,7 @@ getProvenGoals (PyTheory theory) = HI.getProvenGoals theory
 
 getUnprovenGoals :: PyTheory -> SentenceByName
 getUnprovenGoals (PyTheory theory) = HI.getUnprovenGoals theory
+
+prettySentence :: PyTheory -> Sentence -> String
+prettySentence (PyTheory theory) = HI.prettySentenceOfTheory theory
+
