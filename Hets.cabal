@@ -90,6 +90,7 @@ common shared-properties
     , xml >= 1.3.7 && < 1.4
     , relation
     , xeno
+    , heap
   cpp-options: -DCASLEXTENSIONS -DRDFLOGIC
   ghc-options: -freduction-depth=31
 

@@ -191,12 +191,12 @@ is normally initially empty.  The stop list update function is given a list
 element a and the current stop list b, and returns 'Nothing' if the element is
 already in the stop list, else 'Just' b', where b' is a new stop list updated
 to contain a. -}
-nubWith :: (a -> b -> Maybe b) -> b -> [a] -> [a]
-nubWith f s es = case es of
-  [] -> []
+nubWith :: [a] -> (a -> b -> Maybe b) -> b -> [a] -> [a]
+nubWith acc f s es = case es of
+  [] -> reverse acc
   e : rs -> case f e s of
-       Just s' -> e : nubWith f s' rs
-       Nothing -> nubWith f s rs
+       Just s' -> nubWith (e:acc) f s' rs
+       Nothing -> nubWith acc f s rs
 
 nubOrd :: Ord a => [a] -> [a]
 nubOrd = nubOrdOn id
@@ -204,7 +204,7 @@ nubOrd = nubOrdOn id
 nubOrdOn :: Ord b => (a -> b) -> [a] -> [a]
 nubOrdOn g = let f a s = let e = g a in
                    if Set.member e s then Nothing else Just (Set.insert e s)
-  in nubWith f Set.empty
+  in nubWith [] f Set.empty
 
 -- | safe variant of !!
 atMaybe :: [a] -> Int -> Maybe a
