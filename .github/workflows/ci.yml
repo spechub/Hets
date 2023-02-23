@@ -705,7 +705,7 @@ jobs:
     needs: ["job_2b", "job_3a", "job_3b", "job_3c", "job_3d", "job_4a"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
@@ -722,4 +722,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: True
-          tags: ${{ secretes.DOCKER_HUB_USERNAME }}/hets:latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/hets:latest
