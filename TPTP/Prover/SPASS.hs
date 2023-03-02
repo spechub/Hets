@@ -1,7 +1,7 @@
 {- |
 Module      :  ./TPTP/Prover/SPASS.hs
 Description :  Interface for the SPASS theorem prover.
-Copyright   :  (c) Eugen Kuksa University of Magdeburg 2017
+Copyright   :  (c) Eugen Kuksa University of Magdeburg 2017, Tom Kranz 2021-2022
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Eugen Kuksa <kuksa@iks.cs.ovgu.de>

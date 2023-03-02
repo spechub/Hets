@@ -1,3 +1,18 @@
+{- |
+Module      :  ./CASL/ToTIP.hs
+Description :  represent CASL in TIP format
+Copyright   :  (c) Tom Kranz 2022
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :
+Stability   :  experimental
+Portability : 
+
+translations from CASL specs to TIP format
+
+This module provides functions for expressing CASL signatures in
+  TIP declarations and converting single sentences to declarations.
+-}
 module CASL.ToTIP where
 
 import TIP.AbsTIP

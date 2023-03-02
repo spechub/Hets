@@ -1,3 +1,22 @@
+{- |
+Module      :  ./CASL/Zipperposition.hs
+Description :  Zipperposition prover for CASL
+Copyright   :  (c) Tom Kranz 2022
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :
+Stability   :  experimentatl
+Portability :  non-portable (via GUI imports)
+
+provides higher-order and first-order+induction prover for CASL
+
+The FO+induction prover only works if all sort-generation constraints are
+  introduced via free-datatype declarations. Higher-order mode can deal with
+  anything by receiving any sort-generation constraints as second-order
+  induction axioms.
+  Currently limited by an inability to parse simultaneous (interdependent) data
+  type declarations and annotations (e.g. axiom names).
+-}
 module CASL.Zipperposition (zipperpositionFreeFolProver, zipperpositionCFolProver) where
 
 import CASL.Sublogic

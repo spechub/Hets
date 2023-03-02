@@ -1,3 +1,15 @@
+{- |
+Module      :  ./TIP/Prover/Common.hs
+Description :  useful functions for provers with TIP input
+Copyright   :  (c) Tom Kranz 2022
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :
+Stability   :  experimental
+Portability :  non-portable (imports TIP.AbsTIP)
+
+These functions should be of use for any prover interfacing via the TIP format.
+-}
 module TIP.Prover.Common where
 
 import TIP.AbsTIP

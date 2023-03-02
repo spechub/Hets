@@ -1,3 +1,15 @@
+{- |
+Module      :  ./TIP/Utils.hs
+Description :  utility functions for dealing with TIP objects
+Copyright   :  (c) Tom Kranz 2022
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Maintainer  :
+Stability   :  experimental
+Portability :  non-portable (imports TIP.AbsTIP)
+
+Extracting/wrapping names and attributes from/in TIP objects, with quoting.
+-}
 module TIP.Utils where
 
 import TIP.AbsTIP
