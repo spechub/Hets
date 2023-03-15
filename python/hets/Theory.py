@@ -1,9 +1,11 @@
 from typing import List, Optional, Tuple
 
-from .haskell import (Just, Nothing, fst, thd, PyTheory, usableProvers, usableConsistencyCheckers, autoProveNode,
+from .HsWrapper import HsHierarchyElement
+from .haskell import (Just, Nothing, fst, thd, PyTheory, usableProvers, usableConsistencyCheckers, proveNodeAndRecord,
                       availableComorphisms, getAllSentences, getAllGoals, getAllAxioms, getProvenGoals, prettySentence,
                       getUnprovenGoals, OMap, fstOf3, sndOf3, ProofStatus, PyProver, PyComorphism, PyConsChecker,
-                      ConsistencyStatus)
+                      ConsistencyStatus, defaultProofOptions, PyProofOptions, mkPyProofOptions, TheoryPointer, snd,
+                      defaultConsCheckingOptions, PyConsCheckingOptions, checkConsistencyAndRecord)
 
 from .result import resultOrRaise
 
@@ -14,11 +16,27 @@ from .ProofState import ProofState
 from .Sentence import Sentence
 
 
-class Theory:
-    def __init__(self, hsTheory: PyTheory, hsAutoCheckConsistency) -> None:
+class Theory(HsHierarchyElement):
+    def __init__(self, hsTheory: PyTheory, parent: Optional[HsHierarchyElement]) -> None:
+        super().__init__(parent)
         self._hsTheory = hsTheory
         self._hsPrettySentence = prettySentence(hsTheory)
-        self._hsAutoCheckConsistency = hsAutoCheckConsistency
+
+    def hsObj(self):
+        return self._hsTheory
+
+    def hsUpdate(self, newHsObj):
+        self._hsTheory = newHsObj
+
+    def _theoryPointer(self) -> TheoryPointer:
+        node = self.parent().hsObj()
+        graph = self.parent().parent().hsObj()
+        envName = self.parent().parent().parent().hsObj()
+
+        name = fst(envName)
+        env = snd(envName)
+
+        return name, env, graph, node
 
     def usableProvers(self) -> List[Prover]:
         provers = usableProvers(self._hsTheory).act()
@@ -32,29 +50,63 @@ class Theory:
         comorphisms = availableComorphisms(self._hsTheory)
         return [Comorphism(x) for x in comorphisms]
 
-    def prove(self, prover: Optional[Prover] = None, comorphism: Optional[Comorphism] = None) -> Tuple[
-        ProofState, List[ProofStatus]]:
+    def prove(self,
+              prover: Optional[Prover] = None,
+              comorphism: Optional[Comorphism] = None,
+              useTheorems: Optional[bool] = None,
+              goalsToProve: Optional[List[str]] = None,
+              axiomsToInclude: Optional[List[str]] = None,
+              timeout: Optional[int] = None
+              ) -> List[ProofStatus]:
         proverM = Just(prover._hsProver) if prover else Nothing().subst(a=PyProver())
         comorphismM = Just(comorphism._hsComorphism) if comorphism else Nothing().subst(a=PyComorphism())
 
-        proveResultR = autoProveNode(
-            self._hsTheory, proverM, comorphismM).act()
-        proveResult = resultOrRaise(proveResultR)
+        defaultOpts = defaultProofOptions
 
-        self._hsTheory = fstOf3(proveResult)
+        opts = mkPyProofOptions(
+            proverM,
+            comorphismM)(
+            useTheorems if useTheorems is not None else defaultOpts.proofOptsUseTheorems(),
+            goalsToProve if goalsToProve is not None else defaultOpts.proofOptsGoalsToProve(),
+            axiomsToInclude if axiomsToInclude is not None else defaultOpts.proofOptsAxiomsToInclude(),
+            timeout if timeout is not None else defaultOpts.proofOptsTimeout(),
+        )
 
-        state = sndOf3(proveResult)
-        status = thd(proveResult)
+        proveResultR = proveNodeAndRecord(self._theoryPointer(), opts).act()
+        result = resultOrRaise(proveResultR)
+        newThAndStatuses = fst(result)
+        newTh = fst(newThAndStatuses)
+        goalStatuses = snd(newThAndStatuses)
+        newEnv = snd(result)
 
-        return ProofState(state, self), status
+        self.hsUpdate(newTh)
 
-    def checkConsistency(self, consChecker: Optional[ConsistencyChecker] = None,
-                         comorphism: Optional[Comorphism] = None, includeTheorems: Optional[bool] = True,
-                         timeout: Optional[int] = 600) -> ConsistencyStatus:
+        self.root().hsUpdate(newEnv)
+
+        return goalStatuses
+
+    def checkConsistency(self,
+                         consChecker: Optional[ConsistencyChecker] = None,
+                         comorphism: Optional[Comorphism] = None,
+                         includeTheorems: Optional[bool] = None,
+                         timeout: Optional[int] = None
+                         ) -> ConsistencyStatus:
         ccM = Just(consChecker._hsConsChecker) if consChecker else Nothing().subst(a=PyConsChecker())
         comorphismM = Just(comorphism._hsComorphism) if comorphism else Nothing().subst(a=PyComorphism())
 
-        ccResult = self._hsAutoCheckConsistency(timeout, includeTheorems, ccM, comorphismM).act()
+        defaultOpts = defaultConsCheckingOptions
+
+        opts = PyConsCheckingOptions(
+            ccM,
+            comorphismM,
+            includeTheorems if includeTheorems is not None else defaultOpts.consOptsIncludeTheorems(),
+            timeout if timeout is not None else defaultOpts.consOptsTimeout(),
+        )
+
+        result = checkConsistencyAndRecord(self._theoryPointer(), opts).act()
+        ccResult, newEnv = fst(result), snd(result)
+
+        self.root().hsUpdate(newEnv)
 
         return ccResult
 

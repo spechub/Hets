@@ -28,6 +28,7 @@ import Data.Dynamic
 
 import HetsAPI.DataTypes (SentenceByName, Sentence)
 
+
 -- | @getDevelopmentGraphByName name env@ returns the development graph for the
 --   library @name@ in the environment @env@.
 getGraphForLibrary :: LibName -> LibEnv -> DGraph

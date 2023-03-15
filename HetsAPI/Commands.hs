@@ -27,7 +27,6 @@ module HetsAPI.Commands (
    , HPC.availableComorphisms
    , HPC.usableProvers
    , HPC.usableConsistencyCheckers
-   , HPC.autoProveNode
    , HPC.proveNode
    , HPC.checkConsistency
    , HPC.checkConservativityNode 

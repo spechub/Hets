@@ -24,7 +24,6 @@ module HetsAPI (
    , getNodesFromDevelopmentGraph
    , getLNodesFromDevelopmentGraph
    , usableProvers
-   , autoProveNode
    , proveNode 
 ) where
 
