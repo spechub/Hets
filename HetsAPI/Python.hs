@@ -28,9 +28,11 @@ module HetsAPI.Python (
     , prettySentence
     , defaultProofOptions
     , defaultConsCheckingOptions
+    , getGlobalTheory
 
     -- Unchanged re-export from Hets.ProveCommands
     , HP.checkConservativityNode
+    , HP.recomputeNode
 
     -- Unchanged re-export from Hets.Commands
     , HC.automatic
@@ -91,7 +93,7 @@ import Data.Bifunctor (bimap)
 import Logic.Comorphism (AnyComorphism)
 import Logic.Logic (sym_of)
 import Logic.Prover (ProofStatus(..))
-import Static.DevGraph (DGNodeLab (dgn_theory), LibEnv, DGraph, dgBody)
+import Static.DevGraph (DGNodeLab (dgn_theory, globalTheory), LibEnv, DGraph, dgBody)
 import qualified Static.GTheory as GT
 import Proofs.ConsistencyCheck (ConsistencyStatus)
 import qualified Proofs.AbstractState
@@ -267,3 +269,6 @@ prettySentence (PyTheory theory) = HI.prettySentenceOfTheory theory
 
 getDGNodeById :: DGraph -> Int -> Maybe DGNodeLab
 getDGNodeById = lab . dgBody
+
+getGlobalTheory :: DGNodeLab -> Maybe PyTheory
+getGlobalTheory = fmap PyTheory . globalTheory 

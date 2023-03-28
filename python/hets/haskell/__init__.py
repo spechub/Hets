@@ -13,10 +13,13 @@ from hs.HetsAPI.Python import (PyTheory, PyComorphism, PyConsChecker, PyProver, 
                                compositionProveEdges, conservativity, automaticHideTheoremShift, theoremHideShift,
                                computeColimit, normalForm, triangleCons, freeness, libFlatImports, libFlatDUnions,
                                libFlatRenamings, libFlatHiding, libFlatHeterogen, qualifyLibEnv, defaultProofOptions,
-                               defaultConsCheckingOptions, TheoryPointer, mkPyProofOptions, getDGNodeById)
+                               defaultConsCheckingOptions, TheoryPointer, mkPyProofOptions, getDGNodeById, recomputeNode,
+                               getGlobalTheory)
 from hs.Prelude import Just, Nothing, fst, snd, show, String
 
 from hs.HetsAPI.Internal import (fromJust, Result, resultToMaybe, Diagnosis, HetcatsOpts, defaultHetcatsOpts, DGraph,
-                                 DGNodeLab, ProofStatus, ProofState, ConsistencyStatus)
+                                 DGNodeLab, ProofStatus, ProofState, ConsistencyStatus, dgn_name, ConsistencyStatus,
+                                 ConsStatus, Conservativity, getNodeConsStatus, showConsistencyStatus, GoalStatus,
+                                 TimeOfDay, TacticScript, getConsOfStatus)
 
 import hs.Common.OrderedMap as OMap

@@ -2,17 +2,31 @@ module HetsAPI.Internal (
     fromJust
     , Result, resultToMaybe, Diagnosis
     , HetcatsOpts, defaultHetcatsOpts
-    , DGraph, DGNodeLab
+    , DGraph, DGNodeLab(dgn_name)
     , ProofStatus
+    , GoalStatus
+    , TimeOfDay
+    , TacticScript
     , ProofState
     , ConsistencyStatus
+    , sType
+    , ConsStatus
+    , Conservativity
+    , getNodeConsStatus
+    , getConsOfStatus
+    , isProvenConsStatusLink
+    , showConsistencyStatus
 ) where
 
 
 import Data.Maybe (fromJust)
+import Data.Time (TimeOfDay)
+
 import Common.Result (Result, resultToMaybe, Diagnosis)
+import Common.Consistency(Conservativity(..), showConsistencyStatus)
 import Driver.Options (HetcatsOpts, defaultHetcatsOpts)
-import Static.DevGraph (DGraph, DGNodeLab)
-import Logic.Prover (ProofStatus)
+import Static.DevGraph (DGraph, DGNodeLab(..), getNodeConsStatus, getNodeCons)
+import Static.DgUtils (ConsStatus, getConsOfStatus, isProvenConsStatusLink)
+import Logic.Prover (ProofStatus, GoalStatus, TacticScript)
 import Proofs.AbstractState (ProofState)
-import Proofs.ConsistencyCheck (ConsistencyStatus)
+import Proofs.ConsistencyCheck (ConsistencyStatus(..))

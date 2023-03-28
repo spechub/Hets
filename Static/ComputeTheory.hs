@@ -15,6 +15,7 @@ module Static.ComputeTheory
     ( computeTheory
     , globalNodeTheory
     , getGlobalTheory
+    , recomputeNodeLabel
     , theoremsToAxioms
     , computeDGraphTheories
     , computeLibEnvTheories

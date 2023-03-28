@@ -17,6 +17,7 @@ module HetsAPI.ProveCommands (
     , defaultProofOptions
     , ConsCheckingOptions(..)
     , defaultConsCheckingOptions
+    , recomputeNode
 ) where
 
 import HetsAPI.DataTypes
@@ -41,7 +42,7 @@ import Logic.Prover (ProofStatus, ProverKind (..))
 import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, getUsableProvers, G_cons_checker (..), getProverName, getConsCheckers, getCcName)
 import Proofs.ConsistencyCheck (ConsistencyStatus, SType(..), consistencyCheck, sType)
 
-import Static.ComputeTheory(updateLabelTheory)
+import Static.ComputeTheory(updateLabelTheory, recomputeNodeLabel)
 import Static.DevGraph (LibEnv, DGraph, DGNodeLab, ProofHistory, DGChange(..), dgn_theory, markNodeInconsistent, markNodeConsistent)
 import Static.GTheory (G_theory (..), sublogicOfTh)
 import Static.History (changeDGH)
@@ -166,3 +167,8 @@ checkConsistencyAndRecord p opts = do
 checkConservativityNode ::LNode DGNodeLab -> LibEnv -> LibName
   -> IO (String, LibEnv, ProofHistory)
 checkConservativityNode = Interfaces.Utils.checkConservativityNode False
+
+recomputeNode :: TheoryPointer -> LibEnv
+recomputeNode (name, env, graph, node@(i, label)) =
+    Map.insert name (changeDGH graph $ SetNodeLab label 
+        (i, recomputeNodeLabel env name graph node)) env

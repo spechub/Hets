@@ -28,16 +28,6 @@ class Theory(HsHierarchyElement):
     def hsUpdate(self, newHsObj):
         self._hsTheory = newHsObj
 
-    def _theoryPointer(self) -> TheoryPointer:
-        node = self.parent().hsObj()
-        graph = self.parent().parent().hsObj()
-        envName = self.parent().parent().parent().hsObj()
-
-        name = fst(envName)
-        env = snd(envName)
-
-        return name, env, graph, node
-
     def usableProvers(self) -> List[Prover]:
         provers = usableProvers(self._hsTheory).act()
         return list({Prover(fst(p)) for p in provers})
@@ -49,66 +39,6 @@ class Theory(HsHierarchyElement):
     def availableComorphisms(self) -> List[Comorphism]:
         comorphisms = availableComorphisms(self._hsTheory)
         return [Comorphism(x) for x in comorphisms]
-
-    def prove(self,
-              prover: Optional[Prover] = None,
-              comorphism: Optional[Comorphism] = None,
-              useTheorems: Optional[bool] = None,
-              goalsToProve: Optional[List[str]] = None,
-              axiomsToInclude: Optional[List[str]] = None,
-              timeout: Optional[int] = None
-              ) -> List[ProofStatus]:
-        proverM = Just(prover._hsProver) if prover else Nothing().subst(a=PyProver())
-        comorphismM = Just(comorphism._hsComorphism) if comorphism else Nothing().subst(a=PyComorphism())
-
-        defaultOpts = defaultProofOptions
-
-        opts = mkPyProofOptions(
-            proverM,
-            comorphismM)(
-            useTheorems if useTheorems is not None else defaultOpts.proofOptsUseTheorems(),
-            goalsToProve if goalsToProve is not None else defaultOpts.proofOptsGoalsToProve(),
-            axiomsToInclude if axiomsToInclude is not None else defaultOpts.proofOptsAxiomsToInclude(),
-            timeout if timeout is not None else defaultOpts.proofOptsTimeout(),
-        )
-
-        proveResultR = proveNodeAndRecord(self._theoryPointer(), opts).act()
-        result = resultOrRaise(proveResultR)
-        newThAndStatuses = fst(result)
-        newTh = fst(newThAndStatuses)
-        goalStatuses = snd(newThAndStatuses)
-        newEnv = snd(result)
-
-        self.hsUpdate(newTh)
-
-        self.root().hsUpdate(newEnv)
-
-        return goalStatuses
-
-    def checkConsistency(self,
-                         consChecker: Optional[ConsistencyChecker] = None,
-                         comorphism: Optional[Comorphism] = None,
-                         includeTheorems: Optional[bool] = None,
-                         timeout: Optional[int] = None
-                         ) -> ConsistencyStatus:
-        ccM = Just(consChecker._hsConsChecker) if consChecker else Nothing().subst(a=PyConsChecker())
-        comorphismM = Just(comorphism._hsComorphism) if comorphism else Nothing().subst(a=PyComorphism())
-
-        defaultOpts = defaultConsCheckingOptions
-
-        opts = PyConsCheckingOptions(
-            ccM,
-            comorphismM,
-            includeTheorems if includeTheorems is not None else defaultOpts.consOptsIncludeTheorems(),
-            timeout if timeout is not None else defaultOpts.consOptsTimeout(),
-        )
-
-        result = checkConsistencyAndRecord(self._theoryPointer(), opts).act()
-        ccResult, newEnv = fst(result), snd(result)
-
-        self.root().hsUpdate(newEnv)
-
-        return ccResult
 
     def sentences(self) -> List[Sentence]:
         sentences = getAllSentences(self._hsTheory)

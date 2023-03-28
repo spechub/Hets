@@ -4,7 +4,7 @@ from typing import Any, List
 
 
 class ProofStatus:
-    def __init__(self, hsProofStatus: ProofStatusHs[Any]):
+    def __init__(self, hsProofStatus: ProofStatusHs):
         self._hsProofStatus = hsProofStatus
 
     def goalName(self) -> str:

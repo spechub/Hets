@@ -13,6 +13,8 @@ module HetsAPI.InfoCommands (
    , prettySentenceOfTheory
 ) where
 
+import HetsAPI.DataTypes (TheoryPointer)
+
 import Common.LibName (LibName)
 import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, DGraph, DGNodeLab)
 import Data.Graph.Inductive (LNode)
