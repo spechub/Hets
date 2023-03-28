@@ -35,7 +35,6 @@ class DevGraphNode(HsHierarchyElement):
     def name(self):
         return self.label().dgn_name()
 
-    # TODO Move prove and consistency from theory
     def _theoryPointer(self) -> TheoryPointer:
         node = self.hsObj()
         graph = self.parent().hsObj()
@@ -104,19 +103,12 @@ class DevGraphNode(HsHierarchyElement):
         return ccResult
 
 
-    # TODO Add consistency result
     def consistencyStatus(self) -> ConsistencyStatus:
         nodeLab = snd(self._hsNode)
         hsConsStatus = nodeLab.getNodeConsStatus()
         return ConsistencyStatus(hsConsStatus)
 
-        # TODO return both Conservativity Conservativity
-
-    # TODO after proving/consistency call recomputeNodeLabel
-
     def globalTheory(self) -> Optional[Theory]:
-        # TODO: call computeTheory
-        # l.getDevelopmentGraph().nodes()[10].globalTheory().sentences() != []
         nodeLab = snd(self._hsNode)
 
         pyTheoryM = getGlobalTheory(nodeLab)

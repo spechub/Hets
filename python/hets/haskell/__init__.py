@@ -20,6 +20,7 @@ from hs.Prelude import Just, Nothing, fst, snd, show, String
 from hs.HetsAPI.Internal import (fromJust, Result, resultToMaybe, Diagnosis, HetcatsOpts, defaultHetcatsOpts, DGraph,
                                  DGNodeLab, ProofStatus, ProofState, ConsistencyStatus, dgn_name, ConsistencyStatus,
                                  ConsStatus, Conservativity, getNodeConsStatus, showConsistencyStatus, GoalStatus,
-                                 TimeOfDay, TacticScript, getConsOfStatus)
+                                 TimeOfDay, TacticScript, getConsOfStatus, requiredConservativity, provenConservativity,
+                                 linkStatus)
 
 import hs.Common.OrderedMap as OMap

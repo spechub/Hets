@@ -11,6 +11,9 @@ module HetsAPI.Internal (
     , ConsistencyStatus
     , sType
     , ConsStatus
+    , requiredConservativity
+    , provenConservativity
+    , linkStatus
     , Conservativity
     , getNodeConsStatus
     , getConsOfStatus
@@ -26,7 +29,7 @@ import Common.Result (Result, resultToMaybe, Diagnosis)
 import Common.Consistency(Conservativity(..), showConsistencyStatus)
 import Driver.Options (HetcatsOpts, defaultHetcatsOpts)
 import Static.DevGraph (DGraph, DGNodeLab(..), getNodeConsStatus, getNodeCons)
-import Static.DgUtils (ConsStatus, getConsOfStatus, isProvenConsStatusLink)
+import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink)
 import Logic.Prover (ProofStatus, GoalStatus, TacticScript)
 import Proofs.AbstractState (ProofState)
 import Proofs.ConsistencyCheck (ConsistencyStatus(..))
