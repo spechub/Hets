@@ -60,6 +60,8 @@ module HetsAPI.Python (
     , HI.getGraphForLibrary
     , HI.getNodesFromDevelopmentGraph
     , HI.getLNodesFromDevelopmentGraph
+    , HI.getEdgesFromDevelopmentGraph
+    , HI.getLEdgesFromDevelopmentGraph
 
     , fstOf3
     , sndOf3

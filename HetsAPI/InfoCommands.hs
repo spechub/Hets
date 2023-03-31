@@ -4,6 +4,8 @@ module HetsAPI.InfoCommands (
      getGraphForLibrary
    , getNodesFromDevelopmentGraph
    , getLNodesFromDevelopmentGraph
+   , getEdgesFromDevelopmentGraph
+   , getLEdgesFromDevelopmentGraph
    , getAllSentences
    , getAllAxioms
    , getAllGoals
@@ -16,8 +18,8 @@ module HetsAPI.InfoCommands (
 import HetsAPI.DataTypes (TheoryPointer)
 
 import Common.LibName (LibName)
-import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, DGraph, DGNodeLab)
-import Data.Graph.Inductive (LNode)
+import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, labEdgesDG, DGraph, DGNodeLab, DGLinkLab)
+import Data.Graph.Inductive (LNode, LEdge)
 import Static.GTheory (G_theory (..), isProvenSenStatus)
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation (sentence, SenAttr (isAxiom))
@@ -41,11 +43,16 @@ getGraphForLibrary = lookupDGraph
 getNodesFromDevelopmentGraph :: DGraph -> [DGNodeLab]
 getNodesFromDevelopmentGraph = fmap snd . labNodesDG
 
-
 -- | @getNodesFromDevelopmentGraph graph@ returns the nodes of the development
 --   graph @graph@
 getLNodesFromDevelopmentGraph :: DGraph -> [LNode DGNodeLab]
 getLNodesFromDevelopmentGraph = labNodesDG
+
+getLEdgesFromDevelopmentGraph :: DGraph -> [LEdge DGLinkLab]
+getLEdgesFromDevelopmentGraph = labEdgesDG
+
+getEdgesFromDevelopmentGraph :: DGraph -> [DGLinkLab]
+getEdgesFromDevelopmentGraph = fmap (\(_, _, x) -> x) . labEdgesDG
 
 getAllSentences :: G_theory -> SentenceByName
 getAllSentences (G_theory _ _ _ _ sens _) = OMap.map (toJSON . sentence) sens

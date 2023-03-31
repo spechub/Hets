@@ -2,7 +2,7 @@ module HetsAPI.Internal (
     fromJust
     , Result, resultToMaybe, Diagnosis
     , HetcatsOpts, defaultHetcatsOpts
-    , DGraph, DGNodeLab(dgn_name)
+    , DGraph, DGNodeLab(dgn_name), DGLinkLab(dglName)
     , ProofStatus
     , GoalStatus
     , TimeOfDay
@@ -28,7 +28,7 @@ import Data.Time (TimeOfDay)
 import Common.Result (Result, resultToMaybe, Diagnosis)
 import Common.Consistency(Conservativity(..), showConsistencyStatus)
 import Driver.Options (HetcatsOpts, defaultHetcatsOpts)
-import Static.DevGraph (DGraph, DGNodeLab(..), getNodeConsStatus, getNodeCons)
+import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), getNodeConsStatus, getNodeCons)
 import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink)
 import Logic.Prover (ProofStatus, GoalStatus, TacticScript)
 import Proofs.AbstractState (ProofState)

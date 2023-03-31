@@ -26,13 +26,13 @@ class DevGraphNode(HsHierarchyElement):
     def hsObj(self):
         return self._hsNode
 
-    def id(self):
+    def id(self) -> int:
         return fst(self._hsNode)
 
-    def label(self):
+    def label(self) -> DGNodeLab:
         return snd(self._hsNode)
 
-    def name(self):
+    def name(self) -> str:
         return self.label().dgn_name()
 
     def _theoryPointer(self) -> TheoryPointer:
