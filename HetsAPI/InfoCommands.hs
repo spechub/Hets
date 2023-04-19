@@ -24,7 +24,7 @@ module HetsAPI.InfoCommands (
 import HetsAPI.DataTypes (TheoryPointer)
 
 import Common.LibName (LibName)
-import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, labEdgesDG, DGraph, DGNodeLab, DGLinkLab)
+import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, labEdgesDG, DGraph, DGNodeLab, DGLinkLab, getDGNodeName)
 import Data.Graph.Inductive (LNode, LEdge)
 import Static.GTheory (G_theory (..), isProvenSenStatus)
 import qualified Common.OrderedMap as OMap
