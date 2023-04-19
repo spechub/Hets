@@ -1,4 +1,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+{- |
+Description :  Commands providing information about the state of the development graph and selected theories
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+-}
+
 
 module HetsAPI.InfoCommands (
      getGraphForLibrary

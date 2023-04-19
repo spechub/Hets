@@ -1,3 +1,8 @@
+{- |
+Description :  HetsAPIs python interface. This module reexports all commands and functionality from the API and hides certain unsupported features from the python interface.
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+-}
 module HetsAPI.Python (
     PyTheory
     , PyComorphism

@@ -1,3 +1,8 @@
+"""
+Description :  Represents `Logic.Prover.ProofStatus`
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+"""
 from .haskell import ProofStatus as ProofStatusHs, GoalStatus, TimeOfDay, TacticScript
 
 from typing import Any, List

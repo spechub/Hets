@@ -1,3 +1,9 @@
+"""
+Description : Type hints for the python interface to the haskell API
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+"""
+
 from typing import Any, Tuple, TypeVar, Generic, List, Callable
 
 from .OMap import OMap

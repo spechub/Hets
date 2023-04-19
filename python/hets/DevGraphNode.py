@@ -1,3 +1,9 @@
+"""
+Description :  Represents `Static.DevGraph.DGNodeLab`
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+"""
+
 from typing import Tuple, Optional, List
 
 from .ConsistencyStatus import ConsistencyStatus

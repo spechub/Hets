@@ -1,3 +1,9 @@
+"""
+Description :  Represents `Static.GTheory.G_theory`
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+"""
+
 from typing import List, Optional, Tuple
 
 from .HsWrapper import HsHierarchyElement

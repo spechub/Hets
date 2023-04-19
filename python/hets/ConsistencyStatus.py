@@ -1,3 +1,9 @@
+"""
+Description :  Represents `Static.DgUtils.ConsStatus`
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+"""
+
 from .haskell import ConsStatus, showConsistencyStatus
 
 

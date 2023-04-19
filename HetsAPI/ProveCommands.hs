@@ -1,3 +1,8 @@
+{- |
+Description :  All commands to prove or check the consistency of a theory, node or edge
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+-}
 module HetsAPI.ProveCommands (
     availableComorphisms
     , usableProvers

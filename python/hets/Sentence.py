@@ -1,3 +1,8 @@
+"""
+Description :  Represents `Logic.Logic.Sentences`
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+"""
 from typing import Tuple, Callable
 
 from .haskell import fst, snd, Sentence as PySentence

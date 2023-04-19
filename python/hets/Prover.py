@@ -1,3 +1,9 @@
+"""
+Description :  Represents `Logic.Prover.Prover`
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+"""
+
 from typing import Optional, List
 
 from .haskell import getProverName, PyProver, PyComorphism

@@ -1,3 +1,8 @@
+{- |
+Description :  Common Datatypes used by the HETS API
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+-}
 module HetsAPI.DataTypes (
     Sentence
   , SentenceByName

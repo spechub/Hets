@@ -1,3 +1,9 @@
+{- |
+Description :  This module aims to bundle all internals required to work with the API. The main reason is for the Python API to only import to modules.
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+-}
+
 module HetsAPI.Internal (
     fromJust
     , Result, resultToMaybe, Diagnosis

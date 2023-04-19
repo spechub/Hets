@@ -1,3 +1,8 @@
+{- |
+Description :  All commands to interact with the HETS API
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+-}
 module HetsAPI.Commands (
    automatic
    , globalSubsume

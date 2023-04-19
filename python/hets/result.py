@@ -1,3 +1,9 @@
+"""
+Description :  Provides utility functions to interact with `Common.Result.Result` instances
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+"""
+
 from typing import Any, TypeVar, Generic
 from .haskell import Result, resultToMaybe, fromJust, Just, show
 
