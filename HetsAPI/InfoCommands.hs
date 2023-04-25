@@ -29,7 +29,7 @@ import Data.Graph.Inductive (LNode, LEdge)
 import Static.GTheory (G_theory (..), isProvenSenStatus)
 import qualified Common.OrderedMap as OMap
 import Common.AS_Annotation (sentence, SenAttr (isAxiom))
-import Data.Aeson (toJSON, fromJSON, Result(..))
+import Data.Aeson (encode, eitherDecode, Result(..))
 import Logic.Logic(Logic)
 import Common.DocUtils (pretty)
 
@@ -60,30 +60,32 @@ getLEdgesFromDevelopmentGraph = labEdgesDG
 getEdgesFromDevelopmentGraph :: DGraph -> [DGLinkLab]
 getEdgesFromDevelopmentGraph = fmap (\(_, _, x) -> x) . labEdgesDG
 
+-- getGlobalAnnotations :: DGraph -> GlobalAnnos
+
 getAllSentences :: G_theory -> SentenceByName
-getAllSentences (G_theory _ _ _ _ sens _) = OMap.map (toJSON . sentence) sens
+getAllSentences (G_theory _ _ _ _ sens _) = OMap.map (encode . sentence) sens
 
 getAllAxioms :: G_theory -> SentenceByName
-getAllAxioms (G_theory _ _ _ _ sens _) = OMap.map (toJSON . sentence)
+getAllAxioms (G_theory _ _ _ _ sens _) = OMap.map (encode . sentence)
     $ OMap.filter isAxiom sens
 
 getAllGoals :: G_theory -> SentenceByName
-getAllGoals (G_theory _ _ _ _ sens _) = OMap.map (toJSON . sentence)
+getAllGoals (G_theory _ _ _ _ sens _) = OMap.map (encode . sentence)
     $ OMap.filter (not . isAxiom) sens
 
 getProvenGoals :: G_theory -> SentenceByName
-getProvenGoals (G_theory _ _ _ _ sens _) = OMap.map (toJSON . sentence)
+getProvenGoals (G_theory _ _ _ _ sens _) = OMap.map (encode . sentence)
     $ OMap.filter (\sen -> not (isAxiom sen) && isProvenSenStatus sen) sens
 
 getUnprovenGoals :: G_theory -> SentenceByName
-getUnprovenGoals (G_theory _ _ _ _ sens _) = OMap.map (toJSON . sentence)
+getUnprovenGoals (G_theory _ _ _ _ sens _) = OMap.map (encode . sentence)
     $ OMap.filter (\sen -> isAxiom sen && isProvenSenStatus sen) sens
 
 prettySentence' :: Logic lid sublogics basic_spec sentence symb_items symb_map_items sign morphism symbol raw_symbol proof_tree =>
     sentence -> lid -> Sentence -> String
-prettySentence' (x::sentence) _ sen = case (fromJSON sen :: Result sentence) of
-    Success a -> show . pretty $ a
-    Error e -> "Error parsing JSON: " ++ e
+prettySentence' (x::sentence) _ sen = case (eitherDecode sen :: Either String sentence) of
+    Left e -> "Error parsing JSON: " ++ e
+    Right a -> show . pretty $ a
 
 prettySentence :: Logic lid sublogics basic_spec sentence symb_items symb_map_items sign morphism symbol raw_symbol proof_tree =>
     lid -> Sentence -> String
