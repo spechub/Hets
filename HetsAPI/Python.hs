@@ -13,11 +13,11 @@ module HetsAPI.Python (
     , PyConsCheckingOptions(..)
     , mkPyProofOptions
     -- Wrapped with Py*
-    , getTheoryFromNode
-    , usableProvers
+    , theoryOfNode
+    , getUsableProvers
     , translateTheory
-    , availableComorphisms
-    , usableConsistencyCheckers
+    , getAvailableComorphisms
+    , getUsableConsistencyCheckers
     , checkConsistency
     , checkConsistencyAndRecord
     , proveNode
@@ -27,13 +27,13 @@ module HetsAPI.Python (
     , getAllGoals
     , getProvenGoals
     , getUnprovenGoals
-    , getConsCheckerName
-    , getComorphismName
-    , getProverName
+    , consCheckerName
+    , comorphismName
+    , proverName
     , prettySentence
     , defaultProofOptions
     , defaultConsCheckingOptions
-    , getGlobalTheory
+    , globalTheory
 
     -- Unchanged re-export from Hets.ProveCommands
     , HP.checkConservativityNode
@@ -100,7 +100,8 @@ import Data.Bifunctor (bimap)
 import Logic.Comorphism (AnyComorphism)
 import Logic.Logic (sym_of)
 import Logic.Prover (ProofStatus(..))
-import Static.DevGraph (DGNodeLab (dgn_theory, globalTheory), LibEnv, DGraph, dgBody)
+import Static.DevGraph (DGNodeLab (dgn_theory), LibEnv, DGraph, dgBody)
+import qualified Static.DevGraph (DGNodeLab(globalTheory))
 import qualified Static.GTheory as GT
 import Proofs.ConsistencyCheck (ConsistencyStatus)
 import qualified Proofs.AbstractState
@@ -199,23 +200,23 @@ instance Show PyComorphism where
 instance Show PyProofTree where
     show (PyProofTree t) = "PyProofTree " ++ show t
 
-getProverName :: PyProver -> String
-getProverName (PyProver p) = Proofs.AbstractState.getProverName p
+proverName :: PyProver -> String
+proverName (PyProver p) = Proofs.AbstractState.getProverName p
 
 
-getComorphismName :: PyComorphism -> String
-getComorphismName (PyComorphism c) = show c
+comorphismName :: PyComorphism -> String
+comorphismName (PyComorphism c) = show c
 
-getConsCheckerName :: PyConsChecker -> String
-getConsCheckerName (PyConsChecker cc) = Proofs.AbstractState.getCcName cc
+consCheckerName :: PyConsChecker -> String
+consCheckerName (PyConsChecker cc) = Proofs.AbstractState.getCcName cc
 
-getTheoryFromNode :: DGNodeLab -> PyTheory
-getTheoryFromNode = PyTheory . dgn_theory
+theoryOfNode :: DGNodeLab -> PyTheory
+theoryOfNode = PyTheory . dgn_theory
 
--- | @usableProvers theory@ checks for usable provers available on the machine
-usableProvers :: PyTheory -> IO [(PyProver, PyComorphism)]
-usableProvers (PyTheory th) = do
-    provers <- HP.usableProvers th
+-- | @getUsableProvers theory@ checks for usable provers available on the machine
+getUsableProvers :: PyTheory -> IO [(PyProver, PyComorphism)]
+getUsableProvers (PyTheory th) = do
+    provers <- HP.getUsableProvers th
     let toPy (p, c) = (PyProver p, PyComorphism c)
     return $ fmap toPy provers
 
@@ -243,12 +244,12 @@ proveNodeAndRecord ptr opts =
 translateTheory :: PyComorphism -> PyTheory -> Result PyTheory
 translateTheory (PyComorphism comorphism) (PyTheory theory) = HC.translateTheory comorphism theory <&> PyTheory
 
-availableComorphisms :: PyTheory -> [PyComorphism]
-availableComorphisms (PyTheory theory) = PyComorphism <$> HP.availableComorphisms theory
+getAvailableComorphisms :: PyTheory -> [PyComorphism]
+getAvailableComorphisms (PyTheory theory) = PyComorphism <$> HP.getAvailableComorphisms theory
 
-usableConsistencyCheckers :: PyTheory -> IO [(PyConsChecker, PyComorphism)]
-usableConsistencyCheckers (PyTheory th) =
-    fmap (bimap PyConsChecker PyComorphism) <$> HP.usableConsistencyCheckers th
+getUsableConsistencyCheckers :: PyTheory -> IO [(PyConsChecker, PyComorphism)]
+getUsableConsistencyCheckers (PyTheory th) =
+    fmap (bimap PyConsChecker PyComorphism) <$> HP.getUsableConsistencyCheckers th
 
 checkConsistency :: HDT.TheoryPointer -> PyConsCheckingOptions -> IO ConsistencyStatus
 checkConsistency ptr = HP.checkConsistency ptr . toConsCheckingOptions
@@ -277,5 +278,5 @@ prettySentence (PyTheory theory) = HI.prettySentenceOfTheory theory
 getDGNodeById :: DGraph -> Int -> Maybe DGNodeLab
 getDGNodeById = lab . dgBody
 
-getGlobalTheory :: DGNodeLab -> Maybe PyTheory
-getGlobalTheory = fmap PyTheory . globalTheory 
+globalTheory :: DGNodeLab -> Maybe PyTheory
+globalTheory = fmap PyTheory . Static.DevGraph.globalTheory 

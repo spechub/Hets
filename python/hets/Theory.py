@@ -7,8 +7,8 @@ License     :  GPLv2 or higher, see LICENSE.txt
 from typing import List, Optional, Tuple
 
 from .HsWrapper import HsHierarchyElement
-from .haskell import (Just, Nothing, fst, thd, PyTheory, usableProvers, usableConsistencyCheckers, proveNodeAndRecord,
-                      availableComorphisms, getAllSentences, getAllGoals, getAllAxioms, getProvenGoals, prettySentence,
+from .haskell import (Just, Nothing, fst, thd, PyTheory, getUsableProvers, getUsableConsistencyCheckers, proveNodeAndRecord,
+                      getAvailableComorphisms, getAllSentences, getAllGoals, getAllAxioms, getProvenGoals, prettySentence,
                       getUnprovenGoals, OMap, fstOf3, sndOf3, ProofStatus, PyProver, PyComorphism, PyConsChecker,
                       ConsistencyStatus, defaultProofOptions, PyProofOptions, mkPyProofOptions, TheoryPointer, snd,
                       defaultConsCheckingOptions, PyConsCheckingOptions, checkConsistencyAndRecord)
@@ -34,16 +34,16 @@ class Theory(HsHierarchyElement):
     def hsUpdate(self, newHsObj):
         self._hsTheory = newHsObj
 
-    def usableProvers(self) -> List[Prover]:
-        provers = usableProvers(self._hsTheory).act()
+    def getUsableProvers(self) -> List[Prover]:
+        provers = getUsableProvers(self._hsTheory).act()
         return list({Prover(fst(p)) for p in provers})
 
-    def usableConsistencyCheckers(self) -> List[ConsistencyChecker]:
-        ccs = usableConsistencyCheckers(self._hsTheory).act()
+    def getUsableConsistencyCheckers(self) -> List[ConsistencyChecker]:
+        ccs = getUsableConsistencyCheckers(self._hsTheory).act()
         return list({ConsistencyChecker(fst(cc)) for cc in ccs})
 
-    def availableComorphisms(self) -> List[Comorphism]:
-        comorphisms = availableComorphisms(self._hsTheory)
+    def getAvailableComorphisms(self) -> List[Comorphism]:
+        comorphisms = getAvailableComorphisms(self._hsTheory)
         return [Comorphism(x) for x in comorphisms]
 
     def sentences(self) -> List[Sentence]:

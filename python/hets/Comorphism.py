@@ -4,7 +4,7 @@ Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 """
 
-from .haskell import getComorphismName, PyComorphism
+from .haskell import comorphismName, PyComorphism
 
 
 class Comorphism:
@@ -12,7 +12,7 @@ class Comorphism:
         self._hsComorphism = hsComorphism
 
     def name(self) -> str:
-        return getComorphismName(self._hsComorphism)
+        return comorphismName(self._hsComorphism)
 
     def __eq__(self, other):
         return isinstance(other, Comorphism) and self.name() == other.name()

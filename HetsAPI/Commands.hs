@@ -29,9 +29,9 @@ module HetsAPI.Commands (
    , showTheory
 
    -- Hets.ProveCommands
-   , HPC.availableComorphisms
-   , HPC.usableProvers
-   , HPC.usableConsistencyCheckers
+   , HPC.getAvailableComorphisms
+   , HPC.getUsableProvers
+   , HPC.getUsableConsistencyCheckers
    , HPC.proveNode
    , HPC.checkConsistency
    , HPC.checkConservativityNode 

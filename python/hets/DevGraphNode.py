@@ -13,10 +13,10 @@ from .ConsistencyChecker import ConsistencyChecker
 from .ProofStatus import ProofStatus
 from .Prover import Prover
 from .HsWrapper import HsHierarchyElement
-from .haskell import snd, getTheoryFromNode, DGNodeLab, fst, Just, Nothing, PyProver, PyComorphism, defaultProofOptions, \
+from .haskell import snd, theoryOfNode, DGNodeLab, fst, Just, Nothing, PyProver, PyComorphism, defaultProofOptions, \
     mkPyProofOptions, proveNodeAndRecord, ConsistencyStatus as HsConsistencyStatus, PyConsChecker, \
     defaultConsCheckingOptions, \
-    PyConsCheckingOptions, checkConsistencyAndRecord, TheoryPointer, getGlobalTheory, recomputeNode, fromJust
+    PyConsCheckingOptions, checkConsistencyAndRecord, TheoryPointer, globalTheory, recomputeNode, fromJust
 
 from .Theory import Theory
 
@@ -117,7 +117,7 @@ class DevGraphNode(HsHierarchyElement):
     def globalTheory(self) -> Optional[Theory]:
         nodeLab = snd(self._hsNode)
 
-        pyTheoryM = getGlobalTheory(nodeLab)
+        pyTheoryM = globalTheory(nodeLab)
 
         if isinstance(pyTheoryM, Just):
             pyTheory = fromJust(pyTheoryM)
@@ -136,11 +136,11 @@ class DevGraphNode(HsHierarchyElement):
 
         if self._theory:
             nodeLab = snd(self._hsNode)
-            hsTheory = getTheoryFromNode(nodeLab)
+            hsTheory = theoryOfNode(nodeLab)
             self._theory.hsUpdate(hsTheory)
 
     def theory(self) -> Theory:
         if self._theory is None:
-            self._theory = Theory(getTheoryFromNode(snd(self._hsNode)), self)
+            self._theory = Theory(theoryOfNode(snd(self._hsNode)), self)
 
         return self._theory

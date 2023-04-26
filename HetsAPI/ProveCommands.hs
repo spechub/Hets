@@ -4,9 +4,9 @@ Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 -}
 module HetsAPI.ProveCommands (
-    availableComorphisms
-    , usableProvers
-    , usableConsistencyCheckers
+    getAvailableComorphisms
+    , getUsableProvers
+    , getUsableConsistencyCheckers
 
     , proveNode
     , recordProofResult
@@ -44,7 +44,8 @@ import Logic.Comorphism (AnyComorphism)
 import Logic.Grothendieck (findComorphismPaths)
 import Logic.Prover (ProofStatus, ProverKind (..))
 
-import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, getUsableProvers, G_cons_checker (..), getProverName, getConsCheckers, getCcName)
+import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, G_cons_checker (..), getProverName, getConsCheckers, getCcName)
+import qualified Proofs.AbstractState as PAS
 import Proofs.ConsistencyCheck (ConsistencyStatus, SType(..), consistencyCheck, sType)
 
 import Static.ComputeTheory(updateLabelTheory, recomputeNodeLabel)
@@ -91,18 +92,18 @@ type ProofResult = (G_theory -- The new theory
 
 
 
--- | @availableComorphisms theory@ yields all available comorphisms for @theory@
-availableComorphisms :: G_theory -> [AnyComorphism]
-availableComorphisms = findComorphismPaths logicGraph . sublogicOfTh
+-- | @getAvailableComorphisms theory@ yields all available comorphisms for @theory@
+getAvailableComorphisms :: G_theory -> [AnyComorphism]
+getAvailableComorphisms = findComorphismPaths logicGraph . sublogicOfTh
 
--- | @usableConsistencyCheckers theory@ checks for usable consistencey checkers  
+-- | @getUsableConsistencyCheckers theory@ checks for usable consistencey checkers  
 --   for @theory@ available on the machine
-usableConsistencyCheckers :: G_theory -> IO [(G_cons_checker, AnyComorphism)]
-usableConsistencyCheckers = getConsCheckers . availableComorphisms
+getUsableConsistencyCheckers :: G_theory -> IO [(G_cons_checker, AnyComorphism)]
+getUsableConsistencyCheckers = getConsCheckers . getAvailableComorphisms
 
--- | @usableProvers theory@ checks for usable provers available on the machine
-usableProvers :: G_theory -> IO [(G_prover, AnyComorphism)]
-usableProvers th = getUsableProvers ProveCMDLautomatic (sublogicOfTh th) logicGraph
+-- | @getUsableProvers theory@ checks for usable provers available on the machine
+getUsableProvers :: G_theory -> IO [(G_prover, AnyComorphism)]
+getUsableProvers th = PAS.getUsableProvers ProveCMDLautomatic (sublogicOfTh th) logicGraph
 
 -- | @proveNode theory prover comorphism@ proves all goals in @theory@ using all
 --   all axioms in @theory@. If @prover@ or @comorphism@ is @Nothing@ the first
@@ -114,13 +115,13 @@ proveNode theory (ProofOptions proverM comorphismM useTh goals axioms timeout) =
         (Just prover, Nothing) -> do
             let proverName = getProverName prover
             comorphism <- lift
-                (snd . head . filter ((== proverName) . getProverName . fst) <$> usableProvers theory)
+                (snd . head . filter ((== proverName) . getProverName . fst) <$> getUsableProvers theory)
             return (prover, comorphism)
         (Nothing, Just comorphism) -> do
             prover <- lift
-                (fst . head . filter ((== comorphism) . snd) <$> usableProvers theory)
+                (fst . head . filter ((== comorphism) . snd) <$> getUsableProvers theory)
             return (prover, comorphism)
-        (Nothing, Nothing) -> head <$> lift (usableProvers theory)
+        (Nothing, Nothing) -> head <$> lift (getUsableProvers theory)
 
     ((th, sens), (state, steps)) <- autoProofAtNode useTh timeout goals axioms theory (prover, comorphism)
     return (th, steps)
@@ -144,12 +145,12 @@ checkConsistency (libName, libEnv, dgraph, lnode) (ConsCheckingOptions ccM comor
         (Just cc, Just comorphism) -> return (cc, comorphism)
         (Just cc, Nothing) -> do
             let ccName = getCcName cc
-            comorphism <-  (snd . head . filter ((== ccName) . getCcName . fst) <$> usableConsistencyCheckers theory)
+            comorphism <-  (snd . head . filter ((== ccName) . getCcName . fst) <$> getUsableConsistencyCheckers theory)
             return (cc, comorphism)
         (Nothing, Just comorphism) -> do
-            cc <- (fst . head . filter ((== comorphism) . snd) <$> usableConsistencyCheckers theory)
+            cc <- (fst . head . filter ((== comorphism) . snd) <$> getUsableConsistencyCheckers theory)
             return (cc, comorphism)
-        (Nothing, Nothing) -> head <$> (usableConsistencyCheckers theory)
+        (Nothing, Nothing) -> head <$> (getUsableConsistencyCheckers theory)
 
     consistencyCheck b cc comorphism libName libEnv dgraph lnode timeout
 

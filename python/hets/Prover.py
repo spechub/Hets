@@ -6,7 +6,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 from typing import Optional, List
 
-from .haskell import getProverName, PyProver, PyComorphism
+from .haskell import proverName, PyProver, PyComorphism
 
 
 class Prover:
@@ -14,7 +14,7 @@ class Prover:
         self._hsProver = hsProver
 
     def name(self) -> str:
-        return getProverName(self._hsProver)
+        return proverName(self._hsProver)
 
     def __eq__(self, other):
         return isinstance(other, Prover) and self.name() == other.name()
