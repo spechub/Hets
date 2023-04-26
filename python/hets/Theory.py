@@ -7,11 +7,16 @@ License     :  GPLv2 or higher, see LICENSE.txt
 from typing import List, Optional, Tuple
 
 from .HsWrapper import HsHierarchyElement
-from .haskell import (Just, Nothing, fst, thd, PyTheory, getUsableProvers, getUsableConsistencyCheckers, proveNodeAndRecord,
-                      getAvailableComorphisms, getAllSentences, getAllGoals, getAllAxioms, getProvenGoals, prettySentence,
+from .Logic import Logic
+from .Signature import Signature
+from .haskell import (Just, Nothing, fst, thd, PyTheory, getUsableProvers, getUsableConsistencyCheckers,
+                      proveNodeAndRecord,
+                      getAvailableComorphisms, getAllSentences, getAllGoals, getAllAxioms, getProvenGoals,
+                      prettySentence,
                       getUnprovenGoals, OMap, fstOf3, sndOf3, ProofStatus, PyProver, PyComorphism, PyConsChecker,
                       ConsistencyStatus, defaultProofOptions, PyProofOptions, mkPyProofOptions, TheoryPointer, snd,
-                      defaultConsCheckingOptions, PyConsCheckingOptions, checkConsistencyAndRecord)
+                      defaultConsCheckingOptions, PyConsCheckingOptions, checkConsistencyAndRecord, logicNameOfTheory,
+                      logicDescriptionOfTheory, signatureOfTheory)
 
 from .result import result_or_raise
 
@@ -62,3 +67,10 @@ class Theory(HsHierarchyElement):
 
     def unproven_goals(self) -> List[Sentence]:
         return [Sentence(x, self._hs_pretty_sentence) for x in OMap.toList(getUnprovenGoals(self._hs_theory))]
+
+    def logic(self) -> Logic:
+        return Logic(logicNameOfTheory(self._hs_theory), logicDescriptionOfTheory(self._hs_theory))
+
+    def signature(self) -> Signature:
+        return Signature(signatureOfTheory(self._hs_theory))
+

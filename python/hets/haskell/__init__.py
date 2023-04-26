@@ -25,7 +25,7 @@ from hs.HetsAPI.Python import (PyTheory, PyComorphism, PyConsChecker, PyProver, 
                                gmorphismOfEdge, comorphismOfGMorphism, signatureOfGMorphism, PyGMorphism,
                                logicNameOfTheory, logicDescriptionOfTheory, targetLogicName, targetLogicDescriptionName,
                                sourceLogicName, sourceLogicDescriptionName, logicNameOfGMorphism,
-                               logicDescriptionOfGMorphism)
+                               logicDescriptionOfGMorphism, signatureOfTheory)
 from hs.Prelude import Just, Nothing, fst, snd, show, String
 
 from hs.HetsAPI.Internal import (fromJust, Result, resultToMaybe, Diagnosis, HetcatsOpts, defaultHetcatsOpts, DGraph,

@@ -38,6 +38,7 @@ module HetsAPI.Python (
     , gmorphismOfEdge
     , comorphismOfGMorphism
     , signatureOfGMorphism
+    , signatureOfTheory
 
     , logicNameOfTheory
     , logicDescriptionOfTheory
@@ -305,6 +306,12 @@ getUnprovenGoals (PyTheory theory) = HI.getUnprovenGoals theory
 
 prettySentence :: PyTheory -> Sentence -> String
 prettySentence (PyTheory theory) = HI.prettySentenceOfTheory theory
+
+signatureOfTheory :: PyTheory -> ExtSign HDT.SignatureJSON HDT.SymbolJSON
+signatureOfTheory (PyTheory GT.G_theory { GT.gTheorySign = sig }) = ExtSign {
+        plainSign = encode (plainSign sig),
+        nonImportedSymbols = Set.map encode $ nonImportedSymbols sig
+    }
 
 logicNameOfTheory :: PyTheory -> String
 logicNameOfTheory (PyTheory GT.G_theory { GT.gTheoryLogic = lid } ) = language_name lid
