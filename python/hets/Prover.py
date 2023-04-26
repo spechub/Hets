@@ -10,11 +10,11 @@ from .haskell import proverName, PyProver, PyComorphism
 
 
 class Prover:
-    def __init__(self, hsProver: PyProver) -> None:
-        self._hsProver = hsProver
+    def __init__(self, hs_prover: PyProver) -> None:
+        self._hs_prover = hs_prover
 
     def name(self) -> str:
-        return proverName(self._hsProver)
+        return proverName(self._hs_prover)
 
     def __eq__(self, other):
         return isinstance(other, Prover) and self.name() == other.name()

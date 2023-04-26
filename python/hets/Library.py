@@ -7,10 +7,11 @@ License     :  GPLv2 or higher, see LICENSE.txt
 from typing import Optional
 
 from .HsWrapper import HsWrapper, HsHierarchyElement
-from .haskell import defaultHetcatsOpts, loadLibrary as loadHsLibrary, fst, snd, getGraphForLibrary, HetcatsOpts, checkConsistencyAndRecord
+from .haskell import defaultHetcatsOpts, loadLibrary as loadHsLibrary, fst, snd, getGraphForLibrary, HetcatsOpts, \
+    checkConsistencyAndRecord
 
 from .DevelopmentGraph import DevelopmentGraph
-from .result import resultOrRaise
+from .result import result_or_raise
 
 from .haskell import (
     automatic as automaticHs,
@@ -36,108 +37,109 @@ from .haskell import (
 
 
 class Library(HsHierarchyElement):
-    def __init__(self, hsLibrary) -> None:
+    def __init__(self, hs_library) -> None:
         super().__init__(None)
-        self._name = fst(hsLibrary)
-        self._env = snd(hsLibrary)
+        self._name = fst(hs_library)
+        self._env = snd(hs_library)
 
         self._dgraph: Optional[DevelopmentGraph] = None
 
-    def hsObj(self):
+    def hs_obj(self):
         return self._name, self._env
 
-    def hsUpdate(self, newEnv):
-        self._env = newEnv
+    def hs_update(self, new_env):
+        self._env = new_env
 
         if self._dgraph:
-            hsGraph = getGraphForLibrary(self._name, self._env)
-            self._dgraph.hsUpdate(hsGraph)
+            hs_graph = getGraphForLibrary(self._name, self._env)
+            self._dgraph.hs_update(hs_graph)
 
-    def getDevelopmentGraph(self) -> DevelopmentGraph:
+    def development_graph(self) -> DevelopmentGraph:
         if self._dgraph is None:
             self._dgraph = DevelopmentGraph(getGraphForLibrary(self._name, self._env), self)
 
         return self._dgraph
 
     def automatic(self):
-        newEnv = automaticHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+        new_env = automaticHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def globalSubsume(self):
-        newEnv = globalSubsumeHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def global_subsume(self):
+        new_env = globalSubsumeHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def globalDecomposition(self):
-        newEnv = globalDecompositionHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def global_decomposition(self):
+        new_env = globalDecompositionHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def localInference(self):
-        newEnv = localInferenceHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def local_inference(self):
+        new_env = localInferenceHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def localDecomposition(self):
-        newEnv = localDecompositionHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def local_decomposition(self):
+        new_env = localDecompositionHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def compositionProveEdges(self):
-        newEnv = compositionProveEdgesHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def composition_prove_edges(self):
+        new_env = compositionProveEdgesHs(self._name, self._env)
+        self.hs_update(new_env)
 
     def conservativity(self):
-        newEnv = conservativityHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+        new_env = conservativityHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def automaticHideTheoremShift(self):
-        newEnv = automaticHideTheoremShiftHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def automatic_hide_theorem_shift(self):
+        new_env = automaticHideTheoremShiftHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def theoremHideShift(self):
-        newEnv = theoremHideShiftHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def theorem_hide_shift(self):
+        new_env = theoremHideShiftHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def computeColimit(self):
-        newEnv = computeColimitHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def compute_colimit(self):
+        new_env = computeColimitHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def normalForm(self):
-        newEnv = normalFormHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def normal_form(self):
+        new_env = normalFormHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def triangleCons(self):
-        newEnv = triangleConsHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def triangle_cons(self):
+        new_env = triangleConsHs(self._name, self._env)
+        self.hs_update(new_env)
 
     def freeness(self):
-        newEnv = freenessHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+        new_env = freenessHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def libFlatImports(self):
-        newEnv = libFlatImportsHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def lib_flat_imports(self):
+        new_env = libFlatImportsHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def libFlatDUnions(self):
-        newEnv = libFlatDUnionsHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def lib_flat_d_unions(self):
+        new_env = libFlatDUnionsHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def libFlatRenamings(self):
-        newEnv = libFlatRenamingsHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def lib_flat_renamings(self):
+        new_env = libFlatRenamingsHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def libFlatHiding(self):
-        newEnv = libFlatHidingHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def lib_flat_hiding(self):
+        new_env = libFlatHidingHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def libFlatHeterogen(self):
-        newEnv = libFlatHeterogenHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def lib_flat_heterogen(self):
+        new_env = libFlatHeterogenHs(self._name, self._env)
+        self.hs_update(new_env)
 
-    def qualifyLibEnv(self):
-        newEnv = qualifyLibEnvHs(self._name, self._env)
-        self.hsUpdate(newEnv)
+    def qualify_lib_env(self):
+        new_env = qualifyLibEnvHs(self._name, self._env)
+        self.hs_update(new_env)
 
-def loadLibrary(path: str, options: HetcatsOpts = defaultHetcatsOpts) -> Library:
+
+def load_library(path: str, options: HetcatsOpts = defaultHetcatsOpts) -> Library:
     result = loadHsLibrary(path, options).act()
 
-    nameAndEnv = resultOrRaise(result, "Failed to load library")
+    name_and_env = result_or_raise(result, "Failed to load library")
 
-    return Library(nameAndEnv)
+    return Library(name_and_env)

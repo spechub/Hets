@@ -8,10 +8,10 @@ from typing import Generic, TypeVar, Optional
 
 
 class HsWrapper:
-    def hsObj(self):
+    def hs_obj(self):
         pass
 
-    def hsUpdate(self, newHsObj):
+    def hs_update(self, new_hs_obj):
         pass
 
 

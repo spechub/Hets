@@ -8,7 +8,7 @@ from typing import Tuple, Optional, List
 
 from .ConsistencyStatus import ConsistencyStatus
 from .Comorphism import Comorphism
-from .result import resultOrRaise
+from .result import result_or_raise
 from .ConsistencyChecker import ConsistencyChecker
 from .ProofStatus import ProofStatus
 from .Prover import Prover
@@ -22,125 +22,124 @@ from .Theory import Theory
 
 
 class DevGraphNode(HsHierarchyElement):
-    def __init__(self, hsNode: Tuple[int, DGNodeLab], parent: Optional[HsHierarchyElement]) -> None:
+    def __init__(self, hs_node: Tuple[int, DGNodeLab], parent: Optional[HsHierarchyElement]) -> None:
         super().__init__(parent)
 
-        self._hsNode = hsNode
+        self._hs_node = hs_node
 
         self._theory: Optional[Theory] = None
 
-    def hsObj(self):
-        return self._hsNode
+    def hs_obj(self):
+        return self._hs_node
 
     def id(self) -> int:
-        return fst(self._hsNode)
+        return fst(self._hs_node)
 
     def label(self) -> DGNodeLab:
-        return snd(self._hsNode)
+        return snd(self._hs_node)
 
     def name(self) -> str:
         return self.label().dgn_name()
 
-    def _theoryPointer(self) -> TheoryPointer:
-        node = self.hsObj()
-        graph = self.parent().hsObj()
-        envName = self.parent().parent().hsObj()
+    def _theory_pointer(self) -> TheoryPointer:
+        node = self.hs_obj()
+        graph = self.parent().hs_obj()
+        env_name = self.parent().parent().hs_obj()
 
-        name = fst(envName)
-        env = snd(envName)
+        name = fst(env_name)
+        env = snd(env_name)
 
         return name, env, graph, node
 
     def prove(self,
               prover: Optional[Prover] = None,
               comorphism: Optional[Comorphism] = None,
-              useTheorems: Optional[bool] = None,
-              goalsToProve: Optional[List[str]] = None,
-              axiomsToInclude: Optional[List[str]] = None,
+              use_theorems: Optional[bool] = None,
+              goals_to_prove: Optional[List[str]] = None,
+              axioms_to_include: Optional[List[str]] = None,
               timeout: Optional[int] = None
               ) -> List[ProofStatus]:
-        proverM = Just(prover._hsProver) if prover else Nothing().subst(a=PyProver())
-        comorphismM = Just(comorphism._hsComorphism) if comorphism else Nothing().subst(a=PyComorphism())
+        prover_maybe = Just(prover._hs_prover) if prover else Nothing().subst(a=PyProver())
+        comorphism_maybe = Just(comorphism._hs_comorphism) if comorphism else Nothing().subst(a=PyComorphism())
 
-        defaultOpts = defaultProofOptions
+        default_opts = defaultProofOptions
 
         opts = mkPyProofOptions(
-            proverM,
-            comorphismM)(
-            useTheorems if useTheorems is not None else defaultOpts.proofOptsUseTheorems(),
-            goalsToProve if goalsToProve is not None else defaultOpts.proofOptsGoalsToProve(),
-            axiomsToInclude if axiomsToInclude is not None else defaultOpts.proofOptsAxiomsToInclude(),
-            timeout if timeout is not None else defaultOpts.proofOptsTimeout(),
+            prover_maybe,
+            comorphism_maybe)(
+            use_theorems if use_theorems is not None else default_opts.proofOptsUseTheorems(),
+            goals_to_prove if goals_to_prove is not None else default_opts.proofOptsGoalsToProve(),
+            axioms_to_include if axioms_to_include is not None else default_opts.proofOptsAxiomsToInclude(),
+            timeout if timeout is not None else default_opts.proofOptsTimeout(),
         )
 
-        proveResultR = proveNodeAndRecord(self._theoryPointer(), opts).act()
-        result = resultOrRaise(proveResultR)
-        newThAndStatuses = fst(result)
-        goalStatuses = snd(newThAndStatuses)
-        newEnv = snd(result)
+        prove_result = proveNodeAndRecord(self._theory_pointer(), opts).act()
+        result = result_or_raise(prove_result)
+        new_th_and_statuses = fst(result)
+        goal_statuses = snd(new_th_and_statuses)
+        new_env = snd(result)
 
-        self.root().hsUpdate(newEnv)
+        self.root().hs_update(new_env)
 
-        return goalStatuses
+        return goal_statuses
 
-    def checkConsistency(self,
-                         consChecker: Optional[ConsistencyChecker] = None,
-                         comorphism: Optional[Comorphism] = None,
-                         includeTheorems: Optional[bool] = None,
-                         timeout: Optional[int] = None
-                         ) -> HsConsistencyStatus:
-        ccM = Just(consChecker._hsConsChecker) if consChecker else Nothing().subst(a=PyConsChecker())
-        comorphismM = Just(comorphism._hsComorphism) if comorphism else Nothing().subst(a=PyComorphism())
+    def check_consistency(self,
+                          cons_checker: Optional[ConsistencyChecker] = None,
+                          comorphism: Optional[Comorphism] = None,
+                          include_theorems: Optional[bool] = None,
+                          timeout: Optional[int] = None
+                          ) -> HsConsistencyStatus:
+        cc_maybe = Just(cons_checker._hs_cons_checker) if cons_checker else Nothing().subst(a=PyConsChecker())
+        comorphism_maybe = Just(comorphism._hs_comorphism) if comorphism else Nothing().subst(a=PyComorphism())
 
-        defaultOpts = defaultConsCheckingOptions
+        default_opts = defaultConsCheckingOptions
 
         opts = PyConsCheckingOptions(
-            ccM,
-            comorphismM,
-            includeTheorems if includeTheorems is not None else defaultOpts.consOptsIncludeTheorems(),
-            timeout if timeout is not None else defaultOpts.consOptsTimeout(),
+            cc_maybe,
+            comorphism_maybe,
+            include_theorems if include_theorems is not None else default_opts.consOptsIncludeTheorems(),
+            timeout if timeout is not None else default_opts.consOptsTimeout(),
         )
 
-        result = checkConsistencyAndRecord(self._theoryPointer(), opts).act()
-        ccResult, newEnv = fst(result), snd(result)
+        result = checkConsistencyAndRecord(self._theory_pointer(), opts).act()
+        cc_result, new_env = fst(result), snd(result)
 
-        self.root().hsUpdate(newEnv)
+        self.root().hs_update(new_env)
 
-        return ccResult
+        return cc_result
 
+    def consistency_status(self) -> ConsistencyStatus:
+        node_lab = snd(self._hs_node)
+        hs_cons_status = node_lab.getNodeConsStatus()
+        return ConsistencyStatus(hs_cons_status)
 
-    def consistencyStatus(self) -> ConsistencyStatus:
-        nodeLab = snd(self._hsNode)
-        hsConsStatus = nodeLab.getNodeConsStatus()
-        return ConsistencyStatus(hsConsStatus)
+    def global_theory(self) -> Optional[Theory]:
+        node_lab = snd(self._hs_node)
 
-    def globalTheory(self) -> Optional[Theory]:
-        nodeLab = snd(self._hsNode)
+        py_theory_maybe = globalTheory(node_lab)
 
-        pyTheoryM = globalTheory(nodeLab)
-
-        if isinstance(pyTheoryM, Just):
-            pyTheory = fromJust(pyTheoryM)
-            return Theory(pyTheory, self)
+        if isinstance(py_theory_maybe, Just):
+            py_theory = fromJust(py_theory_maybe)
+            return Theory(py_theory, self)
 
         return None
 
     def recompute(self) -> None:
-        newLibEnv = recomputeNode(self._theoryPointer())
+        new_lib_env = recomputeNode(self._theory_pointer())
 
         root = self.parent().parent()
-        root.hsUpdate(newLibEnv)
+        root.hs_update(new_lib_env)
 
-    def hsUpdate(self, newHsObj):
-        self._hsNode = newHsObj
+    def hs_update(self, new_hs_obj) -> None:
+        self._hs_node = new_hs_obj
 
         if self._theory:
-            nodeLab = snd(self._hsNode)
-            hsTheory = theoryOfNode(nodeLab)
-            self._theory.hsUpdate(hsTheory)
+            node_lab = snd(self._hs_node)
+            hs_theory = theoryOfNode(node_lab)
+            self._theory.hs_update(hs_theory)
 
     def theory(self) -> Theory:
         if self._theory is None:
-            self._theory = Theory(theoryOfNode(snd(self._hsNode)), self)
+            self._theory = Theory(theoryOfNode(snd(self._hs_node)), self)
 
         return self._theory

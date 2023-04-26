@@ -14,40 +14,40 @@ from .haskell import getLNodesFromDevelopmentGraph, DGraph, Nothing, fromJust, g
 
 
 class DevelopmentGraph(HsHierarchyElement):
-    def __init__(self, hsDevelopmentGraph: DGraph, parent: HsHierarchyElement) -> None:
+    def __init__(self, hs_development_graph: DGraph, parent: HsHierarchyElement) -> None:
         super().__init__(parent)
 
-        self._hsDevelopmentGraph = hsDevelopmentGraph
+        self._hs_development_graph = hs_development_graph
 
         self._nodes: Optional[List[DevGraphNode]] = None
         self._edges: Optional[List[DevGraphEdge]] = None
 
-    def hsObj(self):
-        return self._hsDevelopmentGraph
+    def hs_obj(self):
+        return self._hs_development_graph
 
-    def hsUpdate(self, newHsObj: DGraph):
-        self._hsDevelopmentGraph = newHsObj
+    def hs_update(self, new_hs_obj: DGraph):
+        self._hs_development_graph = new_hs_obj
 
         if self._nodes:
             for node in self._nodes:
-                hsNodeM = getDGNodeById(self._hsDevelopmentGraph, node.id())
-                if isinstance(hsNodeM, Nothing):
+                hs_node_maybe = getDGNodeById(self._hs_development_graph, node.id())
+                if isinstance(hs_node_maybe, Nothing):
                     print(f"Node {node.id} could not be found. Probably, it has been deleted")
                 else:
-                    hsNode = fromJust(hsNodeM)
-                    node.hsUpdate((node.id(), hsNode))
+                    hsNode = fromJust(hs_node_maybe)
+                    node.hs_update((node.id(), hsNode))
 
     def nodes(self) -> List[DevGraphNode]:
         if self._nodes is None:
-            hsNodes = getLNodesFromDevelopmentGraph(self._hsDevelopmentGraph)
-            self._nodes = [DevGraphNode(x, self) for x in hsNodes]
+            hs_nodes = getLNodesFromDevelopmentGraph(self._hs_development_graph)
+            self._nodes = [DevGraphNode(x, self) for x in hs_nodes]
 
         return self._nodes
 
     def edges(self) -> List[DevGraphEdge]:
         if self._edges is None:
-            hsEdges = getLEdgesFromDevelopmentGraph(self._hsDevelopmentGraph)
-            self._edges = [DevGraphEdge(x, self) for x in hsEdges]
+            hs_edges = getLEdgesFromDevelopmentGraph(self._hs_development_graph)
+            self._edges = [DevGraphEdge(x, self) for x in hs_edges]
 
         return self._edges
 

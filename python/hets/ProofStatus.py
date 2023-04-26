@@ -9,27 +9,27 @@ from typing import Any, List
 
 
 class ProofStatus:
-    def __init__(self, hsProofStatus: ProofStatusHs):
-        self._hsProofStatus = hsProofStatus
+    def __init__(self, hs_proof_status: ProofStatusHs):
+        self._hs_proof_status = hs_proof_status
 
-    def goalName(self) -> str:
-        return self._hsProofStatus.goalName()
+    def goal_name(self) -> str:
+        return self._hs_proof_status.goalName()
 
-    def goalStatus(self) -> GoalStatus:
-        return self._hsProofStatus.goalStatus()
+    def goal_status(self) -> GoalStatus:
+        return self._hs_proof_status.goalStatus()
 
-    def usedAxioms(self) -> List[str]:
-        return self._hsProofStatus.usedAxioms()
+    def used_axioms(self) -> List[str]:
+        return self._hs_proof_status.usedAxioms()
 
-    def usedProver(self) -> str:
-        return self._hsProofStatus.usedProver()
+    def used_prover(self) -> str:
+        return self._hs_proof_status.usedProver()
 
-    def usedTime(self) -> TimeOfDay:
-        return self._hsProofStatus.usedTime()
+    def used_time(self) -> TimeOfDay:
+        return self._hs_proof_status.usedTime()
 
-    def tacticScript(self) -> TacticScript:
-        return self._hsProofStatus.tacticScript()
+    def tactic_script(self) -> TacticScript:
+        return self._hs_proof_status.tacticScript()
 
-    def proofLines(self) -> List[str]:
-        return self._hsProofStatus.proofLines()
+    def proof_lines(self) -> List[str]:
+        return self._hs_proof_status.proofLines()
 

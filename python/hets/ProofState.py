@@ -11,27 +11,27 @@ from .haskell import ProofState as ProofStateHs, Diagnosis
 
 
 class ProofState:
-    def __init__(self, hsProofState: ProofStateHs, theory):
-        self._hsProofState = hsProofState
+    def __init__(self, hs_proof_state: ProofStateHs, theory):
+        self._hs_proof_state = hs_proof_state
         self._theory = theory
 
-    def selectedGoals(self) -> List[Sentence]:
-        goalNames = self._hsProofState.selectedGoals()
-        return [ x for x in self._theory.goals() if x.name() in goalNames ]
+    def selected_goals(self) -> List[Sentence]:
+        goal_names = self._hs_proof_state.selectedGoals()
+        return [x for x in self._theory.goals() if x.name() in goal_names]
 
-    def includedAxioms(self) -> List[Sentence]:
-        goalNames = self._hsProofState.includedAxioms()
-        return [ x for x in self._theory.axioms() if x.name() in goalNames ]
+    def included_axioms(self) -> List[Sentence]:
+        goal_names = self._hs_proof_state.includedAxioms()
+        return [x for x in self._theory.axioms() if x.name() in goal_names]
 
-    def includedTheorems(self) -> List[Sentence]:
-        goalNames = self._hsProofState.includedTheorems()
-        return [ x for x in self._theory.sentences() if x.name() in goalNames ]
+    def included_theorems(self) -> List[Sentence]:
+        goal_names = self._hs_proof_state.includedTheorems()
+        return [x for x in self._theory.sentences() if x.name() in goal_names]
 
-    def accDiags(self) -> List[Diagnosis]:
-        return self._hsProofState.accDiags()
+    def acc_diags(self) -> List[Diagnosis]:
+        return self._hs_proof_state.accDiags()
 
-    def selectedProverName(self) -> str:
-        return self._hsProofState.selectedProver()
+    def selected_prover_name(self) -> str:
+        return self._hs_proof_state.selectedProver()
 
-    def selectedConsCheckerName(self) -> str:
-        return self._hsProofState.selectedConsChecker()
+    def selected_cons_checker_name(self) -> str:
+        return self._hs_proof_state.selectedConsChecker()

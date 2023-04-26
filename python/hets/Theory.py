@@ -13,7 +13,7 @@ from .haskell import (Just, Nothing, fst, thd, PyTheory, getUsableProvers, getUs
                       ConsistencyStatus, defaultProofOptions, PyProofOptions, mkPyProofOptions, TheoryPointer, snd,
                       defaultConsCheckingOptions, PyConsCheckingOptions, checkConsistencyAndRecord)
 
-from .result import resultOrRaise
+from .result import result_or_raise
 
 from .Prover import Prover
 from .ConsistencyChecker import ConsistencyChecker
@@ -23,42 +23,42 @@ from .Sentence import Sentence
 
 
 class Theory(HsHierarchyElement):
-    def __init__(self, hsTheory: PyTheory, parent: Optional[HsHierarchyElement]) -> None:
+    def __init__(self, hs_theory: PyTheory, parent: Optional[HsHierarchyElement]) -> None:
         super().__init__(parent)
-        self._hsTheory = hsTheory
-        self._hsPrettySentence = prettySentence(hsTheory)
+        self._hs_theory = hs_theory
+        self._hs_pretty_sentence = prettySentence(hs_theory)
 
-    def hsObj(self):
-        return self._hsTheory
+    def hs_obj(self):
+        return self._hs_theory
 
-    def hsUpdate(self, newHsObj):
-        self._hsTheory = newHsObj
+    def hs_update(self, new_hs_obj):
+        self._hs_theory = new_hs_obj
 
-    def getUsableProvers(self) -> List[Prover]:
-        provers = getUsableProvers(self._hsTheory).act()
+    def get_usable_provers(self) -> List[Prover]:
+        provers = getUsableProvers(self._hs_theory).act()
         return list({Prover(fst(p)) for p in provers})
 
-    def getUsableConsistencyCheckers(self) -> List[ConsistencyChecker]:
-        ccs = getUsableConsistencyCheckers(self._hsTheory).act()
+    def get_usable_consistency_checkers(self) -> List[ConsistencyChecker]:
+        ccs = getUsableConsistencyCheckers(self._hs_theory).act()
         return list({ConsistencyChecker(fst(cc)) for cc in ccs})
 
-    def getAvailableComorphisms(self) -> List[Comorphism]:
-        comorphisms = getAvailableComorphisms(self._hsTheory)
+    def get_available_comorphisms(self) -> List[Comorphism]:
+        comorphisms = getAvailableComorphisms(self._hs_theory)
         return [Comorphism(x) for x in comorphisms]
 
     def sentences(self) -> List[Sentence]:
-        sentences = getAllSentences(self._hsTheory)
-        return [Sentence(x, self._hsPrettySentence) for x in OMap.toList(sentences)]
+        sentences = getAllSentences(self._hs_theory)
+        return [Sentence(x, self._hs_pretty_sentence) for x in OMap.toList(sentences)]
 
     def axioms(self) -> List[Sentence]:
-        axioms = getAllAxioms(self._hsTheory)
-        return [Sentence(x, self._hsPrettySentence) for x in OMap.toList(axioms)]
+        axioms = getAllAxioms(self._hs_theory)
+        return [Sentence(x, self._hs_pretty_sentence) for x in OMap.toList(axioms)]
 
     def goals(self) -> List[Sentence]:
-        return [Sentence(x, self._hsPrettySentence) for x in OMap.toList(getAllGoals(self._hsTheory))]
+        return [Sentence(x, self._hs_pretty_sentence) for x in OMap.toList(getAllGoals(self._hs_theory))]
 
-    def provenGoals(self) -> List[Sentence]:
-        return [Sentence(x, self._hsPrettySentence) for x in OMap.toList(getProvenGoals(self._hsTheory))]
+    def proven_goals(self) -> List[Sentence]:
+        return [Sentence(x, self._hs_pretty_sentence) for x in OMap.toList(getProvenGoals(self._hs_theory))]
 
-    def unprovenGoals(self) -> List[Sentence]:
-        return [Sentence(x, self._hsPrettySentence) for x in OMap.toList(getUnprovenGoals(self._hsTheory))]
+    def unproven_goals(self) -> List[Sentence]:
+        return [Sentence(x, self._hs_pretty_sentence) for x in OMap.toList(getUnprovenGoals(self._hs_theory))]

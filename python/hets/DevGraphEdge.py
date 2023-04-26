@@ -11,22 +11,22 @@ from .HsWrapper import HsHierarchyElement
 
 
 class DevGraphEdge(HsHierarchyElement):
-    def __init__(self, hsEdge: Tuple[int, int, DGLinkLab], parent: Optional[HsHierarchyElement]) -> None:
+    def __init__(self, hs_edge: Tuple[int, int, DGLinkLab], parent: Optional[HsHierarchyElement]) -> None:
         super().__init__(parent)
 
-        self._hsEdge = hsEdge
+        self._hs_edge = hs_edge
 
-    def hsObj(self):
-        return self._hsEdge
+    def hs_obj(self):
+        return self._hs_edge
 
     def origin(self) -> int:
-        return fstOf3(self._hsEdge)
+        return fstOf3(self._hs_edge)
 
     def target(self) -> int:
-        return sndOf3(self._hsEdge)
+        return sndOf3(self._hs_edge)
 
     def label(self) -> DGLinkLab:
-        return thd(self._hsEdge)
+        return thd(self._hs_edge)
 
     def name(self):
         return self.label().dglName()

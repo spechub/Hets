@@ -8,17 +8,16 @@ from .haskell import ConsStatus, showConsistencyStatus
 
 
 class ConsistencyStatus:
-    def __init__(self, hsConsStatus: ConsStatus):
-        self._hsConsStatus = hsConsStatus
+    def __init__(self, hs_cons_status: ConsStatus):
+        self._hs_cons_status = hs_cons_status
 
     def required(self) -> str:
-        hsCons = self._hsConsStatus.requiredConservativity()
+        hsCons = self._hs_cons_status.requiredConservativity()
         return showConsistencyStatus(hsCons)
 
     def proven(self) -> str:
-        hsCons = self._hsConsStatus.provenConservativity()
+        hsCons = self._hs_cons_status.provenConservativity()
         return showConsistencyStatus(hsCons)
 
-
-    def isProvenLink(self) -> bool:
-        return self._hsConsStatus.isProvenConsStatusLink()
+    def is_proven_link(self) -> bool:
+        return self._hs_cons_status.isProvenConsStatusLink()

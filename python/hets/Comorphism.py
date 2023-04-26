@@ -8,11 +8,11 @@ from .haskell import comorphismName, PyComorphism
 
 
 class Comorphism:
-    def __init__(self, hsComorphism: PyComorphism) -> None:
-        self._hsComorphism = hsComorphism
+    def __init__(self, hs_comorphism: PyComorphism) -> None:
+        self._hs_comorphism = hs_comorphism
 
     def name(self) -> str:
-        return comorphismName(self._hsComorphism)
+        return comorphismName(self._hs_comorphism)
 
     def __eq__(self, other):
         return isinstance(other, Comorphism) and self.name() == other.name()
