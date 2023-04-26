@@ -29,7 +29,7 @@ module HetsAPI (
    , getGraphForLibrary
    , getNodesFromDevelopmentGraph
    , getLNodesFromDevelopmentGraph
-   , usableProvers
+   , getUsableProvers
    , proveNode 
 ) where
 

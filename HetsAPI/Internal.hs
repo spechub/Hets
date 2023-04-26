@@ -8,14 +8,17 @@ module HetsAPI.Internal (
     fromJust
     , Result, resultToMaybe, Diagnosis
     , HetcatsOpts, defaultHetcatsOpts
-    , DGraph, DGNodeLab(dgn_name), DGLinkLab(dglName)
+    , DGraph, DGNodeLab, DGLinkLab()
+    , developmentGraphNodeLabelName
+    , developmentGraphEdgeLabelName
     , ProofStatus
     , GoalStatus
     , TimeOfDay
     , TacticScript
     , ProofState
     , ConsistencyStatus
-    , sType
+    , consistencyStatusType
+    , SType
     , ConsStatus
     , requiredConservativity
     , provenConservativity
@@ -36,7 +39,16 @@ import Common.Result (Result, resultToMaybe, Diagnosis)
 import Common.Consistency(Conservativity(..), showConsistencyStatus)
 import Driver.Options (HetcatsOpts, defaultHetcatsOpts)
 import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), getNodeConsStatus, getNodeCons, getDGNodeName)
-import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink)
+import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName)
 import Logic.Prover (ProofStatus, GoalStatus, TacticScript)
 import Proofs.AbstractState (ProofState)
-import Proofs.ConsistencyCheck (ConsistencyStatus(..))
+import Proofs.ConsistencyCheck (ConsistencyStatus(..), SType)
+
+developmentGraphNodeLabelName :: DGNodeLab -> NodeName
+developmentGraphNodeLabelName = dgn_name
+
+developmentGraphEdgeLabelName :: DGLinkLab -> String
+developmentGraphEdgeLabelName = dglName
+
+consistencyStatusType :: ConsistencyStatus -> SType
+consistencyStatusType = sType
