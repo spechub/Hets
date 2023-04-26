@@ -16,7 +16,8 @@ from .HsWrapper import HsHierarchyElement
 from .haskell import snd, theoryOfNode, DGNodeLab, fst, Just, Nothing, PyProver, PyComorphism, defaultProofOptions, \
     mkPyProofOptions, proveNodeAndRecord, ConsistencyStatus as HsConsistencyStatus, PyConsChecker, \
     defaultConsCheckingOptions, \
-    PyConsCheckingOptions, checkConsistencyAndRecord, TheoryPointer, globalTheory, recomputeNode, fromJust
+    PyConsCheckingOptions, checkConsistencyAndRecord, TheoryPointer, globalTheory, recomputeNode, fromJust, \
+    developmentGraphNodeLabelName, developmentGraphEdgeLabelName
 
 from .Theory import Theory
 
@@ -39,7 +40,7 @@ class DevGraphNode(HsHierarchyElement):
         return snd(self._hs_node)
 
     def name(self) -> str:
-        return self.label().dgn_name()
+        return developmentGraphNodeLabelName(self.label())
 
     def _theory_pointer(self) -> TheoryPointer:
         node = self.hs_obj()

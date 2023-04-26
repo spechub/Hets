@@ -6,8 +6,9 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 from typing import Tuple, Optional
 
-from .haskell import DGLinkLab, fstOf3, sndOf3, thd
+from .haskell import DGLinkLab, fstOf3, sndOf3, thd, gmorphismOfEdge, developmentGraphEdgeLabelName
 from .HsWrapper import HsHierarchyElement
+from .GMorphism import GMorphism
 
 
 class DevGraphEdge(HsHierarchyElement):
@@ -25,8 +26,11 @@ class DevGraphEdge(HsHierarchyElement):
     def target(self) -> int:
         return sndOf3(self._hs_edge)
 
-    def label(self) -> DGLinkLab:
+    def _label(self) -> DGLinkLab:
         return thd(self._hs_edge)
 
+    def morphism(self) -> GMorphism:
+        return GMorphism(gmorphismOfEdge(self._label()))
+
     def name(self):
-        return self.label().dglName()
+        return developmentGraphEdgeLabelName(self._label())

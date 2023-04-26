@@ -11,6 +11,7 @@ module HetsAPI.Python (
     , PyProofTree
     , PyConsChecker
     , PyConsCheckingOptions(..)
+    , PyGMorphism (..)
     , mkPyProofOptions
     -- Wrapped with Py*
     , theoryOfNode
@@ -34,6 +35,18 @@ module HetsAPI.Python (
     , defaultProofOptions
     , defaultConsCheckingOptions
     , globalTheory
+    , gmorphismOfEdge
+    , comorphismOfGMorphism
+    , signatureOfGMorphism
+
+    , logicNameOfTheory
+    , logicDescriptionOfTheory
+    , targetLogicName
+    , targetLogicDescriptionName
+    , sourceLogicName
+    , sourceLogicDescriptionName
+    , logicNameOfGMorphism
+    , logicDescriptionOfGMorphism
 
     -- Unchanged re-export from Hets.ProveCommands
     , HP.checkConservativityNode
@@ -77,11 +90,12 @@ module HetsAPI.Python (
     , HDT.Sentence
     , HDT.SentenceByName
     , HDT.TheoryPointer
+    , HDT.SignatureJSON
+    , HDT.SymbolJSON
 )
 
 where
 
-import Data.Functor
 
 import qualified HetsAPI.Commands as HC
 import qualified HetsAPI.ProveCommands as HP
@@ -89,18 +103,22 @@ import qualified HetsAPI.InfoCommands as HI
 import qualified HetsAPI.DataTypes as HDT
 
 import Common.DocUtils (pretty)
-import Common.ExtSign (plainSign)
+import Common.ExtSign (ExtSign(..))
 import Common.LibName (LibName)
 import Common.Result (Result)
 import Common.ResultT (ResultT (runResultT))
 
-import Data.Graph.Inductive (LNode, lab)
+import Data.Aeson(encode)
 import Data.Bifunctor (bimap)
+import Data.Functor
+import Data.Graph.Inductive (LNode, lab)
+import qualified Data.Set as Set
 
-import Logic.Comorphism (AnyComorphism)
-import Logic.Logic (sym_of)
+import Logic.Comorphism (AnyComorphism(..), targetLogic, sourceLogic)
+import Logic.Grothendieck (GMorphism(..))
+import Logic.Logic (sym_of, language_name, description)
 import Logic.Prover (ProofStatus(..))
-import Static.DevGraph (DGNodeLab (dgn_theory), LibEnv, DGraph, dgBody)
+import Static.DevGraph (DGNodeLab (dgn_theory), DGLinkLab(dgl_morphism), LibEnv, DGraph, dgBody)
 import qualified Static.DevGraph (DGNodeLab(globalTheory))
 import qualified Static.GTheory as GT
 import Proofs.ConsistencyCheck (ConsistencyStatus)
@@ -126,6 +144,7 @@ data PyProver = PyProver G_prover
 data PyConsChecker = PyConsChecker G_cons_checker
 data PyComorphism = PyComorphism AnyComorphism
 data PyProofTree = PyProofTree G_proof_tree
+data PyGMorphism = PyGMorphism GMorphism
 
 data PyProofOptions = PyProofOptions {
     proofOptsProver :: Maybe PyProver -- ^ The prover to use. If not set, it is selected automatically
@@ -207,6 +226,18 @@ proverName (PyProver p) = Proofs.AbstractState.getProverName p
 comorphismName :: PyComorphism -> String
 comorphismName (PyComorphism c) = show c
 
+targetLogicName :: PyComorphism -> String
+targetLogicName (PyComorphism (Comorphism cid)) = language_name $ targetLogic cid
+
+targetLogicDescriptionName :: PyComorphism -> String
+targetLogicDescriptionName (PyComorphism (Comorphism cid)) = description $ targetLogic cid
+
+sourceLogicName :: PyComorphism -> String
+sourceLogicName (PyComorphism (Comorphism cid)) = language_name $ sourceLogic cid
+
+sourceLogicDescriptionName :: PyComorphism -> String
+sourceLogicDescriptionName (PyComorphism (Comorphism cid)) = description $ sourceLogic cid
+
 consCheckerName :: PyConsChecker -> String
 consCheckerName (PyConsChecker cc) = Proofs.AbstractState.getCcName cc
 
@@ -275,8 +306,35 @@ getUnprovenGoals (PyTheory theory) = HI.getUnprovenGoals theory
 prettySentence :: PyTheory -> Sentence -> String
 prettySentence (PyTheory theory) = HI.prettySentenceOfTheory theory
 
+logicNameOfTheory :: PyTheory -> String
+logicNameOfTheory (PyTheory GT.G_theory { GT.gTheoryLogic = lid } ) = language_name lid
+
+logicDescriptionOfTheory :: PyTheory -> String
+logicDescriptionOfTheory (PyTheory GT.G_theory { GT.gTheoryLogic = lid } ) = description lid
+
 getDGNodeById :: DGraph -> Int -> Maybe DGNodeLab
 getDGNodeById = lab . dgBody
 
 globalTheory :: DGNodeLab -> Maybe PyTheory
-globalTheory = fmap PyTheory . Static.DevGraph.globalTheory 
+globalTheory = fmap PyTheory . Static.DevGraph.globalTheory
+
+gmorphismOfEdge :: DGLinkLab -> PyGMorphism
+gmorphismOfEdge = PyGMorphism . Static.DevGraph.dgl_morphism
+
+{-------------------------------------------------------------------------------
+GMorphism Wrapper
+-------------------------------------------------------------------------------}
+comorphismOfGMorphism :: PyGMorphism -> PyComorphism
+comorphismOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = PyComorphism (Comorphism cid)
+
+signatureOfGMorphism :: PyGMorphism -> ExtSign HDT.SignatureJSON HDT.SymbolJSON
+signatureOfGMorphism (PyGMorphism (GMorphism {gMorphismSign = sig})) = ExtSign {
+        plainSign = encode (plainSign sig),
+        nonImportedSymbols = Set.map encode $ nonImportedSymbols sig
+    }
+
+logicNameOfGMorphism :: PyGMorphism -> String
+logicNameOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = language_name cid
+
+logicDescriptionOfGMorphism :: PyGMorphism -> String
+logicDescriptionOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = description cid

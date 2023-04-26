@@ -6,6 +6,8 @@ License     :  GPLv2 or higher, see LICENSE.txt
 module HetsAPI.DataTypes (
     Sentence
   , SentenceByName
+  , SignatureJSON
+  , SymbolJSON
   , TheoryPointer) where
 import qualified Common.OrderedMap as OMap
 import Data.ByteString.Lazy(ByteString)
@@ -15,7 +17,13 @@ import Static.DevGraph (LibEnv, DGraph, DGNodeLab)
 
 import Data.Graph.Inductive.Graph (LNode)
 
-type Sentence = ByteString
+-- | In the API if it is not possible to export the generic type, they are converted to JSON.
+type GenericTransportType = ByteString
+
+type Sentence = GenericTransportType
 type SentenceByName = OMap.OMap String Sentence
+
+type SignatureJSON = GenericTransportType
+type SymbolJSON = GenericTransportType
 
 type TheoryPointer = (LibName, LibEnv, DGraph, LNode DGNodeLab)

@@ -29,14 +29,18 @@ module HetsAPI.Internal (
     , isProvenConsStatusLink
     , showConsistencyStatus
     , getDGNodeName
+    , ExtSign
+    , plainSign
+    , nonImportedSymbols
 ) where
 
 
 import Data.Maybe (fromJust)
 import Data.Time (TimeOfDay)
 
-import Common.Result (Result, resultToMaybe, Diagnosis)
+import Common.ExtSign (ExtSign(..))
 import Common.Consistency(Conservativity(..), showConsistencyStatus)
+import Common.Result (Result, resultToMaybe, Diagnosis)
 import Driver.Options (HetcatsOpts, defaultHetcatsOpts)
 import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), getNodeConsStatus, getNodeCons, getDGNodeName)
 import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName)

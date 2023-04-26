@@ -21,13 +21,19 @@ from hs.HetsAPI.Python import (PyTheory, PyComorphism, PyConsChecker, PyProver, 
                                conservativity, automaticHideTheoremShift, theoremHideShift, computeColimit, normalForm,
                                triangleCons, freeness, libFlatImports, libFlatDUnions, libFlatRenamings, libFlatHiding,
                                libFlatHeterogen, qualifyLibEnv, defaultProofOptions, defaultConsCheckingOptions,
-                               TheoryPointer, mkPyProofOptions, getDGNodeById, recomputeNode, globalTheory)
+                               TheoryPointer, mkPyProofOptions, getDGNodeById, recomputeNode, globalTheory,
+                               gmorphismOfEdge, comorphismOfGMorphism, signatureOfGMorphism, PyGMorphism,
+                               logicNameOfTheory, logicDescriptionOfTheory, targetLogicName, targetLogicDescriptionName,
+                               sourceLogicName, sourceLogicDescriptionName, logicNameOfGMorphism,
+                               logicDescriptionOfGMorphism)
 from hs.Prelude import Just, Nothing, fst, snd, show, String
 
 from hs.HetsAPI.Internal import (fromJust, Result, resultToMaybe, Diagnosis, HetcatsOpts, defaultHetcatsOpts, DGraph,
-                                 DGNodeLab, DGLinkLab, ProofStatus, ProofState, ConsistencyStatus, dgn_name, dglName,
+                                 DGNodeLab, DGLinkLab, ProofStatus, ProofState, ConsistencyStatus,
                                  ConsistencyStatus, ConsStatus, Conservativity, getNodeConsStatus,
                                  showConsistencyStatus, GoalStatus, TimeOfDay, TacticScript, getConsOfStatus,
-                                 requiredConservativity, provenConservativity, linkStatus)
+                                 requiredConservativity, provenConservativity, linkStatus, plainSign,
+                                 nonImportedSymbols, ExtSign, developmentGraphEdgeLabelName,
+                                 developmentGraphNodeLabelName)
 
 import hs.Common.OrderedMap as OMap
