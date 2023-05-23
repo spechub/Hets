@@ -25,7 +25,8 @@ from hs.HetsAPI.Python import (PyTheory, PyComorphism, PyConsChecker, PyProver, 
                                gmorphismOfEdge, comorphismOfGMorphism, signatureOfGMorphism, PyGMorphism,
                                logicNameOfTheory, logicDescriptionOfTheory, targetLogicName, targetLogicDescriptionName,
                                sourceLogicName, sourceLogicDescriptionName, logicNameOfGMorphism,
-                               logicDescriptionOfGMorphism, signatureOfTheory)
+                               logicDescriptionOfGMorphism, signatureOfTheory, domainOfGMorphism, codomainOfGMorphism,
+                               isGMorphismInclusion, gMorphismToTransportType)
 from hs.Prelude import Just, Nothing, fst, snd, show, String
 
 from hs.HetsAPI.Internal import (fromJust, Result, resultToMaybe, Diagnosis, HetcatsOpts, defaultHetcatsOpts, DGraph,
@@ -34,6 +35,7 @@ from hs.HetsAPI.Internal import (fromJust, Result, resultToMaybe, Diagnosis, Het
                                  showConsistencyStatus, GoalStatus, TimeOfDay, TacticScript, getConsOfStatus,
                                  requiredConservativity, provenConservativity, linkStatus, plainSign,
                                  nonImportedSymbols, ExtSign, developmentGraphEdgeLabelName,
-                                 developmentGraphNodeLabelName)
+                                 developmentGraphNodeLabelName, globalAnnotations, precedenceAnnotations,
+                                 associativityAnnotations, displayAnnos, literalAnnos, prefixMap, GlobalAnnos)
 
 import hs.Common.OrderedMap as OMap

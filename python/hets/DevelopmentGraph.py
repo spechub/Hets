@@ -7,10 +7,11 @@ from typing import List, Optional
 
 from .DevGraphNode import DevGraphNode
 from .DevGraphEdge import DevGraphEdge
+from .GlobalAnnotations import GlobalAnnotations
 from .HsWrapper import HsHierarchyElement
 
 from .haskell import getLNodesFromDevelopmentGraph, DGraph, Nothing, fromJust, getDGNodeById, \
-    getLEdgesFromDevelopmentGraph
+    getLEdgesFromDevelopmentGraph, globalAnnotations
 
 
 class DevelopmentGraph(HsHierarchyElement):
@@ -51,3 +52,5 @@ class DevelopmentGraph(HsHierarchyElement):
 
         return self._edges
 
+    def global_annotations(self) -> GlobalAnnotations:
+        return GlobalAnnotations(globalAnnotations(self._hs_development_graph))

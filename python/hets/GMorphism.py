@@ -1,10 +1,12 @@
-from typing import Optional
+from typing import Optional, Dict
 
+from .json_conversion import as_json
 from .Comorphism import Comorphism
 from .Signature import Signature
 from .HsWrapper import HsWrapper, HsHierarchyElement
 
-from .haskell import logicNameOfGMorphism, logicDescriptionOfGMorphism, signatureOfGMorphism, comorphismOfGMorphism
+from .haskell import logicNameOfGMorphism, logicDescriptionOfGMorphism, signatureOfGMorphism, comorphismOfGMorphism, \
+    domainOfGMorphism, codomainOfGMorphism, isGMorphismInclusion, gMorphismToTransportType
 
 
 class GMorphism:
@@ -23,3 +25,19 @@ class GMorphism:
 
     def comorphism(self) -> Comorphism:
         return Comorphism(comorphismOfGMorphism(self._hs_g_morphism))
+
+    def domain(self) -> dict:
+        return as_json(domainOfGMorphism(self._hs_g_morphism))
+
+    def codomain(self) -> dict:
+        return as_json(codomainOfGMorphism(self._hs_g_morphism))
+
+    def is_inclusion(self) -> bool:
+        return isGMorphismInclusion(self._hs_g_morphism)
+
+    def as_json(self) -> dict:
+        return as_json(gMorphismToTransportType(self._hs_g_morphism))
+
+    def symbol_map(self) -> Dict[object, object]:
+        pass
+

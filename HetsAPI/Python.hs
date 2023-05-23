@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {- |
 Description :  HetsAPIs python interface. This module reexports all commands and functionality from the API and hides certain unsupported features from the python interface.
 Copyright   :  (c) Otto-von-Guericke University of Magdeburg
@@ -11,7 +12,7 @@ module HetsAPI.Python (
     , PyProofTree
     , PyConsChecker
     , PyConsCheckingOptions(..)
-    , PyGMorphism (..)
+    , PyGMorphism
     , mkPyProofOptions
     -- Wrapped with Py*
     , theoryOfNode
@@ -48,6 +49,10 @@ module HetsAPI.Python (
     , sourceLogicDescriptionName
     , logicNameOfGMorphism
     , logicDescriptionOfGMorphism
+    , domainOfGMorphism
+    , codomainOfGMorphism
+    , isGMorphismInclusion
+    , gMorphismToTransportType
 
     -- Unchanged re-export from Hets.ProveCommands
     , HP.checkConservativityNode
@@ -109,15 +114,16 @@ import Common.LibName (LibName)
 import Common.Result (Result)
 import Common.ResultT (ResultT (runResultT))
 
-import Data.Aeson(encode)
+import Data.Aeson(encode, object, (.=))
 import Data.Bifunctor (bimap)
 import Data.Functor
 import Data.Graph.Inductive (LNode, lab)
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Logic.Comorphism (AnyComorphism(..), targetLogic, sourceLogic)
 import Logic.Grothendieck (GMorphism(..))
-import Logic.Logic (sym_of, language_name, description)
+import Logic.Logic (sym_of, language_name, description, dom, cod, isInclusion, symmap_of)
 import Logic.Prover (ProofStatus(..))
 import Static.DevGraph (DGNodeLab (dgn_theory), DGLinkLab(dgl_morphism), LibEnv, DGraph, dgBody)
 import qualified Static.DevGraph (DGNodeLab(globalTheory))
@@ -345,3 +351,20 @@ logicNameOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = language
 
 logicDescriptionOfGMorphism :: PyGMorphism -> String
 logicDescriptionOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = description cid
+
+domainOfGMorphism :: PyGMorphism -> HDT.GenericTransportType
+domainOfGMorphism (PyGMorphism (GMorphism {gMorphismMor = m})) = encode $ dom m
+
+codomainOfGMorphism :: PyGMorphism -> HDT.GenericTransportType
+codomainOfGMorphism (PyGMorphism (GMorphism {gMorphismMor = m})) = encode $ cod m
+
+isGMorphismInclusion :: PyGMorphism -> Bool
+isGMorphismInclusion (PyGMorphism m) = isInclusion m
+
+
+gMorphismToTransportType :: PyGMorphism -> HDT.GenericTransportType
+gMorphismToTransportType (PyGMorphism (GMorphism {gMorphismComor = cid, gMorphismSign = sig, gMorphismMor = mor})) =
+    encode $ object ["nameOfComorphism" .= show cid, "signature" .= sig, "morphism" .= mor]
+
+-- symbolMapOfGMorphism :: PyGMorphism -> Map.Map HDT.SymbolJSON HDT.SymbolJSON
+-- symbolMapOfGMorphism (PyGMorphism (GMorphism {gMorphismMor = morphism})) = Map.map encode $ Map.mapKeys encode $ symmap_of (targetLogic morphism) morphism

@@ -8,6 +8,7 @@ module HetsAPI.DataTypes (
   , SentenceByName
   , SignatureJSON
   , SymbolJSON
+  , GenericTransportType
   , TheoryPointer) where
 import qualified Common.OrderedMap as OMap
 import Data.ByteString.Lazy(ByteString)
