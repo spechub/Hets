@@ -44,6 +44,9 @@ module HetsAPI.Internal (
     , Token
     , Id
 
+    , LibName
+    , LibEnv
+
     , IRI
 ) where
 
@@ -56,9 +59,10 @@ import Common.Consistency(Conservativity(..), showConsistencyStatus)
 import Common.GlobalAnnotations
 import Common.Id
 import Common.IRI
+import Common.LibName (LibName)
 import Common.Result (Result, resultToMaybe, Diagnosis)
 import Driver.Options (HetcatsOpts, defaultHetcatsOpts)
-import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos)
+import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv)
 import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName)
 import Logic.Prover (ProofStatus, GoalStatus, TacticScript)
 import Proofs.AbstractState (ProofState)
