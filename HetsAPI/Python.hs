@@ -47,8 +47,8 @@ module HetsAPI.Python (
     , targetLogicDescriptionName
     , sourceLogicName
     , sourceLogicDescriptionName
-    , logicNameOfGMorphism
-    , logicDescriptionOfGMorphism
+    , comorphismNameOfGMorphism
+    , comorphismDescriptionOfGMorphism
     , domainOfGMorphism
     , codomainOfGMorphism
     , isGMorphismInclusion
@@ -346,11 +346,11 @@ signatureOfGMorphism (PyGMorphism (GMorphism {gMorphismSign = sig})) = ExtSign {
         nonImportedSymbols = Set.map encode $ nonImportedSymbols sig
     }
 
-logicNameOfGMorphism :: PyGMorphism -> String
-logicNameOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = language_name cid
+comorphismNameOfGMorphism :: PyGMorphism -> String
+comorphismNameOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = language_name cid
 
-logicDescriptionOfGMorphism :: PyGMorphism -> String
-logicDescriptionOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = description cid
+comorphismDescriptionOfGMorphism :: PyGMorphism -> String
+comorphismDescriptionOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = description cid
 
 domainOfGMorphism :: PyGMorphism -> HDT.GenericTransportType
 domainOfGMorphism (PyGMorphism (GMorphism {gMorphismMor = m})) = encode $ dom m

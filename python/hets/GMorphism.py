@@ -5,7 +5,7 @@ from .Comorphism import Comorphism
 from .Signature import Signature
 from .HsWrapper import HsWrapper, HsHierarchyElement
 
-from .haskell import logicNameOfGMorphism, logicDescriptionOfGMorphism, signatureOfGMorphism, comorphismOfGMorphism, \
+from .haskell import comorphismNameOfGMorphism, comorphismDescriptionOfGMorphism, signatureOfGMorphism, comorphismOfGMorphism, \
     domainOfGMorphism, codomainOfGMorphism, isGMorphismInclusion, gMorphismToTransportType
 
 
@@ -15,10 +15,10 @@ class GMorphism:
         self._hs_g_morphism = hs_g_morphism
 
     def name(self) -> str:
-        return logicNameOfGMorphism(self._hs_g_morphism)
+        return comorphismNameOfGMorphism(self._hs_g_morphism)
 
     def description(self) -> str:
-        return logicDescriptionOfGMorphism(self._hs_g_morphism)
+        return comorphismDescriptionOfGMorphism(self._hs_g_morphism)
 
     def signature(self) -> Signature:
         return Signature(signatureOfGMorphism(self._hs_g_morphism))
