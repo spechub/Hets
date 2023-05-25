@@ -1,2 +1,2 @@
 from .base import *
-import hs.Common.OrderedMap as OMap
+from hs.Common.OrderedMap import toList
