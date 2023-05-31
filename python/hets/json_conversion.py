@@ -1,23 +1,30 @@
-from .haskell import show
+import ast
+from typing import Union
+
+from .haskell import show, ByteString, toStrict
 
 import json
 
 
-def as_json(hs_byte_string) -> dict:
+def as_json(hs_byte_string: Union[ByteString, bytes]) -> dict:
     """
-    Returns the sentences as json objects.
+    Returns a haskell byte string as json objects.
 
-    The JSON representation is generated automatically by the haskell package
-    Data.Aeson.
-    See https://hackage.haskell.org/package/aeson/docs/Data-Aeson.html
-    for further details.
+    The union in the parameter originates from hyphen converting `Data.ByteString.ByteString` to pythons `bytes`, but
+    `Data.ByteString.Lazy.ByteString` is not converted automatically.
+
+    The JSON representation is generated automatically by the haskell package Data.Aeson.
+    See https://hackage.haskell.org/package/aeson/docs/Data-Aeson.html for further details.
+
+    @param hs_byte_string A haskell `Data.ByteString.ByteString` or `Data.ByteString.Lazy.ByteString`
+    @return The byte string parsed as json object to a dictionary
     """
 
-    # Get json.
-    # Return type is ByteString which is not converted to either pythons
-    # `bytes` or `str` type. Hence, the conversion via `show` and
-    # `encode.decode`. [1:-1] to exclude the quotation marks added by `show`
-    json_str = show(hs_byte_string).encode("utf-8").decode("unicode_escape")[1:-1]
+    if isinstance(hs_byte_string, bytes):
+        json_str = hs_byte_string
+    else:
+        json_str = toStrict(hs_byte_string)
+
     json_obj = json.loads(json_str)
 
     return json_obj
