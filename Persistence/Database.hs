@@ -18,7 +18,7 @@ import Control.Monad.Logger
 import Control.Monad.IO.Unlift
 import qualified Control.Monad.Fail as Fail
 
-import Data.List (intercalate, isInfixOf)
+import qualified Data.List
 import Data.Text (Text, pack)
 
 import Database.Persist.Sql
@@ -77,15 +77,16 @@ runFullMigrationSet dbConfig =
 
     ignoreError :: MonadIO m
                 => String -> SomeException -> DBMonad m [Single (Maybe Text)]
-    ignoreError searchInfix exception =
-      let message = show exception in
 #ifdef MYSQL
-      if isMySql dbConfig && (searchInfix `isInfixOf` message)
+    ignoreError searchInfix exception =
+      if isMySql dbConfig && (searchInfix `Data.List.isInfixOf` message)
       then
           return []
       else
+#else
+    ignoreError _ exception =
 #endif
-          Fail.fail message
+      Fail.fail message where message = show exception
 
 indexesSQL :: DBConfig -> [String]
 indexesSQL dbConfig =
@@ -93,8 +94,8 @@ indexesSQL dbConfig =
   where
     sqlString :: (String, [String]) -> String
     sqlString (table, columns) =
-      let indexName = "ix_" ++ table ++ "__" ++ intercalate "__" columns
-          indexedColumns = intercalate ", " columns
+      let indexName = "ix_" ++ table ++ "__" ++ Data.List.intercalate "__" columns
+          indexedColumns = Data.List.intercalate ", " columns
 #ifdef MYSQL
           indexNameMySql = take 64 indexName
           mysqlString =
