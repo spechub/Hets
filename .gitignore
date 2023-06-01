@@ -8,7 +8,7 @@
 .*.swp
 .hets*
 *.bin
-hets
+./hets
 hets_server
 hets.cgi
 rev.txt
@@ -25,6 +25,8 @@ doc/*.out
 doc/UserGuide.pdf
 doc/hs2isa.ps
 docs/
+__pycache__
+.idea
 programatica/
 OWL2/*.jar
 OWL2/java/build/

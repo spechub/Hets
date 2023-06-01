@@ -1,3 +1,8 @@
+{- |
+Description :  All commands to interact with the HETS API
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+-}
 module HetsAPI.Commands (
    automatic
    , globalSubsume
@@ -5,6 +10,7 @@ module HetsAPI.Commands (
    , localInference
    , localDecomposition
    , compositionProveEdges
+   , compositionCreateEdges
    , conservativity
    , automaticHideTheoremShift
    , theoremHideShift
@@ -19,49 +25,48 @@ module HetsAPI.Commands (
    , libFlatHeterogen
    , qualifyLibEnv
    , loadLibrary
-   , getGraphForLibrary
-   , getNodesFromDevelopmentGraph
-   , getLNodesFromDevelopmentGraph
    , translateTheory
    , showTheory
 
    -- Hets.ProveCommands
-   , HPC.availableComorphisms
-   , HPC.usableProvers
-   , HPC.usableConsistencyCheckers
-   , HPC.autoProveNode
+   , HPC.getAvailableComorphisms
+   , HPC.getUsableProvers
+   , HPC.getUsableConsistencyCheckers
    , HPC.proveNode
    , HPC.checkConsistency
    , HPC.checkConservativityNode 
+
+   -- Hets.InfoCommands
+   , HIC.getGraphForLibrary
+   , HIC.getNodesFromDevelopmentGraph
+   , HIC.getLNodesFromDevelopmentGraph
+   , HIC.getAllSentences
+   , HIC.getAllAxioms
+   , HIC.getAllGoals
+   , HIC.getProvenGoals
+   , HIC.getUnprovenGoals
 ) where
 
 import qualified Data.Map as Map
-import Data.Graph.Inductive.Graph (LNode)
 
-import Control.Monad.Trans (lift)
 
-import Common.Result (Result(..), fatal_error, maybeToResult, justHint)
-import Common.Id(nullRange)
+import Common.Result (Result(..))
 import Common.LibName (LibName)
-import Common.ResultT (runResultT, liftR)
 
 import Interfaces.CmdAction (globLibAct, globLibResultAct)
-import Interfaces.Command (GlobCmd(..), SelectCmd (Lib))
+import Interfaces.Command (GlobCmd(..))
 
 import qualified HetsAPI.ProveCommands as HPC
+import qualified HetsAPI.InfoCommands as HIC
 
-import Driver.AnaLib (anaLib)
 import Driver.Options (HetcatsOpts)
 import Driver.ReadMain (readAndAnalyse)
 
 import Logic.Comorphism (AnyComorphism)
-import Static.DevGraph (LibEnv, DGraph, lookupDGraph, DGNodeLab, labNodesDG)
+import Static.DevGraph (LibEnv)
 import Static.GTheory (G_theory, mapG_theory)
 import Common.DocUtils (Pretty(pretty))
 
-
-err :: String -> Result a
-err s = fatal_error s nullRange
 
 globalCommands :: Map.Map GlobCmd (LibName -> LibEnv -> LibEnv)
 globalCommands = Map.fromList globLibAct
@@ -147,22 +152,6 @@ loadLibrary file opts = do
    case analysisResult of
     Nothing -> return $ fail  ("Unable to load library " ++ file)
     Just lib -> return $ return lib
-
--- | @getDevelopmentGraphByName name env@ returns the development graph for the
---   library @name@ in the environment @env@.
-getGraphForLibrary :: LibName -> LibEnv -> DGraph
-getGraphForLibrary = lookupDGraph
-
--- | @getNodesFromDevelopmentGraph graph@ returns the nodes of the development
---   graph @graph@
-getNodesFromDevelopmentGraph :: DGraph -> [DGNodeLab]
-getNodesFromDevelopmentGraph = fmap snd . labNodesDG
-
-
--- | @getNodesFromDevelopmentGraph graph@ returns the nodes of the development
---   graph @graph@
-getLNodesFromDevelopmentGraph :: DGraph -> [LNode DGNodeLab]
-getLNodesFromDevelopmentGraph = labNodesDG
 
 translateTheory :: AnyComorphism -> G_theory -> Result G_theory
 translateTheory = mapG_theory False

@@ -72,6 +72,7 @@ common shared-properties
     , aterm >= 0.1.0.1
     , base >= 4.0.0.0
     , containers >= 0.1.0.1
+    , unordered-containers
     , directory >= 1.0.0.0
     , fgl >= 5.4.1.1
     , filepath
@@ -94,12 +95,12 @@ common shared-properties
   cpp-options: -DCASLEXTENSIONS -DRDFLOGIC
   ghc-options: -freduction-depth=31
 
-  if flag(httpclient)
-    build-depends:
-        http-client >= 0.5.7.0
-      , http-client-tls >= 0.3.5.1
-      , connection >= 0.2.8
-    cpp-options: -DNO_WGET
+--   if flag(httpclient)
+--     build-depends:
+--         http-client >= 0.5.7.0
+--       , http-client-tls >= 0.3.5.1
+--       , connection >= 0.2.8
+--     cpp-options: -DNO_WGET
 
   if flag(haxml)
     build-depends: HaXml >= 1.24 && < 2
@@ -265,7 +266,14 @@ Library
         HetsAPI
         HetsAPI.Python
         HetsAPI.Commands
+        HetsAPI.DataTypes
+        HetsAPI.InfoCommands
         HetsAPI.ProveCommands
+        HetsAPI.Internal
+
+        Common.OrderedMap
+
+  other-modules:
         ATC.AS_Annotation
         ATC.AS_Architecture
         ATC.AS_Library
@@ -442,6 +450,8 @@ Library
         Common.InjMap
         Common.Item
         Common.Json
+        Common.Json.ConvInstances
+        Common.Json.Instances
         Common.Keywords
         Common.LaTeX_funs
         Common.LaTeX_maps
@@ -457,7 +467,6 @@ Library
         Common.Lib.Tabular
         Common.LibName
         Common.LogicT
-        Common.OrderedMap
         Common.Parsec
         Common.Partial
         Common.Percent
@@ -795,6 +804,7 @@ Library
         OMDoc.XmlInterface
         OWL2.AS
         OWL2.ASKeywords
+        OWL2.ATC_OWL2
         OWL2.CASL2OWL
         OWL2.ColimSign
         OWL2.ColonKeywords
@@ -919,6 +929,7 @@ Library
         QVTR.Sign
         QVTR.StatAna
         RDF.AS
+        RDF.ATC_RDF
         RDF.Function
         RDF.Logic_RDF
         RDF.Morphism
@@ -1059,5 +1070,4 @@ Library
         VSE.Parse
         VSE.Prove
         VSE.ToSExpr
-  other-modules:
         Static.GTheory
