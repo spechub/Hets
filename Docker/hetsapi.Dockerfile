@@ -3,13 +3,16 @@ FROM hyphen:20.04
 ENV TZ=Europe/Berlin
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt-get update
+RUN apt-get update && apt-get -y install locales && locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
+
 RUN apt-get install -y software-properties-common apt-utils make
 RUN apt-add-repository -y ppa:hets/hets
 RUN apt-get update
-RUN DEBIAN_FRONTEND=noninteractive apt install -y openjdk-8-jdk-headless ant cabal-install\
+RUN apt-get install -y openjdk-8-jdk-headless ant cabal-install\
  ksh perl-base tar xz-utils zip\
- texlive-latex-base texlive-latex-extra texlive-fonts-recommended latexmk\
  libmysqlclient-dev\
  ghc-haddock libghc-missingh-dev\
  ghc>=7.10.3 happy\
@@ -26,10 +29,11 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y openjdk-8-jdk-headless ant cab
  libghc-persistent-mysql-dev\
  libghc-hexpat-dev\
  libghc-aterm-dev\
- libghc-xeno-dev
+ libghc-xeno-dev\
+ libghc-heap-dev
 
 
-# RUN git clone -b 1790_API https://github.com/spechub/Hets.git /hets
+# RUN git clone https://github.com/spechub/Hets.git /hets
 ## OR
 COPY ./ /hets
 
@@ -38,17 +42,17 @@ WORKDIR /hets
 RUN make derived
 
 RUN runhaskell Setup.hs configure \
-    --ghc --prefix=/ \
-    --disable-executable-stripping \
-    --disable-benchmarks \
-    --libdir=/lib/haskell-packages/ghc/lib/x86_64-linux-ghc-8.6.5 \
-    --libsubdir=hets-api-0.100.0 \
-    --datadir=share \
-    --datasubdir=hets-api \
-    --haddockdir=/lib/ghc-doc/haddock/hets-api-0.100.0 \
-    --docdir=share/doc/hets-api-doc \
-    --package-db=/var/lib/ghc/package.conf.d \
-    --disable-profiling \
-    lib:Hets
-RUN runhaskell Setup.hs build lib:Hets
+   --ghc --prefix=/ \
+   --disable-executable-stripping \
+   --disable-benchmarks \
+   --libdir=/lib/haskell-packages/ghc/lib/x86_64-linux-ghc-8.6.5 \
+   --libsubdir=hets-api-0.100.0 \
+   --datadir=share \
+   --datasubdir=hets-api \
+   --haddockdir=/lib/ghc-doc/haddock/hets-api-0.100.0 \
+   --docdir=share/doc/hets-api-doc \
+   --package-db=/var/lib/ghc/package.conf.d \
+   --disable-profiling \
+   lib:Hets
+RUN runhaskell Setup.hs build -j$(nproc) lib:Hets
 RUN runhaskell Setup.hs install
