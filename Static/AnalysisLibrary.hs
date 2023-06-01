@@ -103,7 +103,7 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
   case fname' of
     Left err -> return $ Fail.fail err
     Right (mr, _, file, inputLit) ->
-        if any (`isSuffixOf` file) [envSuffix, prfSuffix] then
+        if any (`isSuffixOf` (filePath file)) [envSuffix, prfSuffix] then
           return . Fail.fail $ "no matching source file for '" ++ fname ++ "' found."
         else let
         input = (if unlit opts then Unlit.unlit else id) inputLit
@@ -114,18 +114,18 @@ anaSource mln lg opts topLns libenv initDG origName = ResultT $ do
               Nothing | useLibPos opts && not (checkUri fname) ->
                 Just $ emptyLibName libStr
               _ -> mln
-        fn2 = keepOrigClifName opts origName file
+        fn2 = keepOrigClifName opts origName (filePath file)
         fnAbs = if isAbsolute fn2 then fn2 else dir </> fn2
         url = if checkUri fn2 then fn2 else "file://" ++ fnAbs
         in
         if runMMT opts then mmtRes fname else
-            if takeExtension file /= ('.' : show TwelfIn)
+            if takeExtension (filePath file) /= ('.' : show TwelfIn)
             then runResultT $
                  anaString nLn lgraph opts topLns libenv initDG input url mr
             else do
-              res <- anaTwelfFile opts file
+              res <- anaTwelfFile opts (filePath file)
               return $ case res of
-                Nothing -> Fail.fail $ "failed to analyse file: " ++ file
+                Nothing -> Fail.fail $ "failed to analyse file: " ++ (filePath file)
                 Just (lname, lenv) -> return (lname, Map.union lenv libenv)
 
 -- | parsing of input string (content of file)
@@ -263,8 +263,7 @@ anaLibFileOrGetEnv lgraph opts topLns libenv initDG mln file = do
 -}
 anaLibDefn :: LogicGraph -> HetcatsOpts -> LNS -> LibEnv -> DGraph -> LIB_DEFN
   -> FilePath -> ResultT IO (LibName, LIB_DEFN, GlobalAnnos, LibEnv)
-anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file
-  = do
+anaLibDefn lgraph opts topLns libenv dg (Lib_defn ln alibItems pos ans) file = do
   let libStr = libToFileName ln
       isDOLlib = elem ':' libStr
   gannos <- showDiags1 opts $ liftR $ addGlobalAnnos

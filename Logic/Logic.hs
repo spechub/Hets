@@ -162,6 +162,8 @@ import Data.Typeable
 import Control.Monad (unless)
 import qualified Control.Monad.Fail as Fail
 
+import Data.Aeson (FromJSON, ToJSON)
+
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
      deriving (Eq, Show)
@@ -171,8 +173,8 @@ class ShATermConvertible a => Convertible a
 instance ShATermConvertible a => Convertible a
 
 -- | shortcut for class constraints
-class (Pretty a, Convertible a) => PrintTypeConv a
-instance (Pretty a, Convertible a) => PrintTypeConv a
+class (Pretty a, Convertible a, ToJSON a, FromJSON a) => PrintTypeConv a
+instance (Pretty a, Convertible a, ToJSON a, FromJSON a) => PrintTypeConv a
 
 -- | shortcut for class constraints with equality
 class (Eq a, PrintTypeConv a) => EqPrintTypeConv a

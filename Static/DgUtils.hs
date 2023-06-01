@@ -212,7 +212,11 @@ fcList :: [FreeOrCofree]
 fcList = [minBound .. maxBound]
 
 -- | required and proven conservativity (with a proof)
-data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus
+data ConsStatus = ConsStatus
+  { requiredConservativity :: Conservativity,
+    provenConservativity :: Conservativity,
+    linkStatus :: ThmLinkStatus
+  }
   deriving (Show, Eq, Ord, Typeable, Data)
 
 isProvenConsStatusLink :: ConsStatus -> Bool

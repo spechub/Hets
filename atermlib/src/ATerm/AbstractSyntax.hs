@@ -30,7 +30,7 @@ import Data.Dynamic
 import Data.Typeable
 import Data.Array
 import System.Mem.StableName
-import GHC.Prim
+import Unsafe.Coerce
 import qualified Data.List as List
 import Data.Maybe
 
