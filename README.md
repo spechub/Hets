@@ -48,14 +48,23 @@ or install it easily in a [docker container](https://github.com/spechub/Hets/wik
 
 #### The basic system
 ```
-sudo apt-get install software-properties-common
 sudo dpkg --add-architecture i386			# not needed for hets-server
 sudo apt-add-repository ppa:hets/hets
-sudo apt-get update
+sudo apt-get install hets-desktop
+```
+#### The basic system (Ubuntu jammy 22.04)
+```
+sudo dpkg --add-architecture i386			# not needed for hets-server
+sudo apt-add-repository -S "deb [trusted=yes] http://pkg.cs.ovgu.de/LNF/linux/ubuntu 22.04/"
 sudo apt-get install hets-desktop
 ```
 
+
 * for using Hets as a server providing a RESTful interface, use hets-server. This is a smaller version without GUI dependencies. Note that also hets-desktop can be used as as server.
+
+#### Get the latest binaries
+
+From [here](http://hets.eu/latest) you can get the latest Hets binaries (always freshly compiled from the master branch). 
 
 #### Hets development
 For Hets development additionally type in
@@ -71,19 +80,8 @@ The Hets sources should be obtained from the git repository (see the end of this
 We provide the AUR-packages [`hets-desktop-bin`](https://aur.archlinux.org/packages/hets-desktop-bin/) and [`hets-server-bin`](https://aur.archlinux.org/packages/hets-server-bin/) to install 64 bit binaries of Hets/Hets-server.
 If you would like to compile Hets yourself, you can install one of the AUR-packages [`hets-desktop`](https://aur.archlinux.org/packages/hets-desktop/) and [`hets-server`](https://aur.archlinux.org/packages/hets-server/).
 
-### Installing Hets under OS X/macOS (10.9 (Mavericks) and greater)
-* Install Homebrew: See [https://brew.sh](https://brew.sh)
-* Install Java: `brew cask install java`
-* Install the Hets-Repository to Homebrew: `brew tap spechub/hets`
-* Only for Hets-Desktop, install X11: `brew cask install xquartz`
-* Either install hets-desktop: `brew install spechub/hets/hets-desktop`
-* Or install hets-server: `brew install spechub/hets/hets-server`
-
-This installs Hets along with all its dependencies.
-Some of the dependencies are optional, but recommended, especially the provers.
-You can install Hets without these by adding a flag `--without-*` where `*` is one of these recommended dependencies.
-For instance, you can run `brew install spechub/hets/hets-desktop --without-leo2` to skip the installation of Leo2.
-For a list of these flags, run `brew info hets-desktop`.
+### Installing Hets under macOS and Windows
+* Please use a [docker container](https://github.com/spechub/Hets/wiki/How-to-use-the-Hets-Docker-Container).
 
 ### Hets libraries
 Download the [Hets libraries](https://github.com/spechub/Hets-lib) and set $HETS_LIB to the folder containing these.

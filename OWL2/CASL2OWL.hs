@@ -22,6 +22,7 @@ import Common.Id
 import Common.ProofTree
 import Common.Utils
 import qualified Common.Lib.MapSet as MapSet
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -117,7 +118,7 @@ getPropSens i args mres = let
       [mki " range" $ ObjectPropertyAxiom $ ObjectPropertyRange [] (toO i n) (toC a)]) ncs
 
 getPropNames :: (a -> [b]) -> MapSet.MapSet Id a -> Set.Set IRI
-getPropNames f = Map.foldWithKey (\ i s l ->
+getPropNames f = Map.foldrWithKey (\ i s l ->
     case Set.toList s of
       [] -> l
       h : _ -> Set.union l $ Set.fromList
@@ -128,21 +129,21 @@ commonType :: CS.Sign f e -> [[SORT]] -> Result [SORT]
 commonType csig l =
   case map (keepMaximals csig) $ transpose l of
     hl | all (not . null) hl -> return $ map head hl
-    _ -> fail $ "no common types for " ++ show l
+    _ -> Fail.fail $ "no common types for " ++ show l
 
 commonOpType :: CS.Sign f e -> Set.Set OpType -> Result OpType
 commonOpType csig os = do
   l <- commonType csig $ map (\ o -> opRes o : opArgs o) $ Set.toList os
   case l of
     r : args -> return $ mkTotOpType args r
-    _ -> fail $ "no common types for " ++ showDoc os ""
+    _ -> Fail.fail $ "no common types for " ++ showDoc os ""
 
 commonPredType :: CS.Sign f e -> Set.Set PredType -> Result PredType
 commonPredType csig ps = do
   args <- commonType csig $ map predArgs $ Set.toList ps
   case args of
     _ : _ -> return $ PredType args
-    _ -> fail $ "no common types for " ++ showDoc ps ""
+    _ -> Fail.fail $ "no common types for " ++ showDoc ps ""
 
 getCommonSupers :: CS.Sign f e -> [SORT] -> Set.Set SORT
 getCommonSupers csig s = let supers t = Set.insert t $ supersortsOf t csig in
@@ -195,12 +196,12 @@ mapSign csig = let
     , individuals = toIris $ MapSet.keysSet cs
     }
   in do
-  s1 <- Map.foldWithKey (\ i s ml -> do
+  s1 <- Map.foldrWithKey (\ i s ml -> do
       l <- ml
       return $ mkIndi False i
         (keepMinimals csig id $ map opRes $ Set.toList s) ++ l)
     (return sortSens) (MapSet.toMap cs)
-  s2 <- Map.foldWithKey (\ i s ml -> do
+  s2 <- Map.foldrWithKey (\ i s ml -> do
     l <- ml
     let sl = Set.toList s
         mki = mk "plain function " i
@@ -211,10 +212,10 @@ mapSign csig = let
            , mki " domain" $ ObjectPropertyAxiom $ ObjectPropertyDomain [] oi (toC a)
            , mki " range" $ ObjectPropertyAxiom $ ObjectPropertyRange [] oi (toC r)]
          ++ l
-      (as, rs) -> fail $ "CASL2OWL.mapSign2: " ++ show i ++ " args: "
+      (as, rs) -> Fail.fail $ "CASL2OWL.mapSign2: " ++ show i ++ " args: "
                    ++ show as ++ " resulttypes: " ++ show rs)
     (return s1) (MapSet.toMap sos)
-  s3 <- Map.foldWithKey (\ i s ml -> do
+  s3 <- Map.foldrWithKey (\ i s ml -> do
     l <- ml
     let mkp = mk "binary predicate " i
         oi = toO i (-1)
@@ -224,21 +225,21 @@ mapSign csig = let
          $ [ mkp " domain" $ ObjectPropertyAxiom $ ObjectPropertyDomain [] oi (toC a)
            , mkp " range" $ ObjectPropertyAxiom $ ObjectPropertyRange [] oi (toC r)]
          ++ l
-      ts -> fail $ "CASL2OWL.mapSign3: " ++ show i ++ " types: " ++ show ts)
+      ts -> Fail.fail $ "CASL2OWL.mapSign3: " ++ show i ++ " types: " ++ show ts)
     (return s2) (MapSet.toMap bps)
-  s4 <- Map.foldWithKey (\ i s ml ->
+  s4 <- Map.foldrWithKey (\ i s ml ->
      case keepMaxs $ concatMap predArgs $ Set.toList s of
        [r] -> do
          l <- ml
          return $ fmap (makeNamed ("plain predicate " ++ show i)) (toSC i [r]) ++ l
-       ts -> fail $ "CASL2OWL.mapSign4: " ++ show i ++ " types: " ++ show ts)
+       ts -> Fail.fail $ "CASL2OWL.mapSign4: " ++ show i ++ " types: " ++ show ts)
      (return s3) (MapSet.toMap sps)
-  s5 <- Map.foldWithKey (\ i s ml -> do
+  s5 <- Map.foldrWithKey (\ i s ml -> do
      l <- ml
      ot <- commonOpType csig s
      return $ getPropSens i (opArgs ot) (Just $ opRes ot) ++ l
      ) (return s4) (MapSet.toMap os)
-  s6 <- Map.foldWithKey (\ i s ml -> do
+  s6 <- Map.foldrWithKey (\ i s ml -> do
      l <- ml
      pt <- commonPredType csig s
      return $ getPropSens i (predArgs pt) Nothing ++ l

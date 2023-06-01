@@ -33,6 +33,7 @@ import qualified Data.Map as Map
 import Data.List
 
 import qualified Data.Set as Set
+import qualified Control.Monad.Fail as Fail
 
 -- | Derivation of an Taxonomy for OWL
 onto2Tax :: TaxoGraphKind
@@ -40,7 +41,7 @@ onto2Tax :: TaxoGraphKind
          -> Sign -> [Named Axiom]
          -> Result MMiSSOntology
 onto2Tax gk inOnto sig sens = case gk of
-  KSubsort -> fail "Dear user, this logic is single sorted, sorry!"
+  KSubsort -> Fail.fail "Dear user, this logic is single sorted, sorry!"
   KConcept -> do
     cs <- unsafePerformIO $ runClassifier sig sens
     tree <- relBuilder cs
@@ -71,7 +72,7 @@ relBuilder :: String
 relBuilder tr =
   let ln = filter (not . null) $ lines tr in
   if any (isPrefixOf "ERROR: ") ln || null ln then
-    fail "Classification via Pellet failed! Ontology might be inconsistent!"
+    Fail.fail "Classification via Pellet failed! Ontology might be inconsistent!"
     else return $ map relBuild $ splitter $ map tail ln
 
 -- | splitter for output
@@ -100,8 +101,8 @@ runClassifier sig sen = do
       tLimit = 800
   res <- runTimedPellet "classify" "PelletClassifier" th Nothing tLimit
   return $ case res of
-    Nothing -> fail $ "Timeout after " ++ show tLimit ++ " seconds!"
+    Nothing -> Fail.fail $ "Timeout after " ++ show tLimit ++ " seconds!"
     Just (progTh, out, _) ->
-      if progTh then return out else fail "Pellet not found"
+      if progTh then return out else Fail.fail "Pellet not found"
 -- runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
 -- runClassifier _ _ = return $ return []

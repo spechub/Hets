@@ -28,6 +28,7 @@ import Comorphisms.LogicGraph (logicGraph)
 
 import Control.Monad.Trans (lift)
 import Control.Monad (foldM, unless)
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Graph.Inductive.Graph as Graph (Node)
 import qualified Data.Map as Map
@@ -60,7 +61,7 @@ readDGXmlR opts path lv = do
   res <- lift $ parseXml xml'
   case res of
     Right xml -> rebuiltDgXml opts lv xml
-    Left err -> fail $ "failed to parse XML file: " ++ path ++ "\n" ++ err
+    Left err -> Fail.fail $ "failed to parse XML file: " ++ path ++ "\n" ++ err
 
 -- | call rebuiltDG with only a LibEnv and an Xml-Element
 rebuiltDgXml :: HetcatsOpts -> LibEnv -> Element -> ResultT IO (LibName, LibEnv)
@@ -138,10 +139,10 @@ getSigForXNode :: LogicGraph -> DGraph
                -> [(Graph.Node, GMorphism, DGLinkType, XLink)]
                -> ResultT IO G_sign
 getSigForXNode lg dg mrs = case mrs of
-    [] -> fail "insertStep: empty link list"
+    [] -> Fail.fail "insertStep: empty link list"
     (_, _, FreeOrCofreeDefLink _ _, xLk) : rt -> do
         unless (null rt)
-          $ fail "unexpected non-singleton free or cofree def link"
+          $ Fail.fail "unexpected non-singleton free or cofree def link"
         fmap snd $ signOfNode (source xLk) dg
     _ -> liftR $ gsigManyUnion lg $ map (\ (_, m, _, _) -> cod m) mrs
 
@@ -187,7 +188,7 @@ getTypeAndMorAux lg dg sg@(G_sign slid _ _) xLk = let
         HidingThm -> do
           (i', sg') <- case mr_source xLk of
             Just ms -> signOfNode ms dg
-            Nothing -> fail "no morphism source declaration for HidingThmLink"
+            Nothing -> Fail.fail "no morphism source declaration for HidingThmLink"
           mr' <- liftR $ ginclusion lg sg' sg
           mkRtVAL sg' $ HidingFreeOrCofreeThm Nothing i' mr' lStat
         FreeOrCofreeThm fc -> do
@@ -221,7 +222,7 @@ generateNodeLab opts lg mGt xNd (dg, lv) = case xNd of
           (i, gt) <- case lookupUniqueNodeByName rfNd dg' of
               Just (i, lbl) -> case signOf $ dgn_theory lbl of
                 G_sign lid sign sId -> return (i, noSensGTheory lid sign sId)
-              Nothing -> fail $ "reference node " ++ rfNd ++ " was not found"
+              Nothing -> Fail.fail $ "reference node " ++ rfNd ++ " was not found"
           (gt', _) <- parseSpecs gt nm dg spc
           let nInf = newRefInfo (emptyLibName rfLb) i
           return (newInfoNodeLab nm nInf gt', lv')
@@ -263,7 +264,7 @@ parseSpecs gt' nm dg spec = let
           (response, msg) = extendByBasicSpec (globalAnnos dg) spec gt'
           in case response of
             Success gt'' _ smbs _ -> return (gt'', smbs)
-            Failure _ -> fail $ "[ " ++ showName nm ++ " ]\n" ++ msg
+            Failure _ -> Fail.fail $ "[ " ++ showName nm ++ " ]\n" ++ msg
 
 loadRefLib :: HetcatsOpts -> String -> LibEnv -> ResultT IO (DGraph, LibEnv)
 loadRefLib opts ln lv = do
@@ -272,7 +273,7 @@ loadRefLib opts ln lv = do
             Just path -> do
               (ln', lv') <- readDGXmlR opts path lv
               return (lookupDGraph ln' lv', lv')
-            _ -> fail $ "no file exists for reference library " ++ ln
+            _ -> Fail.fail $ "no file exists for reference library " ++ ln
 
 -- | creates an entirely empty theory
 emptyTheory :: AnyLogic -> G_theory
@@ -284,6 +285,6 @@ signature, but only if one single node is found for the respective name.
 Otherwise an error is thrown. -}
 signOfNode :: String -> DGraph -> ResultT IO (Graph.Node, G_sign)
 signOfNode nd dg = case lookupUniqueNodeByName nd dg of
-  Nothing -> fail $ "required node [" ++ nd ++ "] was not found in DGraph!"
+  Nothing -> Fail.fail $ "required node [" ++ nd ++ "] was not found in DGraph!"
   Just (j, lbl) ->
     return (j, signOf (dgn_theory lbl))

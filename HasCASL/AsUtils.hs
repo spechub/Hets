@@ -22,6 +22,7 @@ import Common.DocUtils
 import Common.Id
 import Common.Keywords
 import Common.Parsec
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Set as Set
 import qualified Text.ParserCombinators.Parsec as P
@@ -68,7 +69,7 @@ redStep ty = case ty of
     KindedType t k ps -> do
       r <- redStep t
       return $ KindedType r k ps
-    _ -> fail "unreducible"
+    _ -> Fail.fail "unreducible"
 
 strippedType :: Type -> Type
 strippedType = foldType mapTypeRec

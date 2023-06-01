@@ -99,6 +99,12 @@ transitiveS = "Transitive"
 hasS :: String
 hasS = "has"
 
+sameAsS :: String
+sameAsS = "SameAs"
+
+differentFromS :: String
+differentFromS = "DifferentFrom"
+
 hexBinaryS :: String
 hexBinaryS = "hexBinary"
 
@@ -152,9 +158,6 @@ onlysomeS = "onlysome"
 
 orS :: String
 orS = "or"
-
-patternS :: String
-patternS = "pattern"
 
 positiveIntegerS :: String
 positiveIntegerS = "positiveInteger"

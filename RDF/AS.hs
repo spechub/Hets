@@ -21,6 +21,7 @@ module RDF.AS where
 import Common.Id
 import Common.IRI
 import qualified OWL2.AS as AS
+import OWL2.ATC_OWL2 ()
 
 import Data.Data
 import Data.List

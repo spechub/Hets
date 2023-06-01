@@ -95,13 +95,14 @@ import Data.Map as Map (Map, lookup)
 import Data.Maybe
 import Data.List
 
-import Control.Monad (when)
+-- import Control.Monad (when)
 
 import Common.Id as Id
 import Common.Lexer
 import Common.Parsec
 import Common.Percent
-import Common.Token (mixId, comps)
+import Common.Token (comps)
+import qualified Control.Monad.Fail as Fail
 
 -- * The IRI datatype
 
@@ -268,14 +269,14 @@ isNullIRI :: IRI -> Bool
 isNullIRI i = i == nullIRI
 
 -- | set the Range attribute of IRIs
-setIRIRange :: Range -> IRI -> IRI
-setIRIRange r i = i { iriPos = r }
+-- setIRIRange :: Range -> IRI -> IRI
+-- setIRIRange r i = i { iriPos = r }
 
 -- | checks if a string (bound to be localPart of an IRI) contains \":\/\/\"
-cssIRI :: String -> String
-cssIRI i 
-  | isInfixOf "://" i = "Full"
-  | otherwise = "Abbreviated"
+-- cssIRI :: String -> String
+-- cssIRI i
+--   | isInfixOf "://" i = "Full"
+--   | otherwise = "Abbreviated"
 
 iRIRange :: IRI -> [Pos]
 iRIRange i = let Range rs = iriPos i in case rs of
@@ -439,14 +440,14 @@ curie = iriWithPos $ do
     pn <- option "" $ try (do
         n <- option "" ncname 
                               
-        c <- string ":"
+        _ <- string ":"
         return $ n -- ++ c Don't add the colon to the prefix!
       )
     i <- referenceAux False
     return nullIRI { prefixName = pn, iFragment = iriToString id i $ [], isAbbrev = True }
 
-reference :: IRIParser st IRI
-reference = referenceAux True
+-- reference :: IRIParser st IRI
+-- reference = referenceAux True
 
 dolChar :: IRIParser st String
 dolChar = ucharAux True "@:"
@@ -658,7 +659,7 @@ decOctet :: IRIParser st String
 decOctet = do
   a1 <- countMinMax 1 3 digit
   if (read a1 :: Int) > 255 then
-            fail "Decimal octet value too large"
+            Fail.fail "Decimal octet value too large"
           else
             return a1
 
@@ -695,31 +696,31 @@ iisegment-nz-nc = 1*( iunreserved / pct-encoded / sub-delims
 {- iipchar         = iunreserved / pct-encoded / sub-delims / ":"
 / "@" -}
 
-idParser :: IRIParser st Id
-idParser = mixId ([],[]) ([],[]) 
+-- idParser :: IRIParser st Id
+-- idParser = mixId ([],[]) ([],[])
 
 ipathAbEmpty :: IRIParser st Id
 ipathAbEmpty = do
   s <- flat $ many slashIsegment
   return $ stringToId s
 
-ipathAbEmpty1 :: Bool -> IRIParser st Id
-ipathAbEmpty1 slash = do
-  when slash $ do char '/'; return ()
-  si <- isegmentorId "/"
-  case si of
-    Left s ->     do char '/'
-                     i <- ipathAbEmpty1 False
-                     return $ prependString s i
-              <|> do return $ stringToId ""  
-    Right i -> return i
+-- ipathAbEmpty1 :: Bool -> IRIParser st Id
+-- ipathAbEmpty1 slash = do
+--   when slash $ do char '/'; return ()
+--   si <- isegmentorId "/"
+--   case si of
+--     Left s ->     do char '/'
+--                      i <- ipathAbEmpty1 False
+--                      return $ prependString s i
+--               <|> do return $ stringToId ""
+--     Right i -> return i
 
-isegmentorId :: String -> IRIParser st (Either String Id)
-isegmentorId lead =
-      do s <- isegment
-         return (Left ('/':s))
---  <|> do id <- idParser
---         return (Right (prependString "/" id))
+-- isegmentorId :: String -> IRIParser st (Either String Id)
+-- isegmentorId lead =
+--       do s <- isegment
+--          return (Left ('/':s))
+-- --  <|> do id <- idParser
+-- --         return (Right (prependString "/" id))
   
 ipathAbs :: IRIParser st Id
 ipathAbs = do
@@ -1179,6 +1180,7 @@ to the prefix of @c@ or the concatenation of @i@ and @iriPath c@
 is not a valid IRI. -}
 expandCurie :: Map String IRI -> IRI -> Maybe IRI
 expandCurie pm iri
+    | hasFullIRI iri = Just iri
     | isAbbrev iri = do
         def <- Map.lookup (prefixName iri) pm
         let defS = iriToStringFull id (setAngles False def) ""
@@ -1196,6 +1198,7 @@ expansion can be done more efficient than using @expandCurie@.
 -}
 expandCurie' :: Map String String -> IRI -> Maybe IRI
 expandCurie' pm iri
+    | hasFullIRI iri = Just iri
     | isAbbrev iri = do
         def <- Map.lookup (prefixName iri) pm
         -- remove surrounding angle brackets if needed

@@ -25,8 +25,6 @@ import Logic.Prover
 
 import OWL2.Morphism
 import OWL2.Sign
-import OWL2.Profiles
-import OWL2.Sublogic
 import OWL2.ProfilesAndSublogics
 import OWL2.ProverState
 import OWL2.AS
@@ -79,7 +77,7 @@ hermitCheck = fmap
 -}
 hermitProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
 hermitProver =
-  (mkAutomaticProver "java" hermitS topS hermitGUI hermitCMDLautomaticBatch)
+  (mkAutomaticProver "java" hermitS dlS hermitGUI hermitCMDLautomaticBatch)
   { proverUsable = hermitCheck }
 
 hermitConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree

@@ -1,5 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, DeriveDataTypeable
-  , GeneralizedNewtypeDeriving #-}
+  , GeneralizedNewtypeDeriving, DeriveGeneric #-}
 {- |
 Module      :  ./DMU/Logic_DMU.hs
 Description :  Instance of class Logic for DMU
@@ -30,10 +30,11 @@ import ATerm.Lib
 import Text.ParserCombinators.Parsec
 
 import Data.List
-import Data.Monoid
+import Data.Monoid ()
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Typeable
+import GHC.Generics
 
 data DMU = DMU deriving Show
 
@@ -41,17 +42,18 @@ instance Language DMU where
   description _ = "a logic to wrap output of the CAD tool Catia"
 
 newtype Text = Text { fromText :: String }
-  deriving (Show, Eq, Ord, GetRange, Typeable, ShATermConvertible)
+  deriving (Show, Eq, Ord, GetRange, Typeable, ShATermConvertible, Generic)
 
 instance Pretty Text where
   pretty (Text s) = text s
 
 -- use generic Category instance from Logic.Logic
 
+instance Semigroup Text where
+    (Text l1) <> (Text l2) = Text
+      . unlines $ lines l1 ++ lines l2
 instance Monoid Text where
     mempty = Text ""
-    mappend (Text l1) (Text l2) = Text
-      . unlines $ lines l1 ++ lines l2
 
 instance Syntax DMU Text () () () where
   parse_basic_spec DMU = Just (\ _ -> fmap Text $ many1 anyChar)

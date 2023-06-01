@@ -34,7 +34,7 @@ import CSL.Symbol
 import CSL.Tools
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 import Logic.Logic
 
@@ -80,16 +80,17 @@ instance Sentences CSL CMD
     simplify_sen CSL _ = id
     symKind CSL _ = "op"
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- | Syntax of CSL logic
 instance Syntax CSL BASIC_SPEC Symbol
     SYMB_ITEMS SYMB_MAP_ITEMS where
          parse_basic_spec CSL = parseBasicSpec
-         parse_symb_items CSL = parseSymbItems
-         parse_symb_map_items CSL = parseSymbMapItems
+         parse_symb_items CSL = fmap const parseSymbItems
+         parse_symb_map_items CSL = fmap const parseSymbMapItems
 
 -- | Instance of Logic for reduce logc
 instance Logic CSL

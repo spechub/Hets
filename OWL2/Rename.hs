@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
-
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  ./OWL2/Rename.hs
 Copyright   :  (c) Felix Gabriel Mance
@@ -26,6 +26,7 @@ import Data.Char (isDigit)
 import Data.List (find, nub)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Control.Monad.Fail as Fail
 
 import Common.Result
 
@@ -53,7 +54,7 @@ uniteSign :: Sign -> Sign -> Result Sign
 uniteSign s1 s2 = do
     let (pm, tm) = integPref (prefixMap s1) (prefixMap s2)
     if Map.null tm then return (addSign s1 s2) {prefixMap = pm}
-      else fail "Static analysis could not unite signatures"
+      else Fail.fail "Static analysis could not unite signatures"
 
 intersectSign :: Sign -> Sign -> Result Sign
 intersectSign s1 s2 = do
@@ -69,7 +70,7 @@ intersectSign s1 s2 = do
             , labelMap = Map.intersection (labelMap s1) $ labelMap s2
             , prefixMap =  pm
             }
-    else fail "Static analysis could not intersect signatures"
+    else Fail.fail "Static analysis could not intersect signatures"
 
 integPref :: PrefixMap -> PrefixMap
                     -> (PrefixMap, StringMap)

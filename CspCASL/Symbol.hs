@@ -32,6 +32,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 data CspSymbType
   = CaslSymbType SymbType
@@ -215,7 +216,7 @@ cspSymbOrMapToRaw sig msig k (CspSymbMap s mt) = case mt of
                 : zipWith pairS (res1 : args1) (res2 : args2)
             (CaslSymbType SortAsItemType, CaslSymbType SortAsItemType) ->
               return [(w, x)]
-            _ -> fail $ "profiles of '" ++ showDoc c1 "' and '"
+            _ -> Fail.fail $ "profiles of '" ++ showDoc c1 "' and '"
                ++ showDoc c2 "' do not match"
         _ -> return [(w, x)]
 
@@ -258,7 +259,7 @@ toRawSymbol r = case r of
 
 splitSymbolMap :: Map.Map CspRawSymbol CspRawSymbol
   -> (RawSymbolMap, Map.Map CspRawSymbol CspRawSymbol)
-splitSymbolMap = Map.foldWithKey (\ s t (cm, ccm) ->
+splitSymbolMap = Map.foldrWithKey (\ s t (cm, ccm) ->
   case (toRawSymbol s, toRawSymbol t) of
     (Just c, Just d) -> (Map.insert c d cm, ccm)
     _ -> (cm, Map.insert s t ccm)) (Map.empty, Map.empty)

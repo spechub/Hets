@@ -1,3 +1,4 @@
+#SUBLOGIC=ALCu-D|integer|
 Prefix(: = <http://example.org/>)
 Prefix( xsd: = <http://www.w3.org/2001/XMLSchema#>)
 Prefix( owl: = <http://www.w3.org/2002/07/owl#>)

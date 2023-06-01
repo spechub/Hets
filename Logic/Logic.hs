@@ -1,5 +1,11 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
-  , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {- |
 Module      :  ./Logic/Logic.hs
 Description :  central interface (type class) for logics in Hets
@@ -150,10 +156,13 @@ import Common.ToXml
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
+
+import Data.Aeson (FromJSON, ToJSON)
 
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
@@ -164,8 +173,8 @@ class ShATermConvertible a => Convertible a
 instance ShATermConvertible a => Convertible a
 
 -- | shortcut for class constraints
-class (Pretty a, Convertible a) => PrintTypeConv a
-instance (Pretty a, Convertible a) => PrintTypeConv a
+class (Pretty a, Convertible a, ToJSON a, FromJSON a) => PrintTypeConv a
+instance (Pretty a, Convertible a, ToJSON a, FromJSON a) => PrintTypeConv a
 
 -- | shortcut for class constraints with equality
 class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
@@ -211,7 +220,7 @@ class (Ord object, Ord morphism)
          dom, cod :: morphism -> object
          -- | the inverse of a morphism
          inverse :: morphism -> Result morphism
-         inverse _ = fail "Logic.Logic.Category.inverse not implemented"
+         inverse _ = Fail.fail "Logic.Logic.Category.inverse not implemented"
          -- | test if the signature morphism an inclusion
          isInclusion :: morphism -> Bool
          isInclusion _ = False -- in general no inclusion
@@ -226,7 +235,7 @@ isIdentity m = isInclusion m && dom m == cod m
 
 comp :: Category object morphism => morphism -> morphism -> Result morphism
 comp m1 m2 = if cod m1 == dom m2 then composeMorphisms m1 m2 else
-  fail "target of first and source of second morphism are different"
+  Fail.fail "target of first and source of second morphism are different"
 
 instance Ord sign => Category sign (DefaultMorphism sign) where
     dom = domOfDefaultMorphism
@@ -258,11 +267,11 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          -- | parser for basic specifications
          parse_basic_spec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
          -- | parser for a single symbol returned as list
-         parseSingleSymbItem :: lid -> Maybe (AParser st symb_items)
+         parseSingleSymbItem :: lid -> Maybe (PrefixMap -> AParser st symb_items)
          -- | parser for symbol lists
-         parse_symb_items :: lid -> Maybe (AParser st symb_items)
+         parse_symb_items :: lid -> Maybe (PrefixMap -> AParser st symb_items)
          -- | parser for symbol maps
-         parse_symb_map_items :: lid -> Maybe (AParser st symb_map_items)
+         parse_symb_map_items :: lid -> Maybe (PrefixMap -> AParser st symb_map_items)
          toItem :: lid -> basic_spec -> Item
          symb_items_name :: lid -> symb_items -> [String]
          -- default implementations
@@ -411,8 +420,8 @@ inlineAxioms :: StaticAnalysis lid
 inlineAxioms _ _ = error "inlineAxioms"
 
 -- | fail function for static analysis
-statFail :: (Language lid, Monad m) => lid -> String -> m a
-statFail lid = fail . statErrMsg lid
+statFail :: (Language lid, Fail.MonadFail m) => lid -> String -> m a
+statFail lid = Fail.fail . statErrMsg lid
 
 statError :: Language lid => lid -> String -> a
 statError lid = error . statErrMsg lid
@@ -640,7 +649,7 @@ inclusion :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
              sign morphism symbol raw_symbol
           => lid -> sign -> sign -> Result morphism
 inclusion l s1 s2 = if is_subsig l s1 s2 then subsig_inclusion l s1 s2
-  else fail $ show $ fsep
+  else Fail.fail $ show $ fsep
        [ text (language_name l)
        , text "cannot construct inclusion. Symbol(s) missing in target:"
        , pretty $ Set.difference (symset_of l s1) $ symset_of l s2
@@ -808,7 +817,7 @@ class (StaticAnalysis lid
 
          export_symToOmdoc :: lid -> OMDoc.NameMap symbol
                            -> symbol -> String -> Result OMDoc.TCElement
-         export_symToOmdoc l _ _ = statFail l "export_symToOmdoc"
+         export_symToOmdoc l _ _ _ = statFail l "export_symToOmdoc"
 
          export_senToOmdoc :: lid -> OMDoc.NameMap symbol
                           -> sentence -> Result OMDoc.TCorOMElement
@@ -853,15 +862,12 @@ class (StaticAnalysis lid
          -- no logic should throw an error here
          addOmdocToTheory _ _ t _ = return t
 
+         -- | sublogic of a theory
+         sublogicOfTheo :: lid -> (sign, [sentence]) -> sublogics
+         sublogicOfTheo _ (sig, axs) = 
+            foldl lub (minSublogic sig) $ map minSublogic axs
 
--- | sublogic of a theory
-sublogicOfTheo :: (Logic lid sublogics
-        basic_spec sentence symb_items symb_map_items
-        sign morphism symbol raw_symbol proof_tree) =>
-    lid -> (sign, [sentence]) -> sublogics
-sublogicOfTheo _ (sig, axs) =
-  foldl lub (minSublogic sig) $
-  map minSublogic axs
+
 
 
 {- The class of logics which can be used as logical frameworks, in which object

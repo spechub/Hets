@@ -35,6 +35,7 @@ import Common.IRI --(iriToStringUnsecure, setAngles)
 import Common.SetColimit
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Logic.Logic
 
@@ -109,7 +110,7 @@ checkHasKey s ol dl = do
 checkObjPropList :: Sign -> [AS.ObjectPropertyExpression] -> Result ()
 checkObjPropList s ol = do
     let ls = map (isDeclObjProp s) ol
-    unless (and ls) $ fail $ "undeclared object properties:\n" ++
+    unless (and ls) $ Fail.fail $ "undeclared object properties:\n" ++
                       showDoc (map (\o -> case o of
                                      AS.ObjectProp _ -> o
                                      AS.ObjectInverseOf x -> x) (filter (not . isDeclObjProp s) ol)) ""
@@ -117,7 +118,7 @@ checkObjPropList s ol = do
 checkDataPropList :: Sign -> [AS.DataPropertyExpression] -> Result ()
 checkDataPropList s dl = do
     let ls = map (isDeclDataProp s) dl
-    unless (and ls) $ fail $ "undeclared data properties:\n" ++ showDoc (filter (not . isDeclDataProp s) dl) ""
+    unless (and ls) $ Fail.fail $ "undeclared data properties:\n" ++ showDoc (filter (not . isDeclDataProp s) dl) ""
 
 -- | checks if a DataRange is valid
 checkDataRange :: Sign -> AS.DataRange -> Result ()
@@ -139,7 +140,7 @@ classExpressionToDataRange s ce = case ce of
         $ mapM (classExpressionToDataRange s) cel
     AS.ObjectComplementOf c -> fmap AS.DataComplementOf
         $ classExpressionToDataRange s c
-    _ -> fail $ "cannot convert ClassExpression to DataRange\n"
+    _ -> Fail.fail $ "cannot convert ClassExpression to DataRange\n"
             ++ showDoc ce ""
 
 {- | checks a ClassExpression and recursively converts the
@@ -186,8 +187,8 @@ checkClassExpression s desc =
                         return $ AS.DataCardinality
                           $ AS.Cardinality a b iri $ Just dr
                         else datErr iri
-    AS.DataValuesFrom _ dExp r -> checkDataRange s r
-        >> if isDeclDataProp s (head dExp) then return desc else datErr (head dExp)
+    AS.DataValuesFrom _ dExps r -> checkDataRange s r
+        >> if all (isDeclDataProp s) dExps then return desc else datErr (head $ filter (not.isDeclDataProp s) dExps)
     AS.DataHasValue dExp l -> do
         checkLiteral s l
         if isDeclDataProp s dExp then return desc
@@ -644,7 +645,7 @@ newODoc AS.OntologyDocument {
                 , AS.ontology = mo {AS.axioms = ax}
                 , AS.prefixDeclaration = pd
                 }
-        else fail $ "Incorrect predefined prefixes " ++ showDoc pd "\n"
+        else Fail.fail $ "Incorrect predefined prefixes " ++ showDoc pd "\n"
 
 -- | static analysis of ontology with incoming sign.
 basicOWL2Analysis :: (AS.OntologyDocument, Sign, GlobalAnnos)
@@ -768,10 +769,10 @@ addEquiv ssig tsig l1 l2 = do
                          Map.insert e1 s Map.empty,
                          Map.insert e2 s Map.empty)
              else
-              fail "only symbols of same kind can be equivalent in an alignment"
-          _ -> fail $ "non-unique symbol match:" ++ showDoc l1 " "
+              Fail.fail "only symbols of same kind can be equivalent in an alignment"
+          _ -> Fail.fail $ "non-unique symbol match:" ++ showDoc l1 " "
                                                  ++  showDoc l2 " "
-    _ -> fail "terms not yet supported in alignments"
+    _ -> Fail.fail "terms not yet supported in alignments"
 
 corr2theo :: String -> Bool -> Sign -> Sign -> [SymbItems] -> [SymbItems] ->
              EndoMap AS.Entity -> EndoMap AS.Entity -> REL_REF ->
@@ -850,7 +851,7 @@ corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                  rSyms = filter (== sym) $
                             Set.toList $ symOf tsig
              case rSyms of
-               [] -> fail $ "relation " ++ show rQName ++
+               [] -> Fail.fail $ "relation " ++ show rQName ++
                                 " not in " ++ show tsig
                [rsym] -> do
                  let sym'@(Entity _ ObjectProperty rQName') =
@@ -867,9 +868,8 @@ corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                  return
                    (sigB', [makeNamed "" axiom], sig1, sig2', eMap1',
                       Map.union eMap2' $ Map.fromAscList [(rsym, sym')])
-               _ -> fail $ "too many matches for " ++ show rQName -}
-            _ -> fail $ "nyi:" ++ show rref
-          _ -> fail $ "non-unique symbol match:" ++ showDoc l1 " "
+               _ -> Fail.fail $ "too many matches for " ++ show rQName -}
+            _ -> Fail.fail $ "nyi:" ++ show rref
+          _ -> Fail.fail $ "non-unique symbol match:" ++ showDoc l1 " "
                                                  ++ showDoc l2 " "
-    _ -> fail "terms not yet supported in alignments"
-
+    _ -> Fail.fail "terms not yet supported in alignments"

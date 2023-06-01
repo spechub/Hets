@@ -1,4 +1,4 @@
-{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable #-}
+{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable, StandaloneDeriving #-}
 {- |
 Module      :  ./Proofs/AbstractState.hs
 Description :  State data structure used by the goal management GUI.
@@ -44,19 +44,23 @@ module Proofs.AbstractState
     , getAllProvers
     , getUsableProvers
     , getConsCheckers
+    , getListOfConsCheckers
     , getAllConsCheckers
     , lookupKnownProver
     , lookupKnownConsChecker
     , autoProofAtNode
+    , usableCC
     ) where
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.Maybe
 import Data.Typeable
 
 import Control.Concurrent.MVar
 import Control.Monad.Trans
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import qualified Common.OrderedMap as OMap
 import Common.Result as Result
@@ -75,6 +79,7 @@ import Logic.Comorphism
 import Logic.Coerce
 
 import Comorphisms.KnownProvers
+import Comorphisms.LogicGraph (logicGraph)
 
 import Static.GTheory
 
@@ -109,7 +114,7 @@ coerceProver ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
   , Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-  , Monad m )
+  , Fail.MonadFail m )
   => lid1 -> lid2 -> String
   -> Prover sign1 sentence1 morphism1 sublogics1 proof_tree1
   -> m (Prover sign2 sentence2 morphism2 sublogics2 proof_tree2)
@@ -123,6 +128,9 @@ data G_cons_checker =
   => G_cons_checker lid
        (ConsChecker sign sentence sublogics morphism proof_tree)
   deriving (Typeable)
+
+instance Eq G_cons_checker where
+  G_cons_checker _ cc1 == G_cons_checker _ cc2 = ccName cc1 == ccName cc2
 
 instance Show G_cons_checker where
  show _ = "G_cons_checker "
@@ -141,7 +149,7 @@ coerceConsChecker ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
   , Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
-  , Monad m )
+  , Fail.MonadFail m )
   => lid1 -> lid2 -> String
   -> ConsChecker sign1 sentence1 sublogics1 morphism1 proof_tree1
   -> m (ConsChecker sign2 sentence2 sublogics2 morphism2 proof_tree2)
@@ -364,11 +372,30 @@ getConsCheckers :: [AnyComorphism] -> IO [(G_cons_checker, AnyComorphism)]
 getConsCheckers = filterM (usableCC . fst) . getAllConsCheckers
 
 getAllConsCheckers :: [AnyComorphism] -> [(G_cons_checker, AnyComorphism)]
-getAllConsCheckers = concatMap (\ cm@(Comorphism cid) ->
-    map (\ cc -> (G_cons_checker (targetLogic cid) cc, cm))
-      $ cons_checkers $ targetLogic cid)
+getAllConsCheckers lst =
+  snd $
+    foldr
+      ( \el@(G_cons_checker _ cc, _) (s, l) ->
+          if not $ Set.member (ccName cc) s
+            then (Set.insert (ccName cc) s, el : l)
+            else (s, l)
+      )
+      (Set.empty, [])
+      $
+      concatMap
+        ( \cm@(Comorphism cid) ->
+            map
+              ( \cc ->
+                  (G_cons_checker (targetLogic cid) cc, cm)
+              )
+              $ cons_checkers $ targetLogic cid
+        )
+        $ lst
 
-lookupKnownConsChecker :: Monad m => ProofState
+getListOfConsCheckers :: [G_cons_checker]
+getListOfConsCheckers = concatMap (\(Logic lid) -> map (\cc -> G_cons_checker lid cc) $ cons_checkers lid) (logics logicGraph)
+
+lookupKnownConsChecker :: Fail.MonadFail m => ProofState
     -> m (G_cons_checker, AnyComorphism)
 lookupKnownConsChecker st =
        let sl = sublogicOfTh (selectedTheory st)
@@ -381,14 +408,14 @@ lookupKnownConsChecker st =
            findCC (pr_n, cms) =
                case filter (matchingCC pr_n) $ getAllConsCheckers
                     $ filter (lessSublogicComor sl) cms of
-                 [] -> fail ("CMDL.ProverConsistency.lookupKnownConsChecker" ++
+                 [] -> Fail.fail ("CMDL.ProverConsistency.lookupKnownConsChecker" ++
                                  ": no consistency checker found")
                  p : _ -> return p
-       in maybe ( fail ("CMDL.ProverConsistency.lookupKnownConsChecker: " ++
+       in maybe ( Fail.fail ("CMDL.ProverConsistency.lookupKnownConsChecker: " ++
                       "no matching known prover")) findCC mt
 
 
-lookupKnownProver :: Monad m => ProofState -> ProverKind
+lookupKnownProver :: Fail.MonadFail m => ProofState -> ProverKind
     -> m (G_prover, AnyComorphism)
 lookupKnownProver st pk =
     let sl = sublogicOfTh (selectedTheory st)
@@ -401,9 +428,9 @@ lookupKnownProver st pk =
         findProver (pr_n, cms) =
             case filter (matchingPr pr_n) $ getProvers pk sl
                  $ filter (lessSublogicComor sl) cms of
-               [] -> fail "Proofs.InferBasic: no prover found"
+               [] -> Fail.fail "Proofs.InferBasic: no prover found"
                p : _ -> return p
-    in maybe (fail "Proofs.InferBasic: no matching known prover")
+    in maybe (Fail.fail "Proofs.InferBasic: no matching known prover")
              findProver mt
 
 -- | Pairs each target prover of these comorphisms with its comorphism
@@ -531,12 +558,12 @@ autoProofAtNode useTh timeout goals axioms g_th p_cm = do
             { includedAxioms = filter (`elem` axioms) $ includedAxioms sg_st }
           st = recalculateSublogicAndSelectedTheory sa_st
       -- try to prepare the theory
-      if null $ selectedGoals st then fail "autoProofAtNode: no goals selected"
+      if null $ selectedGoals st then Fail.fail "autoProofAtNode: no goals selected"
         else do
           (G_theory_with_prover lid1 th p) <- liftR $ prepareForProving st p_cm
           case proveCMDLautomaticBatch p of
             Nothing ->
-              fail "autoProofAtNode: failed to init CMDLautomaticBatch"
+              Fail.fail "autoProofAtNode: failed to init CMDLautomaticBatch"
             Just fn -> do
               let encapsulate_pt ps =
                    ps {proofTree = G_proof_tree lid1 $ proofTree ps}
@@ -548,7 +575,7 @@ autoProofAtNode useTh timeout goals axioms g_th p_cm = do
                 takeMVar mV
                 takeMVar answ
               case maybeResult d of
-                Nothing -> fail "autoProofAtNode: proving failed"
+                Nothing -> Fail.fail "autoProofAtNode: proving failed"
                 Just d' ->
                  return (( currentTheory $ markProved (snd p_cm) lid1 d' st
                          , map (\ ps -> ( goalName ps

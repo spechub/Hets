@@ -15,6 +15,7 @@ module Static.ComputeTheory
     ( computeTheory
     , globalNodeTheory
     , getGlobalTheory
+    , recomputeNodeLabel
     , theoremsToAxioms
     , computeDGraphTheories
     , computeLibEnvTheories
@@ -37,6 +38,7 @@ import Common.LibName
 import Common.Result
 import Common.AS_Annotation
 import qualified Common.OrderedMap as OMap
+import qualified Control.Monad.Fail as Fail
 
 import Data.Graph.Inductive.Graph as Graph
 import Data.List (sortBy)
@@ -90,7 +92,7 @@ theoremsToAxioms (G_theory lid syn sign ind1 sens ind2) =
      G_theory lid syn sign ind1 (markAsAxiom True sens) ind2
 
 getGlobalTheory :: DGNodeLab -> Result G_theory
-getGlobalTheory = maybe (fail "no global theory") return . globalTheory
+getGlobalTheory = maybe (Fail.fail "no global theory") return . globalTheory
 
 globalNodeTheory :: DGraph -> Node -> Maybe G_theory
 globalNodeTheory dg = globalTheory . labDG dg
@@ -138,8 +140,7 @@ computeLabelTheory le ln dg (n, lbl) = let
   localTh = dgn_theory lbl 
   lblName = dgn_libname lbl 
   lblNode = dgn_node lbl 
- in
-    fmap reduceTheory . maybeResult $ if isDGRef lbl then
+ in fmap reduceTheory . maybeResult $ if isDGRef lbl then
         case Map.lookup lblName le of
           Nothing -> return localTh -- do not crash here
           Just dg' -> do

@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
 Module      :  ./Common/InjMap.hs
 Description :  injective maps
@@ -32,11 +32,13 @@ module Common.InjMap
 import Data.Data
 import qualified Data.Map as Map
 
+import GHC.Generics (Generic)
+
 -- | the data type of injective maps
 data InjMap a b = InjMap
     { getAToB :: Map.Map a b -- ^ the actual injective map
     , getBToA :: Map.Map b a -- ^ the inverse map
-    } deriving (Show, Eq, Ord, Typeable, Data)
+    } deriving (Show, Eq, Ord, Typeable, Data, Generic)
 
 -- | for serialization only
 unsafeConstructInjMap :: Map.Map a b -> Map.Map b a -> InjMap a b

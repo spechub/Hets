@@ -1,3 +1,4 @@
+#SUBLOGIC=sRI
 Prefix(: = <http://example.org/>)
   Ontology(
    Declaration(ObjectProperty(:a))

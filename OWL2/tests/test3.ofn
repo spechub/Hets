@@ -1,3 +1,4 @@
+#SUBLOGIC=sR
 Prefix( : = <http://example.org/> )
 
 Ontology(

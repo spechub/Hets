@@ -34,7 +34,7 @@ import Common.DocUtils
 
 import Control.Monad
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 import Logic.Logic
 
@@ -58,9 +58,10 @@ instance Sentences Adl
       print_named Adl = printNSen
       symKind Adl = show . pretty . sym_kind
 
+instance Semigroup Context where
+    (Context m1 l1) <> (Context m2 l2) = Context (mplus m1 m2) $ l1 ++ l2
 instance Monoid Context where
     mempty = Context Nothing []
-    mappend (Context m1 l1) (Context m2 l2) = Context (mplus m1 m2) $ l1 ++ l2
 
 instance Syntax Adl
     Context

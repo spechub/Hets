@@ -37,7 +37,7 @@ import Logic.Logic
 import Common.Doc
 import Common.DocUtils
 
-import Data.Monoid
+import Data.Monoid ()
 
 data HasCASL = HasCASL deriving Show
 
@@ -65,16 +65,17 @@ instance Language HasCASL where
   , "  SubCFOL=       -> the CASL logic without sort generation constraints"
   , "  PCoClTyConsHOL -> the Haskell type system fragment" ]
 
+instance Semigroup BasicSpec where
+    (BasicSpec l1) <> (BasicSpec l2) = BasicSpec $ l1 ++ l2
 instance Monoid BasicSpec where
     mempty = BasicSpec []
-    mappend (BasicSpec l1) (BasicSpec l2) = BasicSpec $ l1 ++ l2
 
 instance Syntax HasCASL BasicSpec
                 Symbol SymbItems SymbMapItems
       where
          parse_basic_spec HasCASL = Just $ const basicSpec
-         parse_symb_items HasCASL = Just symbItems
-         parse_symb_map_items HasCASL = Just symbMapItems
+         parse_symb_items HasCASL = Just . const $ symbItems
+         parse_symb_map_items HasCASL = Just . const $ symbMapItems
          toItem HasCASL = bsToItem
 
 instance Category Env Morphism where

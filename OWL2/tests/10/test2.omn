@@ -1,10 +1,11 @@
+#SUBLOGIC=ALCu-D|integer|
 Prefix: : <http://example.org/>
 Prefix: owl: <http://www.w3.org/2002/07/owl#>
 Prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 Prefix: rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 Prefix: xml: <http://www.w3.org/XML/1998/namespace>
 Prefix: xsd: <http://www.w3.org/2001/XMLSchema#>
-Prefix: swrlb: <http://www.w3.org/2003/11/swrlb>
+Prefix: swrlb: <http://www.w3.org/2003/11/swrlb#>
 
 
 
@@ -14,5 +15,5 @@ Datatype: xsd:integer
 
     
 Rule: 
-    xsd:integer[>= 2 , < 3](?x) -> swrlb:equal(?x, 2)
+    xsd:integer[>= 2 , < 3](?x) -> <http://www.w3.org/2003/11/swrlb#equal>(?x, 2)
 

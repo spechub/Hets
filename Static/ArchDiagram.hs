@@ -35,6 +35,7 @@ import Control.Monad (foldM)
 import Data.List (nub)
 import Data.Maybe (fromMaybe)
 import Common.IRI
+import qualified Control.Monad.Fail as Fail
 
 
 import Static.GTheory
@@ -129,15 +130,15 @@ insInclusionEdges :: LogicGraph
                   -> Result Diag -- ^ the diagram with edges inserted
 insInclusionEdges lgraph diag0 srcNodes (Diag_node_sig tn tnsig) = do
  let inslink diag dns = do
-     d1 <- diag
-     let d = diagGraph d1
-     case dns of
-       Diag_node_sig n nsig -> do
-        incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
-        return Diagram {diagGraph = insEdge (n, tn, DiagLink {
-                                 dl_morphism = incl,
-                                 dl_number = numberOfEdges d1 + 1 }) d,
-                          numberOfEdges = numberOfEdges d1 + 1}
+      d1 <- diag
+      let d = diagGraph d1
+      case dns of
+        Diag_node_sig n nsig -> do
+          incl <- ginclusion lgraph (getSig nsig) (getSig tnsig)
+          return Diagram {diagGraph = insEdge (n, tn, DiagLink {
+                                  dl_morphism = incl,
+                                  dl_number = numberOfEdges d1 + 1 }) d,
+                            numberOfEdges = numberOfEdges d1 + 1}
  foldl inslink (return diag0) srcNodes
 
 {- | Insert the edges from given source node to given target nodes
@@ -393,7 +394,7 @@ homogeniseDiagram targetLid diag =
                = if isIdComorphism (Comorphism cid) then
                  do mor' <- coerceMorphism (targetLogic cid) targetLid "" mor
                     return (n1, n2, (nr, mor'))
-                 else fail $
+                 else Fail.fail $
                   "Trying to coerce a morphism between different logics.\n" ++
                   "Heterogeneous specifications are not fully supported yet."
            convertNodes cDiag [] = return cDiag

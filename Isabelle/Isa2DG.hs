@@ -42,6 +42,7 @@ import Data.List (intercalate)
 import Data.Maybe (catMaybes)
 
 import Control.Monad (unless, when)
+import qualified Control.Monad.Fail as Fail
 import Control.Concurrent (forkIO, killThread)
 
 import Common.Utils
@@ -83,7 +84,7 @@ anaThyFile opts path = do
   "HETS_ISA_TOOLS" "./Isabelle/export"
  exportScript <- canonicalizePath exportScript'
  e1 <- doesFileExist exportScript
- unless e1 $ fail
+ unless e1 $ Fail.fail
   "Export script not available! Maybe you need to specify HETS_ISA_TOOLS"
  (l, close) <- readFifo fifo
  tid <- forkIO $ analyzeMessages (verbose opts) (lines . concat $ l)
@@ -96,7 +97,7 @@ anaThyFile opts path = do
    removeFile tempFile
    soutF <- getTempFile sout (takeBaseName fp ++ ".sout")
    errF <- getTempFile err (takeBaseName fp ++ ".serr")
-   fail $ "Export Failed! - Export script died prematurely. See " ++ soutF
+   Fail.fail $ "Export Failed! - Export script died prematurely. See " ++ soutF
           ++ " and " ++ errF ++ " for details."
   ExitSuccess -> do
    ret <- anaIsaFile opts tempFile
@@ -124,7 +125,7 @@ mkNode (dg, m) (name, header', imps, keywords', uses', body) =
                                             (map (\ (n', _, _, _) -> n') fsigs)
                   _ -> ""
              in makeNamed name' sen) body
-     sgns = Map.foldWithKey (\ k a l ->
+     sgns = Map.foldrWithKey (\ k a l ->
              if elem k imps then snd a : l else l) [] m
      sgn = foldl union_sig (emptySign { imports = imps,
                                          header = header',

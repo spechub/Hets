@@ -4,13 +4,13 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.io.OWLObjectRenderer;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyCreationException;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.io.ToStringRenderer;
 
 import com.clarkparsia.owlapi.modularity.locality.LocalityClass;
 import com.clarkparsia.owlapi.modularity.locality.SyntacticLocalityEvaluator;
@@ -18,6 +18,7 @@ import com.clarkparsia.owlapi.modularity.locality.SyntacticLocalityEvaluator;
 public class LocalityChecker {
 	private static Set<OWLEntity> sign;
 	private static Set<OWLAxiom> axioms;
+  private static ToStringRenderer out;
 
 	public static void main(String[] args) {
 		if (args.length != 3) {
@@ -54,7 +55,7 @@ public class LocalityChecker {
 
 	private static Boolean checker(LocalityClass cl) {
 		boolean local = true;
-		OWLObjectRenderer out = org.semanticweb.owlapi.io.ToStringRenderer.getInstance();
+		out = ToStringRenderer.getInstance();
 		SyntacticLocalityEvaluator eval = new SyntacticLocalityEvaluator(cl);
 		// let's try the bottom evaluator first
 		Iterator<OWLAxiom> it = axioms.iterator();
@@ -63,7 +64,7 @@ public class LocalityChecker {
 			boolean l = eval.isLocal(elem, sign);
 			if (!l) {
 				System.out.print("Non-local axiom: ");
-				System.out.println(out.render(elem));
+				System.out.println(out.getRendering(elem));
 				System.out.println("");
 			}
 			local = local && l;

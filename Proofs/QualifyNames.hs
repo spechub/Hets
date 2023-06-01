@@ -40,6 +40,7 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 qualifyLibEnv :: LibEnv -> Result LibEnv
 qualifyLibEnv libEnv = fmap fst
@@ -58,7 +59,7 @@ qualifyDGraph ln dg =
   $ do
   let es = map (\ (_, _, lb) -> dgl_id lb) $ labEdgesDG dg
   unless (Set.size (Set.fromList es) == length es) $
-    fail $ "inkonsistent graph for library " ++ showDoc ln ""
+    Fail.fail $ "inkonsistent graph for library " ++ showDoc ln ""
   (dg1, trm) <- foldM (qualifyLabNode ln) (dg, Map.empty) $ topsortedNodes dg
   return (groupHistory dg (DGRule "Qualified-Names") dg1, trm)
 

@@ -1,4 +1,6 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 {- |
 Module      :  $Header$
 Description :  Comorphism from OWL 2 to CASL_Dl
@@ -19,6 +21,7 @@ import Common.Result
 import Common.Id
 import Common.IRI
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.List as List
@@ -190,7 +193,7 @@ mapMorphism oMor = do
       cdm <- mapSign $ osource oMor
       ccd <- mapSign $ otarget oMor
       let emap = mmaps oMor
-          preds = Map.foldWithKey (\ (Entity _ ty u1) u2 -> let
+          preds = Map.foldrWithKey (\ (Entity _ ty u1) u2 -> let
               i1 = uriToCaslId u1
               i2 = uriToCaslId u2
               in case ty of
@@ -198,7 +201,7 @@ mapMorphism oMor = do
                 ObjectProperty -> Map.insert (i1, objectPropPred) i2
                 DataProperty -> Map.insert (i1, dataPropPred) i2
                 _ -> id) Map.empty emap
-          ops = Map.foldWithKey (\ (Entity _ ty u1) u2 -> case ty of
+          ops = Map.foldrWithKey (\ (Entity _ ty u1) u2 -> case ty of
                 NamedIndividual -> Map.insert (uriToCaslId u1, indiConst)
                   (uriToCaslId u2, Total)
                 _ -> id) Map.empty emap
@@ -858,8 +861,8 @@ mapAxioms axiom = case axiom of
                 
                 let impl = mkImpl antecedent consequent
                 return $ ([mkForall (names ++ map thingDecl [1..lastVar - 1]) impl], sig1 ++ sig2)
-        DGRule _ _ _ -> fail "Translating DGRules is not supported yet!"
-    DGAxiom _ _ _ _ _ -> fail "Translating DGAxioms is not supported yet!"
+        DGRule _ _ _ -> Fail.fail "Translating DGRules is not supported yet!"
+    DGAxiom _ _ _ _ _ -> Fail.fail "Translating DGAxioms is not supported yet!"
 
 
 iArgToTerm :: IndividualArg -> Result(TERM ())
@@ -927,5 +930,4 @@ atomToSentence startVar atom = case atom of
     DifferentIndividualsAtom iarg1 iarg2 -> do
             fs <- mapComIndivList Different (Just $ iArgToIRI iarg1) [iArgToIRI iarg2]
             return (fs, [], startVar)
-    _ -> fail $ "Couldn't translate unknown atom '" ++ show atom ++ "'!"
-    
+    _ -> Fail.fail $ "Couldn't translate unknown atom '" ++ show atom ++ "'!"

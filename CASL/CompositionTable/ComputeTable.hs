@@ -24,6 +24,7 @@ import Common.IRI (IRI)
 import Common.DocUtils
 import Common.Result
 import qualified Common.Lib.Rel as Rel
+import qualified Control.Monad.Fail as Fail
 
 import Data.Maybe
 import qualified Data.Set as Set
@@ -59,7 +60,7 @@ computeCompTable spName (sig, nsens) = do
   (baseRel, rel) <-
      case map Set.toList $ Rel.topSort $ sortRel sig of
        [[b], [r]] -> return (b, r)
-       _ -> fail errSorts
+       _ -> Fail.fail errSorts
   -- types of operation symbols
   let opTypes = mapSetToList (opMap sig)
       invt = mkTotOpType [baseRel] baseRel
@@ -71,7 +72,7 @@ computeCompTable spName (sig, nsens) = do
   let oplookup typ msg =
         case mlookup typ of
                [op] -> return op
-               ops -> fail (errOps ops msg )
+               ops -> Fail.fail (errOps ops msg )
   cmps <- oplookup cmpt "__cmps__: BaseRel * BaseRel -> Rel"
   _cmpl <- oplookup complt "compl__: Rel -> Rel"
   inv <- oplookup invt "inv__ : BaseRel -> BaseRel"

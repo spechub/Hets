@@ -25,6 +25,7 @@ import CommandP
 import ParseLib2
 import System.Environment
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 import qualified Control.Exception as Exception
 
 -- GHC version
@@ -64,7 +65,7 @@ chaseImports' text indats =
         action :: (ToDo, ToDo) -> FilePath -> IO (ToDo, ToDo)
         action (dats, done) m = if null dats then return ([], done) else do
              mp <- Exception.catch (fmap return $ getEnv "DERIVEPATH")
-                   $ \ e -> return . fail $ show (e :: Exception.IOException)
+                   $ \ e -> return . Fail.fail $ show (e :: Exception.IOException)
              let paths = maybe [] breakPaths mp
              mc <- findModule paths m
              return $ case mc of

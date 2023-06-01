@@ -20,7 +20,7 @@ module DtdToHaskell.TypeDef
 
 import Data.Char (isLower, isUpper, toLower, toUpper, isDigit)
 import Data.List (intersperse)
-import Text.PrettyPrint.HughesPJ
+import Text.PrettyPrint.HughesPJ as PP
 
 
 -- -- Internal representation for typedefs ----
@@ -45,7 +45,8 @@ data StructType =
     | Tuple [StructType]
     | OneOf [StructType]
     | Any                               -- ^ XML's contentspec allows ANY
-    | String
+    | StringMixed                       -- ^ mixed (#PCDATA | ... )*
+    | String                            -- ^ string only (#PCDATA)
     | Defined Name
     deriving Eq
 
@@ -64,6 +65,7 @@ instance Show StructType where
                                                               (map shows ss))
                                     . showChar ')'
     showsPrec _ (Any) = showString "ANY"
+    showsPrec _ (StringMixed) = showString "#PCDATA"
     showsPrec _ (String) = showString "#PCDATA"
     showsPrec _ (Defined (Name n _)) = showString n
 
@@ -74,11 +76,11 @@ ppTypeDef :: TypeDef -> Doc
 -- no attrs, no constructors
 ppTypeDef (DataDef _ n [] []) =
     let nme = ppHName n in
-    text "data" <+> nme <+> text "=" <+> nme <+> derives
+    text "data" <+> nme <+> text "=" <+> nme <+> text " " PP.<> derives
 
 -- no attrs, single constructor
 ppTypeDef (DataDef _ n [] [c@(_, [_])]) =
-    text "newtype" <+> ppHName n <+> text "=" <+> ppC c <+> derives
+    text "newtype" <+> ppHName n <+> text "=" <+> ppC c <+> text "  " PP.<> derives
 
 -- no attrs, multiple constrs
 ppTypeDef (DataDef _ n [] cs) =
@@ -118,11 +120,12 @@ ppTypeDef (EnumDef n es) =
 ppST :: StructType -> Doc
 ppST (Defaultable st _) = parens (text "Defaultable" <+> ppST st)
 ppST (Maybe st) = parens (text "Maybe" <+> ppST st)
-ppST (List st) = text "[" <> ppST st <> text "]"
+ppST (List st) = text "[" PP.<> ppST st PP.<> text "]"
 ppST (List1 st) = parens (text "List1" <+> ppST st)
 ppST (Tuple sts) = parens (commaList (map ppST sts))
-ppST (OneOf sts) = parens (text "OneOf" <> text (show (length sts)) <+>
+ppST (OneOf sts) = parens (text "OneOf" PP.<> text (show (length sts)) <+>
                            hsep (map ppST sts))
+ppST StringMixed = text "String"
 ppST String = text "String"
 ppST Any = text "ANYContent"
 ppST (Defined n) = ppHName n
@@ -147,7 +150,7 @@ ppXName :: Name -> Doc
 ppXName (Name s _) = text s
 -- | Pretty print Haskell attributes name.
 ppAName :: Name -> Doc
-ppAName (Name _ s) = text s <> text "_Attrs"
+ppAName (Name _ s) = text s PP.<> text "_Attrs"
 
 derives :: Doc
 derives = text "deriving" <+> parens (commaList (map text ["Eq", "Show"]))
@@ -189,6 +192,7 @@ elementname_at n  = Name n (mangle n ++ "_Attrs") -}
 
 -- | Convert an XML name to a Haskell conid.
 mangle :: String -> String
+mangle [] = []
 mangle (n : ns)
     | isLower n = notPrelude (toUpper n : map decolonify ns)
     | isDigit n = 'I' : n : map decolonify ns
@@ -232,6 +236,7 @@ notPrelude n = n
 
 -- | Convert an XML name to a Haskell varid.
 manglef :: String -> String
+manglef [] = []
 manglef (n : ns)
     | isUpper n = toLower n : map decolonify ns
     | isDigit n = '_' : n : map decolonify ns

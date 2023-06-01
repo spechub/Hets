@@ -76,6 +76,8 @@ import CASL.CompositionTable.ParseTable2
 
 import OWL2.Medusa
 import OWL2.MedusaToJson
+import OWL2.XMLConversion (xmlOntologyDoc)
+import OWL2.Sign (emptySign)
 
 #ifdef PROGRAMATICA
 import Haskell.CreateModules
@@ -102,8 +104,7 @@ import VSE.ToSExpr
 import OWL2.CreateOWL
 import OWL2.Logic_OWL2
 import OWL2.ParseOWL (convertOWL)
-import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory)
-import qualified OWL2.ParseMS as OWL2 (parseOntologyDocument)
+import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory, convertBasicTheory)
 #endif
 
 #ifdef RDFLOGIC
@@ -291,21 +292,22 @@ writeTheory ins nam opts filePrefix ga
 #endif
 #ifndef NOOWLLOGIC
     OWLOut ty -> case ty of
-      Manchester -> case createOWLTheory raw_gTh of
+      Manchester -> writeOWL2VerbFile opts ty f raw_gTh "Manchester"
+
+      --  TODO: implement OWL2 RDF parser/printer
+      -- RdfXml -> trace "-- RdfXml" $ case createOWLTheory raw_gTh of
+
+      Functional -> writeOWL2VerbFile opts ty f raw_gTh "Functional"
+
+      OwlXml -> case createOWLTheory raw_gTh of
         Result _ Nothing ->
-          putIfVerbose opts 0 $ wrongLogicMsg f "Manchester OWL" $ show ty
+          putIfVerbose opts 0 $ wrongLogicMsg f "OWL" $ show ty
         Result ds (Just th2) -> do
-            let sy = defSyntax opts
-                ms = if null sy then Nothing
-                     else Just $ simpleIdToIRI $ mkSimpleId sy
-                owltext = shows
-                  (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
+            let owltext =
+                  ppTopElement $ xmlOntologyDoc emptySign $ OWL2.convertBasicTheory th2
             showDiags opts ds
-            when (null sy)
-                $ case parse (OWL2.parseOntologyDocument Map.empty >> eof) f owltext of
-              Left err -> putIfVerbose opts 0 $ show err
-              _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
+
       _ -> let flp = getFilePath ln in case guess flp GuessIn of
         OWLIn _ -> writeVerbFile opts f =<< convertOWL flp (show ty)
         _ -> putIfVerbose opts 0
@@ -328,6 +330,23 @@ writeTheory ins nam opts filePrefix ga
             writeVerbFile opts f kiftext
       | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "Common Logic" lang
     _ -> return () -- ignore other file types
+
+allowedOWL2Syntaxes :: [String]
+allowedOWL2Syntaxes = ["Functional", "Manchester"]
+
+writeOWL2VerbFile :: HetcatsOpts -> OWLFormat -> FilePath -> G_theory -> String -> IO ()
+writeOWL2VerbFile opts ty f raw_gTh syntax = case createOWLTheory raw_gTh of
+  Result _ Nothing ->
+    putIfVerbose opts 0 $ wrongLogicMsg f "OWL" $ show ty
+  Result ds (Just th2) -> if elem syntax allowedOWL2Syntaxes
+    then do 
+      let sy = syntax
+          ms = Just $ simpleIdToIRI $ mkSimpleId sy
+          owltext = shows
+            (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
+      showDiags opts ds
+      writeVerbFile opts f owltext
+    else putIfVerbose opts 0 $ "Syntax '" ++ syntax ++ "' is not allowed for OWL2."
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> IO ()
 modelSparQCheck opts gTh@(G_theory lid _ (ExtSign sign0 _) _ sens0 _) =
@@ -431,7 +450,7 @@ writeSpecFiles opts file lenv ln dg = do
          (simpleIdToIRI $ genToken $ 'n' : show n) n)
       $ if ignore || not allSpecs then [] else
       nodesDG dg
-      \\ Map.fold ( \ e l -> case e of
+      \\ Map.foldr ( \ e l -> case e of
             SpecEntry (ExtGenSig _ (NodeSig n _)) -> n : l
             _ -> l) [] gctx
     doDump opts "GlobalAnnos" $ putStrLn $ showGlobalDoc ga ga ""

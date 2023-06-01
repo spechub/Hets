@@ -26,6 +26,7 @@ import Common.Result
 import Common.ProofTree
 import qualified Common.Lib.Rel as Rel
 import qualified Common.Lib.MapSet as MapSet
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -48,8 +49,6 @@ import TPTP.Morphism as TMorphism
 import TPTP.Sign as TSign
 import TPTP.Logic_TPTP
 import TPTP.Sublogic
-
-import qualified Comorphisms.SuleCFOL2SoftFOL as CASL2SoftFOL
 
 data TPTP_FOF = TPTP_FOF
 
@@ -152,7 +151,7 @@ translateFormula signWithRenamings nameS isAxiom' formula = do
                          FOF_quantified_formula Exists variableList conjunction
           -- Has been resolved/removed by prepareNamedFormula:
           Unique_existential ->
-            fail "SuleCFOL2TPTP: Unique_existential occurred where it cannot occur. This is a bug in Hets."
+            Fail.fail "SuleCFOL2TPTP: Unique_existential occurred where it cannot occur. This is a bug in Hets."
       Junction Con fs _ -> do
         fofs <- mapM toUnitaryFormula fs
         return $ unitaryFormulaAnd fofs
@@ -188,7 +187,7 @@ translateFormula signWithRenamings nameS isAxiom' formula = do
       Predication predSymb terms _ -> do
         predName <- case predSymb of
               Pred_name _ ->
-                fail "SuleCFOL2TPTP: An unqualified predicate has been detected. This is a bug in Hets."
+                Fail.fail "SuleCFOL2TPTP: An unqualified predicate has been detected. This is a bug in Hets."
               Qual_pred_name predName (Pred_type args _) _ ->
                 return $ lookupPredName signWithRenamings predName $
                   PredType { predArgs = args }
@@ -220,7 +219,7 @@ translateFormula signWithRenamings nameS isAxiom' formula = do
       -- There is no QuantOp in SuleCFOL
       -- There is no QuantPred in SuleCFOL
       -- There is no ExtFORMULA in SuleCFOL
-      _ -> fail "SuleCFOL2TPTP: A formula that should not occur has occurred."
+      _ -> Fail.fail "SuleCFOL2TPTP: A formula that should not occur has occurred."
 
     translateVarDecls :: [VAR_DECL] -> [(TAS.Variable, SORT)]
     translateVarDecls = concatMap translateVarDecl
@@ -245,7 +244,7 @@ translateTerm signWithRenamings x = case x of
   Application opSymb terms _ -> do
     opName <- case opSymb of
           Op_name _ ->
-            fail "SuleCFOL2TPTP: An unqualified operation has been detected. This is a bug in Hets."
+            Fail.fail "SuleCFOL2TPTP: An unqualified operation has been detected. This is a bug in Hets."
           Qual_op_name opName (Op_type kind args res _) _ ->
             return $ lookupOpName signWithRenamings opName $
               OpType { opKind = kind, opArgs = args, opRes = res }
@@ -259,7 +258,7 @@ translateTerm signWithRenamings x = case x of
   -- Conditional has been resolved/removed in prepareNamedFormula
   -- There is no Cast in SuleCFOL
   -- Everything else cannot occur
-  _ -> fail "SuleCFOL2TPTP: A term that should not occur has occurred."
+  _ -> Fail.fail "SuleCFOL2TPTP: A term that should not occur has occurred."
 
 
 fofUnitaryFormulaToAxiom :: TAS.Name -> FOF_unitary_formula -> TSign.Sentence

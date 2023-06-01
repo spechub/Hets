@@ -40,16 +40,9 @@ import RDF.Morphism
 import RDF.Sublogic
 import RDF.StaticAnalysis
 import ATerm.Conversion
+import RDF.ATC_RDF ()
 
 data RDF = RDF deriving Show
-
-instance ShATermConvertible SymbItems
-instance ShATermConvertible SymbMapItems
-instance ShATermConvertible Sign
-instance ShATermConvertible Axiom
-instance ShATermConvertible TurtleDocument
-instance ShATermConvertible RDFMorphism
-instance ShATermConvertible RDFEntity
 
 instance Language RDF where
   language_name _ = "RDF"
@@ -65,15 +58,16 @@ instance Category Sign RDFMorphism where
     composeMorphisms = composeMor
 -}
 
+instance Semigroup TurtleDocument where
+    (TurtleDocument i p1 l1) <> (TurtleDocument _ p2 l2) =
+      TurtleDocument i (Map.union p1 p2) $ l1 ++ l2
 instance Monoid TurtleDocument where
     mempty = emptyTurtleDocument
-    mappend (TurtleDocument i p1 l1) (TurtleDocument _ p2 l2) =
-      TurtleDocument i (Map.union p1 p2) $ l1 ++ l2
 
 instance Syntax RDF TurtleDocument RDFEntity SymbItems SymbMapItems where
     parse_basic_spec RDF = Just basicSpec
-    parse_symb_items RDF = Just rdfSymbItems
-    parse_symb_map_items RDF = Just rdfSymbMapItems
+    parse_symb_items RDF = Just . const $ rdfSymbItems
+    parse_symb_map_items RDF = Just . const $ rdfSymbMapItems
 
 instance Sentences RDF Axiom Sign RDFMorphism RDFEntity where
     -- map_sen RDF = mapSen

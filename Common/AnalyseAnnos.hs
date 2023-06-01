@@ -33,12 +33,13 @@ import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.List (partition)
 import Control.Monad (foldM)
+import qualified Control.Monad.Fail as Fail
 import Text.ParserCombinators.Parsec
 
 getGlobalAnnos :: String -> Result GlobalAnnos
 getGlobalAnnos istr = let str = trimLeft istr in
   case runParser (annotations << eof) () "" str of
-    Left err -> fail $ show err
+    Left err -> Fail.fail $ show err
     Right ans -> addGlobalAnnos emptyGlobalAnnos ans
 
 -- | add global annotations

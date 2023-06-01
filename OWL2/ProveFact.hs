@@ -207,14 +207,12 @@ runFact sps cfg saveFact thName nGoal = do
         writeFile tmpFileName prob
         writeFile (tmpFileName ++ ".entail.owl") entail
       mExit <- runTimedFact tmpFileName prob (Just entail) tLimit
-      ((err, retval), output, tUsed) <- case mExit of
-            Just (b, ex, output, t_u) -> if b then do
-              let outp = lines output
-              return (proofStat ex outp t_u, outp, t_u)
-              else return ((ATPError output, defaultProofStatus), [], t_u)
-            Nothing -> return
-              ( (ATPTLimitExceeded, defaultProofStatus)
-              , [], midnight)
+      let ((err, retval), output, tUsed) = case mExit of
+            Just (b, ex, out, t_u) -> if b then let outlines = lines out in
+                (proofStat ex outlines t_u, outlines, t_u)
+              else
+                ((ATPError out, defaultProofStatus), [], t_u)
+            Nothing -> ( (ATPTLimitExceeded, defaultProofStatus), [], midnight)
       return (err, cfg
             { proofStatus = retval
             , resultOutput = output
@@ -228,6 +226,7 @@ runFact sps cfg saveFact thName nGoal = do
       ExitFailure 10 -> (ATPSuccess, (provedStatus tUsed)
                        { usedAxioms = map senAttr $ initialState sps })
       ExitFailure 20 -> (ATPSuccess, disProvedStatus)
+      ExitFailure 30 -> (ATPSuccess, (provedStatus tUsed))
       ExitFailure _ -> ( ATPError (unlines ("Internal error." : out))
                        , defaultProofStatus)
       ExitSuccess -> ( ATPError (unlines ("Internal error." : out))

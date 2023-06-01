@@ -21,6 +21,7 @@ import Common.Consistency
 import Common.Result
 import Common.ProverTools
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 import GUI.Utils ()
 
@@ -75,8 +76,8 @@ runLocalityChecker jar ct onto sig = do
       removeFile sigFile
       return $ case mExit of
         Just (cont, out, _) -> parseOutput out cont
-        Nothing -> fail $ "Timelimit " ++ show tLimit ++ " exceeded"
-    else return $ fail $ jar ++ " not found"
+        Nothing -> Fail.fail $ "Timelimit " ++ show tLimit ++ " exceeded"
+    else return $ Fail.fail $ jar ++ " not found"
 
 parseOutput :: String
             -> ExitCode
@@ -85,5 +86,5 @@ parseOutput ls1 exit = do
   let ls = lines ls1
   case exit of
     ExitFailure 10 -> return (Cons, [])
-    ExitFailure 20 -> fail $ unlines ls
-    x -> fail $ "Internal program error: " ++ show x ++ "\n" ++ unlines ls
+    ExitFailure 20 -> Fail.fail $ unlines ls
+    x -> Fail.fail $ "Internal program error: " ++ show x ++ "\n" ++ unlines ls

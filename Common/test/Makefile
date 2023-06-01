@@ -17,4 +17,3 @@ output: annos
 
 %:
 	(cd ../..; $(MAKE) $@)
-

@@ -41,7 +41,7 @@ import Common.DefaultMorphism
 import Common.ProofTree
 import Logic.Logic as Logic
 
-import Data.Monoid
+import Data.Monoid ()
 import qualified Data.Set as Set
 import qualified SoftFOL.ProveDarwin as Darwin
 
@@ -57,9 +57,10 @@ instance Syntax TPTP BASIC_SPEC Symbol () ()
   where
     parse_basic_spec TPTP = Just parseBasicSpec
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 instance Sentences TPTP Sentence Sign Morphism Symbol
   where

@@ -46,6 +46,7 @@ import Common.Utils
 
 import Control.Exception (assert)
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Data.List
 import Data.Maybe
@@ -96,22 +97,22 @@ simplify te rs =
                                  Just _ -> cs
                                  Nothing -> insertC r cs)
 
-entail :: Monad m => Env -> Constrain -> m ()
+entail :: Fail.MonadFail m => Env -> Constrain -> m ()
 entail te c = let cm = classMap te in case c of
     Kinding ty k -> if k == universe then
                         assert (rawKindOfType ty == ClassKind ())
                     $ return () else
       let Result _ds mk = inferKinds Nothing ty te in
                    case mk of
-                   Nothing -> fail $ "constrain '" ++
+                   Nothing -> Fail.fail $ "constrain '" ++
                                   showDoc c "' is unprovable"
                    Just ((_, ks), _) -> when (newKind cm k ks)
-                       $ fail $ "constrain '" ++
+                       $ Fail.fail $ "constrain '" ++
                            showDoc c "' is unprovable" ++
                               if Set.null ks then "" else
                                   "\n  known kinds are: " ++ showDoc ks ""
     Subtyping t1 t2 -> unless (lesserType te t1 t2)
-                       $ fail ("unable to prove: " ++ showDoc t1 " < "
+                       $ Fail.fail ("unable to prove: " ++ showDoc t1 " < "
                                   ++ showDoc t2 "")
 
 freshLeaves :: Type -> State Int Type
@@ -300,7 +301,7 @@ shapeRel te subL =
            Just (s1, atoms0) ->
                let atoms = filter isAtomic atoms0
                    r = Rel.transClosure $ Rel.fromList atoms
-                   es = Map.foldWithKey ( \ t1 st l1 ->
+                   es = Map.foldrWithKey ( \ t1 st l1 ->
                              case t1 of
                              TypeName _ _ 0 -> Set.fold ( \ t2 l2 ->
                                  case t2 of
@@ -432,14 +433,14 @@ shapeRelAndSimplify doFail te cs mTy = do
 
 -- | Downsets of type variables made monomorphic need to be considered
 fromTypeVars :: LocalTypeVars -> [(Type, Type)]
-fromTypeVars = Map.foldWithKey
+fromTypeVars = Map.foldrWithKey
     (\ t (TypeVarDefn _ vk rk _) c -> case vk of
               Downset ty -> (TypeName t rk 0, monoType ty) : c
               _ -> c) []
 
 -- | the type relation of declared types
 fromTypeMap :: TypeMap -> Rel.Rel Type
-fromTypeMap = Map.foldWithKey (\ t ti r -> let k = typeKind ti in
+fromTypeMap = Map.foldrWithKey (\ t ti r -> let k = typeKind ti in
                     Set.fold ( \ j -> Rel.insertPair (TypeName t k 0)
                                 $ TypeName j k 0) r
                                     $ superTypes ti) Rel.empty

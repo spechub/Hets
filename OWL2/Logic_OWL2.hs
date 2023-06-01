@@ -16,6 +16,7 @@ Here is the place where the class Logic is instantiated for OWL2.
 module OWL2.Logic_OWL2 where
 
 import ATC.ProofTree ()
+import OWL2.ATC_OWL2 ()
 
 import Common.AS_Annotation as Anno
 import Common.Consistency
@@ -48,7 +49,7 @@ import OWL2.Pretty
 import OWL2.Morphism
 import qualified OWL2.ParseMS as PaMS (parseOntologyDocument)
 import qualified OWL2.ParseAS as PaAS (parseOntologyDocument) 
-import OWL2.ManchesterPrint (convertBasicTheory)
+import OWL2.ManchesterPrint (convertBasicTheory, convertBasicTheory')
 import OWL2.Parse (symbItem, symbItems, symbMapItems) --temporary
 import OWL2.ProfilesAndSublogics
 import OWL2.ProveFact
@@ -65,14 +66,6 @@ import ATerm.Conversion
 
 data OWL2 = OWL2
 
-instance ShATermConvertible SymbItems
-instance ShATermConvertible SymbMapItems
-instance ShATermConvertible Sign
-instance ShATermConvertible Axiom
-instance ShATermConvertible OntologyDocument
-instance ShATermConvertible OWLMorphism
-instance ShATermConvertible Entity
-instance ShATermConvertible ProfSub
 
 instance Show OWL2 where
   show _ = "OWL"
@@ -89,24 +82,26 @@ instance Category Sign OWLMorphism where
     isInclusion = isOWLInclusion
     composeMorphisms = composeMor
 
+instance Semigroup Ontology where
+    (Ontology n v i1 a1 ax1) <> (Ontology _ _ i2 a2 ax2) =
+        Ontology n v (i1 ++ i2) (a1 ++ a2) (ax1 ++ ax2)
 instance Monoid Ontology where
     mempty = Ontology Nothing Nothing [] [] []
-    mappend (Ontology n v i1 a1 ax1) (Ontology _ _ i2 a2 ax2) =
-        Ontology n v (i1 ++ i2) (a1 ++ a2) (ax1 ++ ax2)
 
+instance Semigroup OntologyDocument where
+    (OntologyDocument m p1 o1) <> (OntologyDocument _ p2 o2) =
+      OntologyDocument m (Map.union p1 p2) $ mappend o1 o2
 instance Monoid OntologyDocument where
     mempty = OntologyDocument (OntologyMetadata AS) mempty mempty
-    mappend (OntologyDocument m p1 o1) (OntologyDocument _ p2 o2) =
-      OntologyDocument m (Map.union p1 p2) $ mappend o1 o2
 
 instance Syntax OWL2 OntologyDocument Entity SymbItems SymbMapItems where
     parsersAndPrinters OWL2 = -- addSyntax "Ship" (parseOntologyDocument, ppShipOnt) 
       addSyntax "Manchester" (PaMS.parseOntologyDocument, PrMS.printOntologyDocument)
       $ addSyntax "Functional" (PaAS.parseOntologyDocument, PrAS.printOntologyDocument)
       $ makeDefault (PaMS.parseOntologyDocument, PrMS.printOntologyDocument)
-    parseSingleSymbItem OWL2 = Just symbItem
-    parse_symb_items OWL2 = Just symbItems
-    parse_symb_map_items OWL2 = Just symbMapItems
+    parseSingleSymbItem OWL2 = Just . const $ symbItem
+    parse_symb_items OWL2 = Just . const $ symbItems
+    parse_symb_map_items OWL2 = Just . const $ symbMapItems
     symb_items_name OWL2 = symbItemsName
 
 
@@ -213,6 +208,7 @@ instance Logic OWL2 ProfSub OntologyDocument Axiom SymbItems SymbMapItems
                     (checkOWLjar localityJar) $ conserCheck ct)
            ["BOTTOM_BOTTOM", "TOP_BOTTOM", "TOP_TOP"]
          stability OWL2 = Stable
+         sublogicOfTheo OWL2 = profilesAndSublogic . convertBasicTheory'
 
 instance SemiLatticeWithTop ProfSub where
     lub = maxS

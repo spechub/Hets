@@ -37,6 +37,8 @@ import Common.Doc
 import Common.DocUtils ()
 import Common.Utils
 
+import qualified Control.Monad.Fail as Fail
+
 maudePath :: String
 maudePath = "maude"
 maudeArgs :: [String]
@@ -75,7 +77,7 @@ basicAnalysis sign (MaudeText mt) = do
     case readMaybe spStr of
       Just sp -> return $ convertSpec sp
       Nothing ->
-          fail $ "cannot interpret the following maude output:\n" ++ spStr
+          Fail.fail $ "cannot interpret the following maude output:\n" ++ spStr
           ++ "\ncreated for:\n" ++ sigStr
           ++ "\nmaude return:\n" ++ specOut
 

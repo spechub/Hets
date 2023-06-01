@@ -24,6 +24,7 @@ import Common.Lexer hiding (parens)
 import Common.Parsec
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Data.Char (isSpace)
 import Data.Maybe
@@ -268,7 +269,7 @@ clauseFork ct = do
           [t] | not b -> toNSPClause ct t
           _ -> unexpected "clause term"
 
-toNSPClause :: Monad m => SPClauseType -> SPTerm -> m NSPClause
+toNSPClause :: Fail.MonadFail m => SPClauseType -> SPTerm -> m NSPClause
 toNSPClause ct t = case t of
     SPQuantTerm q vl l | q == SPForall && ct == SPCNF
         || q == SPExists && ct == SPDNF -> do
@@ -492,9 +493,9 @@ term = do
                             [("forall", SPForall), ("exists", SPExists)]
               , variableList = ts, qFormula = a }
 
-toClauseBody :: Monad m => SPClauseType -> SPTerm -> m NSPClauseBody
+toClauseBody :: Fail.MonadFail m => SPClauseType -> SPTerm -> m NSPClauseBody
 toClauseBody b t = case t of
     SPComplexTerm n ts | b == SPCNF && n == SPOr || b == SPDNF && n == SPAnd ->
       do ls <- mapM toLiteral ts
          return $ NSPClauseBody b ls
-    _ -> fail $ "expected " ++ show b ++ "-application"
+    _ -> Fail.fail $ "expected " ++ show b ++ "-application"

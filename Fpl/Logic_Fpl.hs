@@ -44,8 +44,8 @@ instance SignExtension SignExt where
 
 instance Syntax Fpl FplBasicSpec Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec Fpl = Just $ basicSpec fplReservedWords
-    parse_symb_items Fpl = Just $ symbItems fplReservedWords
-    parse_symb_map_items Fpl = Just $ symbMapItems fplReservedWords
+    parse_symb_items Fpl = Just . const $ symbItems fplReservedWords
+    parse_symb_map_items Fpl = Just . const $ symbMapItems fplReservedWords
 
 instance Sentences Fpl FplForm FplSign FplMor Symbol where
       map_sen Fpl m = return . mapFplSen m

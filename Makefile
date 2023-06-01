@@ -12,6 +12,8 @@
 # the corresponding tool as is: GHC_PKG_FLAGS (ghc-pkg), GHC_FLAGS (ghc).
 # For profiling, call make with PROFILE=on 
 
+## dummy line to re-trigger CI runs like GHA, travic-ci, etc.
+
 include var.mk
 
 NO_BIND_WARNING := -fno-warn-unused-do-bind
@@ -22,6 +24,25 @@ HC_OPTS += $(HC_WARN) $(HC_PROF) $(GHC_FLAGS)
 # uncomment the above line to generate .imports files for displayDependencyGraph
 
 .DEFAULT_GOAL := hets
+
+# GHA 16 color pallete is junk. So use 256 colors (i.e. BG >= 16). That's much
+# closer to what *x terminals would show.
+#	bold, black, cyan
+COLOR_INFO := \E[1;38;5;0;48;5;80m
+#	bold, red, yellow
+COLOR_WARN := \E[1;38;5;1;48;5;226m
+#	bold, yellow, red
+COLOR_ERROR := \E[1;38;5;226;48;5;196m
+#	# bold, black, green
+COLOR_OK := \E[1;38;5;0;48;5;82m
+COLOR_END := \E[0m
+
+OSR := $(shell [ -x /usr/bin/lsb_release ] && lsb_release -cs || uname -s )
+
+# Testing:
+# If != 0 'make check' and related scripts stop immediately if an error occurs.
+# Otherwise continues until all test have been run and finally the target fails.
+FAIL_EARLY ?= 1
 
 .NOTPARALLEL:
 
@@ -72,7 +93,8 @@ GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs
 
 PERL = perl
 GENRULES = utils/genRules
-GENRULECALL = $(GENRULES) -r ShATermConvertible \
+GENRULECALL = $(GENRULES) -r ShATermConvertible -r Json \
+	-i "GHC.Generics(Generic)" -i "Data.Aeson(ToJSON, FromJSON)" \
     -i ATerm.Lib
 
 GENRULECALL2 = $(GENRULES) -r ShATermLG \
@@ -81,17 +103,11 @@ DRIFT = utils/DrIFT
 HADDOCK = haddock
 
 DTD2HS = utils/DtdToHaskell
-ifneq ($(strip $(HAXML_PACKAGE_COMPAT)),)
-DTD2HS_src = utils/DtdToHaskell-src/pre-1.22/
-else
-DTD2HS_src = utils/DtdToHaskell-src/current/
-endif
 
 ifneq ($(strip $(HAXML_PACKAGE)),)
 derived_sources += Isabelle/IsaExport.hs
 endif
 
-DTD2HS_deps = $(DTD2HS_src)*.hs
 
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
@@ -104,16 +120,17 @@ logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
     CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2 RDF CSMOF QVTR TPTP
+    FreeCAD OWL2 RDF CSMOF QVTR TPTP NeSyPatterns
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
-    Common/ATerm/ATermDiffMain.hs Common/annos.hs \
+    Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/testxmldiff.hs \
     SoftFOL/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
     Comorphisms/test/sublogicGraph.hs PGIP/ParseProofScript.hs \
     Common/testxupdate.hs Common/testxpath.hs \
-    SoftFOL/dfg.hs Adl/adl.hs GUI/displayDependencyGraph.hs
+    SoftFOL/dfg.hs Adl/adl.hs GUI/displayDependencyGraph.hs \
+	OWL2/scripts/runTest.hs
 
 ### list of directories to run checks in
 TESTDIRS += Common CASL Fpl/test HasCASL test ExtModal/Tries \
@@ -193,7 +210,7 @@ drifted_files = Common/AS_Annotation.hs \
     RelationalScheme/AS.hs ATC/Grothendieck.hs \
     ExtModal/AS_ExtModal.hs QBF/AS_BASIC_QBF.hs \
     CommonLogic/AS_CommonLogic.hs Fpl/As.hs \
-	TPTP/AS.hs \
+	TPTP/AS.hs NeSyPatterns/AS.hs \
     $(gendrifted_files)
 
 # files to extract data types from to generate ShATermConvertible instances
@@ -230,16 +247,16 @@ ATC/ProofTree.der.hs: Common/ProofTree.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
 
 ATC/AS_Annotation.der.hs: Common/AS_Annotation.der.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -o $@ $<
+	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $<
 
 ATC/Consistency.der.hs: Common/Consistency.hs $(GENRULES)
 	$(GENRULECALL) -x Common.Consistency.ConservativityChecker -o $@ $<
 
 ATC/LibName.der.hs: Common/LibName.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -o $@ $<
+	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $<
 
 ATC/ExtSign.der.hs: Common/ExtSign.hs $(GENRULES)
-	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $<
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $<
 
 ATC/DefaultMorphism.der.hs: Common/DefaultMorphism.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
@@ -333,12 +350,15 @@ THF_files = THF/As.hs THF/Cons.hs THF/Sign.hs THF/Sublogic.hs
 
 FreeCAD_files = FreeCAD/As.hs
 
-OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
+OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs \
   OWL2/Morphism.hs OWL2/ProfilesAndSublogics.hs OWL2/Sublogic.hs \
-  OWL2/Profiles.hs Common/IRI.hs
+  OWL2/Profiles.hs
 
-RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
-  RDF/Sublogic.hs Common/IRI.hs
+NeSyPatterns_files = NeSyPatterns/AS.hs NeSyPatterns/Symbol.hs \
+  NeSyPatterns/Sign.hs NeSyPatterns/Morphism.hs
+
+RDF_files = RDF/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
+  RDF/Sublogic.hs
 
 CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
@@ -436,19 +456,23 @@ THF/ATC_THF.der.hs: $(THF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Id -i ATC.GlobalAnnotations -o $@ $(THF_files)
 
 FreeCAD/ATC_FreeCAD.der.hs: $(FreeCAD_files) $(GENRULES)
-	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(FreeCAD_files)
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $(FreeCAD_files)
 
 OWL2/ATC_OWL2.der.hs: $(OWL2_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.Result -o $@ $(OWL2_files)
+	$(GENRULECALL) -i ATC.Result -i ATC.IRI -o $@ $(OWL2_files)
+
+NeSyPatterns/ATC_NeSyPatterns.der.hs: $(NeSyPatterns_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.Result -i NeSyPatterns.ATC_Relation \
+		-i ATC.AS_Annotation -o $@ $(NeSyPatterns_files)
 
 RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(RDF_files)
 
 CSMOF/ATC_CSMOF.der.hs: $(CSMOF_files) $(GENRULES)
-	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(CSMOF_files)
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $(CSMOF_files)
 
 QVTR/ATC_QVTR.der.hs: $(QVTR_files) CSMOF/ATC_CSMOF.hs $(GENRULES)
-	$(GENRULECALL) -i CSMOF.ATC_CSMOF -i Common.ATerm.ConvInstances \
+	$(GENRULECALL) -i CSMOF.ATC_CSMOF -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances \
  -o $@ $(QVTR_files)
 
 TPTP/ATC_TPTP.der.hs: $(TPTP_files) $(GENRULES)
@@ -474,11 +498,13 @@ derived_sources += $(drifted_files) $(hs_der_files)
 ####################################################################
 .PHONY: all hets-opt hets-optimized hets_server-opt doc docs jars \
 	clean o_clean clean_pretty bin_clean java_clean realclean distclean \
-	annos check test capa hacapa h2h h2hf showKP clean_genRules genRules \
+	annos check test capa hacapa h2h h2hf showKP clean_genRules genRules derived \
     count fromKif release cgi ghci build-hets callghc \
 	get-programatica check_desktop check_server check_cgi \
 	install install-common install-owl-tools archive \
 	build-indep build-arch build binary-indep binary-arch binary
+
+
 
 .SECONDARY: $(generated_rule_files)
 
@@ -486,6 +512,8 @@ derived_sources += $(drifted_files) $(hs_der_files)
 
 # dummy target to force ghc invocation
 callghc:
+
+derived: $(derived_sources)
 
 # some trickery to trigger a full clean if the main target (hets, hets_server)
 # changed since last call
@@ -501,9 +529,9 @@ check_cgi:
 %-opt: HC_OPTS += -O
 
 # the variant without GUI
-hets_server hets_server-opt: HASKELINE_PACKAGE :=
-hets_server hets_server-opt: GLADE_PACKAGE :=
-hets_server hets_server-opt: UNI_PACKAGE :=
+hets_server hets_server-opt check $(TESTTARGETS): HASKELINE_PACKAGE :=
+hets_server hets_server-opt check $(TESTTARGETS): GTK_PACKAGE :=
+hets_server hets_server-opt check $(TESTTARGETS): UNI_PACKAGE :=
 hets_server hets_server-opt: check_server $(derived_sources)
 	@touch .hets_server
 	$(HC) --make $(HC_OPTS) -o hets_server hets.hs
@@ -522,7 +550,12 @@ hets_cgi hets_cgi-opt: check_cgi GUI/hets_cgi.hs $(derived_sources)
 	$(HC) --make $(HC_OPTS) -o hets.cgi GUI/hets_cgi.hs
 	@ln -f hets.cgi hets_cgi.bin
 
-derivedSources: $(derived_sources)
+# For tests: Usually hets_server as well as hets[_desktop] are ok for testing.
+# Thus we avoid re-building one or the other by not adding a hard dep here.
+hets_available:
+	@[[ ! -x hets ]] && { [[ -x hets_server ]] && ln -s hets_server hets ; } \
+		|| true
+	@[[ ! -x hets ]] && { echo 'Build hets_server first' && return 1 ; } || true
 
 TEX_FILES := $(wildcard doc/*.tex doc/*.png doc/*.dot doc/*.sty doc/*.eps)
 doc/UserGuide.pdf: $(TEX_FILES)
@@ -555,7 +588,7 @@ docs: $(derived_sources) $(STACK_UPGRADE_TARGET)
 	@$(RM) -r docs && mkdir docs && \
 		printf '\nCheck log.haddock for results ...\n'
 	$(STACK) exec -- haddock --html \
-            $(filter-out Scratch.hs, $(wildcard *.hs)) \
+            $(filter-out Setup.hs Scratch.hs, $(wildcard *.hs)) \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
 	    --hyperlinked-source --odir=docs \
@@ -563,9 +596,7 @@ docs: $(derived_sources) $(STACK_UPGRADE_TARGET)
 $(DRIFT): $(DRIFT_deps)
 	cd utils/DrIFT-src; $(HC) --make -o ../DrIFT DrIFT.hs
 
-$(DTD2HS): $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell.hs
-	@mkdir -p utils/DtdToHaskell-src/DtdToHaskell
-	@cp -f $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell
+$(DTD2HS): utils/DtdToHaskell-src/DtdToHaskell/*.hs utils/DtdToHaskell-src/DtdToHaskell.hs
 	$(HC) --make $(HC_OPTS) -iutils/DtdToHaskell-src -o $@ \
             utils/DtdToHaskell-src/DtdToHaskell.hs
 
@@ -621,8 +652,11 @@ clean_pretty:
 			pretty/generated_words.tex \
 		test/*/*.{thy,pp.dol,pp.tex,th,dfg.c,xml,log,dvi,aux,sty} \
 			test/*/log */test/temp* ToHaskell/test/*.{out,output} \
-			ExtModal/Tries/*.{pp.dol,th} Fpl/test/*.{pp.dol,th} \
-			CommonLogic/TestData/*.{pp.dol,th} Common/testxmldiff \
+		ExtModal/Tries/*.{pp.dol,th} Fpl/test/*.{pp.dol,th} \
+		CommonLogic/TestData/*.{pp.dol,th} Common/testxmldiff \
+		OWL2/tests/*.pp* OWL2/tests/*_*.omn OWL2/tests/*_*.th \
+		Static/test/*.xupdate3* Static/test/*.{dol.bak,xh,xhi,xml} \
+			Static/test/patch \
 		doc/UserGuide.{log,aux,bbl,blg,out,fdb_latexmk,fls} doc/hs2isa.ps \
 			$(USER_GUIDE) log.haddock \
 		debian/{root,files,hets-*,tmp} \
@@ -642,7 +676,6 @@ distclean: clean_stack realclean clean_genRules
 		utils/appendHaskellPreludeString \
 		utils/DrIFT utils/genRules \
 		$(DTD2HS) \
-		utils/DtdToHaskell-src/DtdToHaskell \
 		utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log \
 		docs
 
@@ -683,9 +716,18 @@ h2h: Haskell/h2h
 ### test program to check the known provers
 showKP: Comorphisms/test/showKP
 
-### run tests in other directories
-check: $(TESTTARGETS)
-	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done
+### run tests in other directories. No deps to $(TESTTARGETS) because
+### Makefile in the subdirs would re-make them anyway
+check: hets_available
+	@FAIL=; \
+	for i in $(TESTDIRS) ; do \
+		printf "Test: ${COLOR_INFO}  $(MAKE) -C $$i check  ${COLOR_END}\n"; \
+		FAIL_EARLY=$(FAIL_EARLY) $(MAKE) -C $$i check && \
+			printf "${COLOR_OK}  OK  ${COLOR_END}\n" && continue ; \
+		(( $(FAIL_EARLY) )) && return 99 ; \
+		printf "${COLOR_ERROR}  FAILED  ${COLOR_END}\n" && FAIL=1 ; \
+	done ; \
+	[[ -n $${FAIL} ]] && return 1 || return 0
 
 test:
 	yes X | $(MAKE) check
@@ -944,9 +986,13 @@ debian/changelog.tmp: debian/control
 	cp -p debian/control.0 debian/control ; \
 	echo "# HC_OPTS='$(HC_OPTS)'" >> debian/control ; \
 	[[ "$(HC_OPTS)" =~ -DMYSQL ]] || \
-		$(SED) -i -e 's/libmysqlclient20, //' debian/control ; \
+		$(SED) -i -e 's/libmysqlclient21, //' debian/control ; \
 	[[ ! "$(HC_OPTS)" =~ -DNO_WGET ]] || \
 		$(SED) -i -e 's/wget, //' debian/control
+	-[[ $(OSR) == 'focal' ]] && sed -i -e 's/ksh,/ksh93,/' \
+		-e 's/ *libzstd1,//' -e 's/ *libharfbuzz0b,//' debian/control
+	-[[ $(OSR) == 'jammy' ]] && sed -i -r -e 's/libffi7/libffi8/' \
+		-e 's/libssl1.1/libssl3/' -e 's/ *libatomic1,//' debian/control
 	@SRCPKG=`grep ^Source: debian/control |awk '{ print $$2 ; }'` ; \
 	if [ -z "${FULL_DEBVERS}" ]; then \
 		LSB=`lsb_release -rs`; A="$${LSB%.*}"; B="$${LSB#*.}"; B="$${B##0}"; \

@@ -33,7 +33,7 @@ import CommonLogic.OMDoc
 import CommonLogic.Sublogic
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 import Logic.Logic
 
@@ -65,9 +65,10 @@ instance Sentences CommonLogic
       symsOfSen CommonLogic _ = symsOfTextMeta
       symKind CommonLogic = Symbol.symKind
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 instance Syntax CommonLogic
     BASIC_SPEC
@@ -79,8 +80,8 @@ instance Syntax CommonLogic
         addSyntax "KIF" (KIF.basicSpec, Print_KIF.printBasicSpec)
         $ addSyntax "CLIF" (CLIF.basicSpec, pretty)
         $ makeDefault (CLIF.basicSpec, pretty)
-      parse_symb_items CommonLogic = Just CLIF.symbItems
-      parse_symb_map_items CommonLogic = Just CLIF.symbMapItems
+      parse_symb_items CommonLogic = Just . const $ CLIF.symbItems
+      parse_symb_map_items CommonLogic = Just . const $ CLIF.symbMapItems
 
 instance Logic CommonLogic
     CommonLogicSL     -- Sublogics

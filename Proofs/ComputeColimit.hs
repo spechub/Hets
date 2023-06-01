@@ -34,11 +34,13 @@ import Common.SFKT
 import Common.Id
 import Common.IRI
 import Common.Utils (nubOrd)
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
+-- | computes the colimit of one development graph in a LibEnv
 computeColimit :: LibName -> LibEnv -> Result LibEnv
 computeColimit ln le = do
   let dgraph = lookupDGraph ln le
@@ -106,14 +108,14 @@ gWeaklyAmalgamableCocone diag
                              (mor Map.! n) startMorId)) $
          labNodes graph
     return (gth, morFun)
- | not $ isConnected diag = fail "Graph is not connected"
- | not $ isThin $ removeIdentities diag = fail "Graph is not thin"
+ | not $ isConnected diag = Fail.fail "Graph is not connected"
+ | not $ isThin $ removeIdentities diag = Fail.fail "Graph is not thin"
  | otherwise = do
    let funDesc = initDescList diag
    -- graph <- observe $ hetWeakAmalgCocone diag funDesc
    allGraphs <- runM Nothing $ hetWeakAmalgCocone diag funDesc
    case allGraphs of
-    [] -> fail "could not compute cocone"
+    [] -> Fail.fail "could not compute cocone"
     _ -> do
      let graph = head allGraphs
      {- TO DO: modify this function so it would return
