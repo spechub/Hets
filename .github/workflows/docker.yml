@@ -18,7 +18,7 @@ on:
   pull_request:
     paths:
       - 'Docker/**'
-  workflow_dispatch
+  workflow_dispatch:
 
 # Run this workflow for the latest commit in a branch, only. I.e. if there is
 # any instance for an older commit still running, stop it and kill its jobs.
