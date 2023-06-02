@@ -1,0 +1,54 @@
+# Build hets docker image
+name: Docker
+
+env:
+  HETS_LIB_REPO: https://github.com/spechub/Hets-lib.git
+  HETS_PPA: http://ppa.launchpad.net/hets/hets/ubuntu
+  DEBUG: 'false'
+
+# When to trigger this workflow. Since expression handling is absolutely
+# brain damaged (typical Microsoft crap) and buggy, one can't simple set an env
+# var above and exec jobs wrt. to its value. So to disable this workflow either
+# remove this file from this directory OR rename master e.g. to never_happens in
+# on.push.branches and append '**' to the on.pull_request.paths-ignore, etc..
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    paths:
+      - 'Docker/**'
+
+# Run this workflow for the latest commit in a branch, only. I.e. if there is
+# any instance for an older commit still running, stop it and kill its jobs.
+concurrency:
+  group: pr-docker-${{ github.head_ref }}
+  cancel-in-progress: true
+
+# A workflow is made up of one or more jobs that can run seq. or in parallel but
+# always in a separate, fresh container. So each job needs to fetch the work
+# from previous jobs and checkout the repo again, if needed.
+jobs:
+
+  job_1:
+    name: Publish docker image
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Seet Up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile
+          push: True
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/hets:latest
