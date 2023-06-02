@@ -51,6 +51,7 @@ import CASL.Formula (formula)
 
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
+import CASL.Zipperposition
 #endif
 
 import Common.ProofTree
@@ -78,6 +79,8 @@ instance Language CASL where
   , "  Sul    -> with a locally filtered subsort relation"
   , "  P      -> with partial functions"
   , "  C      -> with sort generation constraints"
+  , "  tC     -> C without partial constructors"
+  , "  fC     -> C without non-free constraints (implies tC)"
   , "  eC     -> C without renamings"
   , "  sC     -> C with injective constructors"
   , "  seC    -> sC and eC"
@@ -293,5 +296,9 @@ instance Logic CASL CASL_Sublogics
          addOmdocToTheory CASL = OMI.addOmdocToTheory
          syntaxTable CASL = Just . getSyntaxTable
 #ifdef UNI_PACKAGE
-         provers CASL = [quickCheckProver]
+         provers CASL =
+           [ quickCheckProver
+           , zipperpositionFreeFolProver
+           , zipperpositionCFolProver
+           ]
 #endif
