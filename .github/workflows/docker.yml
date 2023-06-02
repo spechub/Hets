@@ -4,13 +4,7 @@ name: Docker
 env:
   HETS_LIB_REPO: https://github.com/spechub/Hets-lib.git
   HETS_PPA: http://ppa.launchpad.net/hets/hets/ubuntu
-  DEBUG: 'false'
 
-# When to trigger this workflow. Since expression handling is absolutely
-# brain damaged (typical Microsoft crap) and buggy, one can't simple set an env
-# var above and exec jobs wrt. to its value. So to disable this workflow either
-# remove this file from this directory OR rename master e.g. to never_happens in
-# on.push.branches and append '**' to the on.pull_request.paths-ignore, etc..
 on:
   push:
     branches:
@@ -20,20 +14,19 @@ on:
       - 'Docker/**'
   workflow_dispatch:
 
+
 # Run this workflow for the latest commit in a branch, only. I.e. if there is
 # any instance for an older commit still running, stop it and kill its jobs.
 concurrency:
   group: pr-docker-${{ github.head_ref }}
   cancel-in-progress: true
 
-# A workflow is made up of one or more jobs that can run seq. or in parallel but
-# always in a separate, fresh container. So each job needs to fetch the work
-# from previous jobs and checkout the repo again, if needed.
 jobs:
 
   job_1:
+    # takes ~ ???
     name: Publish docker image
-	runs-on: ubuntu-18.04
+    runs-on: ubuntu-18.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
