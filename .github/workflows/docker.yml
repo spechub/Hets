@@ -18,6 +18,7 @@ on:
   pull_request:
     paths:
       - 'Docker/**'
+  workflow_dispatch
 
 # Run this workflow for the latest commit in a branch, only. I.e. if there is
 # any instance for an older commit still running, stop it and kill its jobs.
@@ -32,6 +33,7 @@ jobs:
 
   job_1:
     name: Publish docker image
+	runs-on: ubuntu-18.04
     steps:
       - name: Checkout
         uses: actions/checkout@v3
