@@ -65,6 +65,6 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: ./Docker
+          context: "{{defaultContext}}:Docker"
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/hets:latest
