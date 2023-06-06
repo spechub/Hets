@@ -12,6 +12,8 @@ on:
   pull_request:
     paths:
       - 'Docker/**'
+  # NOTE: Can be triggered via WebUI, if this file is on the _default_ branch,
+  #       only. However, triggering via Rest Api should work!
   workflow_dispatch:
     inputs:
       tags:
@@ -28,7 +30,13 @@ jobs:
   job_1:
     # takes ~ ???
     name: Publish docker image
-    runs-on: ubuntu-18.04
+	# If a job doesn't get picked up for hours, the cause could be, that the
+	# specified platform is not supported anymore. In this case one will not get
+	# any hint, what's goin wrong - it just sits in the queue and wait for a
+	# runner forever (or until it gets kicked by a github cleanup job). See also
+	# https://github.com/actions/runner-images/issues/6002
+	# https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+    runs-on: ubuntu-20.04
     steps:
       - name: Dump GitHub context
         env:
