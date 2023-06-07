@@ -40,6 +40,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
+-- | computes the colimit of one development graph in a LibEnv
 computeColimit :: LibName -> LibEnv -> Result LibEnv
 computeColimit ln le = do
   let dgraph = lookupDGraph ln le

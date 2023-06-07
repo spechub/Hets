@@ -1106,7 +1106,7 @@ data OntologySyntaxType = MS | AS | XML
 data OntologyMetadata = OntologyMetadata {
   syntaxType :: OntologySyntaxType
   -- might be extended 
-} deriving  (Show, Eq, Ord, Data, Typeable)
+  } deriving  (Show, Eq, Ord, Data, Typeable)
 
 changeSyntax :: OntologySyntaxType -> OntologyDocument -> OntologyDocument
 changeSyntax t o@(OntologyDocument m _ _) = o {
@@ -1117,7 +1117,7 @@ data OntologyDocument = OntologyDocument {
     ontologyMetadata :: OntologyMetadata 
   , prefixDeclaration :: GA.PrefixMap
   , ontology :: Ontology
-}
+  }
   deriving  (Show, Eq, Ord, Data, Typeable)
 
 data PrefixDeclaration = PrefixDeclaration PrefixName IRI
@@ -1133,5 +1133,5 @@ data Ontology = Ontology {
   , importsDocuments :: DirectlyImportsDocuments
   , ontologyAnnotation:: OntologyAnnotations
   , axioms :: [Axiom]
-}
+  }
   deriving  (Show, Eq, Ord, Data)

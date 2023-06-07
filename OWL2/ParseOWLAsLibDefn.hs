@@ -32,7 +32,6 @@ import OWL2.ParseOWL
 import Syntax.AS_Library
 import Syntax.AS_Structured
 
-
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWLAsLibDefn :: Bool                  -- ^ Sets Option.quick
          -> FilePath              -- ^ local filepath or uri

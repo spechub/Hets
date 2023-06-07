@@ -1,6 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE ExistentialQuantification #-}
@@ -43,6 +44,8 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Json
 import Common.ToXml
+
+import GHC.Generics (Generic)
 
 class (Language cid,
        Logic lid1 sublogics1
@@ -191,7 +194,7 @@ instance (Morphism cid
 -- default is ok
 
 newtype S2 s = S2 { sentence2 :: s }
-  deriving (Eq, Ord, Show, Typeable, ShATermConvertible, Pretty, GetRange, Data)
+  deriving (Eq, Ord, Show, Typeable, ShATermConvertible, Pretty, GetRange, Data, Generic)
 
 deriving instance {-# OVERLAPPING #-} Data a => ToJson (S2 a)
 deriving instance {-# OVERLAPPING #-} Data a => ToXml (S2 a)

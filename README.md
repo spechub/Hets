@@ -37,7 +37,7 @@ A good starting point is the [Hets user guide](https://github.com/spechub/Hets/b
 
 For a formal introduction to hets see the introductory paper [The Heterogeneous Tool Set](http://iks.cs.ovgu.de/~till/papers/hets-paper.pdf) by Till Mossakowski, Christian Maeder, Klaus Lüttich and Stefan Wölfl. For more in-depth information about Hets see the thesis [Heterogeneous specification and the heterogeneous tool set](http://iks.cs.ovgu.de/~till/papers/habil.pdf) by Till Mossakowski.
 
-For questions related to hets there is a [mailing list](http://www.informatik.uni-bremen.de/mailman/listinfo/hets-users).
+For questions related to hets there is a [mailing list](https://listserv.ovgu.de/mailman/listinfo/hets-users-l).
 
 ## Using Hets
 
@@ -145,7 +145,7 @@ Before committing haskell source files you may check compliance to the programmi
 
 Also have a look at the current [Release Notes](https://github.com/spechub/Hets/releases/latest), [Debugging and Testing Hets](https://github.com/spechub/Hets/wiki/Debugging-and-Testing-Hets),[Code Review](https://github.com/spechub/Hets/wiki/Code-Review) and [Branching](https://github.com/spechub/Hets/wiki/Branching).
 
-If you want to participate in the Hets development feel free to tell us via our [mailing list](http://www.informatik.uni-bremen.de/mailman/listinfo/hets-devel) for Hets developers.
+If you want to participate in the Hets development feel free to tell us via our [mailing list](https://listserv.ovgu.de/mailman/listinfo/hets-devel-l) for Hets developers.
 
 If you wish to make larger changes we generally recommend [forking](https://help.github.com/articles/fork-a-repo) this repository. You can however request access to this repository if you plan on contributing regularly.
 

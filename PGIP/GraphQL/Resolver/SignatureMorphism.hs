@@ -20,7 +20,7 @@ import Persistence.Schema as DatabaseSchema
 import Database.Esqueleto
 
 import Control.Monad.IO.Class (MonadIO (..))
-import Control.Monad.Fail
+import Control.Monad.Fail ()
 
 resolve :: HetcatsOpts -> Cache -> Int -> IO (Maybe GraphQLResult.Result)
 resolve opts _ idVar =

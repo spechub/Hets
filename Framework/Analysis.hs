@@ -157,21 +157,20 @@ buildLogic ml l ltruth maybeMod _ maybePf = do
   if exists then
      error $ "The directory " ++ l ++ " already exists.\n" ++
              "Please choose a different object logic name." else do
-
-  createDirectory l
-  let logicCl = write_logic ml l
-  writeFile (l ++ "/" ++ "Logic_" ++ l ++ ".hs") logicCl
-  let syntaxCl = write_syntax ml l ltruth
-  writeFile (l ++ "/" ++ "Syntax.hs") syntaxCl
-  if isNothing maybeMod then
-     error $ "Please provide a model theory for " ++ l ++ "\n" else do
-  let modCl = write_model ml l $ fromJust maybeMod
-  writeFile (l ++ "/" ++ "Model.hs") modCl
-  if isNothing maybePf then
-     error $ "Please provide a proof theory for " ++ l ++ "\n" else do
-  let proofCl = write_proof ml l $ fromJust maybePf
-  writeFile (l ++ "/" ++ "Proof.hs") proofCl
-  return ()
+      createDirectory l
+      let logicCl = write_logic ml l
+      writeFile (l ++ "/" ++ "Logic_" ++ l ++ ".hs") logicCl
+      let syntaxCl = write_syntax ml l ltruth
+      writeFile (l ++ "/" ++ "Syntax.hs") syntaxCl
+      if isNothing maybeMod then
+        error $ "Please provide a model theory for " ++ l ++ "\n" else do
+          let modCl = write_model ml l $ fromJust maybeMod
+          writeFile (l ++ "/" ++ "Model.hs") modCl
+          if isNothing maybePf then
+            error $ "Please provide a proof theory for " ++ l ++ "\n" else do
+                let proofCl = write_proof ml l $ fromJust maybePf
+                writeFile (l ++ "/" ++ "Proof.hs") proofCl
+                return ()
 
 -- includes the newly-defined logic in the logic list
 addLogic2LogicList :: String -> IO ()
@@ -299,9 +298,9 @@ buildComorphism ml c s t synM pfM modM = do
   if exists
      then error $ "The comorphism " ++ c ++ "already exists.\n"
      else do
-  let comorphismC = write_comorphism ml c s t synM pfM modM
-  writeFile ("Comorphisms" ++ "/" ++ c ++ ".hs") comorphismC
-  return ()
+        let comorphismC = write_comorphism ml c s t synM pfM modM
+        writeFile ("Comorphisms" ++ "/" ++ c ++ ".hs") comorphismC
+        return ()
 
 addComorphism2ComorphismList :: String -> IO ()
 addComorphism2ComorphismList c = do
