@@ -1,7 +1,7 @@
 {- |
 Module      :  ./TPTP/Prover/EProver.hs
 Description :  Interface for the E Theorem Prover.
-Copyright   :  (c) Eugen Kuksa University of Magdeburg 2017
+Copyright   :  (c) Eugen Kuksa University of Magdeburg 2017, Tom Kranz 2021-2022
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  Eugen Kuksa <kuksa@iks.cs.ovgu.de>
@@ -80,9 +80,12 @@ runTheProver proverState cfg saveTPTPFile theoryName namedGoal = do
                          putStrLn $ unlines errs
                          return $ getAxioms proverState
                 else return $ getAxioms proverState
+  let proofGraph = if szsProved szsStatusLine || szsDisproved szsStatusLine
+                then graphFromProofObject proofLines
+                else proofTree (proofStatus cfg)
   let (atpRetval, resultedProofStatus) =
         atpRetValAndProofStatus cfg namedGoal resultedTimeUsed axiomsUsed
           szsStatusLine prover_name
-  return (atpRetval, cfg { proofStatus = resultedProofStatus
+  return (atpRetval, cfg { proofStatus = resultedProofStatus { proofTree = proofGraph }
                          , resultOutput = out
                          , timeUsed = resultedTimeUsed })

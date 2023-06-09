@@ -1,0 +1,154 @@
+{-
+Copyright (c) 2015, Dan Rosén
+Copyright (c) 2016, Nick Smallbone
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above
+      copyright notice, this list of conditions and the following
+      disclaimer in the documentation and/or other materials provided
+      with the distribution.
+
+    * Neither the name of the copyright holder nor the names of other
+      contributors may be used to endorse or promote products derived
+      from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-}
+comment ";";
+Start. Start ::= [Decl];
+
+[].  [Decl] ::= ;
+(:). [Decl] ::= "(" Decl ")"  [Decl];
+
+DeclareDatatype.  Decl ::= "declare-datatype" AttrSymbol Datatype;
+DeclareDatatypes. Decl ::= "declare-datatypes" "(" [DatatypeName] ")" "(" [Datatype] ")";
+DeclareSort.      Decl ::= "declare-sort" AttrSymbol Integer;
+DeclareConst.     Decl ::= "declare-const" AttrSymbol ConstType ;
+DeclareFun.       Decl ::= "declare-fun" AttrSymbol FunType;
+DefineFun.        Decl ::= "define-fun" FunDec Expr;
+DefineFunRec.     Decl ::= "define-fun-rec" FunDec Expr;
+DefineFunsRec.    Decl ::= "define-funs-rec" "(" [BracketedFunDec] ")" "(" [Expr] ")";
+Formula.          Decl ::= Assertion [Attr] Expr;
+FormulaPar.       Decl ::= Assertion [Attr] "(" Par Expr ")";
+
+Assert. Assertion ::= "assert";
+Prove.  Assertion ::= "prove";
+
+Par.         Par    ::= "par" "(" [Symbol] ")";
+
+ConstTypeMono. ConstType ::= Type;
+ConstTypePoly. ConstType ::= "(" Par Type ")";
+
+InnerFunType. InnerFunType ::= "(" [Type] ")" Type;
+FunTypeMono.  FunType ::= InnerFunType;
+FunTypePoly.  FunType ::= "(" Par "(" InnerFunType ")" ")";
+
+InnerFunDec.  InnerFunDec ::= "(" [Binding] ")" Type;
+FunDecMono.   FunDec ::= AttrSymbol InnerFunDec;
+FunDecPoly.   FunDec ::= AttrSymbol "(" Par "(" InnerFunDec ")" ")";
+BracketedFunDec. BracketedFunDec ::= "(" FunDec ")";
+
+DatatypeName. DatatypeName ::= "(" AttrSymbol Integer ")";
+InnerDatatype. InnerDatatype ::= "(" [Constructor] ")";
+DatatypeMono. Datatype ::= InnerDatatype;
+DatatypePoly. Datatype ::= "(" Par InnerDatatype ")";
+Constructor.  Constructor ::= "(" AttrSymbol [Binding] ")";
+
+Binding. Binding ::= "(" Symbol Type ")";
+
+LetDecl. LetDecl ::= "(" Symbol Expr ")";
+
+TyVar.   Type ::= Symbol;
+TyApp.   Type ::= "(" Symbol [Type] ")";
+ArrowTy. Type ::= "(" "=>" [Type] ")";
+IntTy.   Type ::= "Int";
+RealTy.  Type ::= "Real";
+BoolTy.  Type ::= "Bool";
+
+Var.       Expr ::= PolySymbol;
+App.       Expr ::= "(" Head [Expr] ")";
+Match.     Expr ::= "(" "match" Expr "(" [Case] ")" ")";
+Let.       Expr ::= "(" "let" "(" [LetDecl] ")" Expr ")";
+Binder.    Expr ::= "(" Binder "(" [Binding] ")" Expr ")";
+Lit.       Expr ::= Lit;
+
+LitInt.    Lit ::= Integer;
+LitNegInt. Lit ::= "-" Integer;
+LitTrue.   Lit ::= "true";
+LitFalse.  Lit ::= "false";
+
+Lambda. Binder ::= "lambda";
+Forall. Binder ::= "forall";
+Exists. Binder ::= "exists";
+
+Case.    Case ::= "(" Pattern Expr ")";
+
+Default.    Pattern ::= "_";
+ConPat.     Pattern ::= "(" Symbol [Symbol] ")";
+SimplePat.  Pattern ::= Symbol;
+LitPat.     Pattern ::= Lit;
+
+Const.      Head ::= PolySymbol;
+At.         Head ::= "@";
+IfThenElse. Head ::= "ite";
+And.        Head ::= "and";
+Or.         Head ::= "or";
+Not.        Head ::= "not";
+Implies.    Head ::= "=>";
+Equal.      Head ::= "=";
+Distinct.   Head ::= "distinct";
+NumAdd.     Head ::= "+";
+NumSub.     Head ::= "-";
+NumMul.     Head ::= "*";
+NumDiv.     Head ::= "/";
+IntDiv.     Head ::= "div";
+IntMod.     Head ::= "mod";
+NumGt.      Head ::= ">";
+NumGe.      Head ::= ">=";
+NumLt.      Head ::= "<";
+NumLe.      Head ::= "<=";
+NumWiden.   Head ::= "to_real";
+
+NoAs. PolySymbol ::= Symbol;
+As.   PolySymbol ::= "(" "_" Symbol [Type] ")";
+
+AttrSymbol. AttrSymbol ::= Symbol [Attr];
+NoValue. Attr ::= Keyword;
+Value.   Attr ::= Keyword Symbol;
+
+terminator LetDecl "";
+terminator Case "";
+terminator Expr "";
+terminator Datatype "";
+terminator Constructor "";
+terminator Binding "";
+terminator Symbol "";
+terminator Type "";
+terminator FunDec "";
+terminator BracketedFunDec "";
+terminator Attr "";
+terminator DatatypeName "";
+
+Unquoted. Symbol ::= UnquotedSymbol;
+Quoted.   Symbol ::= QuotedSymbol;
+
+position token UnquotedSymbol (letter|["~!@$%^&*_+=<>.?/"])(letter|digit|["~!@$%^&*_-+=<>.?/"])*;
+position token QuotedSymbol '|'((char - '|') | ('\\' char))*'|';
+token Keyword ':'(letter|digit|["-"])*;
