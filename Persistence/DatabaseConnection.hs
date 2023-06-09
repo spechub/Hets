@@ -39,12 +39,13 @@ getConnection :: ( MonadIO m
               => DBConfig -> IO ((Pool SqlBackend -> m a) -> m a)
 getConnection dbConfig = case adapter dbConfig of
 #ifdef MYSQL
+  Just "mysql" -> return $ MySQL.connection dbConfig $
+                    fromMaybe defaultPoolSize $ pool dbConfig
+  Just "mysql2" -> return $ MySQL.connection dbConfig $
+                    fromMaybe defaultPoolSize $ pool dbConfig
+#else
   Just "mysql" -> Fail.fail mySQLErrorMessage
   Just "mysql2" -> Fail.fail mySQLErrorMessage
-  Just "mysql" -> return $ MySQL.connection dbConfig $
-                    fromMaybe defaultPoolSize $ pool dbConfig
-  Just "mysql" -> return $ MySQL.connection dbConfig $
-                    fromMaybe defaultPoolSize $ pool dbConfig
 #endif
 #ifdef UNI_PACKAGE
   Just "postgresql" -> Fail.fail postgreSQLErrorMessage
@@ -59,7 +60,7 @@ getConnection dbConfig = case adapter dbConfig of
   _ -> Fail.fail ("Persistence.Database: No database adapter specified "
                ++ "or adapter unsupported.")
   where
-#ifdef MYSQL
+#ifndef MYSQL
     mySQLErrorMessage = "MySQL support is deactivated. If you need it, please use a hets-server package compiled with the mysql flag instead of hets-desktop."
 #endif
 #ifdef UNI_PACKAGE

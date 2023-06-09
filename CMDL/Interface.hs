@@ -22,8 +22,7 @@ import Comorphisms.LogicGraph (logicGraph)
 import Logic.Grothendieck
 #endif
 
-import Proofs.AbstractState (getAllConsCheckers, sublogicOfTheory, getCcName
-                            , getListOfConsCheckers, usableCC)
+import Proofs.AbstractState (getListOfConsCheckers, usableCC)
 
 import System.IO
 
@@ -45,6 +44,8 @@ import Control.Monad
 import Control.Monad.Trans (MonadIO (..))
 
 #ifdef HASKELINE
+import Proofs.AbstractState (getAllConsCheckers, sublogicOfTheory, getCcName)
+
 shellSettings :: IORef CmdlState -> Settings IO
 shellSettings st =
   Settings {
