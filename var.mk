@@ -20,10 +20,21 @@ OSVERS := $(shell uname -v 2>/dev/null)
 # what makes comparing version numbers much easier. If any part in the version
 # string is not a number, it gets replaced by '0'.
 # This macro requires features found in shells like ksh93 or bash.
+#
+# Since gnu make version 4.3 sharps must no longer be escaped in shell calls.
+# Ubuntu 20.04 comes with version 4.2.1, 22.04 with 4.3.
+# TODO: remove once 20.04 is no longer supported
+ifeq '$(shell echo -e "4.3\n${MAKE_VERSION}"|sort -V|head -1)' '4.3'
+version = $(shell X="$(1)"; X="$${X##*-}"; A=( $${X//./ } 0 0 0 ); \
+	A=( $$( printf "%d %d %d" "$${A[0]}" "$${A[1]}" "$${A[2]}" )); \
+	echo $$(( $${A[0]} * 1000000 + $${A[1]} * 1000 + $${A[2]} )) \
+)
+else
 version = $(shell X="$(1)"; X="$${X\#\#*-}"; A=( $${X//./ } 0 0 0 ); \
 	A=( $$( printf "%d %d %d" "$${A[0]}" "$${A[1]}" "$${A[2]}" )); \
 	echo $$(( $${A[0]} * 1000000 + $${A[1]} * 1000 + $${A[2]} )) \
 )
+endif
 
 # If stack exists, use it. Otherwise skip it and use the system GHC.
 STACK ?= $(shell command -v stack 2> /dev/null)
