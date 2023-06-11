@@ -25,7 +25,9 @@ import NeSyPatterns.Morphism
 import NeSyPatterns.Sign
 import NeSyPatterns.Symbol as Symbol
 import NeSyPatterns.Parse
-import NeSyPatterns.Taxonomy
+#ifdef UNI_PACKAGE
+import NeSyPatterns.Taxonomy (nesy2Tax)
+#endif
 
 import Common.ProofTree
 import ATC.ProofTree ()

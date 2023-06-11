@@ -2,7 +2,6 @@ module Persistence.Range where
 
 import Persistence.Database
 import Persistence.Schema as SchemaClass
-import qualified Persistence.Schema as SchemaClass (FileRange (..))
 
 import Common.Id
 
