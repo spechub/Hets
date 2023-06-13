@@ -9,6 +9,10 @@ module HetsAPI.Internal (
     , Result, resultToMaybe, Diagnosis
     , HetcatsOpts, defaultHetcatsOpts
     , DGraph, DGNodeLab, DGLinkLab()
+    , DGNodeType, nodeTypeIsProven, nodeTypeIsProvenConsistent, nodeTypeIsReference
+    , DevGraphLinkType(..), DevGraphLinkKind(..), getDevGraphLinkType
+    -- , DGEdgeType, edgeTypeModInc, edgeTypeisInc
+    -- , DGEdgeTypeModInc, GlobalDef, HetDef, HidingDef, LocalDef, FreeOrCofreeDef, ThmType, thmEdgeType, isProvenEdge, isConservativ, isPending
     , developmentGraphNodeLabelName
     , developmentGraphEdgeLabelName
     , ProofStatus
@@ -28,7 +32,7 @@ module HetsAPI.Internal (
     , getConsOfStatus
     , isProvenConsStatusLink
     , showConsistencyStatus
-    , getDGNodeName
+    , isInternalNode
     , ExtSign
     , plainSign
     , nonImportedSymbols
@@ -62,14 +66,15 @@ import Common.IRI
 import Common.LibName (LibName)
 import Common.Result (Result, resultToMaybe, Diagnosis)
 import Driver.Options (HetcatsOpts, defaultHetcatsOpts)
-import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv)
-import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName)
+import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType)
+import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName, DGNodeType(..), DGEdgeType(..), DGEdgeTypeModInc(..), Scope(..), ThmTypes(..), FreeOrCofree(..))
 import Logic.Prover (ProofStatus, GoalStatus, TacticScript)
 import Proofs.AbstractState (ProofState)
 import Proofs.ConsistencyCheck (ConsistencyStatus(..), SType)
 
-developmentGraphNodeLabelName :: DGNodeLab -> NodeName
-developmentGraphNodeLabelName = dgn_name
+developmentGraphNodeLabelName :: DGNodeLab -> String
+developmentGraphNodeLabelName = getDGNodeName
+
 
 developmentGraphEdgeLabelName :: DGLinkLab -> String
 developmentGraphEdgeLabelName = dglName
@@ -94,3 +99,61 @@ literalAnnos = literal_annos
 
 prefixMap :: GlobalAnnos -> PrefixMap
 prefixMap = prefix_map
+
+nodeTypeIsProven :: DGNodeType -> Bool
+nodeTypeIsProven = isProvenNode
+
+nodeTypeIsProvenConsistent :: DGNodeType -> Bool
+nodeTypeIsProvenConsistent = isProvenCons
+
+nodeTypeIsReference :: DGNodeType -> Bool
+nodeTypeIsReference = isRefType
+
+
+data DevGraphLinkKind = LinkKindGlobal | LinkKindLocal | LinkKindHiding | LinkKindFree | LinkKindCofree
+data DevGraphLinkType =
+    DefinitionLink { linkTypeKind :: DevGraphLinkKind, linkTypeIsInclusion :: Bool, linkTypeIsHomogenoeous :: Bool }
+     | TheoremLink { linkTypeKind :: DevGraphLinkKind, linkTypeIsInclusion :: Bool, linkTypeIsHomogenoeous :: Bool, linkTypeIsProven :: Bool, linkTypeIsConservativ :: Bool }
+
+getDevGraphLinkType :: DGLinkLab -> DevGraphLinkType
+getDevGraphLinkType l = case edgeTypeModInc (getRealDGLinkType l) of
+    GlobalDef -> DefinitionLink LinkKindGlobal inclusion True
+    HetDef -> DefinitionLink LinkKindGlobal inclusion False -- TODO: Correct?
+    HidingDef -> DefinitionLink LinkKindHiding inclusion True
+    LocalDef -> DefinitionLink LinkKindLocal inclusion True
+    FreeOrCofreeDef freeOrCofree -> DefinitionLink (case freeOrCofree of
+        Free -> LinkKindFree
+        Cofree -> LinkKindCofree) inclusion True
+    ThmType {thmEdgeType=thmType, isProvenEdge=proven, isConservativ=conservativ, isPending=pending} -> TheoremLink kind inclusion homogeneous proven conservativ
+        where
+            (kind, homogeneous) = case thmType of
+                HidingThm -> (LinkKindHiding, True)
+                FreeOrCofreeThm freeOrCofree -> case freeOrCofree of
+                    Free -> (LinkKindFree, True)
+                    Cofree -> (LinkKindCofree, True)
+                GlobalOrLocalThm scope isHomogeneous -> case scope of
+                    Global -> (LinkKindGlobal, isHomogeneous)
+                    Local -> (LinkKindLocal, isHomogeneous)
+    where
+        inclusion = isInc . getRealDGLinkType $ l
+
+
+-- edgeTypeModInclusion :: DGEdgeType -> DGEdgeTypeModInc
+-- edgeTypeModInclusion = edgeTypeModInc
+
+-- edgeTypeIsInclusion :: DGEdgeType -> Bool
+-- edgeTypeIsInclusion = isInc
+
+
+-- edgeTypeModInclusionTheoremType :: DGEdgeTypeModInc -> ThmTypes
+-- edgeTypeModInclusionTheoremType = thmEdgeType
+
+-- edgeTypeModInclusionIsProvenEdge :: DGEdgeTypeModInc -> Bool
+-- edgeTypeModInclusionIsProvenEdge = isProvenEdge
+
+-- edgeTypeIsConservativ :: DGEdgeTypeModInc -> Bool
+-- edgeTypeIsConservativ = isConservativ
+
+-- isPending :: DGEdgeTypeModInc -> Bool
+-- isPending = isPending
+

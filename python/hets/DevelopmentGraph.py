@@ -6,12 +6,12 @@ License     :  GPLv2 or higher, see LICENSE.txt
 from typing import List, Optional
 
 from .DevGraphNode import DevGraphNode
-from .DevGraphEdge import DevGraphEdge
+from .DevGraphEdge import DevGraphEdge, DefinitionDevGraphEdge, TheoremDevGraphEdge
 from .GlobalAnnotations import GlobalAnnotations
 from .HsWrapper import HsHierarchyElement
 
 from .haskell import getLNodesFromDevelopmentGraph, DGraph, Nothing, fromJust, getDGNodeById, \
-    getLEdgesFromDevelopmentGraph, globalAnnotations
+    getLEdgesFromDevelopmentGraph, globalAnnotations, getDevGraphLinkType, thd, DefinitionLink
 
 
 class DevelopmentGraph(HsHierarchyElement):
@@ -48,7 +48,8 @@ class DevelopmentGraph(HsHierarchyElement):
     def edges(self) -> List[DevGraphEdge]:
         if self._edges is None:
             hs_edges = getLEdgesFromDevelopmentGraph(self._hs_development_graph)
-            self._edges = [DevGraphEdge(x, self) for x in hs_edges]
+
+            self._edges = [DefinitionDevGraphEdge(x, self) if isinstance(getDevGraphLinkType(thd(x)), DefinitionLink) else TheoremDevGraphEdge(x, self) for x in hs_edges]
 
         return self._edges
 

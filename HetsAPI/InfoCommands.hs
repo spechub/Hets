@@ -19,12 +19,14 @@ module HetsAPI.InfoCommands (
    , getUnprovenGoals
    , prettySentence
    , prettySentenceOfTheory
+   , getDevelopmentGraphNodeType
 ) where
 
 import HetsAPI.DataTypes (TheoryPointer)
 
 import Common.LibName (LibName)
-import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, labEdgesDG, DGraph, DGNodeLab, DGLinkLab, getDGNodeName)
+import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, labEdgesDG, DGraph, DGNodeLab, DGLinkLab, getDGNodeName, getRealDGNodeType)
+import Static.DgUtils (DGNodeType)
 import Data.Graph.Inductive (LNode, LEdge)
 import Static.GTheory (G_theory (..), isProvenSenStatus)
 import qualified Common.OrderedMap as OMap
@@ -93,3 +95,6 @@ prettySentence = prettySentence' (undefined :: sentence)
 
 prettySentenceOfTheory :: G_theory -> Sentence -> String
 prettySentenceOfTheory (G_theory lid _ _ _ _ _) = prettySentence lid
+
+getDevelopmentGraphNodeType :: DGNodeLab -> DGNodeType
+getDevelopmentGraphNodeType = getRealDGNodeType

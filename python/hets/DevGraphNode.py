@@ -17,7 +17,8 @@ from .haskell import snd, theoryOfNode, DGNodeLab, fst, Just, Nothing, PyProver,
     mkPyProofOptions, proveNodeAndRecord, ConsistencyStatus as HsConsistencyStatus, PyConsChecker, \
     defaultConsCheckingOptions, \
     PyConsCheckingOptions, checkConsistencyAndRecord, TheoryPointer, globalTheory, recomputeNode, fromJust, \
-    developmentGraphNodeLabelName, developmentGraphEdgeLabelName
+    developmentGraphNodeLabelName, getDevelopmentGraphNodeType, nodeTypeIsReference, nodeTypeIsProven, \
+    nodeTypeIsProvenConsistent, isInternalNode
 
 from .Theory import Theory
 
@@ -41,6 +42,9 @@ class DevGraphNode(HsHierarchyElement):
 
     def name(self) -> str:
         return developmentGraphNodeLabelName(self.label())
+
+    def is_internal(self) -> bool:
+        return isInternalNode(self.label())
 
     def _theory_pointer(self) -> TheoryPointer:
         node = self.hs_obj()
@@ -144,3 +148,12 @@ class DevGraphNode(HsHierarchyElement):
             self._theory = Theory(theoryOfNode(snd(self._hs_node)), self)
 
         return self._theory
+
+    def is_reference_node(self) -> bool:
+        return nodeTypeIsReference(getDevelopmentGraphNodeType(self.label()))
+
+    def is_proven_node(self) -> bool:
+        return nodeTypeIsProven(getDevelopmentGraphNodeType(self.label()))
+
+    def is_consistency_proven(self) -> bool:
+        return nodeTypeIsProvenConsistent(getDevelopmentGraphNodeType(self.label()))
