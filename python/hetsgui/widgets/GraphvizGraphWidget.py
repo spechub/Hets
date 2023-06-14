@@ -1,4 +1,4 @@
-from typing import Tuple, List
+from typing import Optional
 
 import graphviz
 from gi.repository import Gtk, Gio
@@ -23,6 +23,7 @@ def node_color(node: DevGraphNode) -> str:
             return "yellow"
     else:
         return "coral"
+
 
 def edge_color(edge: DevGraphEdge) -> str:
     if isinstance(edge, TheoremDevGraphEdge):
@@ -53,6 +54,7 @@ def edge_color(edge: DevGraphEdge) -> str:
     else:
         return f"{color}:invis:{color}"
 
+
 def edge_style(edge: DevGraphEdge):
     # Note: Double lines are created with a color list. See edge_color
     if isinstance(edge, TheoremDevGraphEdge):
@@ -62,10 +64,16 @@ def edge_style(edge: DevGraphEdge):
 
 
 class GraphvizGraphWidget(DotWidget):
-    def __init__(self, graph: DevelopmentGraph):
-        super().__init__()
-        self.development_graph = graph
+    g: Optional[Digraph]
+    development_graph: Optional[DevelopmentGraph]
 
+    def __init__(self):
+        super().__init__()
+        self.g = None
+        self.development_graph = None
+
+    def load_graph(self, graph: DevelopmentGraph):
+        self.development_graph = graph
         self.g = Digraph("G")
 
         self.render()

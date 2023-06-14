@@ -1,37 +1,96 @@
-import os
+import typing
+
 import hets
 
-from typing import List
+from typing import List, Callable, Any, Optional
 
 from gi.repository import GLib, Gtk, Gdk, Pango, Gio
 
 from widgets.GraphvizGraphWidget import GraphvizGraphWidget
 
 
+T = typing.TypeVar("T")
+
+
 class defaultview(object):
     w, h = 10, 10
     xy: List[int]
 
-class MainWindow(Gtk.ApplicationWindow):
-    def __init__(self, file: str, **kwargs):
-        super().__init__(**kwargs)
 
+class MainWindow(Gtk.ApplicationWindow):
+    ui_box: Gtk.Box
+    ui_graph: GraphvizGraphWidget
+    file: Optional[str]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.file = None
+        self.library = None
+
+        self.ui_box = Gtk.Box(spacing=6)
+        self.add(self.ui_box)
+
+        self.ui_graph = GraphvizGraphWidget()
+        self.ui_box.pack_start(self.ui_graph, True, True, 0)
+
+
+        self.set_size_request(1200, 600)
+        self.set_title("Heterogeneous Toolset")
+
+        self.connect("button-press-event", self.on_click)
+
+        self._action("open_file", self.on_menu_open_file)
+
+    def _action(self, name: str, cb) -> Gio.SimpleAction:
+        action = Gio.SimpleAction.new(name)
+        action.connect("activate", cb)
+        self.add_action(action)
+        return action
+
+    def open_file(self, file: str):
         self.file = file
         self.library = hets.load_library(file)
 
-        self.set_size_request(1200, 600)
+        if self.ui_graph:
+            self.ui_graph.load_graph(self.library.development_graph())
 
-        self.box = Gtk.Box(spacing=6)
-        self.add(self.box)
+        self.set_title(f"{file} - Heterogeneous Toolset")
 
-        w = GraphvizGraphWidget(self.library.development_graph())
-        self.box.pack_start(w, True, True, 0)
+    def on_menu_open_file(self, action: Gio.SimpleAction, parameter: str):
+        dialog = Gtk.FileChooserDialog(
+            title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN
+        )
+        dialog.add_buttons(
+            Gtk.STOCK_CANCEL,
+            Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_OPEN,
+            Gtk.ResponseType.OK,
+        )
 
+        filter_text = Gtk.FileFilter()
+        filter_text.set_name("Text files")
+        filter_text.add_mime_type("text/plain")
+        dialog.add_filter(filter_text)
 
-        self.set_title(f"{file} - Hets")
+        filter_py = Gtk.FileFilter()
+        filter_py.set_name("Python files")
+        filter_py.add_mime_type("text/x-python")
+        dialog.add_filter(filter_py)
 
-        self.connect("button-press-event", self.on_click)
-        # self.add(w)
+        filter_any = Gtk.FileFilter()
+        filter_any.set_name("Any files")
+        filter_any.add_pattern("*")
+        dialog.add_filter(filter_any)
+
+        response = dialog.run()
+        file = None
+        if response == Gtk.ResponseType.OK:
+            file = dialog.get_filename()
+
+        dialog.destroy()
+
+        if file:
+            self.open_file(file)
 
     def on_click(self, element, event):
 

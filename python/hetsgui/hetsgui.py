@@ -18,6 +18,25 @@ class MyApplication(Gtk.Application):
         self.window = None
         self.file = None
 
+    def _set_menu(self):
+        file_menu = Gio.Menu()
+
+        menu_entry_open = Gio.MenuItem()
+        menu_entry_open.set_label("Open")
+        menu_entry_open.set_action_and_target_value("win.open_file", None)
+        file_menu.append_item(menu_entry_open)
+
+        menu = Gio.Menu()
+        menu.append_submenu("File", file_menu)
+        self.set_menubar(menu)
+
+    def do_startup(self):
+        Gtk.Application.do_startup(self)
+        self._set_menu()
+
+    def on_action_open_file(self, action, parameter):
+        print("Hello World!")
+
     def do_command_line(self, command_line):
         options = command_line.get_options_dict()
         # convert GVariantDict -> GVariant -> dict
@@ -37,9 +56,12 @@ class MyApplication(Gtk.Application):
     def do_activate(self):
         if not self.window:
             from windows.MainWindow import MainWindow
-            print(self.file)
-            self.window = MainWindow(self.file, application=self)
+            self.window = MainWindow(application=self)
 
+            if self.file:
+                self.window.open_file(self.file)
+
+        print(self.get_app_menu())
         self.window.show_all()
         self.window.present()
 
