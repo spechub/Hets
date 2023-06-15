@@ -53,8 +53,6 @@ import Text.XML.Light
 import System.FilePath
 import System.Directory
 
-import Control.Monad
-
 import Data.Char (isSpace)
 import Data.List (isPrefixOf)
 import Data.Maybe

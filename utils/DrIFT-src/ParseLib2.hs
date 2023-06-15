@@ -45,7 +45,6 @@ module ParseLib2
 import Data.Char
 import Control.Applicative
 import Control.Monad
-import Control.Monad.Fail (MonadFail, fail)
 
 infixr 5 +++
 
