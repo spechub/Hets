@@ -6,7 +6,9 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 from typing import Tuple, Optional
 
-from .haskell import DGLinkLab, fstOf3, sndOf3, thd, gmorphismOfEdge, developmentGraphEdgeLabelName, getDevGraphLinkType, DevGraphLinkType, LinkKindGlobal, LinkKindLocal, LinkKindHiding, LinkKindFree, LinkKindCofree, TheoremLink
+from .haskell import DGLinkLab, fstOf3, sndOf3, thd, gmorphismOfEdge, developmentGraphEdgeLabelName, \
+    developmentGraphEdgeLabelId, getDevGraphLinkType, DevGraphLinkType, LinkKindGlobal, LinkKindLocal, LinkKindHiding, \
+    LinkKindFree, LinkKindCofree, TheoremLink, showDoc
 from .HsWrapper import HsHierarchyElement
 from .GMorphism import GMorphism
 from enum import Enum
@@ -19,6 +21,7 @@ class EdgeKind(Enum):
     HIDING = 2
     FREE = 3
     COFREE = 4
+
 
 class DevGraphEdge(HsHierarchyElement):
     def __init__(self, hs_edge: Tuple[int, int, DGLinkLab], parent: Optional[HsHierarchyElement]) -> None:
@@ -44,8 +47,11 @@ class DevGraphEdge(HsHierarchyElement):
     def morphism(self) -> GMorphism:
         return GMorphism(gmorphismOfEdge(self._label()))
 
-    def name(self):
+    def name(self) -> str:
         return developmentGraphEdgeLabelName(self._label())
+
+    def id(self) -> int:
+        return developmentGraphEdgeLabelId(self._label())
 
     def kind(self) -> EdgeKind:
         t = self._type()
@@ -67,6 +73,9 @@ class DevGraphEdge(HsHierarchyElement):
     def is_homogeneous(self) -> bool:
         return self._type().linkTypeIsHomogenoeous()
 
+    def info(self) -> str:
+        return showDoc(self._label(), "")
+
 
 class DefinitionDevGraphEdge(DevGraphEdge):
     pass
@@ -81,4 +90,3 @@ class TheoremDevGraphEdge(DevGraphEdge):
 
     def is_conservativ(self):
         return self._type().linkTypeIsConservativ()
-

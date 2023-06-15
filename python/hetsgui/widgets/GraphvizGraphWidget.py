@@ -1,11 +1,13 @@
 from typing import Optional
 
 import graphviz
-from gi.repository import Gtk, Gio
+import xdot.ui.elements
+from gi.repository import Gtk, Gio, GLib, Gdk
 from graphviz import Graph, Digraph
 from xdot import DotWidget
 
-from hets import DevelopmentGraph, DevGraphNode, DevGraphEdge, TheoremDevGraphEdge, EdgeKind
+from hets import DevelopmentGraph, DevGraphNode, DevGraphEdge, TheoremDevGraphEdge, EdgeKind, DefinitionDevGraphEdge
+from utils import get_variant
 
 
 def node_shape(node: DevGraphNode) -> str:
@@ -18,9 +20,9 @@ def node_shape(node: DevGraphNode) -> str:
 def node_color(node: DevGraphNode) -> str:
     if node.is_proven_node():
         if node.is_consistency_proven():
-            return "green"
+            return "limegreen"
         else:
-            return "yellow"
+            return "gold2"
     else:
         return "coral"
 
@@ -29,24 +31,25 @@ def edge_color(edge: DevGraphEdge) -> str:
     if isinstance(edge, TheoremDevGraphEdge):
         if edge.is_proven():
             if edge.is_conservativ():
-                color = "green"
+                color = "limegreen"
             else:
-                color = "yellow"
+                color = "gold2"
         else:
-            color = "red"
+            color = "coral"
 
-    color = {
-        EdgeKind.FREE: "blue",
-        EdgeKind.COFREE: "blue",
-        EdgeKind.HIDING: "blue",
+    else:
+        color = {
+            EdgeKind.FREE: "royalblue",
+            EdgeKind.COFREE: "royalblue",
+            EdgeKind.HIDING: "royalblue",
 
-        # default
-        EdgeKind.LOCAL: "black",
-        EdgeKind.GLOBAL: "black",
+            # default
+            EdgeKind.LOCAL: "black",
+            EdgeKind.GLOBAL: "black",
 
-        # error
-        EdgeKind.UNKNOWN: "fuchsia"
-    }[edge.kind()]
+            # error
+            EdgeKind.UNKNOWN: "fuchsia"
+        }[edge.kind()]
 
     # Double lines for heterogeneous signature morphisms
     if edge.is_homogeneous():
@@ -57,7 +60,7 @@ def edge_color(edge: DevGraphEdge) -> str:
 
 def edge_style(edge: DevGraphEdge):
     # Note: Double lines are created with a color list. See edge_color
-    if isinstance(edge, TheoremDevGraphEdge):
+    if (isinstance(edge, TheoremDevGraphEdge) and edge.is_homogeneous() or isinstance(edge, DefinitionDevGraphEdge)) and edge.kind() == EdgeKind.LOCAL:
         return "dashed"
     else:
         return ""
@@ -66,6 +69,11 @@ def edge_style(edge: DevGraphEdge):
 class GraphvizGraphWidget(DotWidget):
     g: Optional[Digraph]
     development_graph: Optional[DevelopmentGraph]
+
+    # View properties
+    _show_internal_node_names: bool = False
+    _show_unnamed_nodes_without_open_proofs: bool = False
+    _show_newly_added_proven_edges: bool = False
 
     def __init__(self):
         super().__init__()
@@ -76,14 +84,38 @@ class GraphvizGraphWidget(DotWidget):
         self.development_graph = graph
         self.g = Digraph("G")
 
+        self.render(False)
+
+    def show_internal_node_names(self):
+        self._show_internal_node_names = True
         self.render()
 
-    def render(self) -> None:
+    def hide_internal_node_names(self):
+        self._show_internal_node_names = False
+        self.render()
+
+    def show_unnamed_nodes_without_open_proofs(self):
+        self._show_unnamed_nodes_without_open_proofs = True
+        self.render()
+
+    def hide_unnamed_nodes_without_open_proofs(self):
+        self._show_unnamed_nodes_without_open_proofs = False
+        self.render()
+
+    def show_newly_added_proven_edges(self):
+        self._show_newly_added_proven_edges = True
+        self.render()
+
+    def hide_newly_added_proven_edges(self):
+        self._show_newly_added_proven_edges = False
+        self.render()
+
+    def render(self, keep_zoom=True) -> None:
         g = Digraph("G")
 
         for node in self.development_graph.nodes():
             g.node(str(node.id()),
-                   label="" if node.is_internal() else node.name(),
+                   label="" if node.is_internal() and not self._show_internal_node_names else node.name(),
                    fillcolor=node_color(node),
                    shape=node_shape(node),
                    style="filled")
@@ -94,9 +126,39 @@ class GraphvizGraphWidget(DotWidget):
                    color=edge_color(edge),
                    label=edge.name())
 
+        zoom_ration, x, y = self.zoom_ratio, self.x, self.y
         self.set_dotcode(g.source.encode("utf-8"))
+        if keep_zoom:
+            self.zoom_ratio, self.x, self.y = zoom_ration, x, y
 
         self.g = g
+
+    def _menu_for_node(self, node_id: str) -> Gtk.Menu:
+        menu = Gio.Menu()
+
+        menu_item_prove = Gio.MenuItem()
+        menu_item_prove.set_label("Prove")
+        menu_item_prove.set_action_and_target_value("win.node.prove", GLib.Variant.new_string(node_id))
+        menu.append_item(menu_item_prove)
+
+        menu_item_info = Gio.MenuItem()
+        menu_item_info.set_label("Show node info")
+        menu_item_info.set_action_and_target_value("win.node.show_info", GLib.Variant.new_string(node_id))
+        menu.append_item(menu_item_info)
+
+
+        return Gtk.Menu.new_from_model(menu)
+
+    def _menu_for_edge(self, src_id: str, dst_id: str) -> Gtk.Menu:
+        menu = Gio.Menu()
+
+        menu_item_info = Gio.MenuItem()
+        menu_item_info.set_label("Show edge info")
+        menu_item_info.set_action_and_target_value("win.edge.show_info", get_variant([src_id, dst_id]))
+        menu.append_item(menu_item_info)
+
+
+        return Gtk.Menu.new_from_model(menu)
 
     def on_draw(self, widget, cr):
         cr.set_source_rgb(1, 1, 1)
@@ -109,65 +171,21 @@ class GraphvizGraphWidget(DotWidget):
             return True
 
         if event.button == 3:  # on right click
-            menu = Gtk.Menu()
+            menu = None
+            if isinstance(element, xdot.ui.elements.Node):
+                node_id = element.id.decode("utf-8")
 
-            action_prove = Gtk.Action('prove-node')
-            action_prove.connect('activate', self.on_prove_node)
+                menu = self._menu_for_node(node_id)
+            if isinstance(element, xdot.ui.elements.Edge):
+                src_id, dst_id = element.src.id.decode("utf-8"), element.dst.id.decode("utf-8")
 
-            menu.append(Gtk.MenuItem("Prove", "prove-node"))
+                menu = self._menu_for_edge(src_id, dst_id)
 
-            # menuItem2 = Gtk.MenuItem(label="Create edge from" if self.new_edge_first_node_id is None else "Create edge to")
-
-            # def onClick(menuItem):
-            #     if self.new_edge_first_node_id is None:
-            #         self.new_edge_first_node_id = element.id
-            #         return
-            #
-            #     # Keep the positions of the previous nodes
-            #     g = Digraph()
-            #     g.node_attr["shape"] = "box"
-            #
-            #     first_node_id_b: bytes = self.new_edge_first_node_id
-            #     first_node_id = first_node_id_b.decode("utf-8")
-            #     second_node_id_b: bytes = element.id
-            #     second_node_id = second_node_id_b.decode("utf-8")
-            #
-            #     # g.node(str(new_node_id), label=f"New Node #{new_node_id}", group=f"g{new_node_id}")
-            #     g.edge(first_node_id, second_node_id)
-            #
-            #     for n in self.graph.nodes:
-            #         id = int(n.id.decode("utf-8"))
-            #         if n.id in [first_node_id_b, second_node_id_b]:
-            #             g.node(n.id.decode("utf-8"), label=self.nodes[id], fillcolor='green', style='filled',
-            #                    pos=f"{n.x},{n.y}!")
-            #         else:
-            #             g.node(n.id.decode("utf-8"), label=self.nodes[id],
-            #                    pos=f"{n.x},{n.y}!")
-            #
-            #     for o, t in self.edges:
-            #         g.edge(str(o), str(t))
-            #
-            #     self.edges.append((int(first_node_id), int(second_node_id)))
-            #
-            #     print(g.source)
-            #
-            #     pos_x, pos_y = self.get_current_pos()
-            #     ratio = self.zoom_ratio
-            #     # self.set_filter("fdp")
-            #     self.set_dotcode(g.source.encode("utf-8"))
-            #     self.set_current_pos(pos_x, pos_y)
-            #     self.zoom_image(ratio)
-            #
-            #     self.g = g
-            #     self.new_edge_first_node_id = None
-
-            # menuItem2.connect("activate", onClick)
-
-            menu.attach_to_widget(self)
-            # menu.add(menuItem2)
-            menu.show_all()
-            menu.popup(None, None, None, None, event.button, event.time)
-
+            if menu:
+                menu.attach_to_widget(self)
+                # menu.add(menuItem2)
+                menu.show_all()
+                menu.popup(None, None, None, None, event.button, event.time)
 
         return True
         # return super().on_click(element, event)
@@ -177,14 +195,4 @@ class GraphvizGraphWidget(DotWidget):
 
     def set_highlight(self, items, search=False):
         super().set_highlight(items, search)
-
-    def on_prove_node(self, action, value):
-        print('Action: {}\nValue: {}'.format(action, value))
-
-
-
-
-
-
-
 

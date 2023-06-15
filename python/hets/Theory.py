@@ -43,6 +43,12 @@ class Theory(HsHierarchyElement):
         provers = getUsableProvers(self._hs_theory).act()
         return list({Prover(fst(p)) for p in provers})
 
+    def get_prover_by_name(self, name: str) -> Optional[Prover]:
+        matches = list(p for p in self.get_usable_provers() if p.name() == name)
+        if len(matches) == 1:
+            return matches[0]
+        return None
+
     def get_usable_consistency_checkers(self) -> List[ConsistencyChecker]:
         ccs = getUsableConsistencyCheckers(self._hs_theory).act()
         return list({ConsistencyChecker(fst(cc)) for cc in ccs})

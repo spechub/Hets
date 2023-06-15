@@ -14,6 +14,7 @@ from hs.HetsAPI.Internal import (DGNodeLab,
                                  GlobalAnnos,
                                  developmentGraphNodeLabelName,
                                  developmentGraphEdgeLabelName,
+                                 developmentGraphEdgeLabelId,
                                  globalAnnotations,
                                  precedenceAnnotations,
                                  associativityAnnotations,
@@ -57,5 +58,8 @@ from hs.HetsAPI.Internal import (DGNodeLab,
                                  TheoremLink,
                                  linkTypeIsProven,
                                  linkTypeIsConservativ,
-                                 getDevGraphLinkType
-)
+                                 getDevGraphLinkType,
+                                 showGlobalDoc,
+                                 showDoc,
+
+                                 )

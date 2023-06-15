@@ -15,6 +15,7 @@ module HetsAPI.Internal (
     -- , DGEdgeTypeModInc, GlobalDef, HetDef, HidingDef, LocalDef, FreeOrCofreeDef, ThmType, thmEdgeType, isProvenEdge, isConservativ, isPending
     , developmentGraphNodeLabelName
     , developmentGraphEdgeLabelName
+    , developmentGraphEdgeLabelId
     , ProofStatus
     , GoalStatus
     , TimeOfDay
@@ -52,12 +53,16 @@ module HetsAPI.Internal (
     , LibEnv
 
     , IRI
+
+    , showGlobalDoc
+    , showDoc
 ) where
 
 
 import Data.Maybe (fromJust)
 import Data.Time (TimeOfDay)
 
+import Common.DocUtils(showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign(..))
 import Common.Consistency(Conservativity(..), showConsistencyStatus)
 import Common.GlobalAnnotations
@@ -67,7 +72,7 @@ import Common.LibName (LibName)
 import Common.Result (Result, resultToMaybe, Diagnosis)
 import Driver.Options (HetcatsOpts, defaultHetcatsOpts)
 import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType)
-import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName, DGNodeType(..), DGEdgeType(..), DGEdgeTypeModInc(..), Scope(..), ThmTypes(..), FreeOrCofree(..))
+import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName, DGNodeType(..), DGEdgeType(..), DGEdgeTypeModInc(..), Scope(..), ThmTypes(..), FreeOrCofree(..), getEdgeNum)
 import Logic.Prover (ProofStatus, GoalStatus, TacticScript)
 import Proofs.AbstractState (ProofState)
 import Proofs.ConsistencyCheck (ConsistencyStatus(..), SType)
@@ -78,6 +83,10 @@ developmentGraphNodeLabelName = getDGNodeName
 
 developmentGraphEdgeLabelName :: DGLinkLab -> String
 developmentGraphEdgeLabelName = dglName
+
+developmentGraphEdgeLabelId :: DGLinkLab -> Int
+developmentGraphEdgeLabelId = getEdgeNum . dgl_id
+
 
 consistencyStatusType :: ConsistencyStatus -> SType
 consistencyStatusType = sType
@@ -136,24 +145,3 @@ getDevGraphLinkType l = case edgeTypeModInc (getRealDGLinkType l) of
                     Local -> (LinkKindLocal, isHomogeneous)
     where
         inclusion = isInc . getRealDGLinkType $ l
-
-
--- edgeTypeModInclusion :: DGEdgeType -> DGEdgeTypeModInc
--- edgeTypeModInclusion = edgeTypeModInc
-
--- edgeTypeIsInclusion :: DGEdgeType -> Bool
--- edgeTypeIsInclusion = isInc
-
-
--- edgeTypeModInclusionTheoremType :: DGEdgeTypeModInc -> ThmTypes
--- edgeTypeModInclusionTheoremType = thmEdgeType
-
--- edgeTypeModInclusionIsProvenEdge :: DGEdgeTypeModInc -> Bool
--- edgeTypeModInclusionIsProvenEdge = isProvenEdge
-
--- edgeTypeIsConservativ :: DGEdgeTypeModInc -> Bool
--- edgeTypeIsConservativ = isConservativ
-
--- isPending :: DGEdgeTypeModInc -> Bool
--- isPending = isPending
-

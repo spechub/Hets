@@ -18,7 +18,7 @@ from .haskell import snd, theoryOfNode, DGNodeLab, fst, Just, Nothing, PyProver,
     defaultConsCheckingOptions, \
     PyConsCheckingOptions, checkConsistencyAndRecord, TheoryPointer, globalTheory, recomputeNode, fromJust, \
     developmentGraphNodeLabelName, getDevelopmentGraphNodeType, nodeTypeIsReference, nodeTypeIsProven, \
-    nodeTypeIsProvenConsistent, isInternalNode
+    nodeTypeIsProvenConsistent, isInternalNode, showGlobalDoc
 
 from .Theory import Theory
 
@@ -157,3 +157,7 @@ class DevGraphNode(HsHierarchyElement):
 
     def is_consistency_proven(self) -> bool:
         return nodeTypeIsProvenConsistent(getDevelopmentGraphNodeType(self.label()))
+
+    def info(self) -> str:
+        dev_graph = self.parent()
+        return showGlobalDoc(dev_graph.global_annotations()._hs_global_annos, self.label(), "")
