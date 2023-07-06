@@ -153,9 +153,9 @@ runMetis sps cfg saveTPTP thName nGoal = do
 getGoalStatus :: String -> GoalStatus
 getGoalStatus l = let ll = lines l in
   case mapMaybe (stripPrefix "SZS status") ll of
-  [] -> Open (Reason ll)
+  [] -> Open ll
   z@(s : _) -> case words s of
     w : _
       | szsProved w -> Proved True
       | szsDisproved w -> Disproved
-    _ -> Open (Reason z)
+    _ -> Open z

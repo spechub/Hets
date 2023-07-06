@@ -123,7 +123,7 @@ mapToGoalStatus :: MWStatus -- ^ goal status
 mapToGoalStatus stat = case foAtpStatus stat of
         Solved Theorem -> Proved True
         Solved CounterSatisfiable -> Disproved
-        s -> Open $ Reason [show s]
+        s -> Open [show s]
 
 {- |
   Gets the prover name from MathServResponse and extracts the name only

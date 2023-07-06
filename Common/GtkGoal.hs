@@ -88,8 +88,8 @@ proofStatusToGStatus p = case goalStatus p of
   Proved False -> GInconsistent
   Proved True -> GProved
   Disproved -> GDisproved
-  Open (Reason s) ->
-    if any (isInfixOf "timeout" . map toLower) s then GTimeout else GOpen
+  Open reason ->
+    if any (isInfixOf "timeout" . map toLower) reason then GTimeout else GOpen
 
 -- | Converts a BasicProof into a GStatus
 basicProofToGStatus :: BasicProof -> GStatus
