@@ -13,8 +13,12 @@ module HetsAPI.Python (
     , PyConsChecker
     , PyConsCheckingOptions(..)
     , PyGMorphism
+    , PyBasicProof(..)
+    , PyTheorySentence(..)
+    , PyTheorySentenceByName
     , mkPyProofOptions
     -- Wrapped with Py*
+
     , theoryOfNode
     , getUsableProvers
     , translateTheory
@@ -40,6 +44,7 @@ module HetsAPI.Python (
     , comorphismOfGMorphism
     , signatureOfGMorphism
     , signatureOfTheory
+    , pyProofStatusOfPyBasicProof
 
     , logicNameOfTheory
     , logicDescriptionOfTheory
@@ -53,10 +58,12 @@ module HetsAPI.Python (
     , codomainOfGMorphism
     , isGMorphismInclusion
     , gMorphismToTransportType
+    , theorySentenceBestProof
 
     -- Unchanged re-export from Hets.ProveCommands
     , HP.checkConservativityNode
     , HP.recomputeNode
+    , HP.genericProveBatch
 
     -- Unchanged re-export from Hets.Commands
     , HC.automatic
@@ -87,6 +94,12 @@ module HetsAPI.Python (
     , HI.getEdgesFromDevelopmentGraph
     , HI.getLEdgesFromDevelopmentGraph
     , HI.getDevelopmentGraphNodeType
+    , HI.theorySentenceIsAxiom
+    , HI.theorySentenceWasTheorem
+    , HI.theorySentenceIsDefined
+    , HI.theorySentenceGetTheoremStatus
+    , HI.theorySentencePriority
+    , HI.theorySentenceContent
 
     , fstOf3
     , sndOf3
@@ -95,7 +108,8 @@ module HetsAPI.Python (
 
     -- Datatypes
     , HDT.Sentence
-    , HDT.SentenceByName
+    , HDT.TheorySentence
+    , HDT.TheorySentenceByName
     , HDT.TheoryPointer
     , HDT.SignatureJSON
     , HDT.SymbolJSON
@@ -108,10 +122,13 @@ import qualified HetsAPI.Commands as HC
 import qualified HetsAPI.ProveCommands as HP
 import qualified HetsAPI.InfoCommands as HI
 import qualified HetsAPI.DataTypes as HDT
+import HetsAPI.DataTypes (TheorySentenceByName, TheorySentence, Sentence)
 
+import Common.AS_Annotation (SenAttr(..))
 import Common.DocUtils (pretty)
 import Common.ExtSign (ExtSign(..))
 import Common.LibName (LibName)
+import qualified Common.OrderedMap as OMap
 import Common.Result (Result)
 import Common.ResultT (ResultT (runResultT))
 
@@ -122,19 +139,22 @@ import Data.Graph.Inductive (LNode, lab)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import Common.XPath (BasicType(String))
+
 import Logic.Comorphism (AnyComorphism(..), targetLogic, sourceLogic)
 import Logic.Grothendieck (GMorphism(..))
 import Logic.Logic (sym_of, language_name, description, dom, cod, isInclusion, symmap_of)
-import Logic.Prover (ProofStatus(..))
+import Logic.Prover (ProofStatus(..), ThmStatus(..))
+
 import Static.DevGraph (DGNodeLab (dgn_theory), DGLinkLab(dgl_morphism), LibEnv, DGraph, dgBody)
 import qualified Static.DevGraph (DGNodeLab(globalTheory))
 import qualified Static.GTheory as GT
-import Proofs.ConsistencyCheck (ConsistencyStatus)
+import Static.GTheory (G_theory, BasicProof(..))
+
 import qualified Proofs.AbstractState
-import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, G_cons_checker)
-import HetsAPI.DataTypes (SentenceByName, Sentence)
-import Common.XPath (BasicType(String))
-import Static.GTheory (G_theory)
+import Proofs.AbstractState (G_prover, ProofState, G_proof_tree(..), G_cons_checker)
+import Proofs.ConsistencyCheck (ConsistencyStatus)
+
 
 fstOf3 :: (a,b,c) -> a
 fstOf3 (x, _, _) = x
@@ -152,7 +172,46 @@ data PyProver = PyProver G_prover
 data PyConsChecker = PyConsChecker G_cons_checker
 data PyComorphism = PyComorphism AnyComorphism
 data PyProofTree = PyProofTree G_proof_tree
+
+toPyProofTree :: G_proof_tree -> PyProofTree
+toPyProofTree = PyProofTree
+
 data PyGMorphism = PyGMorphism GMorphism
+data PyBasicProof = PyBasicProof BasicProof
+    | PyBasicProofGuessed
+    | PyBasicProofConjectured
+    | PyBasicProofHandwritten
+
+instance Eq PyBasicProof where
+    a == b = fromPyBasicProof a == fromPyBasicProof b
+
+instance Ord PyBasicProof where
+    compare a b = compare (fromPyBasicProof a) (fromPyBasicProof b)
+
+fromPyBasicProof :: PyBasicProof -> BasicProof
+fromPyBasicProof pb = case pb of
+    PyBasicProof b -> b
+    PyBasicProofGuessed -> Guessed
+    PyBasicProofConjectured -> Conjectured
+    PyBasicProofHandwritten -> Handwritten
+
+toPyBasicProof :: BasicProof -> PyBasicProof
+toPyBasicProof b = case b of
+    BasicProof _ _ -> PyBasicProof b
+    Guessed -> PyBasicProofGuessed
+    Conjectured -> PyBasicProofConjectured
+    Handwritten -> PyBasicProofHandwritten
+
+type PyTheorySentence = SenAttr Sentence (ThmStatus (PyComorphism, PyBasicProof))
+type PyTheorySentenceByName = OMap.OMap String PyTheorySentence
+
+toPyTheorySentence :: TheorySentence -> PyTheorySentence
+toPyTheorySentence sen = sen {senAttr = ThmStatus (fmap (\(c, p) -> (PyComorphism c, toPyBasicProof p)) $ getThmStatus . senAttr $ sen)}
+
+pyProofStatusOfPyBasicProof :: PyBasicProof -> Maybe (ProofStatus PyProofTree)
+pyProofStatusOfPyBasicProof b = case b of
+    PyBasicProof (BasicProof lid status) -> Just . toPyProofStatus $ status {proofTree = G_proof_tree lid $ proofTree status }
+    _ -> Nothing
 
 data PyProofOptions = PyProofOptions {
     proofOptsProver :: Maybe PyProver -- ^ The prover to use. If not set, it is selected automatically
@@ -225,11 +284,10 @@ instance Show PyComorphism where
     show (PyComorphism c) = "PyComorphism "++ show c
 
 instance Show PyProofTree where
-    show (PyProofTree t) = "PyProofTree " ++ show t
+    show (PyProofTree t) = show t
 
 proverName :: PyProver -> String
 proverName (PyProver p) = Proofs.AbstractState.getProverName p
-
 
 comorphismName :: PyComorphism -> String
 comorphismName (PyComorphism c) = show c
@@ -260,16 +318,7 @@ getUsableProvers (PyTheory th) = do
     return $ fmap toPy provers
 
 toPyProofStatus :: ProofStatus G_proof_tree -> ProofStatus PyProofTree
-toPyProofStatus status = ProofStatus {
-      goalName = goalName status
-    , goalStatus = goalStatus status
-    , usedAxioms = usedAxioms status
-    , usedProver = usedProver status
-    , proofTree = PyProofTree (proofTree status)
-    , usedTime = usedTime status
-    , tacticScript = tacticScript status
-    , proofLines = proofLines status
-  }
+toPyProofStatus status = status { proofTree = toPyProofTree (proofTree status) }
 
 proveNode :: PyTheory -> PyProofOptions -> IO (Result (PyTheory, [ProofStatus PyProofTree]))
 proveNode (PyTheory theory) opts =
@@ -296,20 +345,24 @@ checkConsistency ptr = HP.checkConsistency ptr . toConsCheckingOptions
 checkConsistencyAndRecord :: HDT.TheoryPointer -> PyConsCheckingOptions -> IO (ConsistencyStatus, LibEnv)
 checkConsistencyAndRecord ptr = HP.checkConsistencyAndRecord ptr . toConsCheckingOptions
 
-getAllSentences :: PyTheory -> SentenceByName
-getAllSentences (PyTheory theory) = HI.getAllSentences theory
 
-getAllAxioms :: PyTheory -> SentenceByName
-getAllAxioms (PyTheory theory) = HI.getAllAxioms theory
+getAllSentences :: PyTheory -> PyTheorySentenceByName
+getAllSentences (PyTheory theory) = OMap.map toPyTheorySentence $ HI.getAllSentences theory
 
-getAllGoals :: PyTheory -> SentenceByName
-getAllGoals (PyTheory theory) = HI.getAllGoals theory
+getAllAxioms :: PyTheory -> PyTheorySentenceByName
+getAllAxioms (PyTheory theory) = OMap.map toPyTheorySentence $ HI.getAllAxioms theory
 
-getProvenGoals :: PyTheory -> SentenceByName
-getProvenGoals (PyTheory theory) = HI.getProvenGoals theory
+getAllGoals :: PyTheory -> PyTheorySentenceByName
+getAllGoals (PyTheory theory) = OMap.map toPyTheorySentence $ HI.getAllGoals theory
 
-getUnprovenGoals :: PyTheory -> SentenceByName
-getUnprovenGoals (PyTheory theory) = HI.getUnprovenGoals theory
+getProvenGoals :: PyTheory -> PyTheorySentenceByName
+getProvenGoals (PyTheory theory) = OMap.map toPyTheorySentence $ HI.getProvenGoals theory
+
+getUnprovenGoals :: PyTheory -> PyTheorySentenceByName
+getUnprovenGoals (PyTheory theory) = OMap.map toPyTheorySentence $ HI.getUnprovenGoals theory
+
+theorySentenceBestProof :: PyTheorySentence -> Maybe PyBasicProof
+theorySentenceBestProof = HI.theorySentenceBestProof
 
 prettySentence :: PyTheory -> Sentence -> String
 prettySentence (PyTheory theory) = HI.prettySentenceOfTheory theory
@@ -369,3 +422,4 @@ gMorphismToTransportType (PyGMorphism (GMorphism {gMorphismComor = cid, gMorphis
 
 -- symbolMapOfGMorphism :: PyGMorphism -> Map.Map HDT.SymbolJSON HDT.SymbolJSON
 -- symbolMapOfGMorphism (PyGMorphism (GMorphism {gMorphismMor = morphism})) = Map.map encode $ Map.mapKeys encode $ symmap_of (targetLogic morphism) morphism
+

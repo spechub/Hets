@@ -1,4 +1,6 @@
 import sys
+import threading
+import time
 
 import gi
 
@@ -138,7 +140,6 @@ class MyApplication(Gtk.Application):
         menu_entry_qualify_lib_env.set_action_and_target_value("win.proofs.qualify_lib_env", None)
         proof_menu.append_item(menu_entry_qualify_lib_env)
 
-
         menu = Gio.Menu()
         menu.append_submenu("File", file_menu)
         menu.append_submenu("View", view_menu)
@@ -170,15 +171,41 @@ class MyApplication(Gtk.Application):
 
     def do_activate(self):
         if not self.window:
-            from windows.MainWindow import MainWindow
-            self.window = MainWindow(application=self)
+            # from windows.ProveDialog import ProveDialog
+            # self.window = ProveDialog(application=self)
 
-            if self.file:
-                self.window.open_file(self.file)
+            from windows.StartUpWindow import StartUpWindow
+            startup_window = StartUpWindow(application=self)
+            startup_window.show_all()
+            startup_window.present()
 
-        print(self.get_app_menu())
+            self.window = startup_window
+
+            def start_up_done():
+                from windows.MainWindow import MainWindow
+
+                self.window = MainWindow(application=self)
+                startup_window.close()
+
+                if self.file:
+                    self.window.open_file(self.file)
+
+                self.window.show_all()
+                self.window.present()
+
+            # noinspection PyUnresolvedReferences
+            def start_up():
+                import hets
+                import windows.MainWindow
+
+                GLib.idle_add(start_up_done)
+
+            t = threading.Thread(target=start_up)
+            t.start()
+
         self.window.show_all()
         self.window.present()
+
 
 app = MyApplication()
 exit_status = app.run(sys.argv)

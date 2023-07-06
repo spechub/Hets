@@ -31,7 +31,7 @@ class DevelopmentGraph(HsHierarchyElement):
 
         if self._nodes:
             for node in self._nodes:
-                hs_node_maybe = getDGNodeById(self._hs_development_graph, node.id())
+                hs_node_maybe = getDGNodeById(self._hs_development_graph)(node.id())
                 if isinstance(hs_node_maybe, Nothing):
                     print(f"Node {node.id} could not be found. Probably, it has been deleted")
                 else:
@@ -46,12 +46,9 @@ class DevelopmentGraph(HsHierarchyElement):
         return self._nodes
 
     def edges(self) -> List[DevGraphEdge]:
-        if self._edges is None:
-            hs_edges = getLEdgesFromDevelopmentGraph(self._hs_development_graph)
+        hs_edges = getLEdgesFromDevelopmentGraph(self._hs_development_graph)
 
-            self._edges = [DefinitionDevGraphEdge(x, self) if isinstance(getDevGraphLinkType(thd(x)), DefinitionLink) else TheoremDevGraphEdge(x, self) for x in hs_edges]
-
-        return self._edges
+        return [DefinitionDevGraphEdge(x, self) if isinstance(getDevGraphLinkType(thd(x)), DefinitionLink) else TheoremDevGraphEdge(x, self) for x in hs_edges]
 
     def global_annotations(self) -> GlobalAnnotations:
         return GlobalAnnotations(globalAnnotations(self._hs_development_graph))

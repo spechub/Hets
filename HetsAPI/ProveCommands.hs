@@ -23,6 +23,8 @@ module HetsAPI.ProveCommands (
     , ConsCheckingOptions(..)
     , defaultConsCheckingOptions
     , recomputeNode
+
+    , genericProveBatch
 ) where
 
 import HetsAPI.DataTypes
@@ -47,6 +49,7 @@ import Logic.Prover (ProofStatus, ProverKind (..))
 import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, G_cons_checker (..), getProverName, getConsCheckers, getCcName)
 import qualified Proofs.AbstractState as PAS
 import Proofs.ConsistencyCheck (ConsistencyStatus, SType(..), consistencyCheck, sType)
+import Proofs.BatchProcessing (genericProveBatch)
 
 import Static.ComputeTheory(updateLabelTheory, recomputeNodeLabel)
 import Static.DevGraph (LibEnv, DGraph, DGNodeLab, ProofHistory, DGChange(..), dgn_theory, markNodeInconsistent, markNodeConsistent)

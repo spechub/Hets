@@ -61,5 +61,9 @@ from hs.HetsAPI.Internal import (DGNodeLab,
                                  getDevGraphLinkType,
                                  showGlobalDoc,
                                  showDoc,
-
+                                 Open,
+                                 Proved,
+                                 Disproved,
+                                 tacticScriptContent,
+                                 goalStatusOpenReason
                                  )

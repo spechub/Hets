@@ -1,13 +1,40 @@
-from typing import Optional
+from typing import Optional, Tuple
 
-import graphviz
 import xdot.ui.elements
-from gi.repository import Gtk, Gio, GLib, Gdk
-from graphviz import Graph, Digraph
+from gi.repository import Gtk, Gio, GLib
+from graphviz import Digraph
 from xdot import DotWidget
 
-from hets import DevelopmentGraph, DevGraphNode, DevGraphEdge, TheoremDevGraphEdge, EdgeKind, DefinitionDevGraphEdge
+from formatting.Colors import color_to_hex
+from hets import DevelopmentGraph, DevGraphNode, DevGraphEdge, TheoremDevGraphEdge, EdgeKind
 from utils import get_variant
+
+# KEY: (colorname, variant, light)
+COLOR_MAP = {
+    ("black", False, False): "gray0"
+    , ("black", False, True): "gray30"
+    , ("blue", False, False): "RoyalBlue3"
+    , ("blue", False, True): "RoyalBlue1"
+    , ("blue", True, False): "SteelBlue3"
+    , ("blue", True, True): "SteelBlue1"
+    , ("coral", False, False): "coral3"
+    , ("coral", False, True): "coral1"
+    , ("coral", True, False): "LightSalmon2"
+    , ("coral", True, True): "LightSalmon"
+    , ("green", False, False): "MediumSeaGreen"
+    , ("green", False, True): "PaleGreen3"
+    , ("green", True, False): "limegreen"
+    , ("green", True, True): "LightGreen"
+    , ("purple", False, False): "purple2"
+    , ("yellow", False, False): "gold"
+    , ("yellow", False, True): "yellow"
+    , ("yellow", True, False): "LightGoldenrod3"
+    , ("yellow", True, True): "LightGoldenrod"
+    , ("fuchsia", False, False): "fuchsia"
+    , ("fuchsia", False, True): "fuchsia"
+    , ("fuchsia", True, False): "fuchsia"
+    , ("fuchsia", True, True): "fuchsia"
+}
 
 
 def node_shape(node: DevGraphNode) -> str:
@@ -20,47 +47,71 @@ def node_shape(node: DevGraphNode) -> str:
 def node_color(node: DevGraphNode) -> str:
     if node.is_proven_node():
         if node.is_consistency_proven():
-            return "limegreen"
+            return COLOR_MAP[("green", True, False)]
         else:
-            return "gold2"
+            return COLOR_MAP[("yellow", False, True)]
     else:
         return "coral"
 
 
 def edge_color(edge: DevGraphEdge) -> str:
+    color: Tuple[str, bool] = ("fuchsia", True)  # (color name, use variant)
     if isinstance(edge, TheoremDevGraphEdge):
-        if edge.is_proven():
-            if edge.is_conservativ():
-                color = "limegreen"
+        if not edge.is_proven():
+            if edge.kind() == EdgeKind.LOCAL and not edge.is_homogeneous():
+                color = ("coral", True)
+                # coral true
+            elif edge.kind() == EdgeKind.HIDING:
+                color = ("yellow", False)
             else:
-                color = "gold2"
+                color = ("coral", False)
+        elif not edge.is_conservativ():
+            if edge.kind() == EdgeKind.LOCAL and not edge.is_homogeneous():
+                color = ("yellow", True)
+            else:
+                color = ("yellow", False)
+        elif edge.is_pending():
+            if edge.kind() == EdgeKind.LOCAL and not edge.is_homogeneous():
+                color = ("yellow", True)
+            else:
+                color = ("yellow", False)
         else:
-            color = "coral"
+            if edge.kind() == EdgeKind.LOCAL and not edge.is_homogeneous():
+                color = ("green", True)
+            elif edge.kind() == EdgeKind.HIDING:
+                color = ("green", True)
+            else:
+                color = ("green", False)
 
     else:
         color = {
-            EdgeKind.FREE: "royalblue",
-            EdgeKind.COFREE: "royalblue",
-            EdgeKind.HIDING: "royalblue",
+            EdgeKind.FREE: ("blue", False),
+            EdgeKind.COFREE: ("blue", False),
+            EdgeKind.HIDING: ("blue", False),
 
             # default
-            EdgeKind.LOCAL: "black",
-            EdgeKind.GLOBAL: "black",
+            EdgeKind.LOCAL: ("black", False),
+            EdgeKind.GLOBAL: ("black", False),
 
             # error
-            EdgeKind.UNKNOWN: "fuchsia"
+            EdgeKind.UNKNOWN: ("fuchsia", False)
         }[edge.kind()]
+
+    color_name, color_use_variant = color
+    color_use_light = not edge.is_inclusion()
+
+    final_color = COLOR_MAP[(color_name, color_use_variant, color_use_light)]
 
     # Double lines for heterogeneous signature morphisms
     if edge.is_homogeneous():
-        return color
+        return final_color
     else:
-        return f"{color}:invis:{color}"
+        return f"{final_color}:invis:{final_color}"
 
 
 def edge_style(edge: DevGraphEdge):
     # Note: Double lines are created with a color list. See edge_color
-    if (isinstance(edge, TheoremDevGraphEdge) and edge.is_homogeneous() or isinstance(edge, DefinitionDevGraphEdge)) and edge.kind() == EdgeKind.LOCAL:
+    if isinstance(edge, TheoremDevGraphEdge) and edge.kind() == EdgeKind.LOCAL:
         return "dashed"
     else:
         return ""
@@ -113,6 +164,10 @@ class GraphvizGraphWidget(DotWidget):
     def render(self, keep_zoom=True) -> None:
         g = Digraph("G")
 
+        success, color = self.get_style_context().lookup_color("theme_bg_color")
+        if success:
+            g.graph_attr["bgcolor"] = color_to_hex(color)
+
         for node in self.development_graph.nodes():
             g.node(str(node.id()),
                    label="" if node.is_internal() and not self._show_internal_node_names else node.name(),
@@ -146,7 +201,6 @@ class GraphvizGraphWidget(DotWidget):
         menu_item_info.set_action_and_target_value("win.node.show_info", GLib.Variant.new_string(node_id))
         menu.append_item(menu_item_info)
 
-
         return Gtk.Menu.new_from_model(menu)
 
     def _menu_for_edge(self, src_id: str, dst_id: str) -> Gtk.Menu:
@@ -157,14 +211,7 @@ class GraphvizGraphWidget(DotWidget):
         menu_item_info.set_action_and_target_value("win.edge.show_info", get_variant([src_id, dst_id]))
         menu.append_item(menu_item_info)
 
-
         return Gtk.Menu.new_from_model(menu)
-
-    def on_draw(self, widget, cr):
-        cr.set_source_rgb(1, 1, 1)
-        cr.paint()
-
-        return super().on_draw(widget, cr)
 
     def on_click(self, element, event):
         if element is None:
@@ -195,4 +242,3 @@ class GraphvizGraphWidget(DotWidget):
 
     def set_highlight(self, items, search=False):
         super().set_highlight(items, search)
-

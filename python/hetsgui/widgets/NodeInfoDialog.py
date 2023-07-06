@@ -19,6 +19,7 @@ class NodeInfoDialog(Gtk.Dialog):
         box = self.get_content_area()
         text_view = Gtk.TextView()
         text_view.set_property('editable', False)
+        text_view.set_property('monospace', True)
         text_buffer = text_view.get_buffer()
         text_buffer.set_text(title + "\n" + node.info())
 

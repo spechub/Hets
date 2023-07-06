@@ -73,6 +73,9 @@ class DevGraphEdge(HsHierarchyElement):
     def is_homogeneous(self) -> bool:
         return self._type().linkTypeIsHomogenoeous()
 
+    def is_inclusion(self) -> bool:
+        return self._type().linkTypeIsInclusion()
+
     def info(self) -> str:
         return showDoc(self._label(), "")
 
@@ -85,8 +88,11 @@ class TheoremDevGraphEdge(DevGraphEdge):
     def _type(self) -> TheoremLink:
         return super()._type()
 
-    def is_proven(self):
+    def is_proven(self) -> bool:
         return self._type().linkTypeIsProven()
 
-    def is_conservativ(self):
+    def is_conservativ(self) -> bool:
         return self._type().linkTypeIsConservativ()
+
+    def is_pending(self) -> bool:
+        return self._type().linkTypeIsPending()

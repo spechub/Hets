@@ -20,4 +20,8 @@ from hs.HetsAPI.Python import (fstOf3, sndOf3, thd, PyTheory, PyProver, PyConsCh
                                globalDecomposition, localInference, localDecomposition, compositionProveEdges,
                                conservativity, automaticHideTheoremShift, theoremHideShift, computeColimit, normalForm,
                                triangleCons, freeness, libFlatImports, libFlatDUnions, libFlatRenamings, libFlatHiding,
-                               libFlatHeterogen, qualifyLibEnv, getDevelopmentGraphNodeType)
+                               libFlatHeterogen, qualifyLibEnv, getDevelopmentGraphNodeType, PyBasicProof,
+                               PyBasicProofGuessed, PyBasicProofConjectured, PyBasicProofHandwritten, PyTheorySentence,
+                               PyTheorySentenceByName, theorySentenceIsAxiom, theorySentenceWasTheorem,
+                               theorySentenceIsDefined, theorySentenceGetTheoremStatus, theorySentenceBestProof,
+                               theorySentencePriority, theorySentenceContent, pyProofStatusOfPyBasicProof)

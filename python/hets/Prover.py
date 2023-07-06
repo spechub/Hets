@@ -22,3 +22,6 @@ class Prover:
     def __hash__(self):
         return self.name().__hash__()
 
+    def __repr__(self):
+        return f"<{__name__} '{self.name()}'>"
+

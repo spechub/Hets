@@ -10,7 +10,7 @@ from .ConsistencyStatus import ConsistencyStatus
 from .Comorphism import Comorphism
 from .result import result_or_raise
 from .ConsistencyChecker import ConsistencyChecker
-from .ProofStatus import ProofStatus
+from .ProofDetails import ProofDetails
 from .Prover import Prover
 from .HsWrapper import HsHierarchyElement
 from .haskell import snd, theoryOfNode, DGNodeLab, fst, Just, Nothing, PyProver, PyComorphism, defaultProofOptions, \
@@ -63,7 +63,7 @@ class DevGraphNode(HsHierarchyElement):
               goals_to_prove: Optional[List[str]] = None,
               axioms_to_include: Optional[List[str]] = None,
               timeout: Optional[int] = None
-              ) -> List[ProofStatus]:
+              ) -> List[ProofDetails]:
         prover_maybe = Just(prover._hs_prover) if prover else Nothing().subst(a=PyProver())
         comorphism_maybe = Just(comorphism._hs_comorphism) if comorphism else Nothing().subst(a=PyComorphism())
 
@@ -86,7 +86,7 @@ class DevGraphNode(HsHierarchyElement):
 
         self.root().hs_update(new_env)
 
-        return goal_statuses
+        return list(ProofDetails(x) for x in goal_statuses)
 
     def check_consistency(self,
                           cons_checker: Optional[ConsistencyChecker] = None,

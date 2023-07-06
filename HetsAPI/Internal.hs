@@ -16,10 +16,11 @@ module HetsAPI.Internal (
     , developmentGraphNodeLabelName
     , developmentGraphEdgeLabelName
     , developmentGraphEdgeLabelId
-    , ProofStatus
-    , GoalStatus
+    , ProofStatus(..)
+    , GoalStatus(..)
     , TimeOfDay
     , TacticScript
+    , tacticScriptContent
     , ProofState
     , ConsistencyStatus
     , consistencyStatusType
@@ -73,7 +74,7 @@ import Common.Result (Result, resultToMaybe, Diagnosis)
 import Driver.Options (HetcatsOpts, defaultHetcatsOpts)
 import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType)
 import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName, DGNodeType(..), DGEdgeType(..), DGEdgeTypeModInc(..), Scope(..), ThmTypes(..), FreeOrCofree(..), getEdgeNum)
-import Logic.Prover (ProofStatus, GoalStatus, TacticScript)
+import Logic.Prover (ProofStatus(..), GoalStatus(..), TacticScript(..))
 import Proofs.AbstractState (ProofState)
 import Proofs.ConsistencyCheck (ConsistencyStatus(..), SType)
 
@@ -118,22 +119,25 @@ nodeTypeIsProvenConsistent = isProvenCons
 nodeTypeIsReference :: DGNodeType -> Bool
 nodeTypeIsReference = isRefType
 
+tacticScriptContent :: TacticScript -> String
+tacticScriptContent (TacticScript c) = c
+
 
 data DevGraphLinkKind = LinkKindGlobal | LinkKindLocal | LinkKindHiding | LinkKindFree | LinkKindCofree
 data DevGraphLinkType =
     DefinitionLink { linkTypeKind :: DevGraphLinkKind, linkTypeIsInclusion :: Bool, linkTypeIsHomogenoeous :: Bool }
-     | TheoremLink { linkTypeKind :: DevGraphLinkKind, linkTypeIsInclusion :: Bool, linkTypeIsHomogenoeous :: Bool, linkTypeIsProven :: Bool, linkTypeIsConservativ :: Bool }
+     | TheoremLink { linkTypeKind :: DevGraphLinkKind, linkTypeIsInclusion :: Bool, linkTypeIsHomogenoeous :: Bool, linkTypeIsProven :: Bool, linkTypeIsConservativ :: Bool, linkTypeIsPending :: Bool }
 
 getDevGraphLinkType :: DGLinkLab -> DevGraphLinkType
 getDevGraphLinkType l = case edgeTypeModInc (getRealDGLinkType l) of
     GlobalDef -> DefinitionLink LinkKindGlobal inclusion True
-    HetDef -> DefinitionLink LinkKindGlobal inclusion False -- TODO: Correct?
+    HetDef -> DefinitionLink LinkKindGlobal inclusion False
     HidingDef -> DefinitionLink LinkKindHiding inclusion True
     LocalDef -> DefinitionLink LinkKindLocal inclusion True
     FreeOrCofreeDef freeOrCofree -> DefinitionLink (case freeOrCofree of
         Free -> LinkKindFree
         Cofree -> LinkKindCofree) inclusion True
-    ThmType {thmEdgeType=thmType, isProvenEdge=proven, isConservativ=conservativ, isPending=pending} -> TheoremLink kind inclusion homogeneous proven conservativ
+    ThmType {thmEdgeType=thmType, isProvenEdge=proven, isConservativ=conservativ, isPending=pending} -> TheoremLink kind inclusion homogeneous proven conservativ pending
         where
             (kind, homogeneous) = case thmType of
                 HidingThm -> (LinkKindHiding, True)
@@ -145,3 +149,12 @@ getDevGraphLinkType l = case edgeTypeModInc (getRealDGLinkType l) of
                     Local -> (LinkKindLocal, isHomogeneous)
     where
         inclusion = isInc . getRealDGLinkType $ l
+
+
+
+
+
+
+
+
+

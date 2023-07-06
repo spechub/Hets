@@ -1,3 +1,4 @@
+import os
 import typing
 
 import hets
@@ -9,6 +10,8 @@ from gi.repository import GLib, Gtk, Gdk, Pango, Gio
 from widgets.EdgeInfoDialog import EdgeInfoDialog
 from widgets.GraphvizGraphWidget import GraphvizGraphWidget
 from widgets.NodeInfoDialog import NodeInfoDialog
+
+from windows.ProveWindow import ProveWindow
 
 
 T = typing.TypeVar("T")
@@ -30,15 +33,18 @@ class MainWindow(Gtk.ApplicationWindow):
         self.file = None
         self.library = None
 
+        self.set_auto_startup_notification(True)
+        self.set_size_request(1200, 600)
+        self.set_title("Heterogeneous Toolset")
+        icon = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../hets.png"))
+        self.set_default_icon_from_file(icon)
+        self.set_icon_from_file(icon)
+
         self.ui_box = Gtk.Box(spacing=6)
         self.add(self.ui_box)
 
         self.ui_graph = GraphvizGraphWidget()
         self.ui_box.pack_start(self.ui_graph, True, True, 0)
-
-
-        self.set_size_request(1200, 600)
-        self.set_title("Heterogeneous Toolset")
 
         self._action("open_file", self.on_menu_open_file)
         self._action("node.prove", self.on_prove_node, "s")
@@ -125,9 +131,15 @@ class MainWindow(Gtk.ApplicationWindow):
         if self.library:
             node = [n for n in self.library.development_graph().nodes() if str(n.id()) == node_id][0]
 
-            node.prove(node.theory().get_prover_by_name("Pellet"))
+            prove_window = ProveWindow(node, transient_for=self)
+            prove_window.show_all()
+            prove_window.present()
 
-            self.ui_graph.render()
+            prove_window.connect("destroy", lambda _: self.ui_graph.render())
+
+            # node.prove(node.theory().get_prover_by_name("Pellet"))
+
+            # self.ui_graph.render()
         else:
             print(f'Action: prove node {node_id}. But no library is loaded!')
 

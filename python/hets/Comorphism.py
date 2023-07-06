@@ -19,3 +19,6 @@ class Comorphism:
 
     def __hash__(self):
         return self.name().__hash__()
+
+    def path_length(self) -> int:
+        return len(self.name().split(";"))
