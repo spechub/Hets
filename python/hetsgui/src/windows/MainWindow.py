@@ -5,7 +5,7 @@ import hets
 
 from typing import List, Callable, Any, Optional
 
-from gi.repository import GLib, Gtk, Gdk, Pango, Gio
+from gi.repository import GLib, Gtk, Gio
 
 from widgets.EdgeInfoDialog import EdgeInfoDialog
 from widgets.GraphvizGraphWidget import GraphvizGraphWidget
@@ -36,7 +36,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.set_auto_startup_notification(True)
         self.set_size_request(1200, 600)
         self.set_title("Heterogeneous Toolset")
-        icon = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../hets.png"))
+        icon = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../resources/icon.png"))
         self.set_default_icon_from_file(icon)
         self.set_icon_from_file(icon)
 

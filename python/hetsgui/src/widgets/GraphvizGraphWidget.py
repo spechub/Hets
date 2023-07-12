@@ -131,6 +131,10 @@ class GraphvizGraphWidget(DotWidget):
         self.g = None
         self.development_graph = None
 
+        settings: Gtk.Settings = Gtk.Settings.get_for_screen(self.get_screen())
+        settings.connect("notify::gtk-theme-name", lambda w, p: self.render())
+        settings.connect("notify::gtk-application-prefer-dark-theme", lambda w, p: self.render())
+
     def load_graph(self, graph: DevelopmentGraph):
         self.development_graph = graph
         self.g = Digraph("G")

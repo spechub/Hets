@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+    <requires lib="gtk+" version="3.10"/>
+    <menu id="app-menu">
+        <submenu>
+            <attribute name="label" translatable="yes">File</attribute>
+            <item>
+                <attribute name="label" translatable="yes">Open</attribute>
+                <attribute name="action">win.open_file</attribute>
+            </item>
+        </submenu>
+        <submenu>
+            <attribute name="label" translatable="yes">View</attribute>
+            <item>
+                <attribute name="label" translatable="yes">Show internal names</attribute>
+                <attribute name="action">win.toggle_show_names</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Show unnamed nodes without open proofs</attribute>
+                <attribute name="action">win.toggle_show_nodes</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Show newly added proven edges</attribute>
+                <attribute name="action">win.toggle_show_edges</attribute>
+            </item>
+        </submenu>
+        <submenu>
+            <attribute name="label" translatable="yes">Proofs</attribute>
+            <item>
+                <attribute name="label" translatable="yes">Apply proof rules automatically</attribute>
+                <attribute name="action">win.proofs.automatic</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Global-Subsumption</attribute>
+                <attribute name="action">win.proofs.global_subsume</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Global-Decomposition</attribute>
+                <attribute name="action">win.proofs.global_decomposition</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Local-Inference</attribute>
+                <attribute name="action">win.proofs.local_inference</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Local-Decomposition</attribute>
+                <attribute name="action">win.proofs.local_decomposition</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Prove composed edges</attribute>
+                <attribute name="action">win.proofs.composition_prove_edges</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Conservativity</attribute>
+                <attribute name="action">win.proofs.conservativity</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Hide-Theorem-Shift</attribute>
+                <attribute name="action">win.proofs.automatic_hide_theorem_shift</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Theorem-Hide-Shift</attribute>
+                <attribute name="action">win.proofs.theorem_hide_shift</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Compute colimit</attribute>
+                <attribute name="action">win.proofs.compute_colimit</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Compute normal form</attribute>
+                <attribute name="action">win.proofs.normal_form</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Triangle-Cons</attribute>
+                <attribute name="action">win.proofs.triangle_cons</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Freeness</attribute>
+                <attribute name="action">win.proofs.freeness</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Flatten imports</attribute>
+                <attribute name="action">win.proofs.lib_flat_imports</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Flatten D-unions</attribute>
+                <attribute name="action">win.proofs.lib_flat_d_unions</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Flatten renamings</attribute>
+                <attribute name="action">win.proofs.lib_flat_renamings</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Flatten hiding</attribute>
+                <attribute name="action">win.proofs.lib_flat_hiding</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Flatten heterogen</attribute>
+                <attribute name="action">win.proofs.lib_flat_heterogen</attribute>
+            </item>
+            <item>
+                <attribute name="label" translatable="yes">Qualify lib env</attribute>
+                <attribute name="action">win.proofs.qualify_lib_env</attribute>
+            </item>
+        </submenu>
+    </menu>
+
+</interface>

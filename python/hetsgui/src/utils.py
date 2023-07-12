@@ -1,9 +1,7 @@
-
-
-
+import re
 from typing import Any
 
-from gi.repository import GLib
+from gi.repository import GLib, Gio
 
 def get_variant(data: Any) -> GLib.Variant:
     # Source: https://gitlab.gnome.org/GNOME/gnome-browser-connector/-/blob/master/gnome_browser_connector/helpers.py
@@ -38,4 +36,19 @@ def get_variant(data: Any) -> GLib.Variant:
         return variant_builder.end()
     else:
         raise Exception(f"Unknown data type: {type(data)}")
+
+
+def resource_exist(resource_path: str) -> bool:
+    segments = [s for s in re.split(r"([^/]+/)", resource_path) if s]
+    segments.reverse()
+    path = segments.pop()
+    while segments:
+        segment = segments.pop()
+        children = Gio.resources_enumerate_children(path, 0)
+        if segment not in children:
+            return False
+        path += segment
+    return True
+
+
 

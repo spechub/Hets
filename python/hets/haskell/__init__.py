@@ -1,5 +1,4 @@
 from .base import *
-import hyphen
 
 from .ByteString import *
 from .Internal import *

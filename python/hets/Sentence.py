@@ -14,7 +14,8 @@ from .json_conversion import as_json
 
 from .Comorphism import Comorphism
 from .BasicProof import BasicProof
-from .ProofDetails import ProofDetails, ProofKind
+from .ProofDetails import ProofDetails
+from hets import ProofKind
 
 from .HsWrapper import HsHierarchyElement
 

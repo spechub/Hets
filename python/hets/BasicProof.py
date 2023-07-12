@@ -1,6 +1,7 @@
 from typing import Optional
 
-from .ProofDetails import ProofDetails, ProofKind
+from .ProofDetails import ProofDetails
+from .ProofKind import ProofKind
 from .haskell import PyBasicProof, PyBasicProofGuessed, PyBasicProofConjectured, PyBasicProofHandwritten, \
     pyProofStatusOfPyBasicProof, Just, fromJust
 

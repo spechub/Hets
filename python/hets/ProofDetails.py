@@ -4,36 +4,12 @@ Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 """
 from datetime import datetime, timedelta
-from enum import Enum
 
-from .haskell import ProofStatus as ProofStatusHs, GoalStatus, TimeOfDay, tacticScriptContent, Open, Proved, Disproved, show
+from .haskell import ProofStatus as ProofStatusHs, GoalStatus, tacticScriptContent, Open, Proved, Disproved, show
 
-from typing import Any, List, Optional
+from .ProofKind import ProofKind
 
-
-class ProofKind(Enum):
-    UNKNOWN = -1
-    OPEN = 1
-    PROVEN = 2
-    PROVEN_BY_INCONSISTENCY = 3
-    DISPROVEN = 4
-    TIMED_OUT = 5
-    GUESSED = 6
-    CONJECTURED = 7
-    HANDWRITTEN = 8
-
-    def to_str(self) -> str:
-        return {
-            ProofKind.UNKNOWN: "Unknown",
-            ProofKind.OPEN: "Open",
-            ProofKind.PROVEN: "Proven",
-            ProofKind.PROVEN_BY_INCONSISTENCY: "Proven by inconsistency",
-            ProofKind.DISPROVEN: "Disproven",
-            ProofKind.TIMED_OUT: "Timed out",
-            ProofKind.GUESSED: "Guessed",
-            ProofKind.CONJECTURED: "Conjectured",
-            ProofKind.HANDWRITTEN: "Handwritten"
-        }[self]
+from typing import List, Optional
 
 
 class ProofDetails:

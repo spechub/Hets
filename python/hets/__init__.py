@@ -14,7 +14,8 @@ from .GMorphism import GMorphism
 from .Library import Library, load_library
 from .Logic import Logic
 from .ProofState import ProofState
-from .ProofDetails import ProofDetails, ProofKind
+from .ProofDetails import ProofDetails
+from .ProofKind import ProofKind
 from .Prover import Prover
 from .Sentence import Sentence
 from .Signature import Signature
