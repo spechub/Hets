@@ -1,4 +1,4 @@
-FROM hyphen:20.04
+FROM hyphen:22.04
 
 ENV TZ=Europe/Berlin
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
@@ -32,7 +32,6 @@ RUN apt-get install -y openjdk-8-jdk-headless ant cabal-install\
  libghc-xeno-dev\
  libghc-heap-dev
 
-
 # RUN git clone https://github.com/spechub/Hets.git /hets
 ## OR
 COPY ./ /hets
@@ -56,3 +55,9 @@ RUN runhaskell Setup.hs configure \
    lib:Hets
 RUN runhaskell Setup.hs build -j$(nproc) lib:Hets
 RUN runhaskell Setup.hs install
+
+RUN apt-get install hets-provers
+RUN git clone https://github.com/spechub/Hets-lib.git /Hets-lib
+ENV HETS_LIB /Hets-lib
+
+WORKDIR /root
