@@ -7,7 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 module HetsAPI.Internal (
     fromJust
     , Result, resultToMaybe, Diagnosis
-    , HetcatsOpts, defaultHetcatsOpts
+    , HetcatsOpts(..), defaultHetcatsOpts
     , DGraph, DGNodeLab, DGLinkLab()
     , DGNodeType, nodeTypeIsProven, nodeTypeIsProvenConsistent, nodeTypeIsReference
     , DevGraphLinkType(..), DevGraphLinkKind(..), getDevGraphLinkType
@@ -57,6 +57,62 @@ module HetsAPI.Internal (
 
     , showGlobalDoc
     , showDoc
+
+    -- , optsWithAnalysis
+    -- , optsWithGuiType
+    , optsWithUrlCatalog
+    , optsWithInfiles
+    , optsWithSpecNames
+    , optsWithTransNames
+    , optsWithLossyTrans
+    , optsWithViewNames
+    -- , optsWithIntype
+    , optsWithLibdirs
+    , optsWithModelSparQ
+    , optsWithCounterSparQ
+    , optsWithOutdir
+    -- , optsWithOuttypes
+    , optsWithDatabaseDoMigrate
+    , optsWithDatabaseOutputFile
+    , optsWithDatabaseConfigFile
+    , optsWithDatabaseSubConfigKey
+    , optsWithDatabaseFileVersionId
+    , optsWithDatabaseReanalyze
+    -- , optsWithDatabaseConfig
+    -- , optsWithDatabaseContext
+    , optsWithXupdate
+    , optsWithRecurse
+    , optsWithVerbose
+    , optsWithDefLogic
+    , optsWithDefSyntax
+    , optsWithOutputToStdout
+    -- , optsWithCaslAmalg
+    , optsWithInteractive
+    , optsWithConnectP
+    , optsWithConnectH
+    , optsWithUncolored
+    , optsWithXmlFlag
+    , optsWithApplyAutomatic
+    , optsWithComputeNormalForm
+    , optsWithDumpOpts
+    , optsWithDisableCertificateVerification
+    -- , optsWithIoEncoding
+    , optsWithUseLibPos
+    , optsWithUnlit
+    , optsWithServe
+    , optsWithListen
+    , optsWithPidFile
+    , optsWithWhitelist
+    , optsWithBlacklist
+    , optsWithRunMMT
+    , optsWithFullTheories
+    , optsWithOutputLogicList
+    , optsWithOutputLogicGraph
+    , optsWithFileType
+    , optsWithAccessToken
+    , optsWithHttpRequestHeaders
+    , optsWithFullSign
+    , optsWithPrintAST
 ) where
 
 
@@ -71,7 +127,7 @@ import Common.Id
 import Common.IRI
 import Common.LibName (LibName)
 import Common.Result (Result, resultToMaybe, Diagnosis)
-import Driver.Options (HetcatsOpts, defaultHetcatsOpts)
+import Driver.Options (HetcatsOpts(..), defaultHetcatsOpts)
 import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType)
 import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName, DGNodeType(..), DGEdgeType(..), DGEdgeTypeModInc(..), Scope(..), ThmTypes(..), FreeOrCofree(..), getEdgeNum)
 import Logic.Prover (ProofStatus(..), GoalStatus(..), TacticScript(..))
@@ -152,6 +208,114 @@ getDevGraphLinkType l = case edgeTypeModInc (getRealDGLinkType l) of
 
 
 
+-- optsWithAnalysis :: HetcatsOpts -> AnaType -> HetcatsOpts
+-- optsWithAnalysis o v = o {analysis = v}
+optsWithUrlCatalog :: HetcatsOpts -> [(String, String)] -> HetcatsOpts
+optsWithUrlCatalog o v = o {urlCatalog = v}
+optsWithInfiles :: HetcatsOpts -> [FilePath]  -> HetcatsOpts
+optsWithInfiles o v = o {infiles = v}
+optsWithSpecNames :: HetcatsOpts -> [SIMPLE_ID] -> HetcatsOpts
+optsWithSpecNames o v = o {specNames = v}
+optsWithTransNames :: HetcatsOpts -> [SIMPLE_ID] -> HetcatsOpts
+optsWithTransNames o v = o {transNames = v}
+optsWithLossyTrans :: HetcatsOpts -> Bool                 -> HetcatsOpts
+optsWithLossyTrans o v = o {lossyTrans = v}
+optsWithViewNames :: HetcatsOpts -> [SIMPLE_ID] -> HetcatsOpts
+optsWithViewNames o v = o {viewNames = v}
+-- optsWithIntype :: HetcatsOpts -> InType -> HetcatsOpts
+-- optsWithIntype o v = o {intype = v}
+optsWithLibdirs :: HetcatsOpts -> [FilePath] -> HetcatsOpts
+optsWithLibdirs o v = o {libdirs = v}
+optsWithModelSparQ :: HetcatsOpts -> FilePath -> HetcatsOpts
+optsWithModelSparQ o v = o {modelSparQ = v}
+optsWithCounterSparQ :: HetcatsOpts -> Int -> HetcatsOpts
+optsWithCounterSparQ o v = o {counterSparQ = v}
+optsWithOutdir :: HetcatsOpts -> FilePath -> HetcatsOpts
+optsWithOutdir o v = o {outdir = v}
+-- optsWithOuttypes :: HetcatsOpts -> [OutType] -> HetcatsOpts
+-- optsWithOuttypes o v = o {outtypes = v}
+optsWithDatabaseDoMigrate :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithDatabaseDoMigrate o v = o {databaseDoMigrate = v}
+optsWithDatabaseOutputFile :: HetcatsOpts -> FilePath -> HetcatsOpts
+optsWithDatabaseOutputFile o v = o {databaseOutputFile = v}
+optsWithDatabaseConfigFile :: HetcatsOpts -> FilePath -> HetcatsOpts
+optsWithDatabaseConfigFile o v = o {databaseConfigFile = v}
+optsWithDatabaseSubConfigKey :: HetcatsOpts -> String -> HetcatsOpts
+optsWithDatabaseSubConfigKey o v = o {databaseSubConfigKey = v}
+optsWithDatabaseFileVersionId :: HetcatsOpts -> String -> HetcatsOpts
+optsWithDatabaseFileVersionId o v = o {databaseFileVersionId = v}
+optsWithDatabaseReanalyze :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithDatabaseReanalyze o v = o {databaseReanalyze = v}
+-- optsWithDatabaseConfig :: HetcatsOpts -> DBConfig.DBConfig -> HetcatsOpts
+-- optsWithDatabaseConfig o v = o {databaseConfig = v}
+-- optsWithDatabaseContext :: HetcatsOpts -> DBConfig.DBContext -> HetcatsOpts
+-- optsWithDatabaseContext o v = o {databaseContext = v}
+optsWithXupdate :: HetcatsOpts -> FilePath -> HetcatsOpts
+optsWithXupdate o v = o {xupdate = v}
+optsWithRecurse :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithRecurse o v = o {recurse = v}
+optsWithVerbose :: HetcatsOpts -> Int -> HetcatsOpts
+optsWithVerbose o v = o {verbose = v}
+optsWithDefLogic :: HetcatsOpts -> String -> HetcatsOpts
+optsWithDefLogic o v = o {defLogic = v}
+optsWithDefSyntax :: HetcatsOpts -> String -> HetcatsOpts
+optsWithDefSyntax o v = o {defSyntax = v}
+optsWithOutputToStdout :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithOutputToStdout o v = o {outputToStdout = v}
+-- optsWithCaslAmalg :: HetcatsOpts -> [CASLAmalgOpt] -> HetcatsOpts
+-- optsWithCaslAmalg o v = o {caslAmalg = v}
+optsWithInteractive :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithInteractive o v = o {interactive = v}
+optsWithConnectP :: HetcatsOpts -> Int -> HetcatsOpts
+optsWithConnectP o v = o {connectP = v}
+optsWithConnectH :: HetcatsOpts -> String -> HetcatsOpts
+optsWithConnectH o v = o {connectH = v}
+optsWithUncolored :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithUncolored o v = o {uncolored = v}
+optsWithXmlFlag :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithXmlFlag o v = o {xmlFlag = v}
+optsWithApplyAutomatic :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithApplyAutomatic o v = o {applyAutomatic = v}
+optsWithComputeNormalForm :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithComputeNormalForm o v = o {computeNormalForm = v}
+optsWithDumpOpts :: HetcatsOpts -> [String] -> HetcatsOpts
+optsWithDumpOpts o v = o {dumpOpts = v}
+optsWithDisableCertificateVerification :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithDisableCertificateVerification o v = o {disableCertificateVerification = v}
+-- optsWithIoEncoding :: HetcatsOpts -> Enc -> HetcatsOpts
+-- optsWithIoEncoding o v = o {ioEncoding = v}
+optsWithUseLibPos :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithUseLibPos o v = o {useLibPos = v}
+optsWithUnlit :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithUnlit o v = o {unlit = v}
+optsWithServe :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithServe o v = o {serve = v}
+optsWithListen :: HetcatsOpts -> Int -> HetcatsOpts
+optsWithListen o v = o {listen = v}
+optsWithPidFile :: HetcatsOpts -> FilePath -> HetcatsOpts
+optsWithPidFile o v = o {pidFile = v}
+optsWithWhitelist :: HetcatsOpts -> [[String]] -> HetcatsOpts
+optsWithWhitelist o v = o {whitelist = v}
+optsWithBlacklist :: HetcatsOpts -> [[String]] -> HetcatsOpts
+optsWithBlacklist o v = o {blacklist = v}
+optsWithRunMMT :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithRunMMT o v = o {runMMT = v}
+optsWithFullTheories :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithFullTheories o v = o {fullTheories = v}
+optsWithOutputLogicList :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithOutputLogicList o v = o {outputLogicList = v}
+optsWithOutputLogicGraph :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithOutputLogicGraph o v = o {outputLogicGraph = v}
+optsWithFileType :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithFileType o v = o {fileType = v}
+optsWithAccessToken :: HetcatsOpts -> String -> HetcatsOpts
+optsWithAccessToken o v = o {accessToken = v}
+optsWithHttpRequestHeaders :: HetcatsOpts -> [String] -> HetcatsOpts
+optsWithHttpRequestHeaders o v = o {httpRequestHeaders = v}
+optsWithFullSign :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithFullSign o v = o {fullSign = v}
+optsWithPrintAST :: HetcatsOpts -> Bool -> HetcatsOpts
+optsWithPrintAST o v = o {printAST = v}
 
 
 

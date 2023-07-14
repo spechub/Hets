@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.38.2 -->
+<interface>
+    <requires lib="gtk+" version="3.24"/>
+    <template class="EditableListView" parent="GtkBin">
+        <property name="can-focus">False</property>
+        <child>
+            <object class="GtkBox">
+                <property name="can-focus">False</property>
+                <child>
+                    <object class="GtkScrolledWindow">
+                        <property name="shadow-type">in</property>
+                        <child>
+                            <object class="GtkTreeView" id="_treeview">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="hexpand">True</property>
+                                <property name="headers-visible">False</property>
+                                <property name="enable-search">False</property>
+                                <property name="show-expanders">False</property>
+                                <property name="activate-on-single-click">True</property>
+                                <child internal-child="selection">
+                                    <object class="GtkTreeSelection" id="selection">
+                                        <property name="mode">GTK_SELECTION_SINGLE</property>
+                                        <signal name="changed" handler="on_treeview_selection_changed"/>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkTreeViewColumn">
+                                        <child>
+                                            <object class="GtkCellRendererText">
+                                                <property name="editable">True</property>
+                                                <property name="placeholder-text">Type here...</property>
+                                                <signal name="edited" handler="on_text_edited"/>
+                                            </object>
+                                            <attributes>
+                                                <attribute name="text">0</attribute>
+                                            </attributes>
+                                        </child>
+                                    </object>
+                                </child>
+                            </object>
+                        </child>
+                    </object>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkButtonBox">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="valign">start</property>
+                        <property name="hexpand">False</property>
+                        <property name="orientation">vertical</property>
+                        <property name="layout-style">expand</property>
+                        <child>
+                            <object class="GtkButton">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                                <property name="halign">start</property>
+                                <property name="hexpand">False</property>
+                                <property name="use-underline">True</property>
+                                <signal name="clicked" handler="on_add_button_clicked"/>
+                                <child>
+                                    <object class="GtkImage">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="icon-name">list-add-symbolic</property>
+                                    </object>
+                                </child>
+                            </object>
+                            <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <object class="GtkButton" id="_btn_delete">
+                                <property name="visible">True</property>
+                                <property name="sensitive">False</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                                <property name="halign">start</property>
+                                <property name="hexpand">True</property>
+                                <signal name="clicked" handler="on_delete_button_clicked"/>
+                                <child>
+                                    <object class="GtkImage">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="icon-name">list-remove-symbolic</property>
+                                    </object>
+                                </child>
+                            </object>
+                            <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                            </packing>
+                        </child>
+                    </object>
+
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                    </packing>
+                </child>
+            </object>
+        </child>
+    </template>
+</interface>

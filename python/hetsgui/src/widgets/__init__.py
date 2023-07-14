@@ -13,3 +13,4 @@ except:
 from .CellRendererLink import CellRendererLink
 from .SelectableTreeView import SelectableTreeView
 from .ExtendedDotWidget import ExtendedDotWidget
+from .EditableListView import EditableListView

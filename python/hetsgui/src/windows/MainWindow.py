@@ -13,7 +13,6 @@ from widgets.NodeInfoDialog import NodeInfoDialog
 
 from windows.ProveWindow import ProveWindow
 
-
 T = typing.TypeVar("T")
 
 
@@ -74,21 +73,25 @@ class MainWindow(Gtk.ApplicationWindow):
         self._action("proofs.lib_flat_heterogen", self.on_lib_flat_heterogen)
         self._action("proofs.qualify_lib_env", self.on_qualify_lib_env)
 
-    def _action(self, name: str, cb: Callable[[Gio.SimpleAction, T], Any], param_type_str: Optional[str] = None) -> Gio.SimpleAction:
+    def _action(self, name: str, cb: Callable[[Gio.SimpleAction, T], Any],
+                param_type_str: Optional[str] = None) -> Gio.SimpleAction:
         action = Gio.SimpleAction.new(name, GLib.VariantType(param_type_str) if param_type_str else None)
         action.connect("activate", cb)
         self.add_action(action)
         return action
 
-    def _action_toggle(self, name: str, cb: Callable[[Gio.SimpleAction, bool], Any], default: bool = False) -> Gio.SimpleAction:
-        action = Gio.SimpleAction.new_stateful(name, None,  GLib.Variant.new_boolean(default))
+    def _action_toggle(self, name: str, cb: Callable[[Gio.SimpleAction, bool], Any],
+                       default: bool = False) -> Gio.SimpleAction:
+        action = Gio.SimpleAction.new_stateful(name, None, GLib.Variant.new_boolean(default))
         action.connect("change-state", cb)
         self.add_action(action)
         return action
 
     def open_file(self, file: str):
+        opts = {"libdirs": [os.environ["HETS_LIB"]] if "HETS_LIB" in os.environ else []}
+
         self.file = file
-        self.library = hets.load_library(file)
+        self.library = hets.load_library(file, **opts)
 
         if self.ui_graph:
             self.ui_graph.load_graph(self.library.development_graph())
@@ -157,7 +160,8 @@ class MainWindow(Gtk.ApplicationWindow):
         origin_id = parameter.get_child_value(0).get_child_value(0).get_string()
         target_id = parameter.get_child_value(1).get_child_value(0).get_string()
         if self.library:
-            edge = [e for e in self.library.development_graph().edges() if str(e.origin()) == origin_id and str(e.target()) == target_id][0]
+            edge = [e for e in self.library.development_graph().edges() if
+                    str(e.origin()) == origin_id and str(e.target()) == target_id][0]
 
             info_dialog = EdgeInfoDialog(self, edge)
             info_dialog.run()
