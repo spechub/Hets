@@ -8,7 +8,7 @@ from hets import DevGraphNode, ProofKind, Comorphism, Prover, Sentence
 from formatting.Colors import PROOF_KIND_BG_COLORS, color_name_to_rgba
 from windows.ProofDetailsWindow import ProofDetailsWindow
 
-from widgets import CellRendererLink
+from widgets import CellRendererLink, ProverComorphismSelector
 
 
 @GtkSmartTemplate
@@ -17,43 +17,30 @@ class ProveWindow(Gtk.Window):
 
     goals_model: Gtk.ListStore = Gtk.Template.Child()
     axioms_model: Gtk.ListStore = Gtk.Template.Child()
-    prover_model: Gtk.ListStore = Gtk.Template.Child()
-    comorphism_model: Gtk.ListStore = Gtk.Template.Child()
-    comorphism_filtered: Gtk.TreeModelFilter = Gtk.Template.Child()
 
     notebook: Gtk.Notebook = Gtk.Template.Child()
     btn_prove: Gtk.Button = Gtk.Template.Child()
     txt_extra_options: Gtk.Entry = Gtk.Template.Child()
     txt_timeout: Gtk.SpinButton = Gtk.Template.Child()
     switch_include_proven_theorems: Gtk.Switch = Gtk.Template.Child()
-    combo_comorphism: Gtk.ComboBox = Gtk.Template.Child()
-    combo_prover: Gtk.ComboBox = Gtk.Template.Child()
 
     _lbl_sublogic: Gtk.Label = Gtk.Template.Child()
+    _prover_comorphism_selector: ProverComorphismSelector = Gtk.Template.Child()
 
     @property
     def selected_comorphism(self) -> Comorphism:
-        comorphism_model = self.combo_comorphism.get_model()
-        comorphism_index = self.combo_comorphism.get_active()
-        comorphism_name = comorphism_model[comorphism_index][0] if comorphism_index >= 0 else None
-        comorphism = None if comorphism_name is None else next(
-            c for c in self.node.global_theory().get_available_comorphisms() if c.name() == comorphism_name)
-        return comorphism
+        return self._prover_comorphism_selector.selected_comorphism
 
     @property
     def selected_prover(self) -> Prover:
-        prover_model = self.combo_prover.get_model()
-        prover_index = self.combo_prover.get_active()
-        prover_name = prover_model[prover_index][0] if prover_index >= 0 else None
-        prover = self.node.global_theory().get_prover_by_name(prover_name)
-        return prover
+        return self._prover_comorphism_selector.selected_prover
 
     def __init__(self, node: DevGraphNode, **kwargs):
         super().__init__(title=f"Prove {node.name()}", **kwargs)
 
         self.proving_thread: Optional[threading.Thread] = None
         self.node = node
-
+        self._prover_comorphism_selector.theory = node.global_theory()
         self._init_view()
 
         self.update_sublogic()
@@ -72,25 +59,6 @@ class ProveWindow(Gtk.Window):
             self.axioms_model.append(
                 [axiom.name(), True, axiom.name(), str(axiom)])
 
-        # Add provers and comorphisms to their respective models for display in combo boxes
-        for prover, comorphisms in self.node.global_theory().get_usable_provers_with_comorphisms().items():
-            shortest_comorphism_path_len = 100
-            for comorphism in comorphisms:
-                comorphism_path_length = comorphism.path_length()
-                if comorphism_path_length < shortest_comorphism_path_len:
-                    shortest_comorphism_path_len = comorphism_path_length
-
-                self.comorphism_model.append(
-                    [comorphism.name(), comorphism.name(), prover.name(), comorphism_path_length])
-
-            shortest_comorphism_path_len = min(
-                c.path_length() for c in comorphisms)
-            self.prover_model.append(
-                [prover.name(), prover.name(), shortest_comorphism_path_len])
-
-        self.comorphism_filtered.set_visible_func(self._comorphism_filter)
-        self.combo_prover.set_active(0)
-
     def _goal_style(self, g: Sentence):
         proof = g.best_proof()
         kind = proof.kind() if proof is not None else ProofKind.OPEN
@@ -98,16 +66,6 @@ class ProveWindow(Gtk.Window):
         color_name = PROOF_KIND_BG_COLORS[kind]
         goal_color = color_name_to_rgba(color_name)
         return goal_color, goal_text
-
-    def _comorphism_filter(self, model: Gtk.ListStore, path: str, data):
-        prover_model = self.combo_prover.get_model()
-        active_prover_iter = self.combo_prover.get_active_iter()
-
-        if active_prover_iter is not None:
-            prover_name = prover_model[active_prover_iter][0]
-            return model[path][2] == prover_name
-        else:
-            return False
 
     @Gtk.Template.Callback()
     def on_close(self, widget, event):
@@ -133,12 +91,6 @@ class ProveWindow(Gtk.Window):
                 goal, self.node.global_theory())
             details_window.show_all()
             details_window.present()
-
-    @Gtk.Template.Callback()
-    def update_comorphisms(self, widget):
-        self.comorphism_filtered.refilter()
-        if len(self.comorphism_filtered) > 0:
-            self.combo_comorphism.set_active(0)
 
     @Gtk.Template.Callback()
     def on_goals_changed(self, model: Gtk.ListStore, path: Gtk.TreePath, it: Gtk.TreeIter):

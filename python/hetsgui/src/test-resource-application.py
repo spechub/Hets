@@ -12,7 +12,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gio, GObject
 
 
-def get_test_window_for_resource(resource_name: str):
+def get_test_window_for_window_resource(resource_name: str):
     name = resource_name.split("/")[-1]
     style_resource_name = f"{resource_name}.css"
 
@@ -29,6 +29,18 @@ def get_test_window_for_resource(resource_name: str):
                 self.get_style_context().add_provider(provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
     return PreviewWindow
+    
+
+class PreviewWidgetWindow(Gtk.Window):
+    def __init__(self, resource: str, **kwargs):
+        super().__init__(**kwargs)
+        self.set_default_size(400, 400)
+        import widgets
+        
+        widget_name = resource.split("/")[-1]
+        widget_class = widgets.__dict__[widget_name]
+        widget = widget_class()
+        self.add(widget)
 
 
 class ResourceSelectorWindow(Gtk.Window):
@@ -38,15 +50,16 @@ class ResourceSelectorWindow(Gtk.Window):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
+        
         def collect_resources(path: str):
             rs: List[str] = Gio.resources_enumerate_children(path, 0)
             result = []
             for resource in rs:
-                if resource.endswith("Window.ui"):
-                    result.append(path + resource[:-3])
-                elif resource.endswith("/"):
+                # if resource.endswith("Window.ui"):
+                if resource.endswith("/"):
                     result += collect_resources(path + resource)
+                elif resource.endswith(".ui"):
+                    result.append(path + resource[:-3])
 
             return result
 
@@ -104,9 +117,11 @@ class PreviewApplication(Gtk.Application):
     def preview_resource(self, widget, resource):
         if self.window is not None:
             self.window.close()
-
-        template_window = get_test_window_for_resource(resource)(application=self)
-        self.window = template_window
+        if resource.endswith("Window"):
+            template_window = get_test_window_for_window_resource(resource)(application=self)
+            self.window = template_window
+        else:
+            self.window = PreviewWidgetWindow(resource, application=self)
 
         self.window.show_all()
         self.window.present()
