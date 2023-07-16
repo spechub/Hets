@@ -18,7 +18,7 @@ from .haskell import (fst, PyTheory, getUsableProvers, getUsableConsistencyCheck
                       prettySentence,
                       getUnprovenGoals, OMap, snd,
                       logicNameOfTheory,
-                      logicDescriptionOfTheory, signatureOfTheory)
+                      logicDescriptionOfTheory, signatureOfTheory, sublogicOfPyTheory, getTheoryForSelection)
 
 
 class Theory(HsHierarchyElement):
@@ -122,19 +122,22 @@ class Theory(HsHierarchyElement):
 
     def goals(self) -> List[Sentence]:
         if self._goals is None:
-            self._goals = [Sentence(x, self._hs_pretty_sentence, self) for x in OMap.toList(getAllGoals(self._hs_theory))]
+            self._goals = [Sentence(x, self._hs_pretty_sentence, self) for x in
+                           OMap.toList(getAllGoals(self._hs_theory))]
 
         return self._goals
 
     def proven_goals(self) -> List[Sentence]:
         if self._proven_goals is None:
-            self._proven_goals = [Sentence(x, self._hs_pretty_sentence, self) for x in OMap.toList(getProvenGoals(self._hs_theory))]
+            self._proven_goals = [Sentence(x, self._hs_pretty_sentence, self) for x in
+                                  OMap.toList(getProvenGoals(self._hs_theory))]
 
         return self._proven_goals
 
     def unproven_goals(self) -> List[Sentence]:
         if self._unproven_goals is None:
-            self._unproven_goals = [Sentence(x, self._hs_pretty_sentence, self) for x in OMap.toList(getUnprovenGoals(self._hs_theory))]
+            self._unproven_goals = [Sentence(x, self._hs_pretty_sentence, self) for x in
+                                    OMap.toList(getUnprovenGoals(self._hs_theory))]
 
         return self._unproven_goals
 
@@ -147,3 +150,20 @@ class Theory(HsHierarchyElement):
     def sentence_by_name(self, name: str) -> Optional[Sentence]:
         return next(iter(s for s in self.sentences() if s.name() == name), None)
 
+    def get_sublogic(self) -> str:
+        return sublogicOfPyTheory(self._hs_theory)
+
+    def with_selection(self,
+                       axioms: Optional[List[str]] = None,
+                       goals: Optional[List[str]] = None,
+                       theorems: Optional[List[str]] = None):
+        if axioms is None:
+            axioms = self.axioms()
+        if goals is None:
+            goals = self.goals()
+        if theorems is None:
+            theorems = []
+
+        theory = getTheoryForSelection(axioms, goals, theorems, self._hs_theory)
+
+        return Theory(theory, self.parent())

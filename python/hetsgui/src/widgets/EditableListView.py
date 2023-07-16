@@ -17,6 +17,9 @@ class EditableListView(Gtk.Bin):
         super().__init__()
 
         self._treeview.set_model(self.model)
+        self.bind_property("model", self._treeview, "model", GObject.BindingFlags.BIDIRECTIONAL)
+
+
 
     @Gtk.Template.Callback()
     def on_add_button_clicked(self, *args):

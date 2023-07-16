@@ -33,6 +33,7 @@ module Proofs.AbstractState
     , toAxioms
     , getAxioms
     , getGoals
+    , makeTheoryForSentences
     , recalculateSublogicAndSelectedTheory
     , markProved
     , G_theory_with_prover (..)
@@ -340,21 +341,25 @@ prepareForProving st (G_prover lid4 p, co) = do
   p' <- coerceProver lid4 lidT "" p
   return $ G_theory_with_prover lidT th p'
 
+makeTheoryForSentences :: [String] -> [String] -> [String] -> G_theory -> G_theory
+makeTheoryForSentences axioms goals theorems (G_theory lid syn sig si sens _ ) =
+  let (aMap, gMap) = OMap.partition isAxiom sens
+        -- proven goals map
+      pMap = OMap.filter isProvenSenStatus gMap
+  in
+  G_theory lid syn sig si
+      (Map.unions
+        [ filterMapWithList goals gMap
+        , filterMapWithList axioms aMap
+        , markAsAxiom True $ filterMapWithList theorems pMap
+        ]) startThId
+
 -- | creates the currently selected theory
 makeSelectedTheory :: ProofState -> G_theory
-makeSelectedTheory s = case currentTheory s of
-  G_theory lid syn sig si sens _ ->
-    -- axiom map, goal map
-    let (aMap, gMap) = OMap.partition isAxiom sens
-        -- proven goals map
-        pMap = OMap.filter isProvenSenStatus gMap
-    in
-    G_theory lid syn sig si
-      (Map.unions
-        [ filterMapWithList (selectedGoals s) gMap
-        , filterMapWithList (includedAxioms s) aMap
-        , markAsAxiom True $ filterMapWithList (includedTheorems s) pMap
-        ]) startThId
+makeSelectedTheory s = makeTheoryForSentences
+  (includedAxioms s)
+  (selectedGoals s)
+  (includedTheorems s) $ currentTheory s
 
 {- |
   recalculation of sublogic upon (de)selection of goals, axioms and

@@ -4,7 +4,8 @@ Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 -}
 module HetsAPI.ProveCommands (
-    getAvailableComorphisms
+    getTheoryForSelection
+    , getAvailableComorphisms
     , getUsableProvers
     , getUsableConsistencyCheckers
 
@@ -46,7 +47,7 @@ import Logic.Comorphism (AnyComorphism)
 import Logic.Grothendieck (findComorphismPaths)
 import Logic.Prover (ProofStatus, ProverKind (..))
 
-import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, G_cons_checker (..), getProverName, getConsCheckers, getCcName)
+import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, G_cons_checker (..), getProverName, getConsCheckers, getCcName, makeTheoryForSentences)
 import qualified Proofs.AbstractState as PAS
 import Proofs.ConsistencyCheck (ConsistencyStatus, SType(..), consistencyCheck, sType)
 import Proofs.BatchProcessing (genericProveBatch)
@@ -94,6 +95,8 @@ type ProofResult = (G_theory -- The new theory
     , [ProofStatus G_proof_tree]) -- ProofStatus of each goal
 
 
+getTheoryForSelection :: [String] -> [String] -> [String] -> G_theory -> G_theory
+getTheoryForSelection = makeTheoryForSentences
 
 -- | @getAvailableComorphisms theory@ yields all available comorphisms for @theory@
 getAvailableComorphisms :: G_theory -> [AnyComorphism]

@@ -24,4 +24,5 @@ from hs.HetsAPI.Python import (fstOf3, sndOf3, thd, PyTheory, PyProver, PyConsCh
                                PyBasicProofGuessed, PyBasicProofConjectured, PyBasicProofHandwritten, PyTheorySentence,
                                PyTheorySentenceByName, theorySentenceIsAxiom, theorySentenceWasTheorem,
                                theorySentenceIsDefined, theorySentenceGetTheoremStatus, theorySentenceBestProof,
-                               theorySentencePriority, theorySentenceContent, pyProofStatusOfPyBasicProof)
+                               theorySentencePriority, theorySentenceContent, pyProofStatusOfPyBasicProof,
+                               sublogicOfPyTheory, getTheoryForSelection)

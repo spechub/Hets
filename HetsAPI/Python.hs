@@ -19,6 +19,8 @@ module HetsAPI.Python (
     , mkPyProofOptions
     -- Wrapped with Py*
 
+    , getTheoryForSelection
+    , sublogicOfPyTheory
     , theoryOfNode
     , getUsableProvers
     , translateTheory
@@ -87,7 +89,7 @@ module HetsAPI.Python (
     , HC.qualifyLibEnv
     , HC.loadLibrary
     , HC.showTheory
-    
+
     , HI.getGraphForLibrary
     , HI.getNodesFromDevelopmentGraph
     , HI.getLNodesFromDevelopmentGraph
@@ -149,7 +151,7 @@ import Logic.Prover (ProofStatus(..), ThmStatus(..))
 import Static.DevGraph (DGNodeLab (dgn_theory), DGLinkLab(dgl_morphism), LibEnv, DGraph, dgBody)
 import qualified Static.DevGraph (DGNodeLab(globalTheory))
 import qualified Static.GTheory as GT
-import Static.GTheory (G_theory, BasicProof(..))
+import Static.GTheory (G_theory, BasicProof(..), sublogicOfTh)
 
 import qualified Proofs.AbstractState
 import Proofs.AbstractState (G_prover, ProofState, G_proof_tree(..), G_cons_checker)
@@ -206,7 +208,7 @@ type PyTheorySentence = SenAttr Sentence (ThmStatus (PyComorphism, PyBasicProof)
 type PyTheorySentenceByName = OMap.OMap String PyTheorySentence
 
 toPyTheorySentence :: TheorySentence -> PyTheorySentence
-toPyTheorySentence sen = sen {senAttr = ThmStatus (fmap (\(c, p) -> (PyComorphism c, toPyBasicProof p)) $ getThmStatus . senAttr $ sen)}
+toPyTheorySentence sen = sen {senAttr = ThmStatus (fmap (bimap PyComorphism toPyBasicProof) $ getThmStatus . senAttr $ sen)}
 
 pyProofStatusOfPyBasicProof :: PyBasicProof -> Maybe (ProofStatus PyProofTree)
 pyProofStatusOfPyBasicProof b = case b of
@@ -310,6 +312,12 @@ consCheckerName (PyConsChecker cc) = Proofs.AbstractState.getCcName cc
 theoryOfNode :: DGNodeLab -> PyTheory
 theoryOfNode = PyTheory . dgn_theory
 
+sublogicOfPyTheory :: PyTheory -> String
+sublogicOfPyTheory (PyTheory th) = show . sublogicOfTh $ th
+
+getTheoryForSelection :: [String] -> [String] -> [String] -> PyTheory -> PyTheory
+getTheoryForSelection axioms goals theorems (PyTheory th) = PyTheory (HP.getTheoryForSelection axioms goals theorems th)
+
 -- | @getUsableProvers theory@ checks for usable provers available on the machine
 getUsableProvers :: PyTheory -> IO [(PyProver, PyComorphism)]
 getUsableProvers (PyTheory th) = do
@@ -322,7 +330,7 @@ toPyProofStatus status = status { proofTree = toPyProofTree (proofTree status) }
 
 proveNode :: PyTheory -> PyProofOptions -> IO (Result (PyTheory, [ProofStatus PyProofTree]))
 proveNode (PyTheory theory) opts =
-    runResultT $ (\(th, statuses) -> (PyTheory th, toPyProofStatus <$> statuses)) <$> HP.proveNode theory (toProofOptions opts)
+    runResultT $ bimap PyTheory (toPyProofStatus <$>) <$> HP.proveNode theory (toProofOptions opts)
 
 proveNodeAndRecord :: HDT.TheoryPointer -> PyProofOptions -> IO (Result ((PyTheory, [ProofStatus PyProofTree]), LibEnv))
 proveNodeAndRecord ptr opts =
