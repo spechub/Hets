@@ -38,36 +38,13 @@
                 <property name="can-focus">True</property>
                 <property name="tab-pos">left</property>
                 <child>
-                    <object class="GtkGrid">
+                    <object class="GridWithToolComorphismSelector" id="_prover_comorphism_selector">
+<!--                    <object class="GtkGrid">-->
                         <property name="border-width">10</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="row-spacing">4</property>
-                        <property name="column-spacing">14</property>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="halign">start</property>
-                                <property name="label" translatable="yes">Prover:</property>
-                            </object>
-                            <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">0</property>
-                            </packing>
-                        </child>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="halign">start</property>
-                                <property name="label" translatable="yes">Comorphism:</property>
-                            </object>
-                            <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">1</property>
-                            </packing>
-                        </child>
+<!--                        <property name="visible">True</property>-->
+<!--                        <property name="can-focus">False</property>-->
+<!--                        <property name="row-spacing">4</property>-->
+<!--                        <property name="column-spacing">14</property>-->
                         <child>
                             <object class="GtkLabel">
                                 <property name="visible">True</property>
@@ -90,20 +67,6 @@
                             <packing>
                                 <property name="left-attach">1</property>
                                 <property name="top-attach">2</property>
-                            </packing>
-                        </child>
-                        <child>
-                            <object class="ProverComorphismSelector" id="_prover_comorphism_selector"></object>
-                            <packing>
-                                <property name="left-attach">
-                                    0
-                                </property>
-                                <property name="top-attach">
-                                    0
-                                </property>
-                                <property name="width">
-                                    2
-                                </property>
                             </packing>
                         </child>
                     </object>

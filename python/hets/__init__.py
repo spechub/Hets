@@ -16,6 +16,7 @@ from .Logic import Logic
 from .ProofState import ProofState
 from .ProofDetails import ProofDetails
 from .ProofKind import ProofKind
+from .ConsistencyKind import ConsistencyKind
 from .Prover import Prover
 from .Sentence import Sentence
 from .Signature import Signature

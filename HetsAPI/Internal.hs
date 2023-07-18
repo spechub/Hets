@@ -24,12 +24,13 @@ module HetsAPI.Internal (
     , ProofState
     , ConsistencyStatus
     , consistencyStatusType
-    , SType
+    , consistencyStatusMessage
+    , SType(..)
     , ConsStatus
     , requiredConservativity
     , provenConservativity
     , linkStatus
-    , Conservativity
+    , Conservativity(..)
     , getNodeConsStatus
     , getConsOfStatus
     , isProvenConsStatusLink
@@ -128,15 +129,19 @@ import Common.IRI
 import Common.LibName (LibName)
 import Common.Result (Result, resultToMaybe, Diagnosis)
 import Driver.Options (HetcatsOpts(..), defaultHetcatsOpts)
-import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType)
-import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName, DGNodeType(..), DGEdgeType(..), DGEdgeTypeModInc(..), Scope(..), ThmTypes(..), FreeOrCofree(..), getEdgeNum)
+import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), DGNodeInfo(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType)
+import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName, DGNodeType(..), DGEdgeType(..), DGEdgeTypeModInc(..), Scope(..), ThmTypes(..), FreeOrCofree(..), ConsStatus(..), getEdgeNum)
 import Logic.Prover (ProofStatus(..), GoalStatus(..), TacticScript(..))
 import Proofs.AbstractState (ProofState)
-import Proofs.ConsistencyCheck (ConsistencyStatus(..), SType)
+import Proofs.ConsistencyCheck (ConsistencyStatus(..), SType(..))
 
 developmentGraphNodeLabelName :: DGNodeLab -> String
 developmentGraphNodeLabelName = getDGNodeName
 
+developmentGraphNodeConsistencyStatus :: DGNodeLab -> Maybe ConsStatus
+developmentGraphNodeConsistencyStatus node = case nodeInfo node of
+    DGNode _ status -> Just status
+    _ -> Nothing
 
 developmentGraphEdgeLabelName :: DGLinkLab -> String
 developmentGraphEdgeLabelName = dglName
@@ -147,6 +152,10 @@ developmentGraphEdgeLabelId = getEdgeNum . dgl_id
 
 consistencyStatusType :: ConsistencyStatus -> SType
 consistencyStatusType = sType
+
+
+consistencyStatusMessage :: ConsistencyStatus -> String
+consistencyStatusMessage = sMessage
 
 globalAnnotations :: DGraph -> GlobalAnnos
 globalAnnotations = globalAnnos
@@ -316,9 +325,4 @@ optsWithFullSign :: HetcatsOpts -> Bool -> HetcatsOpts
 optsWithFullSign o v = o {fullSign = v}
 optsWithPrintAST :: HetcatsOpts -> Bool -> HetcatsOpts
 optsWithPrintAST o v = o {printAST = v}
-
-
-
-
-
 

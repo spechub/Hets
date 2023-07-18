@@ -3,21 +3,37 @@ Description :  Represents `Static.DgUtils.ConsStatus`
 Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 """
-
-from .haskell import ConsStatus, showConsistencyStatus
+from .ConsistencyKind import ConsistencyKind
+from .haskell import ConsStatus, Conservativity, Inconsistent, Unknown, PCons, Cons, Mono, Def
 
 
 class ConsistencyStatus:
     def __init__(self, hs_cons_status: ConsStatus):
         self._hs_cons_status = hs_cons_status
 
-    def required(self) -> str:
+    def required(self) -> ConsistencyKind:
         hsCons = self._hs_cons_status.requiredConservativity()
-        return showConsistencyStatus(hsCons)
+        return self._hs_conservativity_to_consistency_kind(hsCons)
 
-    def proven(self) -> str:
+    def proven(self) -> ConsistencyKind:
         hsCons = self._hs_cons_status.provenConservativity()
-        return showConsistencyStatus(hsCons)
+        return self._hs_conservativity_to_consistency_kind(hsCons)
+
+    def _hs_conservativity_to_consistency_kind(self, hs_cons: Conservativity):
+        if isinstance(hs_cons, Inconsistent):
+            return ConsistencyKind.INCONSISTENT
+        elif isinstance(hs_cons, Unknown):
+            return ConsistencyKind.UNKNOWN
+        elif isinstance(hs_cons, PCons):
+            return ConsistencyKind.PCONS
+        elif isinstance(hs_cons, Cons):
+            return ConsistencyKind.CONS
+        elif isinstance(hs_cons, Mono):
+            return ConsistencyKind.MONO
+        elif isinstance(hs_cons, Def):
+            return ConsistencyKind.DEFINED
+        else:
+            return ConsistencyKind.UNKNOWN
 
     def is_proven_link(self) -> bool:
         return self._hs_cons_status.isProvenConsStatusLink()

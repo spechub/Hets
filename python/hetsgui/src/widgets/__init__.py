@@ -7,7 +7,7 @@ try:
     from .GraphvizGraphWidget import GraphvizGraphWidget
     from .NodeInfoDialog import NodeInfoDialog
     from .ProofDetail import ProofDetail
-    from .ProverComorphismSelector import ProverComorphismSelector
+    from .GridWithToolComorphismSelector import GridWithToolComorphismSelector
 except:
     pass
 

@@ -7,6 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 from typing import Tuple, Optional, List
 
 from .ConsistencyStatus import ConsistencyStatus
+from .ConsistencyKind import ConsistencyKind
 from .Comorphism import Comorphism
 from .result import result_or_raise
 from .ConsistencyChecker import ConsistencyChecker
@@ -18,7 +19,8 @@ from .haskell import snd, theoryOfNode, DGNodeLab, fst, Just, Nothing, PyProver,
     defaultConsCheckingOptions, \
     PyConsCheckingOptions, checkConsistencyAndRecord, TheoryPointer, globalTheory, recomputeNode, fromJust, \
     developmentGraphNodeLabelName, getDevelopmentGraphNodeType, nodeTypeIsReference, nodeTypeIsProven, \
-    nodeTypeIsProvenConsistent, isInternalNode, showGlobalDoc
+    nodeTypeIsProvenConsistent, isInternalNode, showGlobalDoc, consistencyStatusType, CSUnchecked, CSTimeout, CSError, \
+    CSInconsistent, CSConsistent, consistencyStatusMessage
 
 from .Theory import Theory
 
@@ -93,7 +95,7 @@ class DevGraphNode(HsHierarchyElement):
                           comorphism: Optional[Comorphism] = None,
                           include_theorems: Optional[bool] = None,
                           timeout: Optional[int] = None
-                          ) -> HsConsistencyStatus:
+                          ) -> Tuple[ConsistencyKind, str]:
         cc_maybe = Just(cons_checker._hs_cons_checker) if cons_checker else Nothing().subst(a=PyConsChecker())
         comorphism_maybe = Just(comorphism._hs_comorphism) if comorphism else Nothing().subst(a=PyComorphism())
 
@@ -111,7 +113,21 @@ class DevGraphNode(HsHierarchyElement):
 
         self.root().hs_update(new_env)
 
-        return cc_result
+        status_type = consistencyStatusType(cc_result)
+        status_message = consistencyStatusMessage(cc_result)
+
+        if isinstance(status_type, CSUnchecked):
+            return ConsistencyKind.UNKNOWN, status_message
+        elif isinstance(status_type, CSTimeout):
+            return ConsistencyKind.TIMED_OUT, status_message
+        elif isinstance(status_type, CSError):
+            return ConsistencyKind.ERROR, status_message
+        elif isinstance(status_type, CSInconsistent):
+            return ConsistencyKind.INCONSISTENT, status_message
+        elif isinstance(status_type, CSConsistent):
+            return ConsistencyKind.PCONS, status_message
+        else:
+            return ConsistencyKind.UNKNOWN, status_message
 
     def consistency_status(self) -> ConsistencyStatus:
         node_lab = snd(self._hs_node)
@@ -142,6 +158,8 @@ class DevGraphNode(HsHierarchyElement):
             node_lab = snd(self._hs_node)
             hs_theory = theoryOfNode(node_lab)
             self._theory.hs_update(hs_theory)
+
+        print(f"Updaing node {self.name()}. Consistency Status: {snd(new_hs_obj).getNodeConsStatus()}")
 
     def theory(self) -> Theory:
         if self._theory is None:

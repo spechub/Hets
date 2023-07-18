@@ -51,7 +51,7 @@ def node_color(node: DevGraphNode) -> str:
         else:
             return COLOR_MAP[("yellow", False, True)]
     else:
-        return "coral"
+        return COLOR_MAP[("coral", False, node.is_consistency_proven())]
 
 
 def edge_color(edge: DevGraphEdge) -> str:
@@ -199,6 +199,11 @@ class GraphvizGraphWidget(DotWidget):
         menu_item_prove.set_label("Prove")
         menu_item_prove.set_action_and_target_value("win.node.prove", GLib.Variant.new_string(node_id))
         menu.append_item(menu_item_prove)
+        
+        menu_item_consistency = Gio.MenuItem()
+        menu_item_consistency.set_label("Check consistency")
+        menu_item_consistency.set_action_and_target_value("win.node.check_consistency", GLib.Variant.new_string(node_id))
+        menu.append_item(menu_item_consistency)
 
         menu_item_info = Gio.MenuItem()
         menu_item_info.set_label("Show node info")

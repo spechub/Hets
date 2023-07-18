@@ -1,6 +1,6 @@
 from gi.repository import Gdk
 
-from hets import ProofKind
+from hets import ProofKind, ConsistencyKind
 
 PROOF_KIND_BG_COLORS = {
     ProofKind.UNKNOWN: "fuchsia",
@@ -24,6 +24,17 @@ PROOF_KIND_FG_COLORS = {
     ProofKind.GUESSED: "darkseagreen",
     ProofKind.CONJECTURED: "darkseagreen",
     ProofKind.HANDWRITTEN: "darkseagreen"
+}
+
+CONSISTENCY_KIND_BG_COLORS = {
+    ConsistencyKind.INCONSISTENT: "red",
+    ConsistencyKind.UNKNOWN: "black",
+    ConsistencyKind.PCONS: "darkgreen",
+    ConsistencyKind.CONS: "green",
+    ConsistencyKind.MONO: "violet",
+    ConsistencyKind.DEFINED: "darkseagreen",
+    ConsistencyKind.TIMED_OUT: "blue",
+    ConsistencyKind.ERROR: "darkred",
 }
 
 

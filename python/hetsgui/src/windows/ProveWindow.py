@@ -8,7 +8,7 @@ from hets import DevGraphNode, ProofKind, Comorphism, Prover, Sentence
 from formatting.Colors import PROOF_KIND_BG_COLORS, color_name_to_rgba
 from windows.ProofDetailsWindow import ProofDetailsWindow
 
-from widgets import CellRendererLink, ProverComorphismSelector
+from widgets import CellRendererLink, GridWithToolComorphismSelector
 
 
 @GtkSmartTemplate
@@ -25,7 +25,7 @@ class ProveWindow(Gtk.Window):
     switch_include_proven_theorems: Gtk.Switch = Gtk.Template.Child()
 
     _lbl_sublogic: Gtk.Label = Gtk.Template.Child()
-    _prover_comorphism_selector: ProverComorphismSelector = Gtk.Template.Child()
+    _prover_comorphism_selector: GridWithToolComorphismSelector = Gtk.Template.Child()
 
     @property
     def selected_comorphism(self) -> Comorphism:

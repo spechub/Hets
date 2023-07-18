@@ -12,6 +12,7 @@ from widgets.GraphvizGraphWidget import GraphvizGraphWidget
 from widgets.NodeInfoDialog import NodeInfoDialog
 
 from windows.ProveWindow import ProveWindow
+from windows.ConsistencyCheckWindow import ConsistencyCheckWindow
 
 T = typing.TypeVar("T")
 
@@ -47,6 +48,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self._action("open_file", self.on_menu_open_file)
         self._action("node.prove", self.on_prove_node, "s")
+        self._action("node.check_consistency", self.on_check_consistency_node, "s")
         self._action("node.show_info", self.on_show_node_info, "s")
         self._action("edge.show_info", self.on_show_edge_info, "av")
         self._action_toggle("toggle_show_names", self.on_toggle_show_names)
@@ -139,12 +141,21 @@ class MainWindow(Gtk.ApplicationWindow):
             prove_window.present()
 
             prove_window.connect("destroy", lambda _: self.ui_graph.render())
-
-            # node.prove(node.theory().get_prover_by_name("Pellet"))
-
-            # self.ui_graph.render()
         else:
             print(f'Action: prove node {node_id}. But no library is loaded!')
+
+    def on_check_consistency_node(self, action, parameter: GLib.Variant):
+        node_id = parameter.get_string()
+        if self.library:
+            node = [n for n in self.library.development_graph().nodes() if str(n.id()) == node_id][0]
+
+            check_consistency_window = ConsistencyCheckWindow(node, transient_for=self)
+            check_consistency_window.show_all()
+            check_consistency_window.present()
+
+            check_consistency_window.connect("destroy", lambda _: self.ui_graph.render())
+        else:
+            print(f'Action: check consistency node {node_id}. But no library is loaded!')
 
     def on_show_node_info(self, action, parameter: GLib.Variant):
         node_id = parameter.get_string()

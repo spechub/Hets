@@ -26,7 +26,7 @@ import Data.Data
      required for extending imports (no confusion) in Maude -}
 data Conservativity =
     Inconsistent
-  | Unknown String
+  | Unknown { conservativityUnknownReason :: String}
   | None
   | PCons
   | Cons

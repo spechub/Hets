@@ -1,7 +1,6 @@
 """ Auto generated python imports for haskell module ../HetsAPI/Internal.hs"""
 
 from .base import *
-
 from hs.HetsAPI.Internal import (DGNodeLab,
                                  getNodeConsStatus,
                                  DGLinkLab,
@@ -112,5 +111,21 @@ from hs.HetsAPI.Internal import (DGNodeLab,
                                  optsWithAccessToken,
                                  optsWithHttpRequestHeaders,
                                  optsWithFullSign,
-                                 optsWithPrintAST
+                                 optsWithPrintAST,
+                                 consistencyStatusType,
+                                 consistencyStatusMessage,
+                                 SType,
+                                 CSUnchecked,
+                                 CSTimeout,
+                                 CSError,
+                                 CSInconsistent,
+                                 CSConsistent,
+                                 Conservativity,
+                                 Inconsistent,
+                                 Unknown,
+                                 PCons,
+                                 Cons,
+                                 Mono,
+                                 Def
                                  )
+

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+    <requires lib="gtk+" version="3.24"/>
+    <object class="GtkAdjustment" id="adjustment_consistency_checker_timeout">
+        <property name="upper">4294967295</property>
+        <property name="step-increment">1</property>
+        <property name="page-increment">10</property>
+    </object>
+    <template class="ConsistencyCheckWindow" parent="GtkWindow">
+        <property name="can-focus">False</property>
+        <property name="type">popup</property>
+        <property name="window-position">center-on-parent</property>
+        <property name="default-width">600</property>
+        <property name="default-height">260</property>
+        <property name="destroy-with-parent">True</property>
+        <signal name="delete-event" handler="on_close" swapped="no"/>
+        <child>
+            <!--            <object class="GtkOverlay">-->
+            <!--                <child type="overlay">-->
+            <!--            <object class="GtkGrid">-->
+            <!--                <property name="row-homogeneous">False</property>-->
+            <!--                <property name="column-spacing">14</property>-->
+            <!--                <property name="row-spacing">4</property>-->
+
+            <object class="GridWithToolComorphismSelector" id="_consistency_checker_comorphism_selector">
+                <property name="border-width">10</property>
+                <property name="start-top">1</property>
+                <property name="start-left">0</property>
+                <child>
+                    <object class="GtkLabel">
+                        <property name="label">&lt;b&gt;Status:&lt;/b&gt;</property>
+                        <property name="use-markup">True</property>
+                        <property name="halign">GTK_ALIGN_START</property>
+                    </object>
+                    <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">0</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkLabel" id="_lbl_status">
+                        <property name="use-markup">True</property>
+                        <property name="halign">GTK_ALIGN_FILL</property>
+                        <property name="hexpand">True</property>
+                    </object>
+                    <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">0</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkLabel">
+                        <property name="label">Timeout in s:</property>
+                        <property name="halign">GTK_ALIGN_START</property>
+                        <property name="hexpand">True</property>
+                    </object>
+                    <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">3</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkSpinButton" id="_txt_timeout">
+                        <property name="adjustment">adjustment_consistency_checker_timeout</property>
+                        <property name="value">10</property>
+                    </object>
+                    <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">3</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkLabel">
+                        <property name="label">Include proven theorems:</property>
+                        <property name="halign">GTK_ALIGN_START</property>
+                        <property name="tooltip-text">Include preceding proven theorems in next proof attempt
+                        </property>
+                    </object>
+                    <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">4</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkSwitch" id="_switch_include_proven_theorems">
+                        <property name="halign">GTK_ALIGN_END</property>
+                    </object>
+                    <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">4</property>
+                    </packing>
+                </child>
+                <!--                    </object>-->
+                <!--                </child>-->
+                <!--                <child type="overlay">-->
+                <!--                    <object class="GtkBox" id="_box_spinner">-->
+                <!--                        <property name="no-show-all">True</property>-->
+                <!--                        <child>-->
+                <!--                            <object class="GtkBox">-->
+                <!--                                <property name="visible">True</property>-->
+                <!--                                <property name="valign">center</property>-->
+                <!--                                <property name="halign">center</property>-->
+                <!--                                <property name="orientation">GTK_ORIENTATION_VERTICAL</property>-->
+                <!--                                <child>-->
+                <!--                                    <object class="GtkSpinner">-->
+                <!--                                        <property name="active">True</property>-->
+                <!--                                        <property name="height-request">40</property>-->
+                <!--                                        <property name="visible">True</property>-->
+                <!--                                    </object>-->
+                <!--                                </child>-->
+                <!--                                <child>-->
+                <!--                                    <object class="GtkLabel">-->
+                <!--                                        <property name="label">Checking consistency...</property>-->
+                <!--                                        <property name="visible">True</property>-->
+                <!--                                    </object>-->
+                <!--                                </child>-->
+                <!--                            </object>-->
+                <!--                            <packing>-->
+                <!--                                <property name="expand">True</property>-->
+                <!--                                <property name="fill">True</property>-->
+                <!--                            </packing>-->
+                <!--                        </child>-->
+                <!--                        <style>-->
+                <!--                            <class name="overlay"/>-->
+                <!--                        </style>-->
+            </object>
+        </child>
+        <!--            </object>-->
+        <!--        </child>-->
+        <child type="titlebar">
+            <object class="GtkHeaderBar">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="show-close-button">True</property>
+                <child>
+                    <object class="GtkButton" id="_btn_check">
+                        <property name="label" translatable="yes">Check</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                        <signal name="clicked" handler="on_check_clicked" swapped="no"/>
+                    </object>
+                </child>
+            </object>
+        </child>
+    </template>
+</interface>

@@ -3,6 +3,8 @@
   <gresource prefix="/eu/hets/gui">
     <file>resources/icon.png</file>
 
+    <file preprocess="xml-stripblanks">windows/ConsistencyCheckWindow.ui</file>
+    <file>windows/ConsistencyCheckWindow.css</file>
     <file preprocess="xml-stripblanks">windows/StartUpWindow.ui</file>
     <file>windows/StartUpWindow.css</file>
     <file preprocess="xml-stripblanks">windows/ProveWindow.ui</file>
@@ -11,7 +13,7 @@
     <file preprocess="xml-stripblanks">widgets/ProofDetail.ui</file>
     <file>widgets/ProofDetail.css</file>
     <file preprocess="xml-stripblanks">widgets/EditableListView.ui</file>
-    <file preprocess="xml-stripblanks">widgets/ProverComorphismSelector.ui</file>
+    <file preprocess="xml-stripblanks">widgets/GridWithToolComorphismSelector.ui</file>
     <file preprocess="xml-stripblanks">resources/application-menu.xml</file>
   </gresource>
 </gresources>
