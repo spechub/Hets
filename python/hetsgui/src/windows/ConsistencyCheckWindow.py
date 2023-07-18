@@ -70,7 +70,6 @@ class ConsistencyCheckWindow(Gtk.Window):
             comorphism = self.selected_comorphism
             timeout = self._txt_timeout.get_value_as_int()
             include_theorems = self._switch_include_proven_theorems.get_active()
-            print(f'consistency_checker: {consistency_checker}, comorphism: {comorphism}, time out: {timeout}, include_theorems: {include_theorems}')
 
             status, message = self._node.check_consistency(consistency_checker, comorphism, include_theorems, timeout)
         except Exception as e:
@@ -82,8 +81,6 @@ class ConsistencyCheckWindow(Gtk.Window):
     def _finish_checking_progress(self, status: ConsistencyKind, message: str):
         self._btn_check.set_sensitive(True)
         self._update_status(status)
-
-        print(self._node.consistency_status().proven())
 
     def _init_checking_progress(self):
         self._btn_check.set_sensitive(False)

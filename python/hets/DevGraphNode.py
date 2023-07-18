@@ -159,8 +159,6 @@ class DevGraphNode(HsHierarchyElement):
             hs_theory = theoryOfNode(node_lab)
             self._theory.hs_update(hs_theory)
 
-        print(f"Updaing node {self.name()}. Consistency Status: {snd(new_hs_obj).getNodeConsStatus()}")
-
     def theory(self) -> Theory:
         if self._theory is None:
             self._theory = Theory(theoryOfNode(snd(self._hs_node)), self)
