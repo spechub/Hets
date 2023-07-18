@@ -53,7 +53,7 @@ import Proofs.ConsistencyCheck (ConsistencyStatus, SType(..), consistencyCheck, 
 import Proofs.BatchProcessing (genericProveBatch)
 
 import Static.ComputeTheory(updateLabelTheory, recomputeNodeLabel)
-import Static.DevGraph (LibEnv, DGraph, DGNodeLab, ProofHistory, DGChange(..), dgn_theory, markNodeInconsistent, markNodeConsistent)
+import Static.DevGraph (LibEnv, DGraph, DGNodeLab, ProofHistory, DGChange(..), globalTheory, markNodeInconsistent, markNodeConsistent)
 import Static.GTheory (G_theory (..), sublogicOfTh)
 import Static.History (changeDGH)
 
@@ -139,26 +139,29 @@ recordProofResult (name, env, graph, node) (theory, statuses) =
     else Map.insert name ( updateLabelTheory env name graph node theory) env
 
 proveNodeAndRecord :: TheoryPointer -> ProofOptions -> ResultT IO (ProofResult, LibEnv)
-proveNodeAndRecord p@(_, _, _, node) opts = do
-    r <- proveNode (dgn_theory . snd $ node) opts
-    let env = recordProofResult p r
-    return (r, env)
+proveNodeAndRecord p@(_, _, _, node) opts = case globalTheory . snd $ node of
+    Nothing -> fail "No global theory!"
+    Just theory -> do
+        r <- proveNode theory opts
+        let env = recordProofResult p r
+        return (r, env)
 
 checkConsistency :: TheoryPointer -> ConsCheckingOptions -> IO ConsistencyStatus
-checkConsistency (libName, libEnv, dgraph, lnode) (ConsCheckingOptions ccM comorphismM b timeout)  =  do
-    let theory = dgn_theory . snd $ lnode
-    (cc, comorphism) <- case (ccM, comorphismM) of
-        (Just cc, Just comorphism) -> return (cc, comorphism)
-        (Just cc, Nothing) -> do
-            let ccName = getCcName cc
-            comorphism <-  (snd . head . filter ((== ccName) . getCcName . fst) <$> getUsableConsistencyCheckers theory)
-            return (cc, comorphism)
-        (Nothing, Just comorphism) -> do
-            cc <- (fst . head . filter ((== comorphism) . snd) <$> getUsableConsistencyCheckers theory)
-            return (cc, comorphism)
-        (Nothing, Nothing) -> head <$> (getUsableConsistencyCheckers theory)
+checkConsistency (libName, libEnv, dgraph, lnode) (ConsCheckingOptions ccM comorphismM b timeout)  = case globalTheory . snd $ lnode of
+    Nothing -> fail "No global theory!"
+    Just theory -> do
+        (cc, comorphism) <- case (ccM, comorphismM) of
+            (Just cc, Just comorphism) -> return (cc, comorphism)
+            (Just cc, Nothing) -> do
+                let ccName = getCcName cc
+                comorphism <-  (snd . head . filter ((== ccName) . getCcName . fst) <$> getUsableConsistencyCheckers theory)
+                return (cc, comorphism)
+            (Nothing, Just comorphism) -> do
+                cc <- (fst . head . filter ((== comorphism) . snd) <$> getUsableConsistencyCheckers theory)
+                return (cc, comorphism)
+            (Nothing, Nothing) -> head <$> (getUsableConsistencyCheckers theory)
 
-    consistencyCheck b cc comorphism libName libEnv dgraph lnode timeout
+        consistencyCheck b cc comorphism libName libEnv dgraph lnode timeout
 
 recordConsistencyResult :: TheoryPointer -> ConsistencyStatus -> LibEnv
 recordConsistencyResult (name, env, graph, node@(i, label)) consStatus = 
