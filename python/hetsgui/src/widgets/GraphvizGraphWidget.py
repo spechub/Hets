@@ -131,6 +131,8 @@ class GraphvizGraphWidget(DotWidget):
         self.g = None
         self.development_graph = None
 
+        self._dot_code = None
+
         settings: Gtk.Settings = Gtk.Settings.get_for_screen(self.get_screen())
         settings.connect("notify::gtk-theme-name", lambda w, p: self.render())
         settings.connect("notify::gtk-application-prefer-dark-theme", lambda w, p: self.render())
@@ -186,9 +188,12 @@ class GraphvizGraphWidget(DotWidget):
                    label=edge.name())
 
         zoom_ration, x, y = self.zoom_ratio, self.x, self.y
-        self.set_dotcode(g.source.encode("utf-8"))
-        if keep_zoom:
-            self.zoom_ratio, self.x, self.y = zoom_ration, x, y
+        dot_code = g.source
+
+        if dot_code != self._dot_code:
+            self.set_dotcode(dot_code.encode("utf-8"))
+            if keep_zoom:
+                self.zoom_ratio, self.x, self.y = zoom_ration, x, y
 
         self.g = g
 
