@@ -17,6 +17,7 @@ from .ProofState import ProofState
 from .ProofDetails import ProofDetails
 from .ProofKind import ProofKind
 from .ConsistencyKind import ConsistencyKind
+from .Options import Options, Option
 from .Prover import Prover
 from .Sentence import Sentence
 from .Signature import Signature

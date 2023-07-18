@@ -78,9 +78,18 @@ class ResourceSelectorWindow(Gtk.Window):
         button = Gtk.Button(label="Open")
         button.connect("clicked", self.on_open_clicked)
 
+        check_button = Gtk.CheckButton(label="Use stub class", active=True)
+
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         box.pack_start(self.combo, False, False, 0)
-        box.pack_start(button, False, False, 0)
+
+        button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        button_box.pack_start(button, True, True, 14)
+        button_box.pack_end(check_button, False, False, 0)
+
+        box.pack_start(button_box, False, False, 0)
+
+        self._check_stub = check_button
 
         self.add(box)
 
@@ -89,6 +98,9 @@ class ResourceSelectorWindow(Gtk.Window):
         selected = self.combo.get_active()
         resource = resource_model[selected][0]
         self.emit("preview-resource", resource)
+
+    def use_stub(self) -> bool:
+        return self._check_stub.get_active()
 
 
 class PreviewApplication(Gtk.Application):
@@ -115,11 +127,22 @@ class PreviewApplication(Gtk.Application):
         self.window.present()
 
     def preview_resource(self, widget, resource):
+        use_stub = True
         if self.window is not None:
             self.window.close()
+            use_stub = self.window.use_stub()
+
         if resource.endswith("Window"):
-            template_window = get_test_window_for_window_resource(resource)(application=self)
-            self.window = template_window
+            if use_stub:
+                template_window = get_test_window_for_window_resource(resource)(application=self)
+                self.window = template_window
+            else:
+                import importlib
+                module_name = resource[len("/eu/hets/gui/"):].replace("/", ".")
+                window_module = importlib.import_module(module_name)
+                window_type = window_module.__dict__[resource.split("/")[-1]]
+                window = window_type(application=self)
+                self.window = window
         else:
             self.window = PreviewWidgetWindow(resource, application=self)
 

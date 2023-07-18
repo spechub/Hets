@@ -10,6 +10,7 @@ from gi.repository import GLib, Gtk, Gio
 from widgets.EdgeInfoDialog import EdgeInfoDialog
 from widgets.GraphvizGraphWidget import GraphvizGraphWidget
 from widgets.NodeInfoDialog import NodeInfoDialog
+from windows.LibrarySettingsWindow import LibrarySettingsWindow
 
 from windows.ProveWindow import ProveWindow
 from windows.ConsistencyCheckWindow import ConsistencyCheckWindow
@@ -23,6 +24,8 @@ class defaultview(object):
 
 
 class MainWindow(Gtk.ApplicationWindow):
+    _library_settings_window: Optional[LibrarySettingsWindow]
+    _settings: hets.Options
     ui_box: Gtk.Box
     ui_graph: GraphvizGraphWidget
     file: Optional[str]
@@ -30,6 +33,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._library_settings_window = None
+        self._settings = hets.Options(libdirs=[os.environ["HETS_LIB"]] if "HETS_LIB" in os.environ else [])
         self.file = None
         self.library = None
 
@@ -75,6 +80,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self._action("proofs.lib_flat_heterogen", self.on_lib_flat_heterogen)
         self._action("proofs.qualify_lib_env", self.on_qualify_lib_env)
 
+        self._action("open_library_settings", self.on_open_library_settings)
+
     def _action(self, name: str, cb: Callable[[Gio.SimpleAction, T], Any],
                 param_type_str: Optional[str] = None) -> Gio.SimpleAction:
         action = Gio.SimpleAction.new(name, GLib.VariantType(param_type_str) if param_type_str else None)
@@ -90,10 +97,8 @@ class MainWindow(Gtk.ApplicationWindow):
         return action
 
     def open_file(self, file: str):
-        opts = {"libdirs": [os.environ["HETS_LIB"]] if "HETS_LIB" in os.environ else []}
-
         self.file = file
-        self.library = hets.load_library(file, **opts)
+        self.library = hets.load_library(file, self._settings)
 
         if self.ui_graph:
             self.ui_graph.load_graph(self.library.development_graph())
@@ -281,3 +286,19 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_qualify_lib_env(self, action: Gio.SimpleAction, target):
         self.library.qualify_lib_env()
         self.ui_graph.render()
+
+    def on_open_library_settings(self, action: Gio.SimpleAction, target):
+        if self._library_settings_window is None:
+            self._library_settings_window = LibrarySettingsWindow(settings=self._settings)
+            self._library_settings_window.connect('apply-settings', self._on_settings_changed)
+
+        self._library_settings_window.show_all()
+        self._library_settings_window.present()
+
+    def _on_settings_changed(self, widget, settings: hets.Options):
+        self._settings = settings
+        if self.file is not None and self.library is not None:
+            self.open_file(self.file)
+
+        self._library_settings_window.close()
+        self._library_settings_window = None
