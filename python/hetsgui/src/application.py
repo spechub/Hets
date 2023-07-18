@@ -3,6 +3,7 @@
 import os.path
 import sys
 import threading
+import logging
 
 import gi
 
@@ -11,6 +12,8 @@ from gi.repository import GLib, Gtk, Gio
 
 
 class HetsApplication(Gtk.Application):
+    logger = logging.getLogger(__name__)
+
     def __init__(self):
         super().__init__(
             application_id="eu.hets.gui",
@@ -25,8 +28,22 @@ class HetsApplication(Gtk.Application):
 
         pgk_dir = os.path.dirname(os.path.realpath(__file__))
         resource_file = os.path.join(pgk_dir, "hetsgui.gresource")
+        self.logger.debug("Loading resources from %s", resource_file)
         resource: Gio.Resource = Gio.resource_load(resource_file)
         Gio.resources_register(resource)
+
+        self.add_main_option("log", ord('l'), GLib.OptionFlags.NONE, GLib.OptionArg.STRING, "Log level", "<debug|info|warning|error>")
+        self.connect("handle-local-options", self.on_handle_local_options)
+
+    def on_handle_local_options(self, application, options: GLib.VariantDict):
+        log_level = options.lookup_value("log").get_string().upper()
+        log_level_int = getattr(logging, log_level.upper())
+        if not isinstance(log_level_int, int):
+            print('Invalid log level: %s' % log_level, file=sys.stderr)
+            return 1
+        logging.basicConfig(level=log_level_int)
+
+        return -1
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
@@ -35,14 +52,7 @@ class HetsApplication(Gtk.Application):
 
         self.set_menubar(menubar)
 
-    def on_action_open_file(self, action, parameter):
-        print("Hello World!")
-
     def do_command_line(self, command_line):
-        options = command_line.get_options_dict()
-        # convert GVariantDict -> GVariant -> dict
-        options = options.end().unpack()
-
         self.activate()
         return 0
 
@@ -77,9 +87,11 @@ class HetsApplication(Gtk.Application):
 
             # noinspection PyUnresolvedReferences
             def start_up():
+                self.logger.info("Loading python libraries")
                 import hets
                 import windows.MainWindow
                 import widgets
+                self.logger.info("Loading python libraries done")
 
                 GLib.idle_add(start_up_done)
 

@@ -1,3 +1,4 @@
+import logging
 import os.path
 import sys
 from typing import List
@@ -9,7 +10,7 @@ from utils import resource_exist
 gi.require_version("Gtk", "3.0")
 
 
-from gi.repository import Gtk, Gio, GObject
+from gi.repository import Gtk, Gio, GObject, GLib
 
 
 def get_test_window_for_window_resource(resource_name: str):
@@ -113,8 +114,21 @@ class PreviewApplication(Gtk.Application):
         resource: Gio.Resource = Gio.resource_load(resource_file)
         Gio.resources_register(resource)
 
+        self.add_main_option("log", ord('l'), GLib.OptionFlags.NONE, GLib.OptionArg.STRING, "Log level", "<debug|info|warning|error>")
+        self.connect("handle-local-options", self.on_handle_local_options)
+
         # noinspection PyUnresolvedReferences
         import widgets
+
+    def on_handle_local_options(self, application, options: GLib.VariantDict):
+        log_level = options.lookup_value("log").get_string().upper()
+        log_level_int = getattr(logging, log_level.upper())
+        if not isinstance(log_level_int, int):
+            print('Invalid log level: %s' % log_level, file=sys.stderr)
+            return 1
+        logging.basicConfig(level=log_level_int)
+
+        return -1
 
     def do_activate(self):
         if not self.window:

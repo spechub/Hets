@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, Tuple
 
 import xdot.ui.elements
@@ -118,6 +119,8 @@ def edge_style(edge: DevGraphEdge):
 
 
 class GraphvizGraphWidget(DotWidget):
+    _logger = logging.getLogger(__name__)
+
     g: Optional[Digraph]
     development_graph: Optional[DevelopmentGraph]
 
@@ -138,36 +141,44 @@ class GraphvizGraphWidget(DotWidget):
         settings.connect("notify::gtk-application-prefer-dark-theme", lambda w, p: self.render())
 
     def load_graph(self, graph: DevelopmentGraph):
+        self._logger.debug("Loading graph")
         self.development_graph = graph
         self.g = Digraph("G")
 
         self.render(False)
 
     def show_internal_node_names(self):
+        self._logger.debug("Show internal nodes")
         self._show_internal_node_names = True
         self.render()
 
     def hide_internal_node_names(self):
+        self._logger.debug("Hide internal nodes")
         self._show_internal_node_names = False
         self.render()
 
     def show_unnamed_nodes_without_open_proofs(self):
+        self._logger.debug("Show unnamed nodes without open proofs")
         self._show_unnamed_nodes_without_open_proofs = True
         self.render()
 
     def hide_unnamed_nodes_without_open_proofs(self):
+        self._logger.debug("Hide unnamed nodes without open proofs")
         self._show_unnamed_nodes_without_open_proofs = False
         self.render()
 
     def show_newly_added_proven_edges(self):
+        self._logger.debug("Show newly added proven edges")
         self._show_newly_added_proven_edges = True
         self.render()
 
     def hide_newly_added_proven_edges(self):
+        self._logger.debug("Hide newly added proven edges")
         self._show_newly_added_proven_edges = False
         self.render()
 
     def render(self, keep_zoom=True) -> None:
+        self._logger.debug("Render graph; keep zoom: %s", keep_zoom)
         g = Digraph("G")
 
         success, color = self.get_style_context().lookup_color("theme_bg_color")
@@ -194,6 +205,8 @@ class GraphvizGraphWidget(DotWidget):
             self.set_dotcode(dot_code.encode("utf-8"))
             if keep_zoom:
                 self.zoom_ratio, self.x, self.y = zoom_ration, x, y
+        else:
+            self._logger.debug("Dot code did not change. Do not call graphviz")
 
         self.g = g
 
@@ -232,12 +245,13 @@ class GraphvizGraphWidget(DotWidget):
             return True
 
         if event.button == 3:  # on right click
+            self._logger.debug("Right click on %s", element)
             menu = None
             if isinstance(element, xdot.ui.elements.Node):
                 node_id = element.id.decode("utf-8")
 
                 menu = self._menu_for_node(node_id)
-            if isinstance(element, xdot.ui.elements.Edge):
+            elif isinstance(element, xdot.ui.elements.Edge):
                 src_id, dst_id = element.src.id.decode("utf-8"), element.dst.id.decode("utf-8")
 
                 menu = self._menu_for_edge(src_id, dst_id)

@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 import typing
@@ -14,6 +15,7 @@ from hets import DevGraphNode, Theory, ConsistencyChecker, Comorphism, Consisten
 @GtkSmartTemplate
 class ConsistencyCheckWindow(Gtk.Window):
     __gtype_name__ = 'ConsistencyCheckWindow'
+    _logger = logging.getLogger(__name__)
 
     _consistency_checker_comorphism_selector: GridWithToolComorphismSelector = Gtk.Template.Child()
     _btn_check: Gtk.Button = Gtk.Template.Child()
@@ -71,8 +73,16 @@ class ConsistencyCheckWindow(Gtk.Window):
             timeout = self._txt_timeout.get_value_as_int()
             include_theorems = self._switch_include_proven_theorems.get_active()
 
+            self._logger.info(
+                "Checking consistency on %s, checker: %s, comorphism: %s, timeout: %s, include_theorems: %s",
+                self._node.name(), consistency_checker.name(), comorphism.name(), timeout, include_theorems)
+
             status, message = self._node.check_consistency(consistency_checker, comorphism, include_theorems, timeout)
+
+            self._logger.info("Consistency result for %s: %s", self._node.name(), status)
+            self._logger.debug("Consistency check message for %s: %s", self._node.name(), message)
         except Exception as e:
+            self._logger.warning("Consistency check for %s failed: %s", self._node.name(), e)
             status = ConsistencyKind.ERROR
             message = str(e)
 

@@ -1,3 +1,4 @@
+import logging
 import threading
 from typing import Optional
 
@@ -14,6 +15,7 @@ from widgets import CellRendererLink, GridWithToolComorphismSelector
 @GtkSmartTemplate
 class ProveWindow(Gtk.Window):
     __gtype_name__ = "ProveWindow"
+    _logger = logging.getLogger(__name__)
 
     goals_model: Gtk.ListStore = Gtk.Template.Child()
     axioms_model: Gtk.ListStore = Gtk.Template.Child()
@@ -84,7 +86,7 @@ class ProveWindow(Gtk.Window):
     def on_proof_details_clicked(self, widget, path):
         goal_name = self.goals_model[path][0]
         goal = next(iter(g for g in self.node.global_theory().goals()
-                    if g.name() == goal_name), None)
+                         if g.name() == goal_name), None)
 
         if goal is not None:
             details_window = ProofDetailsWindow(
@@ -109,7 +111,7 @@ class ProveWindow(Gtk.Window):
                 goal[2] = '<span foreground="black" style="italic">Waiting...</span>'
                 color = color_name_to_rgba("white")
                 goal[5] = color
-        
+
     def _update_prove_progress(self, next_goal_name: Optional[str], prev_goal_name: Optional[str]):
         if prev_goal_name is not None:
             goal_row = next(
@@ -143,12 +145,20 @@ class ProveWindow(Gtk.Window):
         timeout = self.txt_timeout.get_value_as_int()
         include_theorems = self.switch_include_proven_theorems.get_active()
 
+        self._logger.info(
+            "Proving at node %s, goals: %s, axioms: %s, prover: %s, comorphism: %s, timeout: %s, include_theorems: %s",
+            self.node.name(), goals, axioms, prover.name(), comorphism.name(), timeout, include_theorems)
+
         prev_goal = None
-        for i, goal in enumerate(goals):
+        for goal in goals:
             GLib.idle_add(self._update_prove_progress, goal, prev_goal)
 
-            self.node.prove(prover, comorphism, include_theorems, [
-                            goal], axioms, timeout)
+            self._logger.debug("Proving at node %s. Next goal: %s", self.node.name(), goal)
+            try:
+                self.node.prove(prover, comorphism, include_theorems, [goal], axioms, timeout)
+            except Exception as e:
+                self._logger.warning("Proving at node %s failed for goal %s: %s", self.node.name(), goal, e)
+
             prev_goal = goal
 
         GLib.idle_add(self._update_prove_progress, None, prev_goal)
@@ -157,7 +167,6 @@ class ProveWindow(Gtk.Window):
 
     def update_sublogic(self):
         if self.proving_thread is None or not self.proving_thread.is_alive():
-
             axioms = [row[0] for row in self.axioms_model if row[1]]
             goals = [row[0] for row in self.goals_model if row[1]]
 

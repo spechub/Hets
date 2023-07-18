@@ -3,6 +3,7 @@ Description :  Represents `Static.DevGraph.DGraph`
 Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 """
+import logging
 from typing import List, Optional
 
 from .DevGraphNode import DevGraphNode
@@ -15,6 +16,8 @@ from .haskell import getLNodesFromDevelopmentGraph, DGraph, Nothing, fromJust, g
 
 
 class DevelopmentGraph(HsHierarchyElement):
+    _logger = logging.getLogger(__name__)
+
     def __init__(self, hs_development_graph: DGraph, parent: HsHierarchyElement) -> None:
         super().__init__(parent)
 
@@ -28,12 +31,13 @@ class DevelopmentGraph(HsHierarchyElement):
 
     def hs_update(self, new_hs_obj: DGraph):
         self._hs_development_graph = new_hs_obj
+        self._logger.debug("Updating hs object of development graph")
 
         if self._nodes:
             for node in self._nodes:
                 hs_node_maybe = getDGNodeById(self._hs_development_graph)(node.id())
                 if isinstance(hs_node_maybe, Nothing):
-                    print(f"Node {node.id} could not be found. Probably, it has been deleted")
+                    self._logger.warning(f"Node {node.id} could not be found. Probably, it has been deleted")
                 else:
                     hsNode = fromJust(hs_node_maybe)
                     node.hs_update((node.id(), hsNode))

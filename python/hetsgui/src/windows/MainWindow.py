@@ -180,7 +180,7 @@ class MainWindow(Gtk.ApplicationWindow):
         if self._loaded_library:
             node = [n for n in self._loaded_library.development_graph().nodes() if str(n.id()) == node_id][0]
 
-            info_dialog = NodeInfoDialog(self, node)
+            info_dialog = NodeInfoDialog(node)
             info_dialog.run()
         else:
             print(f'Action: Show info for node {node_id}. But no library is loaded!')
@@ -192,7 +192,7 @@ class MainWindow(Gtk.ApplicationWindow):
             edge = [e for e in self._loaded_library.development_graph().edges() if
                     str(e.origin()) == origin_id and str(e.target()) == target_id][0]
 
-            info_dialog = EdgeInfoDialog(self, edge)
+            info_dialog = EdgeInfoDialog(edge)
             info_dialog.run()
         else:
             print(f'Action: Show info for edge {origin_id}->{target_id}. But no library is loaded!')

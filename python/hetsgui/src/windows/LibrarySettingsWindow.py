@@ -1,3 +1,4 @@
+import logging
 import typing
 
 import gi
@@ -18,6 +19,8 @@ class LibrarySettingsWindow(Gtk.Window):
     __gtype_name__ = "LibrarySettingsWindow"
 
     __gsignals__ = {"apply-settings": (GObject.SIGNAL_RUN_FIRST, None, (GObject.TYPE_PYOBJECT,))}
+    _logger = logging.getLogger(__name__)
+
 
     _grid: Gtk.Grid = Gtk.Template.Child()
 
@@ -43,7 +46,7 @@ class LibrarySettingsWindow(Gtk.Window):
             elif isinstance(typ, list):
                 self.add_list_field(name, typ[0])
             else:
-                print(f"Field '{name}' has unknown type '{typ}'")
+                self._logger.warning(f"Field '%s' has unknown type '%s'", name, typ)
 
     def _add_row(self, field_name: str, widget: Gtk.Widget):
         label = Gtk.Label(label=natural_case(field_name), halign=Gtk.Align.START)
@@ -92,6 +95,8 @@ class LibrarySettingsWindow(Gtk.Window):
             elif isinstance(widget, EditableListView):
                 entries = [tuple(list(x)) if len(list(x)) > 1 else x[0] for x in widget.model]
                 self._settings[name] = entries
+
+        self._logger.debug("Library settings: %s", self._settings.to_dict())
 
         self.emit('apply-settings', self._settings)
 
