@@ -10,6 +10,8 @@ from formatting.Colors import color_to_hex
 from hets import DevelopmentGraph, DevGraphNode, DevGraphEdge, TheoremDevGraphEdge, EdgeKind
 from utils import get_variant
 
+from .ExtendedDotWidget import ExtendedDotWidget
+
 # KEY: (colorname, variant, light)
 COLOR_MAP = {
     ("black", False, False): "gray0"
@@ -118,7 +120,7 @@ def edge_style(edge: DevGraphEdge):
         return ""
 
 
-class GraphvizGraphWidget(DotWidget):
+class GraphvizGraphWidget(ExtendedDotWidget):
     _logger = logging.getLogger(__name__)
 
     g: Optional[Digraph]
