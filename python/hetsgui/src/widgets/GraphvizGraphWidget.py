@@ -6,7 +6,7 @@ from gi.repository import Gtk, Gio, GLib
 from graphviz import Digraph
 from xdot import DotWidget
 
-from formatting.Colors import color_to_hex
+from formatting.colors import color_to_hex
 from hets import DevelopmentGraph, DevGraphNode, DevGraphEdge, TheoremDevGraphEdge, EdgeKind
 from utils import get_variant
 
@@ -121,6 +121,8 @@ def edge_style(edge: DevGraphEdge):
 
 
 class GraphvizGraphWidget(ExtendedDotWidget):
+    __gtype_name__ = "GraphvizGraphWidget"
+
     _logger = logging.getLogger(__name__)
 
     g: Optional[Digraph]

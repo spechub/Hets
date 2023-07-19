@@ -1,13 +1,7 @@
-import re
-
-from gi.repository import Gtk, Pango
+from gi.repository import Gtk
 
 from GtkSmartTemplate import GtkSmartTemplate
-from formatting.Colors import PROOF_KIND_FG_COLORS
 from hets import Sentence, Theory
-
-from xdot import DotWidget
-
 from widgets import ProofDetail
 
 

@@ -5,6 +5,8 @@
 
     <file preprocess="xml-stripblanks">windows/ConsistencyCheckWindow.ui</file>
     <file>windows/ConsistencyCheckWindow.css</file>
+    <file preprocess="xml-stripblanks">windows/MainWindow.ui</file>
+    <file>windows/MainWindow.css</file>
     <file preprocess="xml-stripblanks">windows/StartUpWindow.ui</file>
     <file>windows/StartUpWindow.css</file>
     <file preprocess="xml-stripblanks">windows/ProveWindow.ui</file>

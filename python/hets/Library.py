@@ -5,39 +5,20 @@ License     :  GPLv2 or higher, see LICENSE.txt
 """
 
 from typing import Optional
-import typing
-
-from .HsWrapper import HsWrapper, HsHierarchyElement
-from .Options import Options
-from .haskell import defaultHetcatsOpts, loadLibrary as loadHsLibrary, fst, snd, getGraphForLibrary, HetcatsOpts, \
-    checkConsistencyAndRecord, Result, resultToMaybe, Just, fromJust
-
-import hets.haskell.Internal as Internal
 
 from .DevelopmentGraph import DevelopmentGraph
-from .result import result_or_raise
-
-from .haskell import (
-    automatic as automaticHs,
-    globalSubsume as globalSubsumeHs,
-    globalDecomposition as globalDecompositionHs,
-    localInference as localInferenceHs,
-    localDecomposition as localDecompositionHs,
-    compositionProveEdges as compositionProveEdgesHs,
-    conservativity as conservativityHs,
-    automaticHideTheoremShift as automaticHideTheoremShiftHs,
-    theoremHideShift as theoremHideShiftHs,
-    computeColimit as computeColimitHs,
-    normalForm as normalFormHs,
-    triangleCons as triangleConsHs,
-    freeness as freenessHs,
-    libFlatImports as libFlatImportsHs,
-    libFlatDUnions as libFlatDUnionsHs,
-    libFlatRenamings as libFlatRenamingsHs,
-    libFlatHiding as libFlatHidingHs,
-    libFlatHeterogen as libFlatHeterogenHs,
+from .HsWrapper import HsHierarchyElement
+from .Options import Options
+from .haskell import loadLibrary as loadHsLibrary, fst, snd, getGraphForLibrary, Result, resultToMaybe, Just, fromJust, \
+    automatic as automaticHs, globalSubsume as globalSubsumeHs, globalDecomposition as globalDecompositionHs, \
+    localInference as localInferenceHs, localDecomposition as localDecompositionHs, \
+    compositionProveEdges as compositionProveEdgesHs, conservativity as conservativityHs, \
+    automaticHideTheoremShift as automaticHideTheoremShiftHs, theoremHideShift as theoremHideShiftHs, \
+    computeColimit as computeColimitHs, normalForm as normalFormHs, triangleCons as triangleConsHs, \
+    freeness as freenessHs, libFlatImports as libFlatImportsHs, libFlatDUnions as libFlatDUnionsHs, \
+    libFlatRenamings as libFlatRenamingsHs, libFlatHiding as libFlatHidingHs, libFlatHeterogen as libFlatHeterogenHs, \
     qualifyLibEnv as qualifyLibEnvHs
-)
+from .result import result_or_raise
 
 
 class Library(HsHierarchyElement):

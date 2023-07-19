@@ -1,21 +1,23 @@
+import concurrent.futures
 import logging
 import threading
+import traceback
 from typing import Optional
 
 from gi.repository import Gtk, GLib
 
 from GtkSmartTemplate import GtkSmartTemplate
+from formatting.colors import PROOF_KIND_BG_COLORS, color_name_to_rgba
 from hets import DevGraphNode, ProofKind, Comorphism, Prover, Sentence
-from formatting.Colors import PROOF_KIND_BG_COLORS, color_name_to_rgba
+from widgets import GridWithToolComorphismSelector
 from windows.ProofDetailsWindow import ProofDetailsWindow
-
-from widgets import CellRendererLink, GridWithToolComorphismSelector
 
 
 @GtkSmartTemplate
 class ProveWindow(Gtk.Window):
     __gtype_name__ = "ProveWindow"
     _logger = logging.getLogger(__name__)
+    _prove_lock: threading.Lock
 
     goals_model: Gtk.ListStore = Gtk.Template.Child()
     axioms_model: Gtk.ListStore = Gtk.Template.Child()
@@ -40,7 +42,8 @@ class ProveWindow(Gtk.Window):
     def __init__(self, node: DevGraphNode, **kwargs):
         super().__init__(title=f"Prove {node.name()}", **kwargs)
 
-        self.proving_thread: Optional[threading.Thread] = None
+        self._proving_thread: Optional[threading.Thread] = None
+        self._prove_lock = threading.Lock()
         self.node = node
         self._prover_comorphism_selector.theory = node.global_theory()
         self._init_view()
@@ -71,16 +74,16 @@ class ProveWindow(Gtk.Window):
 
     @Gtk.Template.Callback()
     def on_close(self, widget, event):
-        if self.proving_thread is not None and self.proving_thread.is_alive():
+        if self._proving_thread is not None and self._proving_thread.is_alive():
             return True  # Stop the window from being closed if a proving process is currently running
 
         return False
 
     @Gtk.Template.Callback()
     def on_prove_clicked(self, _):
-        self.proving_thread = threading.Thread(target=self._prove)
+        self._proving_thread = threading.Thread(target=self._prove)
         # self.proving_thread.daemon = True
-        self.proving_thread.start()
+        self._proving_thread.start()
 
     @Gtk.Template.Callback()
     def on_proof_details_clicked(self, widget, path):
@@ -112,23 +115,20 @@ class ProveWindow(Gtk.Window):
                 color = color_name_to_rgba("white")
                 goal[5] = color
 
-    def _update_prove_progress(self, next_goal_name: Optional[str], prev_goal_name: Optional[str]):
-        if prev_goal_name is not None:
-            goal_row = next(
-                iter(g for g in self.goals_model if g[0] == prev_goal_name), None)
-            goal = next(iter(g for g in self.node.global_theory(
-            ).goals() if g.name() == prev_goal_name), None)
+    def _finish_prove_progress_goal(self, goal_name: str):
+        goal_row = next(iter(g for g in self.goals_model if g[0] == goal_name), None)
+        goal = next(iter(g for g in self.node.global_theory().goals() if g.name() == goal_name), None)
 
-            if goal_row is not None:
-                color, text = self._goal_style(goal)
-                goal_row[2] = text
-                goal_row[5] = color
+        if goal_row is not None:
+            color, text = self._goal_style(goal)
+            goal_row[2] = text
+            goal_row[5] = color
 
-        if next_goal_name is not None:
-            goal_row = next(
-                iter(g for g in self.goals_model if g[0] == next_goal_name), None)
-            if goal_row is not None:
-                goal_row[2] = '<span foreground="black" style="italic">Proving...</span>'
+    def _start_prove_progress_goal(self, goal_name: str):
+        goal_row = next(
+            iter(g for g in self.goals_model if g[0] == goal_name), None)
+        if goal_row is not None:
+            goal_row[2] = '<span foreground="black" style="italic">Proving...</span>'
 
     def _finish_prove_progress(self):
         self.btn_prove.set_sensitive(True)
@@ -145,28 +145,41 @@ class ProveWindow(Gtk.Window):
         timeout = self.txt_timeout.get_value_as_int()
         include_theorems = self.switch_include_proven_theorems.get_active()
 
+        def prove_goal(g):
+            GLib.idle_add(self._start_prove_progress_goal, g)
+
+            self._logger.debug("Proving at node %s. Next goal: %s", self.node.name(), g)
+            try:
+                self.node.prove(prover, comorphism, include_theorems, [g], axioms, timeout)
+            except Exception as e:
+                self._logger.warning("Proving at node %s failed for goal %s: %s", self.node.name(), g,
+                                     traceback.format_exc())
+
+                dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR,
+                                           buttons=Gtk.ButtonsType.CLOSE, text=f"Proving failed!")
+                dialog.format_secondary_text(f"Check the console for more details. Error message: {str(e)}")
+                dialog.run()
+                dialog.destroy()
+
+            GLib.idle_add(self._finish_prove_progress_goal, g)
+
         self._logger.info(
             "Proving at node %s, goals: %s, axioms: %s, prover: %s, comorphism: %s, timeout: %s, include_theorems: %s",
             self.node.name(), goals, axioms, prover.name(), comorphism.name(), timeout, include_theorems)
 
-        prev_goal = None
-        for goal in goals:
-            GLib.idle_add(self._update_prove_progress, goal, prev_goal)
-
-            self._logger.debug("Proving at node %s. Next goal: %s", self.node.name(), goal)
-            try:
-                self.node.prove(prover, comorphism, include_theorems, [goal], axioms, timeout)
-            except Exception as e:
-                self._logger.warning("Proving at node %s failed for goal %s: %s", self.node.name(), goal, e)
-
-            prev_goal = goal
-
-        GLib.idle_add(self._update_prove_progress, None, prev_goal)
+        if include_theorems:
+            self._logger.debug("Theorems included. Proving sequentially")
+            for goal in goals:
+                prove_goal(goal)
+        else:
+            self._logger.debug("Theorems not included. Proving in parallel")
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+                concurrent.futures.wait([executor.submit(prove_goal, goal) for goal in goals])
 
         GLib.idle_add(self._finish_prove_progress)
 
     def update_sublogic(self):
-        if self.proving_thread is None or not self.proving_thread.is_alive():
+        if self._proving_thread is None or not self._proving_thread.is_alive():
             axioms = [row[0] for row in self.axioms_model if row[1]]
             goals = [row[0] for row in self.goals_model if row[1]]
 

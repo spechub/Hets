@@ -26,6 +26,7 @@
                 <property name="border-width">10</property>
                 <property name="start-top">1</property>
                 <property name="start-left">0</property>
+                <property name="use-consistency-checkers">True</property>
                 <child>
                     <object class="GtkLabel">
                         <property name="label">&lt;b&gt;Status:&lt;/b&gt;</property>

@@ -3,11 +3,11 @@ Description :  Defines a common base class for wrapped haskell elements
 Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 """
-
-from typing import Generic, TypeVar, Optional
+from typing import Optional
 
 
 class HsWrapper:
+
     def hs_obj(self):
         pass
 

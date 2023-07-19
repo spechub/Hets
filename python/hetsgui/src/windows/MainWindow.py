@@ -1,3 +1,4 @@
+import logging
 import os
 import typing
 
@@ -7,6 +8,7 @@ from typing import List, Callable, Any, Optional
 
 from gi.repository import GLib, Gtk, Gio
 
+from GtkSmartTemplate import GtkSmartTemplate
 from widgets.EdgeInfoDialog import EdgeInfoDialog
 from widgets.GraphvizGraphWidget import GraphvizGraphWidget
 from widgets.NodeInfoDialog import NodeInfoDialog
@@ -23,11 +25,16 @@ class defaultview(object):
     xy: List[int]
 
 
+@GtkSmartTemplate
 class MainWindow(Gtk.ApplicationWindow):
+    __gtype_name__ = "MainWindow"
+
+    _logger = logging.getLogger(__name__)
+
     _library_settings_window: Optional[LibrarySettingsWindow]
     _settings: hets.Options
-    _ui_box: Gtk.Box
-    _ui_graph: GraphvizGraphWidget
+    _ui_graph: GraphvizGraphWidget = Gtk.Template.Child()
+    # _status_bar: Gtk.Statusbar = Gtk.Template.Child()
     _opened_file: Optional[str]
     _loaded_library: Optional[hets.Library]
 
@@ -39,17 +46,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self._loaded_library = None
 
         self.set_auto_startup_notification(True)
-        self.set_size_request(1200, 600)
-        self.set_title("Heterogeneous Toolset")
         icon = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../resources/icon.png"))
         self.set_default_icon_from_file(icon)
         self.set_icon_from_file(icon)
-
-        self._ui_box = Gtk.Box(spacing=6)
-        self.add(self._ui_box)
-
-        self._ui_graph = GraphvizGraphWidget()
-        self._ui_box.pack_start(self._ui_graph, True, True, 0)
 
         self._library_actions: typing.List[Gio.SimpleAction] = []
 
@@ -115,7 +114,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self._set_library_actions_enabled(True)
         except Exception as e:
             self._set_library_actions_enabled(False)
-            raise e
+            self._logger.error(f"Failed to load file '{file}': %s", e)
+
+            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.CLOSE, text=f"Failed to load {file}!")
+            dialog.format_secondary_text(f"Check the console for more details.\nError message: {str(e)}")
+            dialog.run()
+            dialog.destroy()
 
     def _on_menu_open_file(self, action: Gio.SimpleAction, parameter: str):
         dialog = Gtk.FileChooserDialog(
@@ -159,7 +163,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
             prove_window.connect("destroy", lambda _: self._ui_graph.render())
         else:
-            print(f'Action: prove node {node_id}. But no library is loaded!')
+            self._logger.warning(f'Action: prove node {node_id}. But no library is loaded!')
 
     def _on_check_consistency_node(self, action, parameter: GLib.Variant):
         node_id = parameter.get_string()
@@ -172,7 +176,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
             check_consistency_window.connect("destroy", lambda _: self._ui_graph.render())
         else:
-            print(f'Action: check consistency node {node_id}. But no library is loaded!')
+            self._logger.warning(f'Action: check consistency node {node_id}. But no library is loaded!')
 
     def _on_show_node_info(self, action, parameter: GLib.Variant):
         node_id = parameter.get_string()
@@ -182,7 +186,7 @@ class MainWindow(Gtk.ApplicationWindow):
             info_dialog = NodeInfoDialog(node)
             info_dialog.run()
         else:
-            print(f'Action: Show info for node {node_id}. But no library is loaded!')
+            self._logger.warning(f'Action: Show info for node {node_id}. But no library is loaded!')
 
     def _on_show_edge_info(self, action, parameter: GLib.Variant):
         origin_id = parameter.get_child_value(0).get_child_value(0).get_string()
@@ -194,7 +198,7 @@ class MainWindow(Gtk.ApplicationWindow):
             info_dialog = EdgeInfoDialog(edge)
             info_dialog.run()
         else:
-            print(f'Action: Show info for edge {origin_id}->{target_id}. But no library is loaded!')
+            self._logger.warning(f'Action: Show info for edge {origin_id}->{target_id}. But no library is loaded!')
 
     def _on_toggle_show_names(self, action: Gio.SimpleAction, target: GLib.Variant):
         action.set_state(target)

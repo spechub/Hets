@@ -7,7 +7,7 @@ from hs.HetsAPI.Python import (fstOf3, sndOf3, thd, PyTheory, PyProver, PyConsCh
                                PyConsCheckingOptions, defaultProofOptions, defaultConsCheckingOptions, proverName,
                                comorphismName, targetLogicName, targetLogicDescriptionName, sourceLogicName,
                                sourceLogicDescriptionName, consCheckerName, theoryOfNode, getUsableProvers, proveNode,
-                               proveNodeAndRecord, translateTheory, getAvailableComorphisms,
+                               proveNodeAndRecord, recordProofResult, translateTheory, getAvailableComorphisms,
                                getUsableConsistencyCheckers, checkConsistency, checkConsistencyAndRecord,
                                getAllSentences, getAllAxioms, getAllGoals, getProvenGoals, getUnprovenGoals,
                                prettySentence, signatureOfTheory, logicNameOfTheory, logicDescriptionOfTheory,

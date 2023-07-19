@@ -29,6 +29,7 @@ module HetsAPI.Python (
     , checkConsistency
     , checkConsistencyAndRecord
     , proveNode
+    , recordProofResult
     , proveNodeAndRecord
     , getAllSentences
     , getAllAxioms
@@ -177,6 +178,9 @@ data PyProofTree = PyProofTree G_proof_tree
 
 toPyProofTree :: G_proof_tree -> PyProofTree
 toPyProofTree = PyProofTree
+
+fromPyProofTree :: PyProofTree -> G_proof_tree
+fromPyProofTree (PyProofTree tree ) = tree
 
 data PyGMorphism = PyGMorphism GMorphism
 data PyBasicProof = PyBasicProof BasicProof
@@ -328,9 +332,15 @@ getUsableProvers (PyTheory th) = do
 toPyProofStatus :: ProofStatus G_proof_tree -> ProofStatus PyProofTree
 toPyProofStatus status = status { proofTree = toPyProofTree (proofTree status) }
 
-proveNode :: PyTheory -> PyProofOptions -> IO (Result (PyTheory, [ProofStatus PyProofTree]))
-proveNode (PyTheory theory) opts =
-    runResultT $ bimap PyTheory (toPyProofStatus <$>) <$> HP.proveNode theory (toProofOptions opts)
+fromPyProofStatus :: ProofStatus PyProofTree -> ProofStatus G_proof_tree
+fromPyProofStatus status  = status {proofTree = fromPyProofTree (proofTree status)}
+
+proveNode :: HDT.TheoryPointer -> PyProofOptions -> IO (Result (PyTheory, [ProofStatus PyProofTree]))
+proveNode ptr opts =
+    runResultT $ bimap PyTheory (toPyProofStatus <$>) <$> HP.proveNode ptr (toProofOptions opts)
+
+recordProofResult :: HDT.TheoryPointer -> (PyTheory, [ProofStatus PyProofTree]) -> LibEnv
+recordProofResult ptr (PyTheory theory, statuses) = HP.recordProofResult ptr (theory, fmap fromPyProofStatus statuses)
 
 proveNodeAndRecord :: HDT.TheoryPointer -> PyProofOptions -> IO (Result ((PyTheory, [ProofStatus PyProofTree]), LibEnv))
 proveNodeAndRecord ptr opts =

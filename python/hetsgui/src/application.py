@@ -60,7 +60,7 @@ class HetsApplication(Gtk.Application):
 
     def on_open(self, a, files, n_files, hint):
         if n_files != 1:
-            print("Expected exactly one file")
+            print("Expected exactly one file", file=sys.stderr)
             return 1
 
         self.file = files[0].get_path()

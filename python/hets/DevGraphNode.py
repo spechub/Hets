@@ -3,7 +3,7 @@ Description :  Represents `Static.DevGraph.DGNodeLab`
 Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 """
-
+import threading
 from typing import Tuple, Optional, List
 
 from .ConsistencyStatus import ConsistencyStatus
@@ -15,7 +15,7 @@ from .ProofDetails import ProofDetails
 from .Prover import Prover
 from .HsWrapper import HsHierarchyElement
 from .haskell import snd, theoryOfNode, DGNodeLab, fst, Just, Nothing, PyProver, PyComorphism, defaultProofOptions, \
-    mkPyProofOptions, proveNodeAndRecord, ConsistencyStatus as HsConsistencyStatus, PyConsChecker, \
+    mkPyProofOptions, proveNode, recordProofResult, ConsistencyStatus as HsConsistencyStatus, PyConsChecker, \
     defaultConsCheckingOptions, \
     PyConsCheckingOptions, checkConsistencyAndRecord, TheoryPointer, globalTheory, recomputeNode, fromJust, \
     developmentGraphNodeLabelName, getDevelopmentGraphNodeType, nodeTypeIsReference, nodeTypeIsProven, \
@@ -26,8 +26,12 @@ from .Theory import Theory
 
 
 class DevGraphNode(HsHierarchyElement):
+    _prove_lock: threading.Lock
+
     def __init__(self, hs_node: Tuple[int, DGNodeLab], parent: Optional[HsHierarchyElement]) -> None:
         super().__init__(parent)
+
+        self._prove_lock = threading.Lock()
 
         self._hs_node = hs_node
 
@@ -80,13 +84,16 @@ class DevGraphNode(HsHierarchyElement):
             timeout if timeout is not None else default_opts.proofOptsTimeout(),
         )
 
-        prove_result = proveNodeAndRecord(self._theory_pointer(), opts).act()
+        prove_result = proveNode(self._theory_pointer(), opts).act()
         result = result_or_raise(prove_result)
-        new_th_and_statuses = fst(result)
-        goal_statuses = snd(new_th_and_statuses)
-        new_env = snd(result)
+
+        self._prove_lock.acquire()
+        new_env = recordProofResult(self._theory_pointer(), result)
 
         self.root().hs_update(new_env)
+        self._prove_lock.release()
+
+        goal_statuses = snd(result)
 
         return list(ProofDetails(x) for x in goal_statuses)
 
@@ -158,7 +165,7 @@ class DevGraphNode(HsHierarchyElement):
             node_lab = snd(self._hs_node)
             hs_theory = theoryOfNode(node_lab)
             self._theory.hs_update(hs_theory)
-
+        
     def theory(self) -> Theory:
         if self._theory is None:
             self._theory = Theory(theoryOfNode(snd(self._hs_node)), self)

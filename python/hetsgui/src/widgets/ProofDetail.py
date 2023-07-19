@@ -1,14 +1,10 @@
 import re
 import typing
-from enum import Enum
 
-import gi
 from gi.repository import Gtk, GObject, Gio
 
-from formatting.Colors import PROOF_KIND_FG_COLORS
-from hets import BasicProof, Comorphism
-
 from GtkSmartTemplate import GtkSmartTemplate
+from formatting.colors import PROOF_KIND_FG_COLORS
 from widgets import ExtendedDotWidget
 
 
@@ -66,7 +62,8 @@ class ProofDetail(Gtk.Bin):
     def on_proof_changed(self, widget, param):
         self._lbl_prover.set_label(self.proof.details().used_prover())
         self._lbl_prover.set_tooltip_text(self.proof.details().used_prover())
-        self._lbl_status.set_markup(f"<span foreground='{PROOF_KIND_FG_COLORS[self.proof.kind()]}'>{self.proof.kind().to_str()}</span>")
+        self._lbl_status.set_markup(
+            f"<span foreground='{PROOF_KIND_FG_COLORS[self.proof.kind()]}'>{self.proof.kind().to_str()}</span>")
         self._lbl_used_time.set_label(str(self.proof.details().used_time()))
 
         proof_lines = self.proof.details().proof_lines()

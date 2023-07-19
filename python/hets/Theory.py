@@ -117,10 +117,8 @@ class Theory(HsHierarchyElement):
         return list((ConsistencyChecker(fst(cc)), Comorphism(snd(cc))) for cc in consistency_checkers)
 
     def get_consistency_checker_by_name(self, name: str) -> Optional[ConsistencyChecker]:
-        matches = list(p for p in self.get_usable_consistency_checkers() if p.name() == name)
-        if len(matches) == 1:
-            return matches[0]
-        return None
+        checkers = self.get_usable_consistency_checkers()
+        return next((cc for cc in checkers if cc.name() == name), None)
 
     def get_available_comorphisms(self) -> List[Comorphism]:
         comorphisms = getAvailableComorphisms(self._hs_theory)

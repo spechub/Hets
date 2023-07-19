@@ -1,15 +1,13 @@
 import logging
 import threading
-import time
+import traceback
 import typing
 
-import gi
 from gi.repository import Gtk, GLib
 
 from GtkSmartTemplate import GtkSmartTemplate
+from hets import DevGraphNode, ConsistencyChecker, Comorphism, ConsistencyKind
 from widgets import GridWithToolComorphismSelector
-from formatting.Colors import CONSISTENCY_KIND_BG_COLORS
-from hets import DevGraphNode, Theory, ConsistencyChecker, Comorphism, ConsistencyKind
 
 
 @GtkSmartTemplate
@@ -25,7 +23,7 @@ class ConsistencyCheckWindow(Gtk.Window):
     _lbl_status: Gtk.Label = Gtk.Template.Child()
 
     @property
-    def selected_comorphism(self) -> Comorphism:
+    def selected_comorphism(self) -> typing.Optional[Comorphism]:
         return self._consistency_checker_comorphism_selector.selected_comorphism
 
     @property
@@ -82,7 +80,14 @@ class ConsistencyCheckWindow(Gtk.Window):
             self._logger.info("Consistency result for %s: %s", self._node.name(), status)
             self._logger.debug("Consistency check message for %s: %s", self._node.name(), message)
         except Exception as e:
-            self._logger.warning("Consistency check for %s failed: %s", self._node.name(), e)
+            self._logger.warning("Consistency check for %s failed: %s", self._node.name(), traceback.format_exc())
+
+            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR,
+                                       buttons=Gtk.ButtonsType.CLOSE, text=f"Check failed!")
+            dialog.format_secondary_text(f"Check the console for more details.\nError message: {str(e)}")
+            dialog.run()
+            dialog.destroy()
+
             status = ConsistencyKind.ERROR
             message = str(e)
 

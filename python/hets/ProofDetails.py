@@ -32,7 +32,6 @@ class ProofDetails:
 
     def used_time(self) -> timedelta:
         used_time_str = show(self._hs_proof_status.usedTime())
-        print(used_time_str)
         if used_time_str.startswith("-"):
             # Sometimes the prover returns -1 as time. Return 0 instead.
             return timedelta(seconds=-1)
