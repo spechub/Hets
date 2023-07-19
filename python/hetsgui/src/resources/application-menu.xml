@@ -16,10 +16,6 @@
                 <attribute name="action">win.toggle_show_names</attribute>
             </item>
             <item>
-                <attribute name="label" translatable="yes">Show unnamed nodes without open proofs</attribute>
-                <attribute name="action">win.toggle_show_nodes</attribute>
-            </item>
-            <item>
                 <attribute name="label" translatable="yes">Show newly added proven edges</attribute>
                 <attribute name="action">win.toggle_show_edges</attribute>
             </item>

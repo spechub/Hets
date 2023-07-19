@@ -59,7 +59,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_actions.append(self._action("node.show_info", self._on_show_node_info, "s"))
         self._library_actions.append(self._action("edge.show_info", self._on_show_edge_info, "av"))
         self._library_actions.append(self._action_toggle("toggle_show_names", self._on_toggle_show_names))
-        self._library_actions.append(self._action_toggle("toggle_show_nodes", self._on_toggle_show_nodes))
         self._library_actions.append(self._action_toggle("toggle_show_edges", self._on_toggle_show_edges))
 
         self._library_actions.append(self._action("proofs.automatic", self.on_automatic))
@@ -205,15 +204,6 @@ class MainWindow(Gtk.ApplicationWindow):
             self._ui_graph.show_internal_node_names()
         else:
             self._ui_graph.hide_internal_node_names()
-
-    def _on_toggle_show_nodes(self, action: Gio.SimpleAction, target: GLib.Variant):
-        action.set_state(target)
-        state = target.get_boolean()
-
-        if state:
-            self._ui_graph.show_unnamed_nodes_without_open_proofs()
-        else:
-            self._ui_graph.hide_unnamed_nodes_without_open_proofs()
 
     def _on_toggle_show_edges(self, action: Gio.SimpleAction, target: GLib.Variant):
         action.set_state(target)

@@ -128,7 +128,6 @@ class GraphvizGraphWidget(ExtendedDotWidget):
 
     # View properties
     _show_internal_node_names: bool = False
-    _show_unnamed_nodes_without_open_proofs: bool = False
     _show_newly_added_proven_edges: bool = False
 
     def __init__(self):
@@ -159,16 +158,6 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         self._show_internal_node_names = False
         self.render()
 
-    def show_unnamed_nodes_without_open_proofs(self):
-        self._logger.debug("Show unnamed nodes without open proofs")
-        self._show_unnamed_nodes_without_open_proofs = True
-        self.render()
-
-    def hide_unnamed_nodes_without_open_proofs(self):
-        self._logger.debug("Hide unnamed nodes without open proofs")
-        self._show_unnamed_nodes_without_open_proofs = False
-        self.render()
-
     def show_newly_added_proven_edges(self):
         self._logger.debug("Show newly added proven edges")
         self._show_newly_added_proven_edges = True
@@ -195,6 +184,12 @@ class GraphvizGraphWidget(ExtendedDotWidget):
                    style="filled")
 
         for edge in self.development_graph.edges():
+            if not self._show_newly_added_proven_edges \
+                    and isinstance(edge, TheoremDevGraphEdge) \
+                    and edge.is_proven() \
+                    and (edge.is_conservativ() or edge.kind() in [EdgeKind.HIDING, EdgeKind.FREE, EdgeKind.COFREE]):
+                continue
+
             g.edge(str(edge.origin()), str(edge.target()),
                    style=edge_style(edge),
                    color=edge_color(edge),
@@ -219,10 +214,11 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         menu_item_prove.set_label("Prove")
         menu_item_prove.set_action_and_target_value("win.node.prove", GLib.Variant.new_string(node_id))
         menu.append_item(menu_item_prove)
-        
+
         menu_item_consistency = Gio.MenuItem()
         menu_item_consistency.set_label("Check consistency")
-        menu_item_consistency.set_action_and_target_value("win.node.check_consistency", GLib.Variant.new_string(node_id))
+        menu_item_consistency.set_action_and_target_value("win.node.check_consistency",
+                                                          GLib.Variant.new_string(node_id))
         menu.append_item(menu_item_consistency)
 
         menu_item_info = Gio.MenuItem()
