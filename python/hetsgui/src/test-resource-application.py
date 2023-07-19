@@ -121,12 +121,14 @@ class PreviewApplication(Gtk.Application):
         import widgets
 
     def on_handle_local_options(self, application, options: GLib.VariantDict):
-        log_level = options.lookup_value("log").get_string().upper()
-        log_level_int = getattr(logging, log_level.upper())
-        if not isinstance(log_level_int, int):
-            print('Invalid log level: %s' % log_level, file=sys.stderr)
-            return 1
-        logging.basicConfig(level=log_level_int)
+        log_value = options.lookup_value("log")
+        if log_value is not None:
+            log_level = log_value.get_string().upper()
+            log_level_int = getattr(logging, log_level.upper(), None)
+            if not isinstance(log_level_int, int):
+                print('Invalid log level: %s' % log_level, file=sys.stderr)
+                return 1
+            logging.basicConfig(level=log_level_int)
 
         return -1
 
