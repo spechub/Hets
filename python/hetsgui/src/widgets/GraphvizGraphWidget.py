@@ -244,6 +244,10 @@ class GraphvizGraphWidget(ExtendedDotWidget):
 
     def on_click(self, element, event):
         if element is None:
+            jump = self.get_jump(event.x, event.y)
+            element = jump.item if jump is not None else None
+
+        if element is None:
             return True
 
         if event.button == 3:  # on right click
