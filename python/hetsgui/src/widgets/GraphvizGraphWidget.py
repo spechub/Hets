@@ -1,15 +1,15 @@
 import logging
+import threading
 from typing import Optional, Tuple
 
 import xdot.ui.elements
-from gi.repository import Gtk, Gio, GLib
+from gi.repository import Gtk, Gio, GLib, GObject
 from graphviz import Digraph
 from xdot import DotWidget
 
 from formatting.colors import color_to_hex
 from hets import DevelopmentGraph, DevGraphNode, DevGraphEdge, TheoremDevGraphEdge, EdgeKind
 from utils import get_variant
-
 from .ExtendedDotWidget import ExtendedDotWidget
 
 # KEY: (colorname, variant, light)
@@ -123,10 +123,17 @@ def edge_style(edge: DevGraphEdge):
 class GraphvizGraphWidget(ExtendedDotWidget):
     __gtype_name__ = "GraphvizGraphWidget"
 
+    __gsignals__ = {
+        "render-start": (GObject.SIGNAL_RUN_FIRST, None, ()),
+        "render-end": (GObject.SIGNAL_RUN_FIRST, None, ())
+    }
+
     _logger = logging.getLogger(__name__)
 
     g: Optional[Digraph]
     development_graph: Optional[DevelopmentGraph]
+
+    _render_thread: Optional[threading.Thread]
 
     # View properties
     _show_internal_node_names: bool = False
@@ -134,6 +141,7 @@ class GraphvizGraphWidget(ExtendedDotWidget):
 
     def __init__(self):
         super().__init__()
+        self._render_thread = None
         self.g = None
         self.development_graph = None
 
@@ -170,13 +178,13 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         self._show_newly_added_proven_edges = False
         self.render()
 
-    def render(self, keep_zoom=True) -> None:
+    def _render(self, keep_zoom, color) -> None:
         self._logger.debug("Render graph; keep zoom: %s", keep_zoom)
+        GLib.idle_add(lambda: self.emit("render-start"))
         g = Digraph("G")
 
-        success, color = self.get_style_context().lookup_color("theme_bg_color")
-        if success:
-            g.graph_attr["bgcolor"] = color_to_hex(color)
+        if color:
+            g.graph_attr["bgcolor"] = color
 
         for node in self.development_graph.nodes():
             g.node(str(node.id()),
@@ -208,6 +216,19 @@ class GraphvizGraphWidget(ExtendedDotWidget):
             self._logger.debug("Dot code did not change. Do not call graphviz")
 
         self.g = g
+
+        GLib.idle_add(lambda: self.emit("render-end"))
+
+    def render(self, keep_zoom=True) -> None:
+        if self._render_thread and self._render_thread.is_alive():
+            self._logger.debug("Already rendering. Waiting for previous render to finish")
+            self._render_thread.join()
+
+        success, color = self.get_style_context().lookup_color("theme_bg_color")
+        color = color_to_hex(color)
+
+        self._render_thread = threading.Thread(target=self._render, args=[keep_zoom, color])
+        self._render_thread.start()
 
     def _menu_for_node(self, node_id: str) -> Gtk.Menu:
         menu = Gio.Menu()

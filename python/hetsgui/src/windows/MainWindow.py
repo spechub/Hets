@@ -34,7 +34,7 @@ class MainWindow(Gtk.ApplicationWindow):
     _library_settings_window: Optional[LibrarySettingsWindow]
     _settings: hets.Options
     _ui_graph: GraphvizGraphWidget = Gtk.Template.Child()
-    # _status_bar: Gtk.Statusbar = Gtk.Template.Child()
+    _status_bar: Gtk.Statusbar = Gtk.Template.Child()
     _opened_file: Optional[str]
     _loaded_library: Optional[hets.Library]
 
@@ -44,6 +44,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self._settings = hets.Options(libdirs=[os.environ["HETS_LIB"]] if "HETS_LIB" in os.environ else [])
         self._opened_file = None
         self._loaded_library = None
+
+        self._ui_graph.connect("render-start", lambda _: self._status_bar.push(self._status_bar.get_context_id("render"), "Rendering graph ..."))
+        self._ui_graph.connect("render-end", lambda _: self._status_bar.push(self._status_bar.get_context_id("render"), "Graph rendered!"))
 
         self.set_auto_startup_notification(True)
         icon = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../resources/icon.png"))

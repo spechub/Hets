@@ -102,7 +102,7 @@ class Options:
             raise AttributeError(f"Unknown key '{key}'")
 
         option = _ALL_OPTIONS_BY_NAME[key]
-        return option._hs_setter()(self._hs_options, value)
+        self._hs_options = option._hs_setter()(self._hs_options, value)
 
     def __len__(self):
         return len(_ALL_OPTIONS)
@@ -117,6 +117,6 @@ class Options:
                 self._hs_options = hs_fn(self._hs_options, value)
 
     def to_dict(self):
-        dict((option.name, option._hs_getter()(self._hs_options)) for option in _ALL_OPTIONS)
+        return dict((option.name, option._hs_getter()(self._hs_options)) for option in _ALL_OPTIONS)
 
 
