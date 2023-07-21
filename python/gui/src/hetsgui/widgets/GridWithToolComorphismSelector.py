@@ -2,7 +2,7 @@ import typing
 
 from gi.repository import Gtk, GObject
 
-from GtkSmartTemplate import GtkSmartTemplate
+from ..GtkSmartTemplate import GtkSmartTemplate
 from hets import Comorphism, ConsistencyChecker, Prover, Theory
 
 

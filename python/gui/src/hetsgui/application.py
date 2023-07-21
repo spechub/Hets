@@ -49,7 +49,7 @@ class HetsApplication(Gtk.Application):
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
-        builder = Gtk.Builder.new_from_resource("/eu/hets/gui/resources/application-menu.xml")
+        builder = Gtk.Builder.new_from_resource("/eu/hets/hetsgui/resources/application-menu.xml")
         menubar = builder.get_object("app-menu")
 
         self.set_menubar(menubar)
@@ -68,7 +68,7 @@ class HetsApplication(Gtk.Application):
 
     def do_activate(self):
         if not self.window:
-            from windows.StartUpWindow import StartUpWindow
+            from .windows.StartUpWindow import StartUpWindow
             startup_window = StartUpWindow(application=self)
             startup_window.show_all()
             startup_window.present()
@@ -76,7 +76,7 @@ class HetsApplication(Gtk.Application):
             self.window = startup_window
 
             def start_up_done():
-                from windows.MainWindow import MainWindow
+                from .windows.MainWindow import MainWindow
 
                 self.window = MainWindow(application=self)
                 startup_window.close()
@@ -91,8 +91,6 @@ class HetsApplication(Gtk.Application):
             def start_up():
                 self.logger.info("Loading python libraries")
                 import hets
-                import windows.MainWindow
-                import widgets
                 self.logger.info("Loading python libraries done")
 
                 GLib.idle_add(start_up_done)
@@ -102,8 +100,3 @@ class HetsApplication(Gtk.Application):
 
         self.window.show_all()
         self.window.present()
-
-
-app = HetsApplication()
-exit_status = app.run(sys.argv)
-sys.exit(exit_status)

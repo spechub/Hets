@@ -1,7 +1,7 @@
 import gi
 from gi.repository import Gtk, GObject
 
-from GtkSmartTemplate import GtkSmartTemplate
+from ..GtkSmartTemplate import GtkSmartTemplate
 
 
 @GtkSmartTemplate

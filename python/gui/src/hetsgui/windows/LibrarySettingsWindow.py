@@ -4,8 +4,8 @@ import typing
 import gi
 from gi.repository import Gtk, GObject
 
-from GtkSmartTemplate import GtkSmartTemplate
-from widgets import EditableListView
+from ..GtkSmartTemplate import GtkSmartTemplate
+from ..widgets import EditableListView
 
 from hets import Options
 

@@ -5,9 +5,9 @@ import typing
 
 from gi.repository import Gtk, GLib
 
-from GtkSmartTemplate import GtkSmartTemplate
+from ..GtkSmartTemplate import GtkSmartTemplate
 from hets import DevGraphNode, ConsistencyChecker, Comorphism, ConsistencyKind
-from widgets import GridWithToolComorphismSelector
+from ..widgets import GridWithToolComorphismSelector
 
 
 @GtkSmartTemplate

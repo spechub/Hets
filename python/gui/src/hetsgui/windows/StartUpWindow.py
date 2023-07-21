@@ -2,7 +2,7 @@ import os.path
 
 from gi.repository import Gtk
 
-from GtkSmartTemplate import GtkSmartTemplate
+from ..GtkSmartTemplate import GtkSmartTemplate
 
 
 @GtkSmartTemplate

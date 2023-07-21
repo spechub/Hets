@@ -64,7 +64,7 @@ class ResourceSelectorWindow(Gtk.Window):
 
             return result
 
-        resources = collect_resources("/eu/hets/gui/")
+        resources = collect_resources("/eu/hets/")
         resource_model = Gtk.ListStore(str)
 
         for r in resources:
@@ -154,7 +154,7 @@ class PreviewApplication(Gtk.Application):
                 self.window = template_window
             else:
                 import importlib
-                module_name = resource[len("/eu/hets/gui/"):].replace("/", ".")
+                module_name = resource[len("/eu/hets/"):].replace("/", ".")
                 window_module = importlib.import_module(module_name)
                 window_type = window_module.__dict__[resource.split("/")[-1]]
                 window = window_type(application=self)

@@ -1,7 +1,7 @@
 import gi
 from gi.repository import Gtk, GObject
 
-from actions.model import toggle_tree_view_cell_handler, toggle_tree_view_header_cell_handler
+from ..actions.model import toggle_tree_view_cell_handler, toggle_tree_view_header_cell_handler
 
 
 class SelectableTreeView(Gtk.TreeView):

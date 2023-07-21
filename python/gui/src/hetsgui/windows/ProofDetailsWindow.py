@@ -1,8 +1,8 @@
 from gi.repository import Gtk
 
-from GtkSmartTemplate import GtkSmartTemplate
+from ..GtkSmartTemplate import GtkSmartTemplate
 from hets import Sentence, Theory
-from widgets import ProofDetail
+from ..widgets import ProofDetail
 
 
 @GtkSmartTemplate

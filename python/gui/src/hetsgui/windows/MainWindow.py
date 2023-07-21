@@ -8,14 +8,14 @@ from typing import List, Callable, Any, Optional
 
 from gi.repository import GLib, Gtk, Gio
 
-from GtkSmartTemplate import GtkSmartTemplate
-from widgets.EdgeInfoDialog import EdgeInfoDialog
-from widgets.GraphvizGraphWidget import GraphvizGraphWidget
-from widgets.NodeInfoDialog import NodeInfoDialog
-from windows.LibrarySettingsWindow import LibrarySettingsWindow
+from ..GtkSmartTemplate import GtkSmartTemplate
+from ..widgets.EdgeInfoDialog import EdgeInfoDialog
+from ..widgets.GraphvizGraphWidget import GraphvizGraphWidget
+from ..widgets.NodeInfoDialog import NodeInfoDialog
+from ..windows.LibrarySettingsWindow import LibrarySettingsWindow
 
-from windows.ProveWindow import ProveWindow
-from windows.ConsistencyCheckWindow import ConsistencyCheckWindow
+from ..windows.ProveWindow import ProveWindow
+from ..windows.ConsistencyCheckWindow import ConsistencyCheckWindow
 
 T = typing.TypeVar("T")
 
@@ -128,6 +128,10 @@ class MainWindow(Gtk.ApplicationWindow):
         dialog = Gtk.FileChooserDialog(
             title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN
         )
+
+        for libdir in self._settings["libdirs"]:
+            dialog.add_shortcut_folder(libdir)
+
         dialog.add_buttons(
             Gtk.STOCK_CANCEL,
             Gtk.ResponseType.CANCEL,

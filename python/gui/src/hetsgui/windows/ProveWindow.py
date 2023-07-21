@@ -6,11 +6,11 @@ from typing import Optional
 
 from gi.repository import Gtk, GLib
 
-from GtkSmartTemplate import GtkSmartTemplate
-from formatting.colors import PROOF_KIND_BG_COLORS, color_name_to_rgba
+from ..GtkSmartTemplate import GtkSmartTemplate
+from ..formatting.colors import PROOF_KIND_BG_COLORS, color_name_to_rgba
 from hets import DevGraphNode, ProofKind, Comorphism, Prover, Sentence
-from widgets import GridWithToolComorphismSelector
-from windows.ProofDetailsWindow import ProofDetailsWindow
+from ..widgets import GridWithToolComorphismSelector
+from ..windows.ProofDetailsWindow import ProofDetailsWindow
 
 
 @GtkSmartTemplate

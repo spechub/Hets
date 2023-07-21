@@ -3,9 +3,9 @@ import typing
 
 from gi.repository import Gtk, GObject, Gio
 
-from GtkSmartTemplate import GtkSmartTemplate
-from formatting.colors import PROOF_KIND_FG_COLORS
-from widgets import ExtendedDotWidget
+from ..GtkSmartTemplate import GtkSmartTemplate
+from ..formatting.colors import PROOF_KIND_FG_COLORS
+from ..widgets import ExtendedDotWidget
 
 
 class AxiomModel(GObject.GObject):

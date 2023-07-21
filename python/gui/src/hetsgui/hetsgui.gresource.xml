@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <gresource prefix="/eu/hets/gui">
+  <gresource prefix="/eu/hets/hetsgui">
     <file>resources/icon.png</file>
 
     <file preprocess="xml-stripblanks">windows/ConsistencyCheckWindow.ui</file>

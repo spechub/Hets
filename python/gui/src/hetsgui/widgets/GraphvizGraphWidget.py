@@ -7,9 +7,9 @@ from gi.repository import Gtk, Gio, GLib, GObject
 from graphviz import Digraph
 from xdot import DotWidget
 
-from formatting.colors import color_to_hex
+from ..formatting.colors import color_to_hex
 from hets import DevelopmentGraph, DevGraphNode, DevGraphEdge, TheoremDevGraphEdge, EdgeKind
-from utils import get_variant
+from ..utils import get_variant
 from .ExtendedDotWidget import ExtendedDotWidget
 
 # KEY: (colorname, variant, light)
