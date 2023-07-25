@@ -9,8 +9,9 @@ ENV LC_ALL en_US.UTF-8
 ENV HETS_LIB=/opt/Hets-lib
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-   apt-get update && apt-get -y install locales && locale-gen en_US.UTF-8 \
+   apt-get update && apt-get -y install locales && locale-gen en_US.UTF-8 && \
    apt-get install -y software-properties-common apt-utils make && \
+# Install build and runtime dependencies
    apt-add-repository -y ppa:hets/hets && \
    apt-get update && \
    apt-get install -y openjdk-8-jdk-headless ant cabal-install\
@@ -33,14 +34,17 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
       libghc-aterm-dev\
       libghc-xeno-dev\
       libghc-heap-dev && \
+# Install provers and Hets-lib
    apt-get install -y cvc-47 darwin eprover fact++ maude minisat pellet spass vampire yices z3 zchaff && \
    git clone https://github.com/spechub/Hets-lib.git ${HETS_LIB} && \
+# Get source
    git clone --branch 2109_python_gui https://github.com/spechub/Hets.git /opt/hets && \
 ## Alternatively copy local files. Careful! Creates two additional layers
 #    true
 # COPY ./ /opt/hets
 # RUN true && \
    cd /opt/hets/ && \
+# Build and install haskell library
    make derived && \
    runhaskell Setup.hs configure \
       --ghc --prefix=/ \
@@ -57,7 +61,9 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
       lib:Hets && \
    runhaskell Setup.hs build -j$(nproc) lib:Hets && \
    runhaskell Setup.hs install && \
+# Install python library
    python3 -m pip install /opt/hets/python/api && \
+# Add non-root user and cleanup
    useradd -ms /bin/bash -u 921 hets && \
    rm -rf /opt/hets
 
