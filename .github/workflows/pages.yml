@@ -18,3 +18,4 @@ jobs:
       uses: sphinx-notes/pages@v3
       with:
         documentation_path: ./python/api/docs
+        requirements_path: ./python/api/docs/requirements.txt
