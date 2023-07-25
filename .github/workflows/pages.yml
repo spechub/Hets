@@ -16,4 +16,5 @@ jobs:
     steps:
     - id: deployment
       uses: sphinx-notes/pages@v3
-      documentation_path: ./python/api/docs
+      with:
+        documentation_path: ./python/api/docs
