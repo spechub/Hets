@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Usage &mdash; Hets API 00.00.01 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Code documentation" href="code-documentation.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Hets API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code-documentation.html">Code documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Hets API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Usage</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Permalink to this heading"></a></h1>
+<p>Most of the classes in the library depend on haskell structures and are therefore not ment to be instantiated manually. Rather, the library handles the instantiation. One exception is the <a class="reference internal" href="code/hets.Options.html#hets.Options" title="hets.Options"><code class="xref py py-class docutils literal notranslate"><span class="pre">Options</span></code></a> class.</p>
+<p>The main entry point is <a class="reference internal" href="code/hets.load_library.html#hets.load_library" title="hets.load_library"><code class="xref py py-meth docutils literal notranslate"><span class="pre">hets.load_library()</span></code></a>. It loads a library from a file path. Once a library is loaded you can perform several actions on the library itself, inspect the development graph with <a class="reference internal" href="code/hets.Library.html#hets.Library.development_graph" title="hets.Library.development_graph"><code class="xref py py-meth docutils literal notranslate"><span class="pre">development_graph()</span></code></a>, and prove or check the consistency of nodes or check the conservativity of an edge.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">hets</span>
+
+<span class="n">lib</span> <span class="o">=</span> <span class="n">hets</span><span class="o">.</span><span class="n">load_library</span><span class="p">(</span><span class="s2">&quot;Family.dol&quot;</span><span class="p">)</span>
+<span class="n">dg</span> <span class="o">=</span> <span class="n">lib</span><span class="o">.</span><span class="n">development_graph</span><span class="p">()</span>
+
+<span class="n">nodes</span> <span class="o">=</span> <span class="n">dg</span><span class="o">.</span><span class="n">nodes</span><span class="p">()</span>
+<span class="n">edges</span> <span class="o">=</span> <span class="n">dg</span><span class="o">.</span><span class="n">edges</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span>
+
+<span class="p">[</span><span class="n">family1</span><span class="p">,</span> <span class="n">family2</span><span class="p">]</span> <span class="o">=</span> <span class="n">nodes</span>
+
+<span class="n">theory1</span> <span class="o">=</span> <span class="n">family1</span><span class="o">.</span><span class="n">global_theory</span><span class="p">()</span>
+<span class="n">sentences1</span> <span class="o">=</span> <span class="n">theory1</span><span class="o">.</span><span class="n">sentences</span><span class="p">()</span>
+<span class="n">goals1</span> <span class="o">=</span> <span class="n">family1</span><span class="o">.</span><span class="n">goals</span><span class="p">()</span>
+<span class="n">axioms1</span> <span class="o">=</span> <span class="n">family1</span><span class="o">.</span><span class="n">axioms</span><span class="p">()</span>
+
+<span class="n">goal</span> <span class="o">=</span> <span class="n">goals1</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">goal</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">is_proven</span><span class="p">())</span>
+
+<span class="n">family1</span><span class="o">.</span><span class="n">prove</span><span class="p">(</span><span class="n">goals</span><span class="o">=</span><span class="p">[</span><span class="n">goal</span><span class="o">.</span><span class="n">name</span><span class="p">()])</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">goal</span><span class="o">.</span><span class="n">is_proven</span><span class="p">())</span>
+</pre></div>
+</div>
+<div class="literal-block-wrapper docutils container" id="id1">
+<div class="code-block-caption"><span class="caption-text">Family.dol</span><a class="headerlink" href="#id1" title="Permalink to this code"></a></div>
+<div class="highlight-dol notranslate"><div class="highlight"><pre><span></span>logic OWL
+
+ontology Family1 =
+  Class: Person
+  Class: Woman SubClassOf: Person
+  ObjectProperty: hasChild
+  Class: Mother
+         EquivalentTo: Woman and hasChild some Person
+  Individual: mary Types: Woman Facts: hasChild  john
+  Individual: john
+  Individual: mary
+       Types: Annotations: Implied &quot;true&quot;^^xsd:boolean
+              Mother
+end
+
+ontology Family2 =
+  Class: Person
+  Class: Woman SubClassOf: Person
+  ObjectProperty: hasChild
+  Class: Mother
+         EquivalentTo: Woman and hasChild some Person
+  Individual: mary Types: Woman Facts: hasChild  john
+  Individual: john Types: Person
+  Individual: mary
+       Types: Annotations: Implied &quot;true&quot;^^xsd:boolean Mother
+       Types: Annotations: Implied &quot;true&quot;^^xsd:boolean Person
+       Types: Annotations: Implied &quot;true&quot;^^xsd:boolean Woman
+end
+</pre></div>
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="code-documentation.html" class="btn btn-neutral float-right" title="Code documentation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Björn Gehrke.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

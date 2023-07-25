@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>hets.ProofDetails &mdash; Hets API 00.00.01 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Hets API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../code-documentation.html">Code documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Hets API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">hets.ProofDetails</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for hets.ProofDetails</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Description :  Represents `Logic.Prover.ProofStatus`</span>
+<span class="sd">Copyright   :  (c) Otto-von-Guericke University of Magdeburg</span>
+<span class="sd">License     :  GPLv2 or higher, see LICENSE.txt</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+
+<span class="kn">from</span> <span class="nn">.haskell</span> <span class="kn">import</span> <span class="n">ProofStatus</span> <span class="k">as</span> <span class="n">ProofStatusHs</span><span class="p">,</span> <span class="n">GoalStatus</span><span class="p">,</span> <span class="n">tacticScriptContent</span><span class="p">,</span> <span class="n">Open</span><span class="p">,</span> <span class="n">Proved</span><span class="p">,</span> <span class="n">Disproved</span><span class="p">,</span> <span class="n">show</span>
+
+<span class="kn">from</span> <span class="nn">.ProofKind</span> <span class="kn">import</span> <span class="n">ProofKind</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+
+
+<div class="viewcode-block" id="ProofDetails"><a class="viewcode-back" href="../../code/hets.ProofDetails.html#hets.ProofDetails">[docs]</a><span class="k">class</span> <span class="nc">ProofDetails</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hs_proof_status</span><span class="p">:</span> <span class="n">ProofStatusHs</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ProofKind</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hs_proof_status</span> <span class="o">=</span> <span class="n">hs_proof_status</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kind</span> <span class="o">=</span> <span class="n">kind</span>
+
+<div class="viewcode-block" id="ProofDetails.goal_name"><a class="viewcode-back" href="../../code/hets.ProofDetails.html#hets.ProofDetails.goal_name">[docs]</a>    <span class="k">def</span> <span class="nf">goal_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hs_proof_status</span><span class="o">.</span><span class="n">goalName</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ProofDetails.goal_status"><a class="viewcode-back" href="../../code/hets.ProofDetails.html#hets.ProofDetails.goal_status">[docs]</a>    <span class="k">def</span> <span class="nf">goal_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GoalStatus</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hs_proof_status</span><span class="o">.</span><span class="n">goalStatus</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ProofDetails.used_axioms"><a class="viewcode-back" href="../../code/hets.ProofDetails.html#hets.ProofDetails.used_axioms">[docs]</a>    <span class="k">def</span> <span class="nf">used_axioms</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hs_proof_status</span><span class="o">.</span><span class="n">usedAxioms</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="ProofDetails.used_prover"><a class="viewcode-back" href="../../code/hets.ProofDetails.html#hets.ProofDetails.used_prover">[docs]</a>    <span class="k">def</span> <span class="nf">used_prover</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hs_proof_status</span><span class="o">.</span><span class="n">usedProver</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ProofDetails.used_time"><a class="viewcode-back" href="../../code/hets.ProofDetails.html#hets.ProofDetails.used_time">[docs]</a>    <span class="k">def</span> <span class="nf">used_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">timedelta</span><span class="p">:</span>
+        <span class="n">used_time_str</span> <span class="o">=</span> <span class="n">show</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hs_proof_status</span><span class="o">.</span><span class="n">usedTime</span><span class="p">())</span>
+        <span class="k">if</span> <span class="n">used_time_str</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">):</span>
+            <span class="c1"># Sometimes the prover returns -1 as time. Return 0 instead.</span>
+            <span class="k">return</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">used_time_str</span><span class="p">:</span>
+            <span class="n">used_time_str</span> <span class="o">=</span> <span class="n">used_time_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">used_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">used_time_str</span><span class="p">,</span> <span class="s2">&quot;%H:%M:%S&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">used_time</span> <span class="o">-</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ProofDetails.tactic_script"><a class="viewcode-back" href="../../code/hets.ProofDetails.html#hets.ProofDetails.tactic_script">[docs]</a>    <span class="k">def</span> <span class="nf">tactic_script</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">tacticScriptContent</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hs_proof_status</span><span class="o">.</span><span class="n">tacticScript</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="ProofDetails.proof_tree"><a class="viewcode-back" href="../../code/hets.ProofDetails.html#hets.ProofDetails.proof_tree">[docs]</a>    <span class="k">def</span> <span class="nf">proof_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">show</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hs_proof_status</span><span class="o">.</span><span class="n">proofTree</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="ProofDetails.proof_lines"><a class="viewcode-back" href="../../code/hets.ProofDetails.html#hets.ProofDetails.proof_lines">[docs]</a>    <span class="k">def</span> <span class="nf">proof_lines</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hs_proof_status</span><span class="o">.</span><span class="n">proofLines</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="ProofDetails.kind"><a class="viewcode-back" href="../../code/hets.ProofDetails.html#hets.ProofDetails.kind">[docs]</a>    <span class="k">def</span> <span class="nf">kind</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProofKind</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kind</span>
+
+        <span class="n">status</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">goal_status</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">Open</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="s2">&quot;timeout&quot;</span> <span class="ow">in</span> <span class="n">reason</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">reason</span> <span class="ow">in</span> <span class="n">status</span><span class="o">.</span><span class="n">goalStatusOpenReason</span><span class="p">()):</span>
+                <span class="k">return</span> <span class="n">ProofKind</span><span class="o">.</span><span class="n">TIMED_OUT</span>
+
+            <span class="k">return</span> <span class="n">ProofKind</span><span class="o">.</span><span class="n">OPEN</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">Disproved</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ProofKind</span><span class="o">.</span><span class="n">DISPROVEN</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">Proved</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ProofKind</span><span class="o">.</span><span class="n">PROVEN</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Björn Gehrke.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

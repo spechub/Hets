@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>hets.Options &mdash; Hets API 00.00.01 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Hets API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../code-documentation.html">Code documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Hets API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">hets.Options</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for hets.Options</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">typing</span>
+
+<span class="kn">import</span> <span class="nn">hets.haskell.Internal</span> <span class="k">as</span> <span class="nn">Internal</span>
+
+
+<div class="viewcode-block" id="Option"><a class="viewcode-back" href="../../code/hets.Option.html#hets.Option">[docs]</a><span class="k">class</span> <span class="nc">Option</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">typ</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span>
+    <span class="n">_hs_name</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">typ</span><span class="p">,</span> <span class="n">hs_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">description</span> <span class="o">=</span> <span class="n">description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">typ</span> <span class="o">=</span> <span class="n">typ</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hs_name</span> <span class="o">=</span> <span class="n">hs_name</span>
+
+    <span class="k">def</span> <span class="nf">_hs_setter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Internal</span><span class="o">.</span><span class="n">HetcatsOpts</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span> <span class="n">Internal</span><span class="o">.</span><span class="n">HetcatsOpts</span><span class="p">]:</span>
+        <span class="n">setter_name</span> <span class="o">=</span> <span class="s2">&quot;optsWith&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hs_name</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hs_name</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">return</span> <span class="n">Internal</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">setter_name</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_hs_getter</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">[[</span><span class="n">Internal</span><span class="o">.</span><span class="n">HetcatsOpts</span><span class="p">],</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="n">Internal</span><span class="o">.</span><span class="n">HetcatsOpts</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_hs_name</span><span class="p">]</span></div>
+
+
+<span class="n">_ALL_OPTIONS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;url_catalog&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">)],</span> <span class="s2">&quot;urlCatalog&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;infiles&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="s2">&quot;infiles&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;spec_names&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span> <span class="s2">&quot;specNames&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;trans_names&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span> <span class="s2">&quot;transNames&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;lossy_trans&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;lossyTrans&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;view_names&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span> <span class="s2">&quot;viewNames&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;libdirs&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="s2">&quot;libdirs&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;model_spar_q&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;modelSparQ&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;counter_spar_q&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;counterSparQ&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;outdir&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;outdir&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;database_do_migrate&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;databaseDoMigrate&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;database_output_file&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;databaseOutputFile&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;database_config_file&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;databaseConfigFile&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;database_sub_config_key&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;databaseSubConfigKey&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;database_file_version_id&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;databaseFileVersionId&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;database_reanalyze&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;databaseReanalyze&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;xupdate&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;xupdate&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;recurse&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;recurse&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;verbose&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;def_logic&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;defLogic&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;def_syntax&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;defSyntax&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;output_to_stdout&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;outputToStdout&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;interactive&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;interactive&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;connect_p&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;connectP&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;connect_h&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;connectH&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;uncolored&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;uncolored&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;xml_flag&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;xmlFlag&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;apply_automatic&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;applyAutomatic&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;compute_normal_form&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;computeNormalForm&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;dump_opts&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="s2">&quot;dumpOpts&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;disable_certificate_verification&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;disableCertificateVerification&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;use_lib_pos&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;useLibPos&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;unlit&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;unlit&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;serve&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;serve&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;listen&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;listen&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;pid_file&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;pidFile&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;whitelist&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[[</span><span class="nb">str</span><span class="p">]],</span> <span class="s2">&quot;whitelist&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;blacklist&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[[</span><span class="nb">str</span><span class="p">]],</span> <span class="s2">&quot;blacklist&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;run_mmt&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;runMMT&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;full_theories&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;fullTheories&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;output_logic_list&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;outputLogicList&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;output_logic_graph&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;outputLogicGraph&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;file_type&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;fileType&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;access_token&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;accessToken&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;http_request_headers&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="s2">&quot;httpRequestHeaders&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;full_sign&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;fullSign&quot;</span><span class="p">),</span>
+    <span class="n">Option</span><span class="p">(</span><span class="s2">&quot;print_ast&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;printAST&quot;</span><span class="p">),</span>
+<span class="p">]</span>
+
+<span class="n">_ALL_OPTIONS_BY_NAME</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">([(</span><span class="n">x</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">_ALL_OPTIONS</span><span class="p">])</span>
+
+
+<div class="viewcode-block" id="Options"><a class="viewcode-back" href="../../code/hets.Options.html#hets.Options">[docs]</a><span class="k">class</span> <span class="nc">Options</span><span class="p">:</span>
+    <span class="n">_hs_options</span><span class="p">:</span> <span class="n">Internal</span><span class="o">.</span><span class="n">HetcatsOpts</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hs_options</span> <span class="o">=</span> <span class="n">Internal</span><span class="o">.</span><span class="n">defaultHetcatsOpts</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">patch</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Option</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">Option</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_ALL_OPTIONS_BY_NAME</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+
+        <span class="n">option</span> <span class="o">=</span> <span class="n">_ALL_OPTIONS_BY_NAME</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">option</span><span class="o">.</span><span class="n">_hs_getter</span><span class="p">()(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hs_options</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Option</span><span class="p">],</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">Option</span><span class="p">):</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">name</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_ALL_OPTIONS_BY_NAME</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown key &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+
+        <span class="n">option</span> <span class="o">=</span> <span class="n">_ALL_OPTIONS_BY_NAME</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_hs_options</span> <span class="o">=</span> <span class="n">option</span><span class="o">.</span><span class="n">_hs_setter</span><span class="p">()(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hs_options</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">_ALL_OPTIONS</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">iter</span><span class="p">(</span><span class="n">_ALL_OPTIONS</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Options.patch"><a class="viewcode-back" href="../../code/hets.Options.html#hets.Options.patch">[docs]</a>    <span class="k">def</span> <span class="nf">patch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">_ALL_OPTIONS_BY_NAME</span> <span class="ow">and</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">hs_fn</span> <span class="o">=</span> <span class="n">_ALL_OPTIONS_BY_NAME</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">_hs_setter</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_hs_options</span> <span class="o">=</span> <span class="n">hs_fn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hs_options</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Options.to_dict"><a class="viewcode-back" href="../../code/hets.Options.html#hets.Options.to_dict">[docs]</a>    <span class="k">def</span> <span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">((</span><span class="n">option</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">option</span><span class="o">.</span><span class="n">_hs_getter</span><span class="p">()(</span><span class="bp">self</span><span class="o">.</span><span class="n">_hs_options</span><span class="p">))</span> <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">_ALL_OPTIONS</span><span class="p">)</span></div></div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Björn Gehrke.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation &mdash; Hets API 00.00.01 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Usage" href="usage.html" />
+    <link rel="prev" title="Welcome to Hets API’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Hets API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#docker">Docker</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#hyphen">Hyphen</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#haskell-and-python-api">Haskell and python API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#provers-and-library">Provers and Library</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="code-documentation.html">Code documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Hets API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading"></a></h1>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#docker" id="id2">Docker</a></p></li>
+<li><p><a class="reference internal" href="#prerequisites" id="id3">Prerequisites</a></p>
+<ul>
+<li><p><a class="reference internal" href="#hyphen" id="id4">Hyphen</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#haskell-and-python-api" id="id5">Haskell and python API</a></p></li>
+<li><p><a class="reference internal" href="#provers-and-library" id="id6">Provers and Library</a></p></li>
+</ul>
+</nav>
+<section id="docker">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">Docker</a><a class="headerlink" href="#docker" title="Permalink to this heading"></a></h2>
+<p>The simplest way to use the hets api is the docker image <a class="reference external" href="https://hub.docker.com/repository/docker/spechub2/hets-api">spechub2/hets-api</a>. Use one of the following commands to get an interactive session:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get an interactive python session</span>
+docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>spechub2/hets-api<span class="w"> </span>python
+
+<span class="c1"># Get an interactive ghci session</span>
+docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>spechub2/hets-api<span class="w"> </span>ghci
+
+<span class="c1"># Get an interactive bash session</span>
+docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>spechub2/hets-api<span class="w"> </span>bash
+</pre></div>
+</div>
+<p>Optionally mount volumes to access your local files inside the docker container. The following command starts an interactive python session with the current working directory mounted inside the container at <code class="docutils literal notranslate"><span class="pre">./files/</span></code></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>-v<span class="w">  </span><span class="nv">$PWD</span>:/home/hets/files<span class="w"> </span>spechub2/hets-api<span class="w"> </span>python
+</pre></div>
+</div>
+</section>
+<section id="prerequisites">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Prerequisites</a><a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h2>
+<section id="hyphen">
+<h3><a class="toc-backref" href="#id4" role="doc-backlink">Hyphen</a><a class="headerlink" href="#hyphen" title="Permalink to this heading"></a></h3>
+<p>The python hets API utilises <a class="reference external" href="https://github.com/tbarnetlamb/hyphen/">hyphen</a> to access the haskell interface from python. To install it, first install its dependencies:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span> <span class="n">install</span> <span class="n">git</span> <span class="n">python3</span><span class="o">-</span><span class="n">dev</span> <span class="n">ghc</span><span class="o">-</span><span class="n">dynamic</span> <span class="n">ghc</span> <span class="n">python3</span> <span class="n">python3</span><span class="o">-</span><span class="n">pip</span> <span class="n">libghc</span><span class="o">-</span><span class="n">ghc</span><span class="o">-</span><span class="n">paths</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">parser</span><span class="o">-</span><span class="n">combinators</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">unordered</span><span class="o">-</span><span class="n">containers</span><span class="o">-</span><span class="n">dev</span>
+</pre></div>
+</div>
+<p>Then, clone the source code and build the project:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">tbarnetlamb</span><span class="o">/</span><span class="n">hyphen</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">hyphen</span>
+<span class="n">python3</span> <span class="n">hyphen</span><span class="o">/</span><span class="n">build</span><span class="o">-</span><span class="n">extn</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>Create a <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> in the root folder of the project with the following content</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[project]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;hyphen&quot;</span>
+<span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;0.1.0.0&quot;</span>
+
+<span class="k">[tool.setuptools]</span>
+<span class="n">packages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="s">&quot;hyphen&quot;</span><span class="w"> </span><span class="p">]</span>
+
+<span class="k">[tool.setuptools.package-data]</span>
+<span class="s">&quot;*&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="s">&quot;hslowlevel.*&quot;</span><span class="w"> </span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Finally install hyphen with</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">.</span>
+</pre></div>
+</div>
+<div class="admonition hint">
+<p class="admonition-title">Hint</p>
+<p>If you get errors during the installation try updating setuptools with
+<code class="docutils literal notranslate"><span class="pre">python3</span> <span class="pre">-m</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">--upgrade</span> <span class="pre">pip</span> <span class="pre">setuptools</span></code></p>
+</div>
+</section>
+</section>
+<section id="haskell-and-python-api">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">Haskell and python API</a><a class="headerlink" href="#haskell-and-python-api" title="Permalink to this heading"></a></h2>
+<p>To build the haskell API packages from the hets ppa are required. Add the ppa with</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span> <span class="n">install</span> <span class="o">-</span><span class="n">y</span> <span class="n">software</span><span class="o">-</span><span class="n">properties</span><span class="o">-</span><span class="n">common</span> <span class="n">apt</span><span class="o">-</span><span class="n">utils</span> <span class="n">make</span>
+<span class="n">sudo</span> <span class="n">apt</span><span class="o">-</span><span class="n">add</span><span class="o">-</span><span class="n">repository</span> <span class="o">-</span><span class="n">y</span> <span class="n">ppa</span><span class="p">:</span><span class="n">hets</span><span class="o">/</span><span class="n">hets</span>
+<span class="n">sudo</span> <span class="n">apt</span> <span class="n">update</span>
+</pre></div>
+</div>
+<p>Then, install the dependencies for building the library</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">apt</span> <span class="n">install</span> <span class="n">openjdk</span><span class="o">-</span><span class="mi">8</span><span class="o">-</span><span class="n">jdk</span><span class="o">-</span><span class="n">headless</span> <span class="n">ant</span> <span class="n">cabal</span><span class="o">-</span><span class="n">install</span> <span class="n">ksh</span> <span class="n">perl</span><span class="o">-</span><span class="n">base</span> <span class="n">tar</span> <span class="n">xz</span><span class="o">-</span><span class="n">utils</span> <span class="nb">zip</span> <span class="n">libmysqlclient</span><span class="o">-</span><span class="n">dev</span> <span class="n">ghc</span><span class="o">-</span><span class="n">haddock</span> <span class="n">libghc</span><span class="o">-</span><span class="n">missingh</span><span class="o">-</span><span class="n">dev</span> <span class="n">ghc</span><span class="o">&gt;=</span><span class="mf">7.10.3</span> <span class="n">happy</span> <span class="n">libghc</span><span class="o">-</span><span class="n">mutable</span><span class="o">-</span><span class="n">containers</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">haxml</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">tar</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">random</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">parsec3</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">fgl</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">xml</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">http</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">warp</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">wai</span><span class="o">-</span><span class="n">extra</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">split</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">file</span><span class="o">-</span><span class="n">embed</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">monad</span><span class="o">-</span><span class="n">logger</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">yaml</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">esqueleto</span><span class="o">-</span><span class="n">dev</span><span class="o">&gt;=</span><span class="mf">2.5.3</span> <span class="n">libghc</span><span class="o">-</span><span class="n">persistent</span><span class="o">-</span><span class="n">dev</span><span class="o">&gt;=</span><span class="mf">2.7.0</span> <span class="n">libghc</span><span class="o">-</span><span class="n">persistent</span><span class="o">-</span><span class="n">template</span><span class="o">-</span><span class="n">dev</span><span class="o">&gt;=</span><span class="mf">2.5.2</span> <span class="n">libghc</span><span class="o">-</span><span class="n">persistent</span><span class="o">-</span><span class="n">postgresql</span><span class="o">-</span><span class="n">dev</span><span class="o">&gt;=</span><span class="mf">2.6.1</span> <span class="n">libghc</span><span class="o">-</span><span class="n">persistent</span><span class="o">-</span><span class="n">sqlite</span><span class="o">-</span><span class="n">dev</span><span class="o">&gt;=</span><span class="mf">2.6.2</span> <span class="n">libghc</span><span class="o">-</span><span class="n">utf8</span><span class="o">-</span><span class="n">string</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">relation</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">persistent</span><span class="o">-</span><span class="n">mysql</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">hexpat</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">aterm</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">xeno</span><span class="o">-</span><span class="n">dev</span> <span class="n">libghc</span><span class="o">-</span><span class="n">heap</span><span class="o">-</span><span class="n">dev</span>
+</pre></div>
+</div>
+<p>Clone the hets repository</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">spechub</span><span class="o">/</span><span class="n">Hets</span><span class="o">.</span><span class="n">git</span>
+<span class="n">cd</span> <span class="n">Hets</span>
+</pre></div>
+</div>
+<p>Build the library</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>make derived
+runhaskell Setup.hs configure
+    --ghc --prefix=/
+    --disable-executable-stripping
+    --disable-benchmarks
+    --libdir=/lib/haskell-packages/ghc/lib/x86_64-linux-ghc-8.6.5
+    --libsubdir=hets-api-0.100.0
+    --datadir=share
+    --datasubdir=hets-api
+    --haddockdir=/lib/ghc-doc/haddock/hets-api-0.100.0
+    --docdir=share/doc/hets-api-doc
+    --package-db=/var/lib/ghc/package.conf.d
+    --disable-profiling
+    lib:Hets
+runhaskell Setup.hs build -j$(nproc) lib:Hets
+sudo runhaskell Setup.hs install
+</pre></div>
+</div>
+<p>Finally, install the python API</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python3</span> <span class="o">-</span><span class="n">m</span> <span class="n">pip</span> <span class="n">install</span> <span class="o">./</span><span class="n">python</span><span class="o">/</span><span class="n">api</span>
+</pre></div>
+</div>
+</section>
+<section id="provers-and-library">
+<h2><a class="toc-backref" href="#id6" role="doc-backlink">Provers and Library</a><a class="headerlink" href="#provers-and-library" title="Permalink to this heading"></a></h2>
+<p>It is recommend to install additional tools for automatic theorem proving as well as to download basic libraries and other examples</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install provers. Choose any subset.</span>
+apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>cvc-47<span class="w"> </span>darwin<span class="w"> </span>eprover<span class="w"> </span>fact++<span class="w"> </span>maude<span class="w"> </span>minisat<span class="w"> </span>pellet<span class="w"> </span>spass<span class="w"> </span>vampire<span class="w"> </span>yices<span class="w"> </span>z3<span class="w"> </span>zchaff
+
+<span class="c1"># Download the hets library</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/spechub/Hets-lib.git
+<span class="nb">export</span><span class="w"> </span><span class="nv">HETS_LIB</span><span class="o">=</span><span class="k">$(</span>realpath<span class="w"> </span>Hets-lib<span class="k">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to Hets API’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="usage.html" class="btn btn-neutral float-right" title="Usage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Björn Gehrke.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

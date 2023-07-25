@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Theory &mdash; Hets API 00.00.01 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Signature" href="hets.Signature.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Hets API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../code-documentation.html">Code documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../code-documentation.html#functions">Functions</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../code-documentation.html#classes">Classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="hets.BasicProof.html">BasicProof</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Comorphism.html">Comorphism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ConsistencyChecker.html">ConsistencyChecker</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ConsistencyStatus.html">ConsistencyStatus</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.DevelopmentGraph.html">DevelopmentGraph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.DevGraphEdge.html">DevGraphEdge</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.DefinitionDevGraphEdge.html">DefinitionDevGraphEdge</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.TheoremDevGraphEdge.html">TheoremDevGraphEdge</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.EdgeKind.html">EdgeKind</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.DevGraphNode.html">DevGraphNode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.GMorphism.html">GMorphism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.GlobalAnnotations.html">GlobalAnnotations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Library.html">Library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Logic.html">Logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ProofState.html">ProofState</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ProofDetails.html">ProofDetails</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ProofKind.html">ProofKind</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ConsistencyKind.html">ConsistencyKind</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Options.html">Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Option.html">Option</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Prover.html">Prover</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Sentence.html">Sentence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Signature.html">Signature</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Theory</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#hets.Theory"><code class="docutils literal notranslate"><span class="pre">Theory</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Hets API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../code-documentation.html">Code documentation</a></li>
+      <li class="breadcrumb-item active">Theory</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="theory">
+<h1>Theory<a class="headerlink" href="#theory" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="hets.Theory">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hets.</span></span><span class="sig-name descname"><span class="pre">Theory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hs_theory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">hs.HetsAPI.Python.PyTheory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">HsHierarchyElement</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hets/Theory.html#Theory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.axioms">
+<span class="sig-name descname"><span class="pre">axioms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.Sentence.html#hets.Sentence" title="hets.Sentence.Sentence"><span class="pre">Sentence</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.axioms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.axioms" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.get_available_comorphisms">
+<span class="sig-name descname"><span class="pre">get_available_comorphisms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.Comorphism.html#hets.Comorphism" title="hets.Comorphism.Comorphism"><span class="pre">Comorphism</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.get_available_comorphisms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.get_available_comorphisms" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.get_consistency_checker_by_name">
+<span class="sig-name descname"><span class="pre">get_consistency_checker_by_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="hets.ConsistencyChecker.html#hets.ConsistencyChecker" title="hets.ConsistencyChecker.ConsistencyChecker"><span class="pre">ConsistencyChecker</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.get_consistency_checker_by_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.get_consistency_checker_by_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.get_prover_by_name">
+<span class="sig-name descname"><span class="pre">get_prover_by_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="hets.Prover.html#hets.Prover" title="hets.Prover.Prover"><span class="pre">Prover</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.get_prover_by_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.get_prover_by_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.get_sublogic">
+<span class="sig-name descname"><span class="pre">get_sublogic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.get_sublogic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.get_sublogic" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.get_usable_consistency_checkers">
+<span class="sig-name descname"><span class="pre">get_usable_consistency_checkers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.ConsistencyChecker.html#hets.ConsistencyChecker" title="hets.ConsistencyChecker.ConsistencyChecker"><span class="pre">ConsistencyChecker</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.get_usable_consistency_checkers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.get_usable_consistency_checkers" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.get_usable_consistency_checkers_and_comorphisms">
+<span class="sig-name descname"><span class="pre">get_usable_consistency_checkers_and_comorphisms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.ConsistencyChecker.html#hets.ConsistencyChecker" title="hets.ConsistencyChecker.ConsistencyChecker"><span class="pre">ConsistencyChecker</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="hets.Comorphism.html#hets.Comorphism" title="hets.Comorphism.Comorphism"><span class="pre">Comorphism</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.get_usable_consistency_checkers_and_comorphisms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.get_usable_consistency_checkers_and_comorphisms" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.get_usable_consistency_checkers_with_comorphisms">
+<span class="sig-name descname"><span class="pre">get_usable_consistency_checkers_with_comorphisms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.ConsistencyChecker.html#hets.ConsistencyChecker" title="hets.ConsistencyChecker.ConsistencyChecker"><span class="pre">ConsistencyChecker</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.Comorphism.html#hets.Comorphism" title="hets.Comorphism.Comorphism"><span class="pre">Comorphism</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.get_usable_consistency_checkers_with_comorphisms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.get_usable_consistency_checkers_with_comorphisms" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.get_usable_provers">
+<span class="sig-name descname"><span class="pre">get_usable_provers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.Prover.html#hets.Prover" title="hets.Prover.Prover"><span class="pre">Prover</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.get_usable_provers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.get_usable_provers" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.get_usable_provers_and_comorphisms">
+<span class="sig-name descname"><span class="pre">get_usable_provers_and_comorphisms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.Prover.html#hets.Prover" title="hets.Prover.Prover"><span class="pre">Prover</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="hets.Comorphism.html#hets.Comorphism" title="hets.Comorphism.Comorphism"><span class="pre">Comorphism</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.get_usable_provers_and_comorphisms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.get_usable_provers_and_comorphisms" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.get_usable_provers_with_comorphisms">
+<span class="sig-name descname"><span class="pre">get_usable_provers_with_comorphisms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.Prover.html#hets.Prover" title="hets.Prover.Prover"><span class="pre">Prover</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.Comorphism.html#hets.Comorphism" title="hets.Comorphism.Comorphism"><span class="pre">Comorphism</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.get_usable_provers_with_comorphisms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.get_usable_provers_with_comorphisms" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.goals">
+<span class="sig-name descname"><span class="pre">goals</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.Sentence.html#hets.Sentence" title="hets.Sentence.Sentence"><span class="pre">Sentence</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.goals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.goals" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.logic">
+<span class="sig-name descname"><span class="pre">logic</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="hets.Logic.html#hets.Logic" title="hets.Logic.Logic"><span class="pre">Logic</span></a></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.logic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.logic" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.proven_goals">
+<span class="sig-name descname"><span class="pre">proven_goals</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.Sentence.html#hets.Sentence" title="hets.Sentence.Sentence"><span class="pre">Sentence</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.proven_goals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.proven_goals" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.sentence_by_name">
+<span class="sig-name descname"><span class="pre">sentence_by_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="hets.Sentence.html#hets.Sentence" title="hets.Sentence.Sentence"><span class="pre">Sentence</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.sentence_by_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.sentence_by_name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.sentences">
+<span class="sig-name descname"><span class="pre">sentences</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.Sentence.html#hets.Sentence" title="hets.Sentence.Sentence"><span class="pre">Sentence</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.sentences"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.sentences" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.signature">
+<span class="sig-name descname"><span class="pre">signature</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="hets.Signature.html#hets.Signature" title="hets.Signature.Signature"><span class="pre">Signature</span></a></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.signature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.signature" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.unproven_goals">
+<span class="sig-name descname"><span class="pre">unproven_goals</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.Sentence.html#hets.Sentence" title="hets.Sentence.Sentence"><span class="pre">Sentence</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.unproven_goals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.unproven_goals" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.Theory.with_selection">
+<span class="sig-name descname"><span class="pre">with_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axioms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">goals</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theorems</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hets/Theory.html#Theory.with_selection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.Theory.with_selection" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="hets.Signature.html" class="btn btn-neutral float-left" title="Signature" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Björn Gehrke.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

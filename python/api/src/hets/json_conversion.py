@@ -1,9 +1,7 @@
-import ast
+import json
 from typing import Union
 
-from .haskell import show, ByteString, toStrict
-
-import json
+from .haskell import ByteString, toStrict
 
 
 def as_json(hs_byte_string: Union[ByteString, bytes]) -> dict:
@@ -16,8 +14,8 @@ def as_json(hs_byte_string: Union[ByteString, bytes]) -> dict:
     The JSON representation is generated automatically by the haskell package Data.Aeson.
     See https://hackage.haskell.org/package/aeson/docs/Data-Aeson.html for further details.
 
-    @param hs_byte_string A haskell `Data.ByteString.ByteString` or `Data.ByteString.Lazy.ByteString`
-    @return The byte string parsed as json object to a dictionary
+    :param: hs_byte_string A haskell `Data.ByteString.ByteString` or `Data.ByteString.Lazy.ByteString`
+    :return: The byte string parsed as json object to a dictionary
     """
 
     if isinstance(hs_byte_string, bytes):

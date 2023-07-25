@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevGraphNode &mdash; Hets API 00.00.01 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="GMorphism" href="hets.GMorphism.html" />
+    <link rel="prev" title="EdgeKind" href="hets.EdgeKind.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Hets API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../code-documentation.html">Code documentation</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../code-documentation.html#functions">Functions</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../code-documentation.html#classes">Classes</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="hets.BasicProof.html">BasicProof</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Comorphism.html">Comorphism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ConsistencyChecker.html">ConsistencyChecker</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ConsistencyStatus.html">ConsistencyStatus</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.DevelopmentGraph.html">DevelopmentGraph</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.DevGraphEdge.html">DevGraphEdge</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.DefinitionDevGraphEdge.html">DefinitionDevGraphEdge</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.TheoremDevGraphEdge.html">TheoremDevGraphEdge</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.EdgeKind.html">EdgeKind</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">DevGraphNode</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#hets.DevGraphNode"><code class="docutils literal notranslate"><span class="pre">DevGraphNode</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="hets.GMorphism.html">GMorphism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.GlobalAnnotations.html">GlobalAnnotations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Library.html">Library</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Logic.html">Logic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ProofState.html">ProofState</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ProofDetails.html">ProofDetails</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ProofKind.html">ProofKind</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.ConsistencyKind.html">ConsistencyKind</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Options.html">Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Option.html">Option</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Prover.html">Prover</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Sentence.html">Sentence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Signature.html">Signature</a></li>
+<li class="toctree-l3"><a class="reference internal" href="hets.Theory.html">Theory</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Hets API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../code-documentation.html">Code documentation</a></li>
+      <li class="breadcrumb-item active">DevGraphNode</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="devgraphnode">
+<h1>DevGraphNode<a class="headerlink" href="#devgraphnode" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="hets.DevGraphNode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">hets.</span></span><span class="sig-name descname"><span class="pre">DevGraphNode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hs_node</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">hs.HetsAPI.Internal.DGNodeLab</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">HsHierarchyElement</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode" title="Permalink to this definition"></a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.check_consistency">
+<span class="sig-name descname"><span class="pre">check_consistency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cons_checker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="hets.ConsistencyChecker.html#hets.ConsistencyChecker" title="hets.ConsistencyChecker.ConsistencyChecker"><span class="pre">ConsistencyChecker</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comorphism</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="hets.Comorphism.html#hets.Comorphism" title="hets.Comorphism.Comorphism"><span class="pre">Comorphism</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_theorems</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.ConsistencyKind.html#hets.ConsistencyKind" title="hets.ConsistencyKind.ConsistencyKind"><span class="pre">ConsistencyKind</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.check_consistency"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.check_consistency" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.consistency_status">
+<span class="sig-name descname"><span class="pre">consistency_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="hets.ConsistencyStatus.html#hets.ConsistencyStatus" title="hets.ConsistencyStatus.ConsistencyStatus"><span class="pre">ConsistencyStatus</span></a></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.consistency_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.consistency_status" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.global_theory">
+<span class="sig-name descname"><span class="pre">global_theory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="hets.Theory.html#hets.Theory" title="hets.Theory.Theory"><span class="pre">Theory</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.global_theory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.global_theory" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.id">
+<span class="sig-name descname"><span class="pre">id</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.id" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.info">
+<span class="sig-name descname"><span class="pre">info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.info" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.is_consistency_proven">
+<span class="sig-name descname"><span class="pre">is_consistency_proven</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.is_consistency_proven"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.is_consistency_proven" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.is_internal">
+<span class="sig-name descname"><span class="pre">is_internal</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.is_internal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.is_internal" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.is_proven_node">
+<span class="sig-name descname"><span class="pre">is_proven_node</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.is_proven_node"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.is_proven_node" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.is_reference_node">
+<span class="sig-name descname"><span class="pre">is_reference_node</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.is_reference_node"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.is_reference_node" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.label">
+<span class="sig-name descname"><span class="pre">label</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">hs.HetsAPI.Internal.DGNodeLab</span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.label"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.label" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.name">
+<span class="sig-name descname"><span class="pre">name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.name" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.prove">
+<span class="sig-name descname"><span class="pre">prove</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prover</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="hets.Prover.html#hets.Prover" title="hets.Prover.Prover"><span class="pre">Prover</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">comorphism</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="hets.Comorphism.html#hets.Comorphism" title="hets.Comorphism.Comorphism"><span class="pre">Comorphism</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_theorems</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">goals_to_prove</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axioms_to_include</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="hets.ProofDetails.html#hets.ProofDetails" title="hets.ProofDetails.ProofDetails"><span class="pre">ProofDetails</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.prove"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.prove" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.recompute">
+<span class="sig-name descname"><span class="pre">recompute</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.recompute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.recompute" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="hets.DevGraphNode.theory">
+<span class="sig-name descname"><span class="pre">theory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="hets.Theory.html#hets.Theory" title="hets.Theory.Theory"><span class="pre">Theory</span></a></span></span><a class="reference internal" href="../_modules/hets/DevGraphNode.html#DevGraphNode.theory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#hets.DevGraphNode.theory" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="hets.EdgeKind.html" class="btn btn-neutral float-left" title="EdgeKind" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="hets.GMorphism.html" class="btn btn-neutral float-right" title="GMorphism" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Björn Gehrke.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

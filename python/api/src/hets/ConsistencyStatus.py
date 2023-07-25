@@ -9,6 +9,16 @@ from .haskell import ConsStatus, Conservativity, Inconsistent, Unknown, PCons, C
 
 class ConsistencyStatus:
     def __init__(self, hs_cons_status: ConsStatus):
+        """
+        Consistency status of a node.
+
+        The status contains the required consistency as well as the result of a proven consistency (or :py:const:`~hets.ConsistencyKind.UNKNOWN` by default)
+
+        :warning: This class should not be instantiated manually.
+
+        :param hs_cons_status: Haskell object of ``HetsAPI.Internal.ConsStatus``
+        """
+
         self._hs_cons_status = hs_cons_status
 
     def required(self) -> ConsistencyKind:
