@@ -106,6 +106,9 @@ CspCASL/ATC_CspCASL.der.hs
 CspCASL/ATC_CspCASL.hs
 DFOL/ATC_DFOL.der.hs
 DFOL/ATC_DFOL.hs
+EVT/AS.hs
+EVT/ATC_EVT.der.hs
+EVT/ATC_EVT.hs
 ExtModal/AS_ExtModal.hs
 ExtModal/ATC_ExtModal.der.hs
 ExtModal/ATC_ExtModal.hs

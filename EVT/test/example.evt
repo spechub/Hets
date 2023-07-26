@@ -1,0 +1,16 @@
+library Marie
+
+logic EVT
+
+spec mac0 =
+   event e1
+     grd iamaguard1 x in NAT
+     act iamanaction1 x = x + 1
+
+spec mac1 =
+   event e2
+     grd iamaguard2 y in NAT
+     act iamanaction2 y = y + 2
+end
+
+spec mac2 = mac0 and mac1
