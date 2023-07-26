@@ -41,6 +41,7 @@ import Static.ConsInclusions
 import qualified Proofs.VSE as VSE
 
 import Common.DocUtils
+import qualified Control.Monad.Fail as Fail
 
 import Driver.Options (HetcatsOpts, rmSuffix, prfSuffix)
 import Driver.ReadFn (libNameToFile)
@@ -167,7 +168,7 @@ createOpen gi file convGraph showLib = Just (
       Just fPath -> do
         openProofStatus gi fPath convGraph showLib
         return ()
-      Nothing -> fail "Could not open file."
+      Nothing -> Fail.fail "Could not open file."
   )
 
 -- | Returns the save-function
@@ -182,7 +183,7 @@ createSaveAs gi file = Just (
                                          , ("All Files", ["*"])] Nothing
     case maybeFilePath of
       Just fPath -> saveProofStatus gi fPath
-      Nothing -> fail "Could not save file."
+      Nothing -> Fail.fail "Could not save file."
   )
 
 -- | Returns the close-function
@@ -389,7 +390,7 @@ createMenuButtonProveStructured :: GInfo -> ButtonMenu GA.NodeValue
 createMenuButtonProveStructured gi =
   createMenuButton "Prove VSE Structured" (\ descr _ ->
     proofMenu gi (SelectCmd Prover $ "VSE structured: " ++ show descr)
-              $ VSE.prove (libName gi, descr)) gi
+              $ VSE.proveVSE (libName gi, descr)) gi
 
 #ifdef GTKGLADE
 createMenuButtonDisproveAtNode :: GInfo -> ButtonMenu GA.NodeValue

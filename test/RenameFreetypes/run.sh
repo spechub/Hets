@@ -1,7 +1,17 @@
-#!/bin/sh
+#!/bin/ksh93
 
-../../hets -v2 -A -o thy *.het
-../../utils/nightly/runisabelle.sh *.thy
+SD=$( cd ${ dirname $0; }; printf "$PWD" )
+BD=${SD%/*/*}
 
-../../hets -l HasCASL -v2 -A -o thy *.het
-../../utils/nightly/runisabelle.sh *.thy
+. ${BD}/Common/test/checkFunctions.sh
+
+cd ${SD} || return 99
+
+${BD}/hets -v2 -A -o thy *.dol || addErr
+${BD}/utils/nightly/runisabelle.sh *.thy || addErr
+
+${BD}/hets -l HasCASL -v2 -A -o thy *.dol || addErr
+${BD}/utils/nightly/runisabelle.sh *.thy || addErr
+
+errorMsg ${ERR} "${.sh.file}"
+(( ! ERR ))

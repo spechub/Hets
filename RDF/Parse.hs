@@ -16,7 +16,7 @@ import Common.Parsec
 import Common.Lexer
 import Common.AnnoParser (newlineOrEof)
 import Common.Token (criticalKeywords)
-import Common.Id
+import Common.IRI
 import qualified Common.GlobalAnnotations as GA (PrefixMap)
 
 import OWL2.AS
@@ -28,10 +28,10 @@ import Data.Either
 import qualified Data.Map as Map
 import Text.ParserCombinators.Parsec
 
-uriP :: CharParser st QName
+uriP :: CharParser st IRI
 uriP =
-  skips $ try $ checkWithUsing showQN uriQ $ \ q ->
-    not (null $ namePrefix q) || notElem (localPart q) criticalKeywords
+  skips $ try $ checkWithUsing showIRI uriQ $ \ q ->
+    not (null $ prefixName q) || notElem (show $ iriPath q) criticalKeywords
 
 -- * hets symbols parser
 
@@ -102,7 +102,7 @@ stringLiteral = do
         string "@"
         t <- skips $ optionMaybe languageTag
         return $ RDFLiteral b s $ Untyped t
-    <|> skips (return $ RDFLiteral b s $ Typed $ mkQName "string")
+    <|> skips (return $ RDFLiteral b s $ Typed $ mkIRI "string")
 
 literal :: CharParser st RDFLiteral
 literal = do
@@ -170,10 +170,9 @@ basicSpec pm = do
     many parseComment
     ls <- many parseStatement
     let td = TurtleDocument
-             dummyQName (Map.map transIri $ convertPrefixMap pm) ls
+             dummyIRI (Map.map mkIRI $ convertPrefixMap pm) ls
 -- return $ trace (show $ Map.union predefinedPrefixes (prefixMap td)) td
     return td
-  where transIri s = QN "" s Full s nullRange
 
 predefinedPrefixes :: RDFPrefixMap
 predefinedPrefixes = Map.fromList $ zip

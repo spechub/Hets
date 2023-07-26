@@ -19,7 +19,7 @@ import Common.Id
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 symOf :: Sign -> Set.Set SFSymbol
 symOf sig =

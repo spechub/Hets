@@ -15,6 +15,7 @@ import Common.Id
 import Common.IRI
 import Common.LibName
 import Common.AS_Annotation
+import qualified Control.Monad.Fail as Fail
 
 import Logic.Grothendieck
 
@@ -38,4 +39,4 @@ parseTPTP s filename = case parse tptp filename s of
     , makeSpecItem (simpleIdToIRI $ mkSimpleId filename)
       $ createSpec b ]
     nullRange []
-  Left err -> fail $ show err
+  Left err -> Fail.fail $ show err

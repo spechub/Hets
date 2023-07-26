@@ -32,7 +32,7 @@ import Data.Maybe
 
 typeRel :: TypeMap -> Rel.Rel Id
 typeRel = Rel.transReduce . Rel.irreflex . Rel.transClosure
-  . Map.foldWithKey ( \ i ti r ->
+  . Map.foldrWithKey ( \ i ti r ->
     Set.fold (Rel.insertPair i) r $ superTypes ti) Rel.empty
 
 getRawKind :: TypeMap -> Id -> RawKind

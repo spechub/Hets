@@ -25,6 +25,7 @@ import Data.List
 import Data.Maybe
 import qualified Control.Exception as Exception
 import qualified Control.Concurrent as Conc
+import qualified Control.Monad.Fail as Fail
 
 import HTk.Toolkit.SpinButton
 import HTk.Toolkit.Separator
@@ -307,7 +308,7 @@ newOptionsFrame con updateFn isExtraOps = do
   or use a detailed GUI for proving each goal manually.
 -}
 genericATPgui
-    :: (Ord proofTree, Ord sentence)
+    :: (Show sentence, Ord proofTree, Ord sentence)
     => ATPFunctions sign sentence mor proofTree pst
        -- ^ prover specific functions
     -> Bool   -- ^ prover supports extra options
@@ -752,7 +753,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                                                  mVar_batchId
                                                  tId
                            if not stored
-                              then fail $ "GenericATP: Thread " ++
+                              then Fail.fail $ "GenericATP: Thread " ++
                                           "run check failed"
                               else do
                             wDestroyed <- windowDestroyed windowDestroyedMVar
@@ -801,7 +802,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
               stored <- Conc.tryPutMVar mVar_batchId batchProverId
               if stored
                  then done
-                 else fail "GenericATP: MVar for batchProverId already taken!!"
+                 else Fail.fail "GenericATP: MVar for batchProverId already taken!!"
              else {- numGoals < 1 -} do
               batchStatusLabel # text "No further open goals\n\n"
               batchCurrentGoalLabel # text "--"
@@ -851,7 +852,7 @@ genericATPgui atpFun isExtraOptions prName thName th freedefs pt = do
                               proofStatus res) . AS_Anno.senAttr)
           $ goalsList s
   -- diags should not be plainly shown by putStrLn here
-  maybe (fail "reverse translation of names failed") return proofstats
+  maybe (Fail.fail "reverse translation of names failed") return proofstats
 
   where
     cleanupThread mVar_TId =

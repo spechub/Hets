@@ -15,7 +15,6 @@ theorems.
 module GUI.GtkDisprove (disproveAtNode) where
 
 import Graphics.UI.Gtk
-import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
 import qualified GUI.Glade.NodeChecker as ConsistencyChecker
@@ -62,7 +61,7 @@ showDisproveGUI gi le dg (i, lbl) = case globalTheory lbl of
   Just gt@(G_theory _ _ _ _ sens _) -> let
     fg g th = let
       l = lbl { dgn_theory = th }
-      l' = l { globalTheory = computeLabelTheory le dg (i, l) }
+      l' = l { globalTheory = computeLabelTheory le (libName gi) dg (i, l) }
       no_cs = ConsistencyStatus CSUnchecked ""
       stat = case OMap.lookup g sens of
         Nothing -> no_cs
@@ -109,8 +108,8 @@ disproveAtNode gInfo descr dgraph = do
     Just (dg, lbl, le) -> do
       acquired <- tryLockLocal lbl
       if acquired then do
-      showDisproveGUI gInfo le dg (descr, lbl)
-      unlockLocal lbl
+        showDisproveGUI gInfo le dg (descr, lbl)
+        unlockLocal lbl
       else errorDialogExt "Error" "Proof or disproof window already open"
 
 {- | after results have been collected, this function is called to store
@@ -140,27 +139,27 @@ and holds the functionality to call the ConsistencyChecker for the
 showDisproveWindow :: MVar (Result G_theory) -> LibName -> LibEnv
                    -> DGraph -> G_theory -> [FNode] -> IO ()
 showDisproveWindow res ln le dg g_th fgoals = postGUIAsync $ do
-  xml <- getGladeXML ConsistencyChecker.get
+  builder <- getGTKBuilder ConsistencyChecker.get
   -- get objects
-  window <- xmlGetWidget xml castToWindow "NodeChecker"
-  btnClose <- xmlGetWidget xml castToButton "btnClose"
-  btnResults <- xmlGetWidget xml castToButton "btnResults"
+  window <- builderGetObject builder castToWindow "NodeChecker"
+  btnClose <- builderGetObject builder castToButton "btnClose"
+  btnResults <- builderGetObject builder castToButton "btnResults"
   -- get goals view and buttons
-  trvGoals <- xmlGetWidget xml castToTreeView "trvNodes"
-  btnNodesAll <- xmlGetWidget xml castToButton "btnNodesAll"
-  btnNodesNone <- xmlGetWidget xml castToButton "btnNodesNone"
-  btnNodesInvert <- xmlGetWidget xml castToButton "btnNodesInvert"
-  btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
-  btnNodesTimeout <- xmlGetWidget xml castToButton "btnNodesTimeout"
-  cbInclThms <- xmlGetWidget xml castToCheckButton "cbInclThms"
+  trvGoals <- builderGetObject builder castToTreeView "trvNodes"
+  btnNodesAll <- builderGetObject builder castToButton "btnNodesAll"
+  btnNodesNone <- builderGetObject builder castToButton "btnNodesNone"
+  btnNodesInvert <- builderGetObject builder castToButton "btnNodesInvert"
+  btnNodesUnchecked <- builderGetObject builder castToButton "btnNodesUnchecked"
+  btnNodesTimeout <- builderGetObject builder castToButton "btnNodesTimeout"
+  cbInclThms <- builderGetObject builder castToCheckButton "cbInclThms"
   -- get checker view and buttons
-  cbComorphism <- xmlGetWidget xml castToComboBox "cbComorphism"
-  lblSublogic <- xmlGetWidget xml castToLabel "lblSublogic"
-  sbTimeout <- xmlGetWidget xml castToSpinButton "sbTimeout"
-  btnCheck <- xmlGetWidget xml castToButton "btnCheck"
-  btnStop <- xmlGetWidget xml castToButton "btnStop"
-  trvFinder <- xmlGetWidget xml castToTreeView "trvFinder"
-  toolLabel <- xmlGetWidget xml castToLabel "label1"
+  cbComorphism <- builderGetObject builder castToComboBox "cbComorphism"
+  lblSublogic <- builderGetObject builder castToLabel "lblSublogic"
+  sbTimeout <- builderGetObject builder castToSpinButton "sbTimeout"
+  btnCheck <- builderGetObject builder castToButton "btnCheck"
+  btnStop <- builderGetObject builder castToButton "btnStop"
+  trvFinder <- builderGetObject builder castToTreeView "trvFinder"
+  toolLabel <- builderGetObject builder castToLabel "label1"
   labelSetLabel toolLabel "Pick disprover"
   windowSetTitle window "Disprove"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit

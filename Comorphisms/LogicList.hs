@@ -87,6 +87,8 @@ import RDF.Logic_RDF
 #endif
 import Comorphisms.DynLogicList
 import UML.Logic_UML
+import NeSyPatterns.Logic_NeSyPatterns
+
 logicList :: [AnyLogic]
 logicList =
   [ Logic CASL
@@ -136,6 +138,7 @@ logicList =
   , Logic CSMOF
   , Logic QVTR
   , Logic UML
+  , Logic NeSyPatterns
   ] ++ dynLogicList
 
 addLogicName :: AnyLogic -> (String, AnyLogic)

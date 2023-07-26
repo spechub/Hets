@@ -8,7 +8,7 @@ Stability   :  experimental
 Portability :  portable
 
 append a haskell Prelude string for programatica analysis
-  or add CASL_DL/PredDatatypes.het to CASL_DL/PredefinedSign.inline.hs
+  or add CASL_DL/PredDatatypes.dol to CASL_DL/PredefinedSign.inline.hs
 -}
 
 module Main where

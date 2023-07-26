@@ -21,7 +21,7 @@ import Common.Lib.State
 import Common.Lib.MapSet (setToMap)
 import Common.Result
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import RDF.AS
 -}
 import RDF.Sign

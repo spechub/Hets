@@ -50,7 +50,7 @@ import Common.ProofTree
 import Common.Id
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show
@@ -91,9 +91,10 @@ instance Sentences Propositional FORMULA
     -- there is nothing to leave out
     simplify_sen Propositional _ = simplify
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- - | Syntax of Propositional logic
 instance Syntax Propositional BASIC_SPEC
@@ -101,8 +102,8 @@ instance Syntax Propositional BASIC_SPEC
          parsersAndPrinters Propositional =
            addSyntax "Hets" (basicSpec, pretty)
            $ makeDefault (basicSpec, pretty)
-         parse_symb_items Propositional = Just symbItems
-         parse_symb_map_items Propositional = Just symbMapItems
+         parse_symb_items Propositional = Just . const $ symbItems
+         parse_symb_map_items Propositional = Just . const $ symbMapItems
 
 -- | Instance of Logic for propositional logc
 instance Logic Propositional

@@ -39,6 +39,7 @@ import CommonLogic.AS_CommonLogic as AS
 import CommonLogic.Sign as Sign
 
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
 
 import Data.Data
 
@@ -64,7 +65,7 @@ isLegalMorphism pmor =
         pdom = Map.keysSet $ propMap pmor
         pcodom = Set.map (applyMorphism pmor) psource
     in unless (Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource) $
-    fail "illegal CommonLogic morphism"
+    Fail.fail "illegal CommonLogic morphism"
 
 -- | Application funtion for morphisms
 applyMorphism :: Morphism -> Id -> Id

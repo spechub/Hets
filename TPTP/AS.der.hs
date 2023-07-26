@@ -290,7 +290,7 @@ data THF_conn_term = THFC_pair THF_pair_connective
 
 -- <thf_conditional>      ::= $ite(<thf_logic_formula>,<thf_logic_formula>,
 --                             <thf_logic_formula>)
-data THF_conditional = THF_conditional THF_logic_formula THF_logic_formula THF_logic_formula -- $ite
+data THF_conditional = THF_conditional THF_logic_formula THF_logic_formula THF_logic_formula --  $ite
                        deriving (Show, Ord, Eq, Data, Typeable)
 
 -- %----The LHS of a term or formula binding must be a non-variable term that
@@ -560,7 +560,7 @@ type TFF_atomic_formula = FOF_atomic_formula
 
 -- <tff_conditional>      ::= $ite_f(<tff_logic_formula>,<tff_logic_formula>,
 --                            <tff_logic_formula>)
-data TFF_conditional = TFF_conditional TFF_logic_formula TFF_logic_formula TFF_logic_formula -- $ite_f
+data TFF_conditional = TFF_conditional TFF_logic_formula TFF_logic_formula TFF_logic_formula --  $ite_f
                        deriving (Show, Ord, Eq, Data, Typeable)
 
 -- <tff_let>              ::= $let_tf(<tff_let_term_defns>,<tff_formula>) |
@@ -821,7 +821,7 @@ data FOF_defined_term = FOFDT_term Defined_term
 -- <fof_defined_atomic_term>  ::= <fof_defined_plain_term>
 -- %----None yet             | <defined_infix_term>
 data FOF_defined_atomic_term = FOFDAT_plain FOF_defined_plain_term
-                             -- | FOFDAT_indix Defined_infix_term
+                             --  | FOFDAT_indix Defined_infix_term
                                deriving (Show, Ord, Eq, Data, Typeable)
 
 -- %----None yet <defined_infix_term> ::= <fof_term> <defined_infix_func> <fof_term>
@@ -1014,14 +1014,14 @@ type Type_functor = Token
 -- <defined_type>         ::= <atomic_defined_word>
 -- <defined_type>         :== $oType | $o | $iType | $i | $tType |
 --                            $real | $rat | $int
-data Defined_type = OType -- $oType/$o is the Boolean type, i.e., the type of $true and $false.
-                  | O     -- $oType/$o is the Boolean type, i.e., the type of $true and $false.
-                  | IType -- $iType/$i is non-empty type of individuals, which may be finite or infinite.
-                  | I     -- $iType/$i is non-empty type of individuals, which may be finite or infinite.
-                  | TType -- $tType is the type (kind) of all types.
-                  | Real  -- $real is the type of <real>s.
-                  | Rat   -- $rat is the type of <rational>s.
-                  | Int   -- $int is the type of <signed_integer>s and <unsigned_integer>s.
+data Defined_type = OType --  $oType/$o is the Boolean type, i.e., the type of $true and $false.
+                  | O     --  $oType/$o is the Boolean type, i.e., the type of $true and $false.
+                  | IType --  $iType/$i is non-empty type of individuals, which may be finite or infinite.
+                  | I     --  $iType/$i is non-empty type of individuals, which may be finite or infinite.
+                  | TType --  $tType is the type (kind) of all types.
+                  | Real  --  $real is the type of <real>s.
+                  | Rat   --  $rat is the type of <rational>s.
+                  | Int   --  $int is the type of <signed_integer>s and <unsigned_integer>s.
                     deriving (Show, Ord, Eq, Data, Typeable)
 
 -- <system_type>          :== <atomic_system_word>
@@ -1417,3 +1417,29 @@ type Distinct_object = Token
 
 -- <file_name>            ::= <single_quoted>
 type File_name = IRI
+
+
+set_formula_role :: Annotated_formula -> Formula_role -> Annotated_formula
+set_formula_role (AF_THF_Annotated (THF_annotated n _ f an)) role =
+     (AF_THF_Annotated (THF_annotated n role f an))
+set_formula_role (AF_TFX_Annotated (TFX_annotated n _ f an)) role =
+     (AF_TFX_Annotated (TFX_annotated n role f an))
+set_formula_role (AF_TFF_Annotated (TFF_annotated n _ f an)) role =
+     (AF_TFF_Annotated (TFF_annotated n role f an))
+set_formula_role (AF_TCF_Annotated (TCF_annotated n _ f an)) role =
+     (AF_TCF_Annotated (TCF_annotated n role f an))
+set_formula_role (AF_FOF_Annotated (FOF_annotated n _ f an)) role =
+     (AF_FOF_Annotated (FOF_annotated n role f an))
+set_formula_role (AF_CNF_Annotated (CNF_annotated n _ f an)) role =
+     (AF_CNF_Annotated (CNF_annotated n role f an))
+set_formula_role (AF_TPI_Annotated (TPI_annotated n _ f an)) role =
+     (AF_TPI_Annotated (TPI_annotated n role f an))
+
+adjust_formula_role :: AS_Anno.Named Annotated_formula -> AS_Anno.Named Annotated_formula
+adjust_formula_role anno_sen = 
+  let sen1 = AS_Anno.sentence anno_sen
+      sen2 = if AS_Anno.isAxiom anno_sen
+             then set_formula_role sen1 Axiom
+             else sen1
+  in anno_sen { AS_Anno.sentence = sen2 }                
+

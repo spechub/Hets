@@ -1,8 +1,9 @@
+cabal-version: 2.2
 name: Hets
-version: 0.99
+version: 0.100.0
 Description: The Heterogeneous Tool Set
 homepage:https://github.com/spechub/Hets
-License: LGPL
+License:  	LGPL-3.0-or-later
 License-File: LICENSE.txt
 Author:
   2007 Cui Jian
@@ -30,7 +31,6 @@ Maintainer: hets-devel@informatik.uni-bremen.de
 Copyright: 2006-2014 DFKI GmbH Bremen, Uni Bremen
 Stability: Experimental
 build-type: Simple
-Cabal-Version: >= 1.4
 
 flag uniform
   description: use HTk and uDrawGraph binding form the uniform workbench
@@ -58,17 +58,21 @@ flag server
 flag haxml
   description: convert Isabelle theories to development graphs
 
-Executable hets
-  Main-is: hets.hs
+flag httpclient
+  description: use native http-client implementation instead of wget
+
+flag mysql
+  description: enable persistent support for MySQL
+
+common shared-properties
+  default-language: Haskell2010
   build-depends:
       HTTP >= 4000.2.4
-    , http-client >= 0.5.7.0
-    , http-client-tls >= 0.3.5.1
-    , connection >= 0.2.8
     , array >= 0.1.0.0
     , aterm >= 0.1.0.1
     , base >= 4.0.0.0
     , containers >= 0.1.0.1
+    , unordered-containers
     , directory >= 1.0.0.0
     , fgl >= 5.4.1.1
     , filepath
@@ -81,22 +85,22 @@ Executable hets
     , pretty >= 1.0.0.0
     , process >= 1.0.1.1
     , split >= 0.1.2.3
-    , time >= 1.1.3 && < 1.7
+    , time >= 1.1.3
     , utf8-string
     , bytestring >= 0.9
     , xml >= 1.3.7 && < 1.4
+    , relation
+    , xeno
+    , heap
   cpp-options: -DCASLEXTENSIONS -DRDFLOGIC
-  ghc-options: -threaded -fcontext-stack=31
+  ghc-options: -freduction-depth=31
 
-  if flag(uniform)
-    build-depends:
-        uni-events
-      , uni-graphs >= 2.0 && < 3.0
-      , uni-htk >= 2.0 && < 3.0
-      , uni-reactor
-      , uni-uDrawGraph >= 2.0 && < 3.0
-      , uni-util >= 2.0 && < 3.0
-    cpp-options: -DUNI_PACKAGE
+--   if flag(httpclient)
+--     build-depends:
+--         http-client >= 0.5.7.0
+--       , http-client-tls >= 0.3.5.1
+--       , connection >= 0.2.8
+--     cpp-options: -DNO_WGET
 
   if flag(haxml)
     build-depends: HaXml >= 1.24 && < 2
@@ -122,9 +126,121 @@ Executable hets
 
   if flag(gtkglade)
     build-depends:
-        glade >= 0.11.1
-      , gtk >= 0.11.2
+        gtk >= 0.11.2
     cpp-options: -DGTKGLADE
+
+  if flag(mysql)
+    build-depends:
+      persistent-mysql >= 2.6.1
+    cpp-options: -DMYSQL
+
+Executable hets
+  import: shared-properties
+  Main-is: hets.hs
+  ghc-options: 
+    - -threaded 
+    - -main-is Main
+
+  if flag(uniform)
+    build-depends:
+         uni-events
+       , uni-graphs >= 2.0 && < 3.0
+       , uni-htk >= 2.0 && < 3.0
+       , uni-reactor
+       , uni-uDrawGraph >= 2.0 && < 3.0
+       , uni-util >= 2.0 && < 3.0
+    cpp-options: -DUNI_PACKAGE
+
+
+Library
+  import: shared-properties
+  default-language: Haskell2010
+  build-depends:
+      HTTP >= 4000.2.4
+    , array >= 0.1.0.0
+    , aterm >= 0.1.0.1
+    , text
+    , base >= 4.0.0.0
+    , containers >= 0.1.0.1
+    , directory >= 1.0.0.0
+    , fgl >= 5.4.1.1
+    , filepath
+    , ghc-prim
+    , transformers >= 0.2.0.0
+    , mtl >= 2.0.0.0
+    , network >= 2.1.0.0
+    , old-time >= 1.0.0.0
+    , parsec >= 2.1.0.0
+    , pretty >= 1.0.0.0
+    , process >= 1.0.1.1
+    , split >= 0.1.2.3
+    , time >= 1.1.3
+    , utf8-string
+    , bytestring >= 0.9
+    , xml >= 1.3.7 && < 1.4
+    , relation
+    , wai-extra >= 3.0 && < 4.0
+    , wai >= 3.0 && < 4.0
+    , warp >= 3.0 && < 4.0
+    , http-types >= 0.6 && <= 1.0
+    , text >= 0.5 && < 1.3
+    , case-insensitive
+    , esqueleto >= 2.5.3
+    , file-embed >= 0.0.10
+    , persistent >= 2.7.0
+    , persistent-template >= 2.5.2 && < 2.12.0
+    , persistent-postgresql >= 2.6.1
+    , persistent-sqlite >= 2.6.2
+    , esqueleto >= 2.5.3
+    , aeson >= 1.1.2.0
+    , yaml >= 0.8.23.3
+    , random >= 1.0
+    , monad-control
+    , monad-logger
+    , unliftio-core
+    , resource-pool
+    , lifted-base
+  cpp-options: -DCASLEXTENSIONS -DRDFLOGIC -DSERVER -DWARP3 -DUNIX -DSERVER
+  ghc-options: -freduction-depth=31
+
+  if flag(httpclient)
+    build-depends:
+        http-client >= 0.5.7.0
+      , http-client-tls >= 0.3.5.1
+      , connection >= 0.2.8
+    cpp-options: -DNO_WGET
+
+  if flag(haxml)
+    build-depends: HaXml >= 1.24 && < 2
+    cpp-options: -DHAXML
+
+  if flag(tar)
+    build-depends: tar >= 0.3 && < 0.6
+    cpp-options: -DTAR_PACKAGE
+
+  if flag(unix)
+    build-depends: unix >= 2.3.0.0
+    cpp-options: -DUNIX
+
+  if flag(haskeline)
+    build-depends:
+        haskeline >= 0.6 && < 0.8
+    cpp-options: -DHASKELINE
+
+  if flag(hexpat)
+    build-depends:
+        hexpat >= 0.11 && < 0.21
+    cpp-options: -DHEXPAT
+
+  if flag(gtkglade)
+    build-depends:
+        gtk >= 0.11.2
+    cpp-options: -DGTKGLADE
+
+  if flag(mysql)
+    build-depends:
+      persistent-mysql >= 2.6.1
+    cpp-options: -DMYSQL
 
   if flag(server)
     build-depends:
@@ -134,5 +250,824 @@ Executable hets
       , http-types >= 0.6 && <= 1.0
       , text >= 0.5 && < 1.3
       , case-insensitive
+      , esqueleto >= 2.5.3
+      , file-embed >= 0.0.10
+      , persistent >= 2.7.0
+      , persistent-template >= 2.5.2
+      , persistent-postgresql >= 2.6.1
+      , persistent-sqlite >= 2.6.2
+      , esqueleto >= 2.5.3
+      , aeson >= 1.1.2.0
+      , yaml >= 0.8.23.3
       , random >= 1.0
     cpp-options: -DSERVER -DWARP3
+    
+  exposed-modules:
+        HetsAPI
+        HetsAPI.Python
+        HetsAPI.Commands
+        HetsAPI.DataTypes
+        HetsAPI.InfoCommands
+        HetsAPI.ProveCommands
+        HetsAPI.Internal
+
+        Common.OrderedMap
+
+  other-modules:
+        ATC.AS_Annotation
+        ATC.AS_Architecture
+        ATC.AS_Library
+        ATC.AS_Structured
+        ATC.Consistency
+        ATC.DefaultMorphism
+        ATC.DevGraph
+        ATC.DgUtils
+        ATC.ExtSign
+        ATC.GlobalAnnotations
+        ATC.Graph
+        ATC.Grothendieck
+        ATC.IRI
+        ATC.Id
+        ATC.LibName
+        ATC.OrderedMap
+        ATC.ProofTree
+        ATC.Prover
+        ATC.Result
+        ATC.Sml_cats
+        ATC.XGraph
+        Adl.ATC_Adl
+        Adl.As
+        Adl.Logic_Adl
+        Adl.Parse
+        Adl.Print
+        Adl.Sign
+        Adl.StatAna
+        CASL.AS_Basic_CASL
+        CASL.ATC_CASL
+        CASL.AlphaConvert
+        CASL.Amalgamability
+        CASL.CCC.FreeTypes
+        CASL.CCC.OnePoint
+        CASL.CCC.TermFormula
+        CASL.CCC.TerminationProof
+        CASL.ColimSign
+        CASL.CompositionTable.CompositionTable
+        CASL.CompositionTable.ComputeTable
+        CASL.CompositionTable.Keywords
+        CASL.CompositionTable.ModelChecker
+        CASL.CompositionTable.ModelFormula
+        CASL.CompositionTable.ModelTable
+        CASL.CompositionTable.ParseSparQ
+        CASL.CompositionTable.ParseTable2
+        CASL.CompositionTable.Pretty2
+        CASL.CompositionTable.ToXml
+        CASL.Cycle
+        CASL.Disambiguate
+        CASL.Fold
+        CASL.Formula
+        CASL.Freeness
+        CASL.Induction
+        CASL.Inject
+        CASL.Kif
+        CASL.Kif2CASL
+        CASL.Logic_CASL
+        CASL.MapSentence
+        CASL.MixfixParser
+        CASL.Monoton
+        CASL.Morphism
+        CASL.OMDoc
+        CASL.OMDocExport
+        CASL.OMDocImport
+        CASL.OpItem
+        CASL.Overload
+        CASL.Parse_AS_Basic
+        CASL.Project
+        CASL.Qualify
+        CASL.Quantification
+        CASL.ShowMixfix
+        CASL.Sign
+        CASL.Simplify
+        CASL.SimplifySen
+        CASL.SortItem
+        CASL.StaticAna
+        CASL.Sublogic
+        CASL.SymbolMapAnalysis
+        CASL.SymbolParser
+        CASL.Taxonomy
+        CASL.ToDoc
+        CASL.ToItem
+        CASL.ToSExpr
+        CASL.Utils
+        CASL.World
+        CASL_DL.AS_CASL_DL
+        CASL_DL.ATC_CASL_DL
+        CASL_DL.Logic_CASL_DL
+        CASL_DL.Parse_AS
+        CASL_DL.PredefinedCASLAxioms
+        CASL_DL.Print_AS
+        CASL_DL.Sign
+        CASL_DL.StatAna
+        CASL_DL.Sublogics
+        CMDL.Commands
+        CMDL.ConsCommands
+        CMDL.DataTypes
+        CMDL.DataTypesUtils
+        CMDL.DgCommands
+        CMDL.InfoCommands
+        CMDL.Interface
+        CMDL.ParseProofScript
+        CMDL.ProcessScript
+        CMDL.ProveCommands
+        CMDL.ProveConsistency
+        CMDL.Shell
+        CMDL.UndoRedo
+        CMDL.Utils
+        COL.AS_COL
+        COL.ATC_COL
+        COL.COLSign
+        COL.Logic_COL
+        COL.Parse_AS
+        COL.Print_AS
+        COL.StatAna
+        CSL.ASUtils
+        CSL.AS_BASIC_CSL
+        CSL.ATC_CSL
+        CSL.Analysis
+        CSL.Fold
+        CSL.Keywords
+        CSL.Lemma_Export
+        CSL.Logic_CSL
+        CSL.Morphism
+        CSL.Parse_AS_Basic
+        CSL.Print_AS
+        CSL.ReduceProve
+        CSL.Reduce_Interface
+        CSL.Sign
+        CSL.Symbol
+        CSL.Tools
+        CSL.TreePO
+        CSMOF.ATC_CSMOF
+        CSMOF.As
+        CSMOF.Logic_CSMOF
+        CSMOF.ParseXmiAsLibDefn
+        CSMOF.Parser
+        CSMOF.Print
+        CSMOF.Sign
+        CSMOF.StatAna
+        CSMOF.XMLKeywords
+        CoCASL.AS_CoCASL
+        CoCASL.ATC_CoCASL
+        CoCASL.CoCASLSign
+        CoCASL.Logic_CoCASL
+        CoCASL.Parse_AS
+        CoCASL.Print_AS
+        CoCASL.StatAna
+        CoCASL.Sublogic
+        Common.AS_Annotation
+        Common.ATerm.ConvInstances
+        Common.Amalgamate
+        Common.AnalyseAnnos
+        Common.AnnoParser
+        Common.AnnoState
+        Common.Consistency
+        Common.ConvertGlobalAnnos
+        Common.ConvertLiteral
+        Common.ConvertMixfixToken
+        Common.Data
+        Common.DebugParser
+        Common.DefaultMorphism
+        Common.Doc
+        Common.DocUtils
+        Common.Earley
+        Common.ExtSign
+        Common.FileType
+        Common.GlobalAnnotations
+        Common.GraphAlgo
+        Common.Http
+        Common.IO
+        Common.IRI
+        Common.Id
+        Common.InjMap
+        Common.Item
+        Common.Json
+        Common.Json.ConvInstances
+        Common.Json.Instances
+        Common.Keywords
+        Common.LaTeX_funs
+        Common.LaTeX_maps
+        Common.Lattice
+        Common.Lexer
+        Common.Lib.Graph
+        Common.Lib.MapSet
+        Common.Lib.Maybe
+        Common.Lib.Pretty
+        Common.Lib.Rel
+        Common.Lib.SizedList
+        Common.Lib.State
+        Common.Lib.Tabular
+        Common.LibName
+        Common.LogicT
+        Common.Parsec
+        Common.Partial
+        Common.Percent
+        Common.Prec
+        Common.PrintLaTeX
+        Common.ProofTree
+        Common.ProofUtils
+        Common.ProverTools
+        Common.Result
+        Common.ResultT
+        Common.SAX
+        Common.SExpr
+        Common.SFKT
+        Common.SZSOntology
+        Common.SetColimit
+        Common.Taxonomy
+        Common.Timing
+        Common.ToXml
+        Common.Token
+        Common.Unlit
+        Common.Utils
+        Common.XPath
+        Common.XUpdate
+        Common.XmlParser
+        CommonLogic.AS_CommonLogic
+        CommonLogic.ATC_CommonLogic
+        CommonLogic.Analysis
+        CommonLogic.ExpandCurie
+        CommonLogic.Lexer_CLIF
+        CommonLogic.Lexer_KIF
+        CommonLogic.Logic_CommonLogic
+        CommonLogic.ModuleElimination
+        CommonLogic.Morphism
+        CommonLogic.OMDoc
+        CommonLogic.OMDocExport
+        CommonLogic.OMDocImport
+        CommonLogic.ParseCLAsLibDefn
+        CommonLogic.Parse_CLIF
+        CommonLogic.Parse_KIF
+        CommonLogic.PredefinedCASLAxioms
+        CommonLogic.Print_KIF
+        CommonLogic.Sign
+        CommonLogic.Sublogic
+        CommonLogic.Symbol
+        CommonLogic.Tools
+        Comorphisms.Adl2CASL
+        Comorphisms.CASL2CoCASL
+        Comorphisms.CASL2CspCASL
+        Comorphisms.CASL2ExtModal
+        Comorphisms.CASL2HasCASL
+        Comorphisms.CASL2Hybrid
+        Comorphisms.CASL2Modal
+        Comorphisms.CASL2NNF
+        Comorphisms.CASL2PCFOL
+        Comorphisms.CASL2Prenex
+        Comorphisms.CASL2Prop
+        Comorphisms.CASL2Skolem
+        Comorphisms.CASL2SubCFOL
+        Comorphisms.CASL2TopSort
+        Comorphisms.CASL2VSE
+        Comorphisms.CASL2VSEImport
+        Comorphisms.CASL2VSERefine
+        Comorphisms.CASL_DL2CASL
+        Comorphisms.CFOL2IsabelleHOL
+        Comorphisms.CSMOF2CASL
+        Comorphisms.CoCASL2CoPCFOL
+        Comorphisms.CoCASL2CoSubCFOL
+        Comorphisms.CoCFOL2IsabelleHOL
+        Comorphisms.CommonLogic2CASL
+        Comorphisms.CommonLogic2IsabelleHOL
+        Comorphisms.CommonLogicModuleElimination
+        Comorphisms.CspCASL2Modal
+        Comorphisms.DFOL2CASL
+        Comorphisms.DynLogicList
+        Comorphisms.ExtModal2CASL
+        Comorphisms.ExtModal2ExtModalNoSubsorts
+        Comorphisms.ExtModal2ExtModalTotal
+        Comorphisms.ExtModal2HasCASL
+        Comorphisms.ExtModal2OWL
+        Comorphisms.HasCASL2HasCASL
+        Comorphisms.HasCASL2IsabelleHOL
+        Comorphisms.HasCASL2PCoClTyConsHOL
+        Comorphisms.HasCASL2THFP_P
+        Comorphisms.HolLight2Isabelle
+        Comorphisms.Hybrid2CASL
+        Comorphisms.KnownProvers
+        Comorphisms.LogicGraph
+        Comorphisms.LogicList
+        Comorphisms.Maude2CASL
+        Comorphisms.Modal2CASL
+        Comorphisms.MonadicHasCASLTranslation
+        Comorphisms.PCoClTyConsHOL2IsabelleHOL
+        Comorphisms.PCoClTyConsHOL2PairsInIsaHOL
+        Comorphisms.PPolyTyConsHOL2IsaUtils
+        Comorphisms.Prop2CASL
+        Comorphisms.Prop2CommonLogic
+        Comorphisms.Prop2QBF
+        Comorphisms.QBF2Prop
+        Comorphisms.QVTR2CASL
+        Comorphisms.RelScheme2CASL
+        Comorphisms.SoftFOL2CommonLogic
+        Comorphisms.SuleCFOL2SoftFOL
+        Comorphisms.SuleCFOL2TPTP
+        Comorphisms.THFP2THF0
+        Comorphisms.THFP_P2HasCASL
+        Comorphisms.THFP_P2THFP
+        ConstraintCASL.AS_ConstraintCASL
+        ConstraintCASL.ATC_ConstraintCASL
+        ConstraintCASL.Formula
+        ConstraintCASL.Logic_ConstraintCASL
+        ConstraintCASL.Print_AS
+        ConstraintCASL.StaticAna
+        CspCASL.AS_CspCASL
+        CspCASL.AS_CspCASL_Process
+        CspCASL.ATC_CspCASL
+        CspCASL.Comorphisms
+        CspCASL.CspCASL_Keywords
+        CspCASL.LocalTop
+        CspCASL.Logic_CspCASL
+        CspCASL.Morphism
+        CspCASL.Parse_CspCASL
+        CspCASL.Parse_CspCASL_Process
+        CspCASL.Print_CspCASL
+        CspCASL.SignCSP
+        CspCASL.SimplifySen
+        CspCASL.StatAnaCSP
+        CspCASL.SymMapAna
+        CspCASL.SymbItems
+        CspCASL.Symbol
+        CspCASLProver.Consts
+        CspCASLProver.CspCASLProver
+        CspCASLProver.CspProverConsts
+        CspCASLProver.IsabelleUtils
+        CspCASLProver.TransProcesses
+        CspCASLProver.Utils
+        DFOL.AS_DFOL
+        DFOL.ATC_DFOL
+        DFOL.Analysis_DFOL
+        DFOL.Colimit
+        DFOL.Comorphism
+        DFOL.Logic_DFOL
+        DFOL.Morphism
+        DFOL.Parse_AS_DFOL
+        DFOL.Sign
+        DFOL.Symbol
+        DFOL.Utils
+        DMU.Logic_DMU
+        Driver.AnaLib
+        Driver.Options
+        Driver.ReadFn
+        Driver.ReadLibDefn
+        Driver.ReadMain
+        Driver.Version
+        Driver.WriteFn
+        Driver.WriteLibDefn
+        ExtModal.AS_ExtModal
+        ExtModal.ATC_ExtModal
+        ExtModal.ExtModalSign
+        ExtModal.Keywords
+        ExtModal.Logic_ExtModal
+        ExtModal.MorphismExtension
+        ExtModal.Parse_AS
+        ExtModal.Print_AS
+        ExtModal.StatAna
+        ExtModal.Sublogic
+        Fpl.ATC_Fpl
+        Fpl.As
+        Fpl.Logic_Fpl
+        Fpl.Morphism
+        Fpl.Sign
+        Fpl.StatAna
+        Framework.AS
+        Framework.ATC_Framework
+        Framework.Analysis
+        Framework.Logic_Framework
+        Framework.WriteLogicUtils
+        FreeCAD.ATC_FreeCAD
+        FreeCAD.As
+        FreeCAD.Brep
+        FreeCAD.Logic_FreeCAD
+        FreeCAD.PrintAs
+        FreeCAD.Translator
+        FreeCAD.VecTools
+        FreeCAD.XMLPrinter
+        GUI.ConsoleUtils
+        GUI.GenericATP
+        GUI.Utils
+        HasCASL.ATC_HasCASL
+        HasCASL.As
+        HasCASL.AsToLe
+        HasCASL.AsUtils
+        HasCASL.Builtin
+        HasCASL.ClassAna
+        HasCASL.Constrain
+        HasCASL.ConvertTypePattern
+        HasCASL.DataAna
+        HasCASL.FoldTerm
+        HasCASL.FoldType
+        HasCASL.HToken
+        HasCASL.Le
+        HasCASL.Logic_HasCASL
+        HasCASL.MapTerm
+        HasCASL.Merge
+        HasCASL.MinType
+        HasCASL.MixAna
+        HasCASL.Morphism
+        HasCASL.OpDecl
+        HasCASL.ParseItem
+        HasCASL.ParseTerm
+        HasCASL.PrintAs
+        HasCASL.PrintLe
+        HasCASL.ProgEq
+        HasCASL.RawSym
+        HasCASL.SimplifyTerm
+        HasCASL.Sublogic
+        HasCASL.SubtypeDecl
+        HasCASL.SymbItem
+        HasCASL.Symbol
+        HasCASL.SymbolMapAnalysis
+        HasCASL.ToItem
+        HasCASL.TypeAna
+        HasCASL.TypeCheck
+        HasCASL.TypeDecl
+        HasCASL.TypeMixAna
+        HasCASL.TypeRel
+        HasCASL.Unify
+        HasCASL.VarDecl
+        HolLight.ATC_HolLight
+        HolLight.Helper
+        HolLight.HolLight2DG
+        HolLight.Logic_HolLight
+        HolLight.Sentence
+        HolLight.Sign
+        HolLight.Sublogic
+        HolLight.Term
+        Hybrid.AS_Hybrid
+        Hybrid.ATC_Hybrid
+        Hybrid.HybridSign
+        Hybrid.Keywords
+        Hybrid.Logic_Hybrid
+        Hybrid.Parse_AS
+        Hybrid.Print_AS
+        Hybrid.StatAna
+        Interfaces.CmdAction
+        Interfaces.Command
+        Interfaces.DataTypes
+        Interfaces.GenericATPState
+        Interfaces.History
+        Interfaces.Utils
+        Isabelle.ATC_Isabelle
+        Isabelle.CreateTheories
+        Isabelle.Isa2DG
+        Isabelle.IsaConsts
+        Isabelle.IsaExport
+        Isabelle.IsaImport
+        Isabelle.IsaParse
+        Isabelle.IsaPrint
+        Isabelle.IsaProve
+        Isabelle.IsaSign
+        Isabelle.IsaStrings
+        Isabelle.Logic_Isabelle
+        Isabelle.MarkSimp
+        Isabelle.Translate
+        LF.AS
+        LF.ATC_LF
+        LF.Analysis
+        LF.ComorphFram
+        LF.Framework
+        LF.Logic_LF
+        LF.MorphParser
+        LF.Morphism
+        LF.Parse
+        LF.Sign
+        LF.Twelf2DG
+        LF.Twelf2GR
+        Logic.Coerce
+        Logic.Comorphism
+        Logic.ExtSign
+        Logic.Grothendieck
+        Logic.KnownIris
+        Logic.LGToJson
+        Logic.LGToXml
+        Logic.Logic
+        Logic.Modification
+        Logic.Morphism
+        Logic.Prover
+        MMT.Hets2mmt
+        Maude.AS_Maude
+        Maude.ATC_Maude
+        Maude.Language
+        Maude.Logic_Maude
+        Maude.Maude2DG
+        Maude.Meta
+        Maude.Meta.AsSymbol
+        Maude.Meta.HasLabels
+        Maude.Meta.HasName
+        Maude.Meta.HasOps
+        Maude.Meta.HasSorts
+        Maude.Morphism
+        Maude.Parse
+        Maude.PreComorphism
+        Maude.Printing
+        Maude.Sentence
+        Maude.Shellout
+        Maude.Sign
+        Maude.Symbol
+        Maude.Util
+        Modal.AS_Modal
+        Modal.ATC_Modal
+        Modal.Logic_Modal
+        Modal.ModalSign
+        Modal.ModalSystems
+        Modal.Parse_AS
+        Modal.Print_AS
+        Modal.StatAna
+        Modal.Utils
+        Modifications.ModalEmbedding
+        NeSyPatterns.AS
+        NeSyPatterns.ATC_NeSyPatterns
+        NeSyPatterns.ATC_Relation
+        NeSyPatterns.Analysis
+        NeSyPatterns.Logic_NeSyPatterns
+        NeSyPatterns.Morphism
+        NeSyPatterns.Parse
+        NeSyPatterns.Print
+        NeSyPatterns.Sign
+        NeSyPatterns.Symbol
+        NeSyPatterns.Taxonomy
+        OMDoc.ATC_OMDoc
+        OMDoc.DataTypes
+        OMDoc.Export
+        OMDoc.Import
+        OMDoc.Logic_OMDoc
+        OMDoc.OMDocInterface
+        OMDoc.XmlInterface
+        OWL2.AS
+        OWL2.ASKeywords
+        OWL2.ATC_OWL2
+        OWL2.CASL2OWL
+        OWL2.ColimSign
+        OWL2.ColonKeywords
+        OWL2.Conservativity
+        OWL2.CreateOWL
+        OWL2.DMU2OWL2
+        OWL2.Extract
+        OWL2.Function
+        OWL2.Keywords
+        OWL2.Logic_OWL2
+        OWL2.MS
+        OWL2.ManchesterPrint
+        OWL2.Medusa
+        OWL2.MedusaToJson
+        OWL2.Morphism
+        OWL2.OWL22CASL
+        OWL2.OWL22CommonLogic
+        OWL2.OWL22NeSyPatterns
+        OWL2.Parse
+        OWL2.ParseAS
+        OWL2.ParseMS
+        OWL2.ParseOWL
+        OWL2.ParseOWLAsLibDefn
+        OWL2.Pretty
+        OWL2.Print
+        OWL2.PrintAS
+        OWL2.PrintMS
+        OWL2.Profiles
+        OWL2.ProfilesAndSublogics
+        OWL2.Propositional2OWL2
+        OWL2.ProveFact
+        OWL2.ProveHermit
+        OWL2.ProvePellet
+        OWL2.ProverState
+        OWL2.Rename
+        OWL2.Sign
+        OWL2.StaticAnalysis
+        OWL2.Sublogic
+        OWL2.Symbols
+        OWL2.Taxonomy
+        OWL2.Theorem
+        OWL2.Translate
+        OWL2.XML
+        OWL2.XMLConversion
+        OWL2.XMLKeywords
+        Persistence.DBConfig
+        Persistence.Database
+        Persistence.DatabaseConnection
+        Persistence.DevGraph
+        Persistence.DevGraph.Cleaning
+        Persistence.Diagnosis
+        Persistence.FileVersion
+        Persistence.LogicGraph
+        Persistence.MySQL
+        Persistence.PostgreSQL
+        Persistence.Range
+        Persistence.SQLite
+        Persistence.Schema
+        Persistence.Schema.ConsistencyStatusType
+        Persistence.Schema.Enums
+        Persistence.Schema.EvaluationStateType
+        Persistence.Schema.MappingOrigin
+        Persistence.Schema.MappingType
+        Persistence.Schema.OMSOrigin
+        Persistence.Utils
+        Proofs.AbstractState
+        Proofs.Automatic
+        Proofs.BatchProcessing
+        Proofs.Composition
+        Proofs.ComputeColimit
+        Proofs.Conservativity
+        Proofs.ConsistencyCheck
+        Proofs.DGFlattening
+        Proofs.EdgeUtils
+        Proofs.FreeDefLinks
+        Proofs.Freeness
+        Proofs.Global
+        Proofs.HideTheoremShift
+        Proofs.Local
+        Proofs.NormalForm
+        Proofs.QualifyNames
+        Proofs.SimpleTheoremHideShift
+        Proofs.StatusUtils
+        Proofs.TheoremHideShift
+        Proofs.TriangleCons
+        Proofs.VSE
+        Propositional.AS_BASIC_Propositional
+        Propositional.ATC_Propositional
+        Propositional.Analysis
+        Propositional.Conservativity
+        Propositional.Conversions
+        Propositional.Fold
+        Propositional.Logic_Propositional
+        Propositional.Morphism
+        Propositional.Parse_AS_Basic
+        Propositional.Prop2CASLHelpers
+        Propositional.Prove
+        Propositional.ProveMinisat
+        Propositional.ProveWithTruthTable
+        Propositional.ProverState
+        Propositional.Sign
+        Propositional.Sublogic
+        Propositional.Symbol
+        Propositional.Tools
+        QBF.AS_BASIC_QBF
+        QBF.ATC_QBF
+        QBF.Analysis
+        QBF.Logic_QBF
+        QBF.Morphism
+        QBF.Parse_AS_Basic
+        QBF.ProveDepQBF
+        QBF.ProverState
+        QBF.Sublogic
+        QBF.Symbol
+        QBF.Tools
+        QVTR.ATC_QVTR
+        QVTR.As
+        QVTR.Logic_QVTR
+        QVTR.ParseQvtAsLibDefn
+        QVTR.Parser
+        QVTR.Print
+        QVTR.Sign
+        QVTR.StatAna
+        RDF.AS
+        RDF.ATC_RDF
+        RDF.Function
+        RDF.Logic_RDF
+        RDF.Morphism
+        RDF.Parse
+        RDF.Print
+        RDF.Sign
+        RDF.StaticAnalysis
+        RDF.Sublogic
+        RDF.Symbols
+        RelationalScheme.AS
+        RelationalScheme.ATC_RelationalScheme
+        RelationalScheme.Keywords
+        RelationalScheme.Logic_Rel
+        RelationalScheme.ParseRS
+        RelationalScheme.Sign
+        RelationalScheme.StaticAnalysis
+        SoftFOL.ATC_SoftFOL
+        SoftFOL.Conversions
+        SoftFOL.CreateDFGDoc
+        SoftFOL.DFGParser
+        SoftFOL.EProver
+        SoftFOL.Logic_SoftFOL
+        SoftFOL.MathServMapping
+        SoftFOL.MathServParsing
+        SoftFOL.Morphism
+        SoftFOL.ParseTPTP
+        SoftFOL.Print
+        SoftFOL.PrintTPTP
+        SoftFOL.ProveDarwin
+        SoftFOL.ProveHyperHyper
+        SoftFOL.ProveMathServ
+        SoftFOL.ProveMetis
+        SoftFOL.ProveSPASS
+        SoftFOL.ProveVampire
+        SoftFOL.ProverState
+        SoftFOL.Sign
+        SoftFOL.StatAna
+        SoftFOL.Translate
+        Static.AnalysisArchitecture
+        Static.AnalysisLibrary
+        Static.AnalysisStructured
+        Static.ApplyChanges
+        Static.ArchDiagram
+        Static.CheckGlobalContext
+        Static.ComputeTheory
+        Static.DGTranslation
+        Static.DevGraph
+        Static.DgUtils
+        Static.DotGraph
+        Static.FromXml
+        Static.FromXmlUtils
+        Static.History
+        Static.PrintDevGraph
+        Static.ToJson
+        Static.ToXml
+        Static.WACocone
+        Static.XGraph
+        Static.XSimplePath
+        Syntax.AS_Architecture
+        Syntax.AS_Library
+        Syntax.AS_Structured
+        Syntax.Parse_AS_Architecture
+        Syntax.Parse_AS_Library
+        Syntax.Parse_AS_Structured
+        Syntax.Print_AS_Architecture
+        Syntax.Print_AS_Library
+        Syntax.Print_AS_Structured
+        Syntax.ToXml
+        THF.ATC_THF
+        THF.As
+        THF.Cons
+        THF.HasCASL2THF0Buildins
+        THF.Logic_THF
+        THF.ParseTHF
+        THF.Poly
+        THF.Print
+        THF.PrintTHF
+        THF.ProveIsabelle
+        THF.ProveLeoII
+        THF.ProveSatallax
+        THF.ProverState
+        THF.SZSProver
+        THF.Sign
+        THF.StaticAnalysisTHF
+        THF.Sublogic
+        THF.Translate
+        THF.Utils
+        TPTP.AS
+        TPTP.ATC_TPTP
+        TPTP.Common
+        TPTP.ConsChecker
+        TPTP.Logic_TPTP
+        TPTP.Morphism
+        TPTP.Morphism.Sentence
+        TPTP.ParseAsLibDefn
+        TPTP.Parser
+        TPTP.Pretty
+        TPTP.ProveHyper
+        TPTP.Prover.CVC4
+        TPTP.Prover.Common
+        TPTP.Prover.Darwin
+        TPTP.Prover.EProver
+        TPTP.Prover.EProver.ProofParser
+        TPTP.Prover.Geo3
+        TPTP.Prover.Isabelle
+        TPTP.Prover.Leo2
+        TPTP.Prover.ProofParser
+        TPTP.Prover.ProverState
+        TPTP.Prover.SPASS
+        TPTP.Prover.SPASS.ProofParser
+        TPTP.Prover.Satallax
+        TPTP.Prover.Vampire
+        TPTP.Prover.Vampire.ProofParser
+        TPTP.Sign
+        TPTP.StaticAnalysis
+        TPTP.Sublogic
+        TPTP.Translate
+        Taxonomy.MMiSSOntology
+        Temporal.AS_BASIC_Temporal
+        Temporal.ATC_Temporal
+        Temporal.Logic_Temporal
+        Temporal.Morphism
+        Temporal.Sign
+        Temporal.Symbol
+        TopHybrid.AS_TopHybrid
+        TopHybrid.ATC_TopHybrid
+        TopHybrid.Logic_TopHybrid
+        TopHybrid.Parse_AS
+        TopHybrid.Print_AS
+        TopHybrid.StatAna
+        TopHybrid.TopHybridSign
+        TopHybrid.Utilities
+        VSE.ATC_VSE
+        VSE.Ana
+        VSE.As
+        VSE.Fold
+        VSE.Logic_VSE
+        VSE.Parse
+        VSE.Prove
+        VSE.ToSExpr
+        Static.GTheory

@@ -31,6 +31,8 @@ import CASL.SymbolParser
 import CASL.Taxonomy
 import CASL.Logic_CASL ()
 
+import Common.DocUtils
+
 data Fpl = Fpl deriving Show
 
 instance Language Fpl where
@@ -42,12 +44,13 @@ instance SignExtension SignExt where
 
 instance Syntax Fpl FplBasicSpec Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec Fpl = Just $ basicSpec fplReservedWords
-    parse_symb_items Fpl = Just $ symbItems fplReservedWords
-    parse_symb_map_items Fpl = Just $ symbMapItems fplReservedWords
+    parse_symb_items Fpl = Just . const $ symbItems fplReservedWords
+    parse_symb_map_items Fpl = Just . const $ symbMapItems fplReservedWords
 
 instance Sentences Fpl FplForm FplSign FplMor Symbol where
       map_sen Fpl m = return . mapFplSen m
       sym_of Fpl = symOf
+      symKind Fpl = show . pretty . symbolKind . symbType
       symmap_of Fpl = morphismToSymbMap
       sym_name Fpl = symName
       simplify_sen Fpl = simplifySen minFplTerm simplifyTermExt . addBuiltins

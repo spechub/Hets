@@ -141,6 +141,10 @@ instance Pretty DGOrigin where
                    else text headr $+$ pretty syms
     in text (dgOriginHeader o) <+> pretty (dgOriginSpec o)
       $+$ case o of
+          DGFreeOrCofree forc -> text "FreeOrCofree:" <+> (text $ show forc)
+          DGInst iri -> text "Inst:" <+> pretty iri
+          DGFitView iri -> text "View:" <+> pretty iri
+          DGNormalForm node -> text "Node:" <+> (text $ show node)
           DGBasicSpec mgbs _ syms -> case mgbs of
               Nothing -> Doc.empty
               Just gbs -> specBraces (pretty gbs)
@@ -151,7 +155,7 @@ instance Pretty DGOrigin where
               in case rst of
                 Restricted r -> pretty r $+$ prtS
                 NoRestriction -> prtS
-          _ -> Doc.empty
+          v@_ -> text $ show v
 
 instance Pretty DGNodeInfo where
   pretty c = case c of
@@ -395,6 +399,7 @@ instance Pretty GlobalEntry where
     AlignEntry ae -> pretty ae
     ArchOrRefEntry b ae -> (if b then topKey archS else keyword refinementS)
       <+> pretty ae
+    _ -> Doc.empty
 
 instance Pretty DGraph where
   pretty dg = vcat

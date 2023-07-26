@@ -47,7 +47,7 @@ import ATC.ProofTree ()
 import Common.ProofTree
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 -- | Lid for propositional logic
 data QBF = QBF deriving Show
@@ -79,6 +79,8 @@ instance Sentences QBF FORMULA
     negation QBF = Just . negateFormula
     -- returns the set of symbols
     sym_of QBF = singletonList . symOf
+    -- kind of symbols is always prop
+    symKind QBF _ = "prop"
     -- returns the symbol map
     symmap_of QBF = getSymbolMap
     -- returns the name of a symbol
@@ -88,16 +90,17 @@ instance Sentences QBF FORMULA
     -- there is nothing to leave out
     simplify_sen QBF _ = simplify
 
+instance Semigroup BASICSPEC where
+    (BasicSpec l1) <> (BasicSpec l2) = BasicSpec $ l1 ++ l2
 instance Monoid BASICSPEC where
     mempty = BasicSpec []
-    mappend (BasicSpec l1) (BasicSpec l2) = BasicSpec $ l1 ++ l2
 
 -- | Syntax of Propositional logic
 instance Syntax QBF BASICSPEC Symbol
     SYMBITEMS SYMBMAPITEMS where
          parse_basic_spec QBF = Just basicSpec
-         parse_symb_items QBF = Just symbItems
-         parse_symb_map_items QBF = Just symbMapItems
+         parse_symb_items QBF = Just . const $ symbItems
+         parse_symb_map_items QBF = Just . const $ symbMapItems
 
 -- | Instance of Logic for propositional logc
 instance Logic QBF

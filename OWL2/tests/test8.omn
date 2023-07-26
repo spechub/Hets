@@ -1,0 +1,80 @@
+#SUBLOGIC=ALCHI
+Prefix: xsd: <http://www.w3.org/2001/XMLSchema#>
+Prefix: owl: <http://www.w3.org/2002/07/owl#>
+Prefix: xml: <http://www.w3.org/XML/1998/namespace>
+Prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+Prefix: rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+
+
+Ontology: <http://www.w3.org/2002/03owlt/description-logic/consistent009>
+
+
+ObjectProperty: <http://oiled.man.example.net/test#f>
+
+    Characteristics: 
+        Functional
+    
+    InverseOf: 
+        <http://oiled.man.example.net/test#invF>
+    
+    
+ObjectProperty: <http://oiled.man.example.net/test#invF>
+
+    InverseOf: 
+        <http://oiled.man.example.net/test#f>
+    
+    
+ObjectProperty: <http://oiled.man.example.net/test#invS>
+
+    InverseOf: 
+        <http://oiled.man.example.net/test#s>
+    
+    
+ObjectProperty: <http://oiled.man.example.net/test#invF1>
+
+    InverseOf: 
+        <http://oiled.man.example.net/test#f1>
+    
+    
+ObjectProperty: <http://oiled.man.example.net/test#s>
+
+    SubPropertyOf: 
+        <http://oiled.man.example.net/test#f>,
+        <http://oiled.man.example.net/test#f1>
+    
+    Characteristics: 
+        Functional
+    
+    InverseOf: 
+        <http://oiled.man.example.net/test#invS>
+    
+    
+ObjectProperty: <http://oiled.man.example.net/test#f1>
+
+    Characteristics: 
+        Functional
+    
+    InverseOf: 
+        <http://oiled.man.example.net/test#invF1>
+    
+    
+Class: <http://oiled.man.example.net/test#Satisfiable>
+
+    EquivalentTo: 
+        (<http://oiled.man.example.net/test#f> some <http://oiled.man.example.net/test#p>)
+         and (<http://oiled.man.example.net/test#f1> some (not (<http://oiled.man.example.net/test#p>)))
+    
+    Individuals: 
+        _:http://www.w3.org/2002/03owlt/description-logic/consistent009#genid7
+    
+    
+Class: <http://oiled.man.example.net/test#p>
+
+    
+Individual: _:http://www.w3.org/2002/03owlt/description-logic/consistent009#genid7
+
+    Types: 
+        <http://oiled.man.example.net/test#Satisfiable>
+    
+    

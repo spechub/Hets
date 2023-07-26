@@ -1,0 +1,15 @@
+#SUBLOGIC=ALCN
+Prefix: : <http://example.org/>
+
+Ontology: 
+
+DataProperty: prop1
+DataProperty: prop2
+ObjectProperty: prop3
+
+Class: A
+Class: B
+
+Datatype: dt_n_gt_1 # Fictional datatype with arity > 1
+
+Class: C EquivalentTo: (prop1, prop2) some dt_n_gt_1 SubClassOf: prop3 min 1

@@ -1,0 +1,113 @@
+# The contents of this file are subject to the terms of the
+# Common Development and Distribution License (the "License")
+# (see http://www.opensource.org/licenses/CDDL-1.0).
+#
+# Copyright (c) 2012 Jens Elkner. All rights reserved.
+# Use is subject to license terms.
+
+# default implementation info
+[[ -z ${LIC} ]] && LIC='[-?$Id $]
+[-copyright?Copyright (c) 2011, 2012 Jens Elkner. All rights reserved.]
+[-license?CDDL 1.0]'
+
+typeset -T ManObj_t=(
+    typeset -Ah 'Variable descriptions. Key: variable name' VAR
+    typeset -Ah 'Function usages. Key: function name' FUNC
+    function addVar {
+		[[ -n ${_.VAR[$1]} ]] && Log.warn "Overwriting previous description for $1"
+        _.VAR[$1]="[+$1?$2]"
+    }
+    typeset -fh 'Add a description (arg2) for the given variable name (arg1)' addVar
+    function addFunc {
+        typeset fname=$1
+        typeset X="${2}"
+		[[ -n ${_.FUNC[${fname}]} ]] && Log.warn "Overwriting previous usage info for $1()"
+        [[ -z ${X} ]] && X="${LIC}\n"
+        shift 2
+        while [[ -n ${1} ]]; do
+            X+="${1}"
+            shift
+        done
+        _.FUNC[${fname}]+="${X}"
+    }
+    typeset -fh $'Add usage info (arg3 ...) for the given function name (arg1). If implementation details (arg2) is empty, the value of \a$LIC\a gets used instead' addFunc
+    function varUsage {
+        typeset X=""
+		[[ "$1" = '@' || "$1" == '*' ]] && set -- ${!_.VAR[@]}
+        while [[ -n $1 ]]; do
+            X+="${_.VAR[$1]}"
+            shift
+        done
+        print "${X}"
+    }
+    typeset -fh $'Get the variable usage info for the named variables (arg2 ...) if available as a concatenated string. See \baddVar()\b' varUsage
+	function funcUsage {
+		printf "${_.FUNC[$1]}"
+	}
+	typeset -fh 'Get the function usage info for the named function (arg1)' funcUsage
+	function printVarComment {
+		(( $1 == 0 )) && return 1
+		typeset X="${_.VAR[$2]}" OPT
+		[[ -z $X ]] && return 1
+		# we use getopts here because we are lazy and do not wanna deal with
+		# line/word breaking
+		typeset OPT
+		X="${ getopts -a NONE "${ print $X; }" OPT --man 2>&1 ; }"
+		X=${X#*$2}						# remove first line
+		X=${X%SYNOPSIS*}				# remove SYNOPSIS and stuff that follows
+		X=${X//\\[abvf]}				# remove special formatting chars
+		X=${X//$'\n ' /$'\n# '}			# replace EOL with a LF+#
+		X=${X%%*($'\n')}				# remove trailing LFs
+		print "\n# Variable $2:\n${X##*($'\n')}"	# + remove too many leading LF
+		return 0
+	}
+	typeset -fh 'Print the description of the given variable (arg2) if available and arg1 != 0. Sets exit status 1 if nothing was printed, 0 otherwise' printVarComment
+
+	function printTypeFieldComments {
+		# similar to printVarComment
+		(( $1 == 0 )) && return 1
+		X="${ $2 --man 2>&1 ; }"
+		X=${X#*DETAILS}					# remove bloat above
+		X=${X%+([ \t\n])$2 defines *}	# remove bloat below
+		X=${X//\\[abvf]}				# remove special formatting chars
+		X=${X//*( )_*( )string.$'\n'}	# remove _ field
+		X=${X%%*($'\n'| )}				# remove trailing LFs
+		X=${X//$'\n ' /$'\n# '}			# replace EOL with a LF+#
+		print "#\n${X##*($'\n')}"		# remove leading LFs and prefix #+LF
+	}
+	typeset -fh 'Extract field descriptions for the given object type (arg2) if available and arg1 != 0. Sets exit status 1 if nothing was printed, 0 otherwise' printTypeFieldComments
+
+	function printFuncComment {
+		typeset OPT X
+		# similar to printVarComment
+		(( $1 == 0 )) && return 1
+		X=${_.FUNC[$2]}
+		[[ -z $X ]] && return 1
+		X="${ getopts -a $2 "${ print $X; }" OPT --man 2>&1 ; }"
+		X=${X/#*$'SYNOPSIS\n '/\# Function: }		# remove bloat above
+		X=${X%%+([[:space:]])@(ENVIRONMENT|SEE)*}	# remove bloat below
+		X=${X//\\[abvf]}				# remove special formatting chars
+		X=${X/\[ options ]}
+		X=${X/+([[:space:]])DESCRIPTION+([[:space:]])/$'\n# '}
+		X=${X//$'\n ' /$'\n# '}						# replace EOL with a LF+#
+		print "${X//$'\n\n'/$'\n#\n'}"
+	}
+	typeset -fh 'Extract function description for the given function (arg2) if available and arg1 != 0. Sets exit status 1 if nothing was printed, 0 otherwise' printFuncComment
+
+	function listVars {
+		typeset ALL="${ print ${!_.VAR[*]} | tr ' ' '\n' | sort -u; }" VNAME
+		for VNAME in $ALL; do
+			[[ $VNAME == OLDENV || $VNAME == LASTENV ]] && continue
+			X=${ typeset -p $VNAME; }
+            (( VERBOSE )) && print "$X" || print "${VNAME}=${X#*=}"
+		done
+		unset -n X
+	}
+	typeset -fh 'List all registered environment variables and its current value, except for OLDENV and LASTENV. If VERBOSE!=0 all the full typeset command gets listed.' listVars
+)
+ManObj_t Man
+
+Man.addVar OSNAME 'The name of the OS in the global zone (uname -s).'
+[[ -z ${OSNAME} ]] && OSNAME=${ uname -s ; } || true
+
+# vim:ts=4 filetype=sh

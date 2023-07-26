@@ -50,8 +50,8 @@ instance SignExtension Procs where
 
 instance Syntax VSE VSEBasicSpec Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec VSE = Just $ basicSpec reservedWords
-    parse_symb_items VSE = Just $ symbItems reservedWords
-    parse_symb_map_items VSE = Just $ symbMapItems reservedWords
+    parse_symb_items VSE = Just . const $ symbItems reservedWords
+    parse_symb_map_items VSE = Just . const $ symbMapItems reservedWords
 
 instance Sentences VSE Sentence VSESign VSEMor Symbol where
       map_sen VSE m = return . mapSen mapDlformula m

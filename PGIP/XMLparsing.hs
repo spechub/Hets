@@ -35,7 +35,7 @@ import Common.ToXml
 
 import Text.XML.Light as XML
 
-import Network (connectTo, PortID (PortNumber), accept, listenOn)
+import Network.Socket
 
 import System.IO
 
@@ -46,6 +46,7 @@ commands can the interface respond to -}
 addPGIPHandshake :: CmdlPgipState -> CmdlPgipState
 addPGIPHandshake pgipData = if useXML pgipData
        then addPGIPElement pgipData
+
             $ add_attr (mkAttr "version" "2.0")
             $ unode "acceptedpgipelems" $ map genPgipElem
              [ "askpgip"
@@ -125,20 +126,28 @@ communicationStep pgD st = do
 -- | Comunicate over a port
 cmdlListenOrConnect2Port :: HetcatsOpts -> CmdlState -> IO CmdlState
 cmdlListenOrConnect2Port opts state = do
-    let portNb = listen opts
+    let portNb = Driver.Options.listen opts
         conPN = connectP opts
         hostName = connectH opts
         swXML = xmlFlag opts
+        hints = defaultHints { addrSocketType = Stream }
+
     servH <- if portNb /= -1 then do
         putIfVerbose opts 1 $ "Starting hets. Listen to port " ++ show portNb
-        servSock <- listenOn $ PortNumber $ fromIntegral portNb
-        (servH, _, _) <- accept servSock
-        return servH
+        addrInfo <- head <$> getAddrInfo (Just hints) Nothing (Just $ show portNb)
+        servSock <- socket (addrFamily addrInfo) (addrSocketType addrInfo) (addrProtocol addrInfo)
+        bind servSock $ addrAddress addrInfo
+        Network.Socket.listen servSock 1024
+        (acceptedServSock, _) <- accept servSock
+        socketToHandle acceptedServSock ReadWriteMode
       else if conPN /= -1 then do
         putIfVerbose opts 1 $ "Starting hets. Connecting to port "
           ++ show conPN ++ " on host " ++ hostName
-        connectTo hostName $ PortNumber $ fromIntegral conPN
-      else error "cmdlListenOrConnect2Port: missing port number"
+        addrInfo <- head <$> getAddrInfo (Just hints) (Just hostName) (Just $ show conPN)
+        sock <- socket (addrFamily addrInfo) (addrSocketType addrInfo) (addrProtocol addrInfo)
+        connect sock $ addrAddress addrInfo
+        socketToHandle sock ReadWriteMode
+      else error "cmlListenOrConnect2Port: missing port number"
     cmdlStartLoop swXML servH servH 1000 state
 
 {- | Reads from a handle, it waits only for a certain amount of time,

@@ -24,6 +24,7 @@ module CASL.Sublogic
     , CASL_Formulas (..)
     , SubsortingFeatures (..)
     , SortGenerationFeatures (..)
+    , SortGenTotality (..)
     -- * class
     , Lattice (..)
     -- * predicates on CASL_SL
@@ -34,6 +35,7 @@ module CASL.Sublogic
     , top
     , caslTop
     , cFol
+    , fol
     , cPrenex
     , sublogics_max
     , comp_list
@@ -113,23 +115,38 @@ data SubsortingFeatures = NoSub
                         | Sub
                           deriving (Show, Eq, Ord, Typeable, Data)
 
+-- sets availability of strongly persistently liberal encoding of partiality
+data SortGenTotality = SomePartial -- ^ partial constructors in gen constraints
+                    | OnlyTotal -- ^ no partial constructors
+                    | OnlyFree -- ^ only free types; no partial cons possible
+                    deriving (Eq, Ord, Typeable, Data)
+
+instance Show SortGenTotality where
+  show SomePartial = ""
+  show OnlyTotal = "t"
+  show OnlyFree = "f"
+
 data SortGenerationFeatures =
           NoSortGen
         | SortGen { emptyMapping :: Bool
                     -- ^ Mapping of indexed sorts is empty
                   , onlyInjConstrs :: Bool
                     -- ^ only constructors that are subsort injections
+                  , totality :: SortGenTotality
+                    -- ^ how total constructors are
                   } deriving (Show, Eq, Ord, Typeable, Data)
 
 joinSortGenFeature :: (Bool -> Bool -> Bool)
+                   -> (SortGenTotality -> SortGenTotality -> SortGenTotality)
                    -> SortGenerationFeatures -> SortGenerationFeatures
                    -> SortGenerationFeatures
-joinSortGenFeature f x y =
+joinSortGenFeature f g x y =
     case x of
       NoSortGen -> y
-      SortGen em_x ojc_x -> case y of
+      SortGen em_x ojc_x tc_x -> case y of
           NoSortGen -> x
-          SortGen em_y ojc_y -> SortGen (f em_x em_y) (f ojc_x ojc_y)
+          SortGen em_y ojc_y tc_y ->
+            SortGen (f em_x em_y) (f ojc_x ojc_y) (g tc_x tc_y)
 
 data CASL_SL a = CASL_SL
     { sub_features :: SubsortingFeatures, -- ^ subsorting
@@ -166,7 +183,7 @@ Special sublogics elements
 
 -- top element
 mkTop :: a -> CASL_SL a
-mkTop = CASL_SL Sub True (SortGen False False) True True SOL True
+mkTop = CASL_SL Sub True (SortGen False False SomePartial) True True SOL True
 
 top :: Lattice a => CASL_SL a
 top = mkTop ctop
@@ -181,6 +198,13 @@ cFol :: Lattice a => CASL_SL a
 cFol = caslTop
   { sub_features = NoSub -- no subsorting
   , has_part = False -- no partiality
+  }
+
+fol :: Lattice a => CASL_SL a
+fol = caslTop
+  { sub_features = NoSub -- no subsorting
+  , has_part = False -- no partiality
+  , cons_features = NoSortGen -- no sort generation constraints 
   }
 
 cPrenex :: Lattice a => CASL_SL a
@@ -215,27 +239,13 @@ need_part = bottom { has_part = True }
 emptyMapConsFeature :: SortGenerationFeatures
 emptyMapConsFeature = SortGen
   { emptyMapping = True
-  , onlyInjConstrs = False }
+  , onlyInjConstrs = False
+  , totality = SomePartial}
 
 -- minimal sublogics with sort generation constraints
-need_cons :: Lattice a => CASL_SL a
-need_cons = bottom
-    { cons_features = SortGen { emptyMapping = False
-                              , onlyInjConstrs = False} }
-
-need_e_cons :: Lattice a => CASL_SL a
-need_e_cons = bottom
-    { cons_features = emptyMapConsFeature }
-
-need_s_cons :: Lattice a => CASL_SL a
-need_s_cons = bottom
-    { cons_features = SortGen { emptyMapping = False
-                              , onlyInjConstrs = True} }
-
-need_se_cons :: Lattice a => CASL_SL a
-need_se_cons = bottom
-    { cons_features = SortGen { emptyMapping = True
-                              , onlyInjConstrs = True} }
+need_cons :: Lattice a => Bool -> Bool -> SortGenTotality -> CASL_SL a
+need_cons em ojc tc = bottom
+    { cons_features = SortGen em ojc tc }
 
 -- minimal sublogic with equality
 need_eq :: Lattice a => CASL_SL a
@@ -264,7 +274,7 @@ sublogics_all l = bottom : map mkBot l ++ concat (sDims [])
     [ sublogics_max need_fol need_eq
     , comp_list [subPAtom, need_horn, need_eq]
     , subPAtom
-    , sublogics_max subPAtom need_cons
+    , sublogics_max subPAtom (need_cons False False SomePartial)
     , cFol, caslTop, top]
 
 sDims :: Lattice a => [[a]] -> [[CASL_SL a]]
@@ -276,7 +286,9 @@ sDims l = let
   map (map mkBot) l ++
   [ [ b { sub_features = s_f } | s_f <- [LocFilSub, Sub]]
   , [b { has_part = t } ]
-  , [b { cons_features = c_f } | c_f <- [ SortGen m s | m <- bools, s <- bools]]
+  , [b { cons_features = c_f } | 
+    c_f <- [ SortGen m s tc | 
+      m <- bools, s <- bools, tc <- [ OnlyFree, OnlyTotal,  SomePartial ]]]
   , [b { has_eq = t } ]
   , [b { has_pred = t } ]
   , [b { has_empty_sorts = t } ]
@@ -315,7 +327,8 @@ sublogics_name f x = f (ext_features x)
                         then (if onlyInjConstrs (cons_features x)
                               then "s" else "") ++
                              (if emptyMapping (cons_features x)
-                              then "e" else "") ++ "C"
+                              then "e" else "") ++
+                             ((show.totality.cons_features) x) ++ "C"
                          else "")
                     ++ formulas_name (has_pred x) (which_logic x)
                     ++ (if has_eq x then "=" else "")
@@ -360,15 +373,18 @@ parseForm s = foldr (\ (q, p) m -> case m of
     Nothing -> m) Nothing nameList
 
 parseCons :: String -> (SortGenerationFeatures, String)
-parseCons s = case stripPrefix "seC" s of
-  Just r -> (SortGen True True, r)
-  Nothing -> case stripPrefix "sC" s of
-    Just r -> (SortGen False True, r)
-    Nothing -> case stripPrefix "eC" s of
-      Just r -> (SortGen True False, r)
-      Nothing -> case stripPrefix "C" s of
-        Just r | not $ isPrefixOf "ond" r -> (SortGen False False, r)
-        _ -> (NoSortGen, s)
+parseCons s = let (ojc, s1) = parseBool "s" s in
+              let (em, s2) = parseBool "e" s1 in
+              let (ofr, s3) = parseBool "f" s2 in
+              let (oto, s4) = parseBool "t" s3 in
+              let tc = if ofr
+                          then OnlyFree
+                          else if oto then OnlyTotal else SomePartial
+              in
+              let (sgc, s5) = parseBool "C" s4 in
+              if not sgc || isPrefixOf "ond" s5
+                 then (NoSortGen, s)
+                 else ((SortGen ojc em tc), s5)
 
 
 {- ----------------------------------------------------------------------------
@@ -396,7 +412,7 @@ sublogics_join jB jS jC jF jE a b = CASL_SL
 
 sublogics_max :: Lattice a => CASL_SL a -> CASL_SL a
               -> CASL_SL a
-sublogics_max = sublogics_join max max (joinSortGenFeature min) max cjoin
+sublogics_max = sublogics_join max max (joinSortGenFeature min min) max cjoin
 
 {- ----------------------------------------------------------------------------
 Helper functions
@@ -529,9 +545,9 @@ sl_basic_items :: Lattice a => (b -> CASL_SL a)
               -> BASIC_ITEMS b s f -> CASL_SL a
 sl_basic_items bf sf ff bi = case bi of
     Sig_items i -> sl_sig_items sf ff i
-    Free_datatype sk l _ -> needsEmptySorts sk
-        $ comp_list $ map (sl_datatype_decl . item) l
-    Sort_gen l _ -> sublogics_max need_se_cons
+    Free_datatype sk l _ -> sublogics_max (need_cons True True OnlyFree)
+        $ needsEmptySorts sk $ comp_list $ map (sl_datatype_decl . item) l
+    Sort_gen l _ -> sublogics_max (need_cons True True OnlyTotal)
         $ comp_list $ map (sl_sig_items sf ff . item) l
     Var_items l _ -> comp_list $ map sl_var_decl l
     Local_var_axioms d l _ -> comp_list
@@ -626,16 +642,20 @@ slRecord :: Lattice a => (f -> CASL_SL a) -> Record f (CASL_SL a) (CASL_SL a)
 slRecord ff = (constRecord ff comp_list bottom)
   { foldPredication = \ _ _ l _ -> comp_list $ need_pred : l
   , foldEquation = \ _ t _ u _ -> comp_list [need_eq, t, u]
-  , foldSort_gen_ax = \ _ constraints _ ->
+  , foldSort_gen_ax = \ _ constraints isFree ->
       case recover_Sort_gen_ax constraints of
-      (_, ops, m) -> case (m, filter (\ o -> case o of
-                   Op_name _ -> True
-                   Qual_op_name n _ _ ->
-                       not (isInjName n)) ops) of
-        ([], []) -> need_se_cons
-        ([], _) -> need_e_cons
-        (_, []) -> need_s_cons
-        _ -> need_cons
+      (_, ops, m) -> let
+        ojc = all isInjOp ops
+        tc = if isFree
+                then OnlyFree
+                else if all isTotalOp ops
+                        then OnlyTotal
+                        else SomePartial
+        in need_cons (null m) ojc tc where
+          isInjOp (Qual_op_name n _ _) = isInjName n
+          isInjOp _ = False
+          isTotalOp (Qual_op_name _ (Op_type Total _ _ _) _) = True
+          isTotalOp _ = False
   , foldQuantPred = \ _ _ _ f -> sublogics_max need_pred f
   , foldCast = \ _ t _ _ -> sublogics_max need_part t
   }

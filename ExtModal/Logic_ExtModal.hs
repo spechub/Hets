@@ -60,9 +60,9 @@ instance SignExtension EModalSign where
 
 instance Syntax ExtModal EM_BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
         parse_basic_spec ExtModal = Just $ basicSpec ext_modal_reserved_words
-        parse_symb_items ExtModal = Just $ symbItems ext_modal_reserved_words
+        parse_symb_items ExtModal = Just . const $ symbItems ext_modal_reserved_words
         parse_symb_map_items ExtModal =
-            Just $ symbMapItems ext_modal_reserved_words
+             Just . const $ symbMapItems ext_modal_reserved_words
 
 -- Simplification of formulas - simplifySen for ExtFORMULA
 simEMSen :: Sign EM_FORMULA EModalSign -> EM_FORMULA -> EM_FORMULA
@@ -84,6 +84,7 @@ instance Sentences ExtModal ExtModalFORMULA ExtModalSign ExtModalMorph Symbol
             (diffMapSet (predMap sig) $ flexPreds e) $ nominals e
           }
         sym_of ExtModal = symOf
+        symKind ExtModal = show . pretty . symbolKind . symbType
         symmap_of ExtModal = morphismToSymbMap
         sym_name ExtModal = symName
 

@@ -30,6 +30,7 @@ import Common.Result
 import qualified Common.Lib.MapSet as MapSet
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -56,7 +57,7 @@ qualifySigExt extInd extEm nodeId libId m sig = do
       sMap = Set.fold (`Map.insert` 1) Map.empty ss
       om = createOpMorMap $ qualOverloaded sMap (Map.map fst $ op_map m)
            nodeId libId (mapOpType sm) mkPartial os
-      oMap = Map.foldWithKey (\ i ->
+      oMap = Map.foldrWithKey (\ i ->
              Map.insertWith (+) i . Set.size) sMap $ MapSet.toMap os
       pm = Map.map fst $ qualOverloaded oMap (pred_map m) nodeId libId
            (mapPredType sm) id ps
@@ -69,7 +70,7 @@ qualOverloaded :: Ord a => Map.Map Id Int -> Map.Map (Id, a) Id -> SIMPLE_ID
                -> LibName -> (a -> a) -> (a -> a) -> MapSet.MapSet Id a
                -> Map.Map (Id, a) (Id, a)
 qualOverloaded oMap rn nodeId libId f g =
-  Map.foldWithKey (\ i s m -> foldr (\ (e, n) -> let ge = g e in
+  Map.foldrWithKey (\ i s m -> foldr (\ (e, n) -> let ge = g e in
     Map.insert (i, ge)
       (case Map.lookup (i, ge) rn of
          Just j | isQualName j -> j
@@ -94,11 +95,11 @@ inverseMorphism invExt m = do
       ipm = Map.fromList $ map (\ ((i, t), j) ->
                   ((j, mapPredType sm t), i)) $ Map.toList pm
   unless (ss == Set.map (mapSort ism . mapSort sm) ss)
-    $ fail "no injective CASL sort mapping"
+    $ Fail.fail "no injective CASL sort mapping"
   unless (os == inducedOpMap ism iom (inducedOpMap sm om os))
-    $ fail "no injective CASL op mapping"
+    $ Fail.fail "no injective CASL op mapping"
   unless (ps == inducedPredMap ism ipm (inducedPredMap sm pm ps))
-    $ fail "no injective CASL pred mapping"
+    $ Fail.fail "no injective CASL pred mapping"
   return (embedMorphism iExt (imageOfMorphism m) src)
     { sort_map = ism
     , op_map = iom

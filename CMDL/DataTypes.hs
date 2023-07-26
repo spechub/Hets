@@ -42,7 +42,9 @@ import Interfaces.Command
 
 import Driver.Options
 
-import Network
+import Network.Socket
+
+import Proofs.AbstractState (G_cons_checker)
 
 import System.IO (Handle)
 
@@ -70,6 +72,7 @@ data CmdlState = CmdlState
   , output :: CmdlMessage -- ^ output of interface
   , hetsOpts :: HetcatsOpts  -- ^ hets command options
   , errorCode :: Int
+  , consCheckers :: [G_cons_checker]
   }
 
 data ProveCmdType = Prove | Disprove | ConsCheck
@@ -91,6 +94,7 @@ emptyCmdlState opts = CmdlState
   , connections = []
   , hetsOpts = opts
   , errorCode = 0
+  , consCheckers = []
 }
 
 data CmdlPrompterState = CmdlPrompterState

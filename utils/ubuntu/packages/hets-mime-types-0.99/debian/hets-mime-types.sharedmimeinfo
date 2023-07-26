@@ -8,6 +8,10 @@
                 <comment>HETS file</comment>
                 <glob pattern="*.het" />
         </mime-type>
+	<mime-type type="text/x-dol">
+                <comment>DOL file</comment>
+                <glob pattern="*.dol" />
+        </mime-type>
 	<mime-type type="text/x-casl">
 		<comment>CASL file</comment>
 		<glob pattern="*.casl" />

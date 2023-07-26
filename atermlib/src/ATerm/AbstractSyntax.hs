@@ -27,9 +27,10 @@ module ATerm.AbstractSyntax
 import qualified Data.Map as Map
 import qualified Data.Map as IntMap
 import Data.Dynamic
+import Data.Typeable
 import Data.Array
 import System.Mem.StableName
-import GHC.Prim
+import Unsafe.Coerce
 import qualified Data.List as List
 import Data.Maybe
 
@@ -63,7 +64,7 @@ data Key = Key Int EqKey
 mkKey :: Typeable a => a -> IO Key
 mkKey t = do
     s <- makeStableName t
-    return $ Key (hashStableName s) $ EqKey (unsafeCoerce # s) $ typeOf t
+    return $ Key (hashStableName s) $ EqKey (unsafeCoerce# s) $ typeOf t
 
 data ATermTable = ATT
     (IntMap.Map Int [(EqKey, Int)])

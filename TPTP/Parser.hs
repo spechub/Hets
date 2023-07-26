@@ -39,6 +39,7 @@ import qualified Common.Lexer as Lexer (pToken)
 import Common.Parsec
 
 import Control.Monad (liftM)
+import qualified Control.Monad.Fail as Fail
 import Data.Char (isAlphaNum, isSpace, ord)
 import Prelude hiding (exp, exponent)
 import Text.ParserCombinators.Parsec
@@ -495,7 +496,7 @@ thf_let_defn_LHS = parserTrace "thf_let_defn_LHS" (liftM THFLDL_tuple thf_tuple
     args <- fof_arguments
     if onlyVariables args
     then return $ THFLDL_functor f args
-    else fail "thf_let_defn_LHS: The <fof_arguments> must all be <variable>s."
+    else Fail.fail "thf_let_defn_LHS: The <fof_arguments> must all be <variable>s."
   <|> liftM THFLDL_constant constant
   <?> "thf_let_defn_LHS"
   )
@@ -2511,7 +2512,7 @@ single_quoted_file_name = parserTrace "single_quoted" (do
         <|> single (satisfy (\ c -> printable c && notElem c "'\\")))
     let s' = escapeTPTPFilePath s
     i <- case parse (iriCurie << eof) "" s' of
-      Left err -> fail $ show err
+      Left err -> Fail.fail $ show err
       Right i -> return $ unescapeTPTPFileIRI i
     keyChar '\''
     skip
@@ -2525,7 +2526,7 @@ unquoted_file_name = parserTrace "single_quoted" (try (do
     s <- lookAhead $ try $ manyTill anyChar $ try $ oneOf ",)"
     let s' = escapeTPTPFilePath s
     i <- case parse (iriCurie << eof) "" s' of
-      Left err -> fail $ show err
+      Left err -> Fail.fail $ show err
       Right i -> return $ unescapeTPTPFileIRI i
     strTok s
     skip

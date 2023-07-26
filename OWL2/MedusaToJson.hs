@@ -13,9 +13,9 @@ JSON output for Medusa
 
 module OWL2.MedusaToJson (medusaToJson, medusaToJsonString) where
 
-import OWL2.AS
 import OWL2.Medusa
 import Common.Json
+import Common.IRI
 import qualified Data.Set as Set
 
 -- render Medusa data as JSON string
@@ -31,15 +31,15 @@ medusaToJson m = JObject [("Definitions",defs),("Relations",rels)]
         rels = JArray $ map relToJson mrels
 
 -- convert an OWL2 individual with its type to JSON
-indToJson :: (QName,QName) -> Json
+indToJson :: (IRI, IRI) -> Json
 indToJson (i,t) =
-  JObject [("Identifier",JString $ localPart i),
-           ("Type",JString $ localPart t)]
+  JObject [("Identifier",JString $ show $ iriPath i),
+           ("Type",JString $ show $ iriPath t)]
 
 -- convert a relation to JSON
-relToJson :: (QName, QName, QName, QName) -> Json
+relToJson :: (IRI, IRI, IRI, IRI) -> Json
 relToJson (i1, p1, i2, p2) =
- JObject [("Individual1", JString $ localPart i1),
-          ("Point1", JString $ localPart p1),
-          ("Individual2", JString $ localPart i2),
-          ("Point2", JString $ localPart p2)]
+ JObject [("Individual1", JString $ show $ iriPath i1),
+          ("Point1", JString $ show $ iriPath p1),
+          ("Individual2", JString $ show $ iriPath i2),
+          ("Point2", JString $ show $ iriPath p2)]

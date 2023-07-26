@@ -261,7 +261,7 @@ makeExplicitProducts (cs_trans1, sig) =
 
 mkExplicitProductsT :: TransMap -> Map.Map Constant ConstInfo
                        -> (TransMap, Map.Map Constant ConstInfo)
-mkExplicitProductsT cs_trans1 cs1 = Map.fold
+mkExplicitProductsT cs_trans1 cs1 = Map.foldr
  (\ c (trans, cs) -> prodTToTuple trans cs (constId c) (constName c)
                      (constType c)) (cs_trans1, cs1) cs1
 

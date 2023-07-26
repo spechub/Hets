@@ -1,105 +1,90 @@
-#!/bin/bash
+#!/bin/ksh93
 
-HETS_OWL_TOOLS=~/Hets/OWL2
-export HETS_OWL_TOOLS
+# - Parser Printer (own testscripts)
+#   - MS
+#   - AS
+#   - XML
+# - Calling hets on (static analysis)
+#   - DOL
+#   - MS
+#   - AS
+#   - XML
 
-ECHO="echo -e"
+# 1. run tests for *.xml
+# 2. run tests for *.omn
 
-$ECHO "\nhi !\n"
+SD=$( cd ${ dirname $0; }; printf "$PWD" )
+BD=${SD%/*/*}
 
-[[ `uname -s` == 'SunOS' ]] && MAKE=gmake || MAKE=make
+. ${BD}/Common/test/checkFunctions.sh
 
-ALL=`ls`
+cd ${BD}
 
-for DIR in $ALL
-do
-    if test -d $DIR;
-        then
-            cd $DIR
+export HETS_OWL_TOOLS=${BD}/OWL2
+if [[ -z ${MAKE} ]]; then
+	[[ ${ uname -s ; } == 'SunOS' ]] && MAKE=gmake || MAKE=make
+fi
 
-            $ECHO "testing for directory:" $DIR
+[[ -f OWL2/OWL2Parser.jar ]] || make jars
 
-            mkdir res
+print 'Compiling runTest...'
+F=OWL2/scripts/runTest
+${MAKE} $F || return 1
 
-            for i in *.ofn *.rdf
-            do
-                $ECHO "\ncalling java for:" $i
-                java -jar ../../OWL2Parser.jar file:`pwd`/$i xml >> `pwd`/res/$i.xml
-            done
+TESTSCRIPT=${BD}/$F
 
-            cd ../../..
+cd ${SD} || return 99
 
-            $ECHO "\ncompiling runConv...\n"
+for D in . * ; do
+	[[ -d $D ]] || continue
+	[[ $D != '.' ]] && cd "$D"
 
-            ${MAKE} OWL2/scripts/runConv
+	infoMsg "Running Functional Syntax Files in $D/ ..."
+	for F in ~(N)*.ofn ; do
+		[[ -f $F ]] || continue
+		print "  Testing $D/$F ... "
+		${TESTSCRIPT} "$F" || addErr
+	done
 
-            cd OWL2/tests/$DIR/res
+	infoMsg "Running Manchester Syntax Files in $D/ ..."
+	for F in ~(N)*.omn ; do
+		[[ -f $F ]] || continue
+		print "  Testing $D/$F ... "
+		${TESTSCRIPT} "$F" || addErr
+	done
 
-            $ECHO "\nrunning runConv first time..."
+	for F in ~(N)*.mno ; do
+		[[ -f $F ]] || continue
+		print "  Testing $D/$F ... "
+		${TESTSCRIPT} "$F" || addErr
+	done
 
-            for i in *.xml
-            do
-                $ECHO "\ncalling runConv for:" $i
-                ../../../scripts/runConv $i >> $i.xml
-            done
+	infoMsg "Running XML Syntax Files in $D/ ..."
+	for F in ~(N)*.xml ; do
+		[[ -f $F ]] || continue
+		print "  Testing $D/$F ... "
+		${TESTSCRIPT} "$F" || addErr
+	done
 
-            $ECHO "\nrunning runConv second time..."
+	infoMsg "Running hets on all files in $D/ ..."
+	for F in ~(N)*.ofn ~(N)*.omn ~(N)*.xml ~(N)*.dol # *.rdf
+	do
+		[[ -f $F ]] || continue
+		[[ "$D" == "11" ]] && [[ "${F##*.}" == "omn" ]] && warnMsg "Skipping $D/$F until OWLAPI supporting Manchester extensions is implemented" && continue
+		print "  Testing $D/$F ... "
+		OUTPUT=${ ${BD}/hets "$F" 2>&1 ; }
+		if (( $? )); then
+			printf "${BOX_FAIL} failed:\n"
+			(( ${#OUTPUT} < 1024 )) && print -- "${OUTPUT}" || \
+				print -- "${COLOR_GRAY}${OUTPUT}${COLOR_END}"
+			addErr
+		else
+			printf "${BOX_OK} success\n"
+		fi
+	done
 
-            for i in *.xml.xml
-            do
-                $ECHO "\ncalling runConv for:" $i
-                ../../../scripts/runConv $i >> $i.xml
-            done
-
-            cd ../../../..
-
-            $ECHO "\ncalling hets for all xml files...\n"
-
-            for i in OWL2/tests/$DIR/res/*.xml
-            do
-                ./hets -i ow2 $i
-                $ECHO "\n"
-            done
-
-            $ECHO "creating omn files with java..."
-
-            cd OWL2/tests/$DIR/res
-
-            for i in *.ofn.xml.xml *.rdf.xml.xml
-            do
-                $ECHO "\ncalling java for:" $i
-                java -jar ../../../OWL2Parser.jar file:`pwd`/$i >> `pwd`/$i.xml.omn
-            done
-
-            cd ../../../..
-
-            $ECHO "\ncompiling runXML...\n"
-
-            ${MAKE} OWL2/scripts/runXML
-
-            cd OWL2/tests/$DIR/res
-
-            $ECHO "\ncalling runXML on .xml files..."
-
-            for i in *.ofn.xml *.rdf.xml
-            do
-                $ECHO "\ncalling runXML for:" $i
-                ../../../scripts/runXML $i >> $i.xml.mno
-            done
-
-            for i in *.ofn.xml.xml *.rdf.xml.xml
-            do
-                $ECHO "\ncalling runXML for:" $i
-                ../../../scripts/runXML $i >> $i.mno.mno
-            done
-
-            cd ..
-
-            #rm -rf res
-
-            cd ..
-
-    fi
+	[[ "$D" == '.'  ]] || cd ~-
 done
 
-$ECHO "\nbye bye !\n"
+errorMsg ${ERR} "${.sh.file}"
+(( ! ERR ))

@@ -12,6 +12,8 @@ generate ShATermConvertible instances
 
 module UserRulesHetCATS (hetcatsrules) where
 
+import Prelude hiding ((<>))
+
 import RuleUtils -- gives some examples
 import DataP
 import Text.PrettyPrint.HughesPJ
@@ -27,6 +29,7 @@ hetcatsrules =
   , ("Binary", binaryfn False, "", "", Nothing)
   , ("BinaryLG", binaryfn True, "", "", Nothing)
   , ("Typeable", typeablefn, "", "", Nothing)
+  , ("Json", jsonfn, "", "", Nothing)
   , ("XmlPickler", xmlpicklerfn, "", "", Nothing)
   , ("GetRange", getrangefn, "", "", Nothing)]
 
@@ -257,7 +260,7 @@ makeSpanFn b =
 
 binaryfn :: Bool -> Data -> Doc
 binaryfn forLG dat =
-  let dn = strippedName dat
+  let dn = name dat
       cs = body dat
       moreCs = length cs > 1
       u = text "u"
@@ -294,7 +297,7 @@ makeGetBinary forLG moreCs b i =
 -- begin of ShATermConvertible derivation
 shatermfn :: Bool -> Data -> Doc
 shatermfn forLG dat =
-  let dn = strippedName dat
+  let dn = name dat
       cs = body dat
       u = text "u"
   in instanceSkeleton (if forLG then "ShATermLG" else "ShATermConvertible")
@@ -356,10 +359,23 @@ makeFromShATerm forLG b =
 typeablefn :: Data -> Doc
 typeablefn dat =
     let vs = vars dat
-        dn = strippedName dat
+        dn = name dat
         ntext str = str ++ if null vs then "" else show $ length vs
         stext = text ("deriving instance Typeable " ++ dn)
     in if null vs then stext else
        text "#if __GLASGOW_HASKELL__ < 708" $$
        text ("deriving instance " ++ ntext "Typeable" ++ " " ++ dn)
        $$ text "#else" $$ stext $$ text "#endif"
+
+
+jsonfn :: Data ->Doc
+jsonfn dat =
+    let vs = vars dat
+        dn = name dat
+        typ = if null vs then text dn else parens . hsep . fmap text $ (dn : vs)
+        gen = text "deriving instance GHC.Generics.Generic" <+> typ
+
+        datC s = dat { constraints = constraints dat ++ map (\x -> (s, x)) vs }
+    in gen
+      $+$ instanceSkeleton "Data.Aeson.ToJSON" [] dat
+      $+$ instanceSkeleton "Data.Aeson.FromJSON" [] dat

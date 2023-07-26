@@ -14,7 +14,6 @@ Generic Gtk GUI for automatic theorem provers.
 module GUI.GtkGenericATP ( genericATPgui ) where
 
 import Graphics.UI.Gtk
-import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
 import qualified GUI.Glade.GenericATP as GenericATP
@@ -24,6 +23,7 @@ import Interfaces.GenericATPState
 import Control.Concurrent (forkIO, killThread, yield)
 import Control.Concurrent.MVar
 import Control.Monad (unless, when)
+import qualified Control.Monad.Fail as Fail
 
 import Common.AS_Annotation as AS_Anno
 import Common.GtkGoal
@@ -38,7 +38,7 @@ import qualified Data.Map as Map
 
 import Logic.Prover
 
-genericATPgui :: (Ord proof_tree, Ord sentence)
+genericATPgui :: (Show sentence, Ord proof_tree, Ord sentence)
               => ATPFunctions sign sentence mor proof_tree pst
               -- ^ prover specific functions
               -> Bool -- ^ prover supports extra options
@@ -52,30 +52,30 @@ genericATPgui :: (Ord proof_tree, Ord sentence)
 genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
   result <- newEmptyMVar
   postGUIAsync $ do
-    xml <- getGladeXML GenericATP.get
+    builder <- getGTKBuilder GenericATP.get
     -- get objects
-    window <- xmlGetWidget xml castToWindow "GenericATP"
+    window <- builderGetObject builder castToWindow "GenericATP"
     -- buttons at buttom
-    btnClose <- xmlGetWidget xml castToButton "btnClose"
-    btnHelp <- xmlGetWidget xml castToButton "btnHelp"
-    btnSaveConfig <- xmlGetWidget xml castToButton "btnSaveConfig"
+    btnClose <- builderGetObject builder castToButton "btnClose"
+    btnHelp <- builderGetObject builder castToButton "btnHelp"
+    btnSaveConfig <- builderGetObject builder castToButton "btnSaveConfig"
     -- goal list
-    trvGoals <- xmlGetWidget xml castToTreeView "trvGoals"
+    trvGoals <- builderGetObject builder castToTreeView "trvGoals"
     -- options area
-    sbTimeout <- xmlGetWidget xml castToSpinButton "sbTimeout"
-    entryOptions <- xmlGetWidget xml castToEntry "entryOptions"
-    cbIncludeProven <- xmlGetWidget xml castToCheckButton "cbIncludeProven"
-    cbSaveBatch <- xmlGetWidget xml castToCheckButton "cbSaveBatch"
+    sbTimeout <- builderGetObject builder castToSpinButton "sbTimeout"
+    entryOptions <- builderGetObject builder castToEntry "entryOptions"
+    cbIncludeProven <- builderGetObject builder castToCheckButton "cbIncludeProven"
+    cbSaveBatch <- builderGetObject builder castToCheckButton "cbSaveBatch"
     -- prove buttons
-    btnStop <- xmlGetWidget xml castToButton "btnStop"
-    btnProveSelected <- xmlGetWidget xml castToButton "btnProveSelected"
-    btnProveAll <- xmlGetWidget xml castToButton "btnProveAll"
+    btnStop <- builderGetObject builder castToButton "btnStop"
+    btnProveSelected <- builderGetObject builder castToButton "btnProveSelected"
+    btnProveAll <- builderGetObject builder castToButton "btnProveAll"
     -- status and axioms
-    lblStatus <- xmlGetWidget xml castToLabel "lblStatus"
-    trvAxioms <- xmlGetWidget xml castToTreeView "trvAxioms"
+    lblStatus <- builderGetObject builder castToLabel "lblStatus"
+    trvAxioms <- builderGetObject builder castToTreeView "trvAxioms"
     -- info and save buttons
-    btnSaveProblem <- xmlGetWidget xml castToButton "btnSaveProblem"
-    btnShowDetails <- xmlGetWidget xml castToButton "btnShowDetails"
+    btnSaveProblem <- builderGetObject builder castToButton "btnSaveProblem"
+    btnShowDetails <- builderGetObject builder castToButton "btnShowDetails"
 
     windowSetTitle window $ prName ++ ": " ++ thName
 
@@ -282,7 +282,7 @@ genericATPgui atpFun hasEOptions prName thName th freedefs pt = do
 
   -- waiting for results
   res <- takeMVar result
-  maybe (fail "reverse translation of names failed") return res
+  maybe (Fail.fail "reverse translation of names failed") return res
 
   where
     prepareLP prS s g' inclProven =

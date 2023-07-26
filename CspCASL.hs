@@ -1,4 +1,9 @@
-{- | CspCASL combines the process algebra CSP with CASL;
+{- |
+Description :  CspCASL combines the process algebra CSP with CASL
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+
+CspCASL combines the process algebra CSP with CASL;
 CASL data elements serve as process alphabet letters.
 
 The modules for CspCASL are built on top of those for "CASL",

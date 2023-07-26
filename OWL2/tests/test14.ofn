@@ -1,3 +1,4 @@
+#SUBLOGIC=ALCH
 Prefix( : = <http://example.org/> )
 
 Ontology(

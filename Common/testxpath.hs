@@ -16,6 +16,7 @@ module Main (main) where
 import Common.XPath
 import Text.ParserCombinators.Parsec
 import Common.Parsec
+import qualified Control.Monad.Fail as Fail
 
 main :: IO ()
 main = do
@@ -24,5 +25,5 @@ main = do
 
 process :: (Int, String) -> IO ()
 process (n, str) = case parse (spaces >> expr << eof) "" str of
-  Left err -> fail $ "line " ++ show n ++ ": " ++ show err
+  Left err -> Fail.fail $ "line " ++ show n ++ ": " ++ show err
   Right e -> print e

@@ -98,13 +98,15 @@ prettySymbol :: (GetRange a, Pretty a) => GlobalAnnos -> a -> Element
 prettySymbol = prettyRangeElem "Symbol"
 
 lnode :: HetcatsOpts -> GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
-lnode opts ga lenv (_, lbl) =
+lnode opts ga lenv (nodeId, lbl) =
   let nm = dgn_name lbl
       (spn, xp) = case reverse $ xpath nm of
           ElemName s : t -> (s, showXPath t)
           l -> ("?", showXPath l)
   in add_attrs (mkNameAttr (showName nm)
     : rangeAttrs (srcRange nm)
+    ++ [mkAttr "id" $ show nodeId]
+    ++ [mkAttr "internal" (map toLower $ show $ isInternal nm)]
     ++ mkAttr "reference" (map toLower $ show $ isDGRef lbl)
     : case signOf $ dgn_theory lbl of
         G_sign slid _ _ -> mkAttr "logic" (show slid)
@@ -179,6 +181,8 @@ ledge opts ga dg (f, t, lbl) = let
   ([ mkAttr "source" $ getNameOfNode f dg
   , mkAttr "target" $ getNameOfNode t dg
   , mkAttr "linkid" $ showEdgeId $ dgl_id lbl
+  , mkAttr "id_source" $ show f
+  , mkAttr "id_target" $ show t
   ] ++ case dgl_origin lbl of
          DGLinkView i _ ->
            [mkNameAttr . iriToStringShortUnsecure $ setAngles False i]

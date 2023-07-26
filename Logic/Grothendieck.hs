@@ -124,10 +124,16 @@ import Common.LibName
 import Common.GraphAlgo
 
 import Control.Monad (foldM)
+import qualified Control.Monad.Fail as Fail
 import Data.Maybe
 import Data.Typeable
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Data.HashMap.Strict as HMap
+import qualified Data.HashSet as HSet
+import qualified Data.Heap as Heap
+
+import Text.Printf
 
 import Text.ParserCombinators.Parsec (Parser, parse, eof, (<|>))
 -- for looking up modifications
@@ -487,16 +493,16 @@ instance Pretty LogicGraph where
        $+$ vcat (map pretty $ Map.elems $ comorphisms lg)
 
 -- | find a logic in a logic graph
-lookupLogic :: Monad m => String -> String -> LogicGraph -> m AnyLogic
+lookupLogic :: Fail.MonadFail m => String -> String -> LogicGraph -> m AnyLogic
 lookupLogic error_prefix logname logicGraph =
     case Map.lookup logname $ logics logicGraph of
-    Nothing -> fail $ error_prefix ++ "unknown logic: " ++ logname
+    Nothing -> Fail.fail $ error_prefix ++ "unknown logic: " ++ logname
     Just lid -> return lid
 
-lookupCurrentLogic :: Monad m => String -> LogicGraph -> m AnyLogic
+lookupCurrentLogic :: Fail.MonadFail m => String -> LogicGraph -> m AnyLogic
 lookupCurrentLogic msg lg = lookupLogic (msg ++ " ") (currentLogic lg) lg
 
-lookupCurrentSyntax :: Monad m => String -> LogicGraph
+lookupCurrentSyntax :: Fail.MonadFail m => String -> LogicGraph
   -> m (AnyLogic, Maybe IRI)
 lookupCurrentSyntax msg lg = do
   l <- lookupLogic (msg ++ " ") (currentLogic lg) lg
@@ -514,18 +520,18 @@ logicUnion lg l1@(Logic lid1) l2@(Logic lid2) =
         Just u -> return u
         Nothing -> case Map.lookup (ln2, ln1) (unions lg) of
           Just (c2, c1) -> return (c1, c2)
-          Nothing -> fail $ "Union of logics " ++ ln1 ++
+          Nothing -> Fail.fail $ "Union of logics " ++ ln1 ++
                      " and " ++ ln2 ++ " does not exist"
    where ln1 = language_name lid1
          ln2 = language_name lid2
 
 -- | find a comorphism composition in a logic graph
-lookupCompComorphism :: Monad m => [String] -> LogicGraph -> m AnyComorphism
+lookupCompComorphism :: Fail.MonadFail m => [String] -> LogicGraph -> m AnyComorphism
 lookupCompComorphism nameList logicGraph = do
   cs <- mapM lookupN nameList
   case cs of
     c : cs1 -> foldM compComorphism c cs1
-    _ -> fail "Illegal empty comorphism composition"
+    _ -> Fail.fail "Illegal empty comorphism composition"
   where
   lookupN name =
     case name of
@@ -535,27 +541,27 @@ lookupCompComorphism nameList logicGraph = do
              msublogic = if null subLogicD
                      then Nothing
                      else Just $ tail subLogicD
-         Logic lid <- maybe (fail ("Cannot find Logic " ++ mainLogic)) return
+         Logic lid <- maybe (Fail.fail ("Cannot find Logic " ++ mainLogic)) return
                  $ Map.lookup mainLogic (logics logicGraph)
          case maybe (Just $ top_sublogic lid) (parseSublogic lid) msublogic of
-           Nothing -> fail $ maybe "missing sublogic"
+           Nothing -> Fail.fail $ maybe "missing sublogic"
                     ("unknown sublogic name " ++) msublogic
            Just s -> return $ Comorphism $ mkIdComorphism lid s
-      _ -> maybe (fail ("Cannot find logic comorphism " ++ name)) return
+      _ -> maybe (Fail.fail ("Cannot find logic comorphism " ++ name)) return
              $ Map.lookup name (comorphisms logicGraph)
 
 -- | find a comorphism in a logic graph
-lookupComorphism :: Monad m => String -> LogicGraph -> m AnyComorphism
+lookupComorphism :: Fail.MonadFail m => String -> LogicGraph -> m AnyComorphism
 lookupComorphism = lookupCompComorphism . splitOn ';'
 
 -- | find a modification in a logic graph
-lookupModification :: (Monad m) => String -> LogicGraph -> m AnyModification
+lookupModification :: (Fail.MonadFail m) => String -> LogicGraph -> m AnyModification
 lookupModification input lG
         = case parse (parseModif lG << eof) "" input of
-            Left err -> fail $ show err
+            Left err -> Fail.fail $ show err
             Right x -> x
 
-parseModif :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+parseModif :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 parseModif lG = do
   (xs, _) <- separatedBy (vertcomp lG) crossT
   let r = do
@@ -564,10 +570,10 @@ parseModif lG = do
           m : ms -> return $ foldM horCompModification m ms
           _ -> Nothing
   case r of
-    Nothing -> fail "Illegal empty horizontal composition"
+    Nothing -> Fail.fail "Illegal empty horizontal composition"
     Just m -> return m
 
-vertcomp :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+vertcomp :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 vertcomp lG = do
   (xs, _) <- separatedBy (pm lG) semiT
   let r = do
@@ -577,34 +583,34 @@ vertcomp lG = do
           _ -> Nothing
              -- r has type Maybe (m AnyModification)
   case r of
-    Nothing -> fail "Illegal empty vertical composition"
+    Nothing -> Fail.fail "Illegal empty vertical composition"
     Just m -> return m
 
-pm :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+pm :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 pm lG = parseName lG <|> bracks lG
 
-bracks :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+bracks :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 bracks lG = do
   oParenT
   modif <- parseModif lG
   cParenT
   return modif
 
-parseIdentity :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+parseIdentity :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 parseIdentity lG = do
   tryString "id_"
   tok <- simpleId
   let name = tokStr tok
   case Map.lookup name (comorphisms lG) of
-    Nothing -> fail $ "Cannot find comorphism" ++ name
+    Nothing -> Fail.fail $ "Cannot find comorphism" ++ name
     Just x -> return $ return $ idModification x
 
-parseName :: (Monad m) => LogicGraph -> Parser (m AnyModification)
+parseName :: (Fail.MonadFail m) => LogicGraph -> Parser (m AnyModification)
 parseName lG = parseIdentity lG <|> do
   tok <- simpleId
   let name = tokStr tok
   case Map.lookup name (modifications lG) of
-    Nothing -> fail $ "Cannot find modification" ++ name
+    Nothing -> Fail.fail $ "Cannot find modification" ++ name
     Just x -> return $ return x
 
 -- * The Grothendieck signature category
@@ -716,7 +722,7 @@ instance Category G_sign GMorphism where
     legal_mor mor
     case maybeResult $ map_sign r s of
       Just (sigma', _) | sigma' == cod mor -> return ()
-      _ -> fail "legal_mor.GMorphism2"
+      _ -> Fail.fail "legal_mor.GMorphism2"
 
 -- | Embedding of homogeneous signature morphisms as Grothendieck sig mors
 gEmbed2 :: G_sign -> G_morphism -> GMorphism
@@ -778,14 +784,14 @@ homGsigDiff (G_sign lid1 (ExtSign s1 _) _) (G_sign lid2 (ExtSign s2 _) _) = do
 -- | union of a list of Grothendieck signatures
 gsigManyUnion :: LogicGraph -> [G_sign] -> Result G_sign
 gsigManyUnion _ [] =
-  fail "union of emtpy list of signatures"
+  Fail.fail "union of emtpy list of signatures"
 gsigManyUnion lg (gsigma : gsigmas) =
   foldM (gsigUnion lg True) gsigma gsigmas
 
 -- | homogeneous Union of a list of morphisms
 homogeneousMorManyUnion :: [G_morphism] -> Result G_morphism
 homogeneousMorManyUnion [] =
-  fail "homogeneous union of emtpy list of morphisms"
+  Fail.fail "homogeneous union of emtpy list of morphisms"
 homogeneousMorManyUnion (gmor : gmors) =
   foldM ( \ (G_morphism lid2 mor2 _) (G_morphism lid1 mor1 _) -> do
             mor1' <- coerceMorphism lid1 lid2 "homogeneousMorManyUnion" mor1
@@ -795,7 +801,7 @@ homogeneousMorManyUnion (gmor : gmors) =
 -- | intersection of a list of Grothendieck signatures
 gsigManyIntersect :: LogicGraph -> [G_sign] -> Result G_sign
 gsigManyIntersect _ [] =
-  fail "intersection of emtpy list of signatures"
+  Fail.fail "intersection of emtpy list of signatures"
 gsigManyIntersect lg (gsigma : gsigmas) =
   foldM (gsigIntersect lg True) gsigma gsigmas
 
@@ -811,7 +817,7 @@ gsigIntersect _lg both gsig1@(G_sign lid1 (ExtSign _sigma1 _) _)
 homogeneousGsigIntersect :: Bool -> G_sign -> G_sign -> Result G_sign
 homogeneousGsigIntersect _both (G_sign lid1 sigma1@(ExtSign _sig1 syms1) _) (G_sign lid2 sigma2 _) = do
   sigma2'@(ExtSign sig2 _) <- coerceSign lid2 lid1 "Intersection of signatures" sigma2
-  sigma3@(ExtSign sig3 _) <- ext_signature_intersect lid1 sigma1 sigma2'
+  ExtSign sig3 _ <- ext_signature_intersect lid1 sigma1 sigma2'
   let syms2 = symset_of lid1 sig2
       symI = Set.intersection syms1 syms2
   return $ G_sign lid1
@@ -829,7 +835,7 @@ logicInclusion logicGraph l1@(Logic lid1) (Logic lid2) =
            Just (Comorphism i) ->
                return (Comorphism i)
            Nothing ->
-               fail ("No inclusion from " ++ ln1 ++ " to " ++ ln2 ++ " found")
+               Fail.fail ("No inclusion from " ++ ln1 ++ " to " ++ ln2 ++ " found")
 
 updateMorIndex :: MorId -> GMorphism -> GMorphism
 updateMorIndex i (GMorphism cid sign si mor _) = GMorphism cid sign si mor i
@@ -880,25 +886,10 @@ with intermediate inclusion -}
 compInclusion :: LogicGraph -> GMorphism -> GMorphism -> Result GMorphism
 compInclusion = genCompInclusion . inclusionAux False
 
--- | Find all (composites of) comorphisms starting from a given logic
+-- | Find compositions of comorphisms starting from a give logic
+-- | use wheted graph of logics to optimize search
 findComorphismPaths :: LogicGraph -> G_sublogics -> [AnyComorphism]
-findComorphismPaths lg (G_sublogics lid sub) =
-  nubOrd $ map fst $ iterateComp (0 :: Int) [(idc, [idc])]
-  where
-  idc = Comorphism (mkIdComorphism lid sub)
-  coMors = Map.elems $ comorphisms lg
-  -- compute possible compositions, but only up to depth 4
-  iterateComp n l =
-    if n > 2 || l == newL then newL else iterateComp (n + 1) newL
-    where
-    newL = nubOrd $ l ++ concatMap extend l
-    -- extend comorphism list in all directions, but no cylces
-    extend (coMor, cmps) =
-       let addCoMor c =
-            case compComorphism coMor c of
-              Nothing -> Nothing
-              Just c1 -> Just (c1, c : cmps)
-        in mapMaybe addCoMor $ filter (not . (`elem` cmps)) coMors
+findComorphismPaths lg gsubl = nubOrd $ findComorphismCompositions lg gsubl
 
 -- | graph representation of the logic graph
 logicGraph2Graph :: LogicGraph
@@ -923,8 +914,8 @@ logicGraph2Graph lg =
  }
 
 -- | finds first comorphism with a matching sublogic
-findComorphism :: Monad m => G_sublogics -> [AnyComorphism] -> m AnyComorphism
-findComorphism _ [] = fail "No matching comorphism found"
+findComorphism :: Fail.MonadFail m => G_sublogics -> [AnyComorphism] -> m AnyComorphism
+findComorphism _ [] = Fail.fail "No matching comorphism found"
 findComorphism gsl@(G_sublogics lid sub) (Comorphism cid : rest) =
     let l2 = sourceLogic cid in
     if Logic lid == Logic l2
@@ -1003,8 +994,275 @@ mirrorSquare s = Square {
                  rightTriangle = leftTriangle s}
 
 lookupSquare :: AnyComorphism -> AnyComorphism -> LogicGraph -> Result [Square]
-lookupSquare com1 com2 lg = maybe (fail "lookupSquare") return $ do
+lookupSquare com1 com2 lg = maybe (Fail.fail "lookupSquare") return $ do
   sqL1 <- Map.lookup (com1, com2) $ squares lg
   sqL2 <- Map.lookup (com2, com1) $ squares lg
   return $ nubOrd $ sqL1 ++ map mirrorSquare sqL2
   -- maybe adjusted if comparing AnyModifications change
+
+-- | algo for searching comorphism paths
+weight_limit :: Int
+weight_limit = 4
+
+times_logic_in_branch :: Int
+times_logic_in_branch = 3
+
+data SearchNode = SearchNode
+  { nodeId :: Int,
+    parentId :: Int,
+    logicName :: String,
+    -- to check wether comorphism already used in branch
+    usedComorphisms :: HSet.HashSet String,
+    -- number of time particular logic is used in branch
+    timesLogicUsed :: HMap.HashMap String Int,
+    -- all comorphism composition in current branch, latest one in the head of the list
+    cCompositions :: [AnyComorphism],
+    -- name of comorphism though wich we get this node from parent
+    comName :: String,
+    -- weight of comorphism leading to that node
+    comWeight :: Int
+  }
+  deriving (Show)
+
+data SearchState = SearchState
+  {
+    searchNodes :: HMap.HashMap Int SearchNode,
+    -- ids of nodes who are currently leaves in search tree
+    leaves :: HSet.HashSet Int,
+    -- distances of nodes in priority queues to root node
+    distance :: HMap.HashMap Int Int,
+    -- priority queue of nodes according their distances: higher distance - higher priority
+    pQueue :: Heap.MinPrioHeap Int Int,
+    -- map logic map to comorphis with it as source logic
+    logicToComorphisms :: HMap.HashMap String [String],
+    -- this field = <last node id in searchNodes> + 1.
+    -- used for proper id generation of children nodes
+    nextNodeId :: Int
+  }
+
+initState :: LogicGraph -> G_sublogics -> SearchState
+initState lg (G_sublogics lid sub) =
+  SearchState
+    { leaves = HSet.empty,
+      searchNodes =
+        HMap.fromList
+          [ ( 0,
+              SearchNode
+                0
+                (-1)
+                (language_name lid)
+                HSet.empty
+                HMap.empty
+                [Comorphism $ mkIdComorphism lid sub]
+                []
+                0
+            )
+          ],
+      distance = HMap.fromList [(0, 0)],
+      pQueue = Heap.fromList [(0, 0)],
+      logicToComorphisms = mapLogicsToComorphisms lg,
+      nextNodeId = 1
+    }
+
+findComorphismCompositions :: LogicGraph -> G_sublogics -> [AnyComorphism]
+findComorphismCompositions lg gsubl =
+  processSearchState lg (initState lg gsubl)
+
+processSearchState :: LogicGraph -> SearchState -> [AnyComorphism]
+processSearchState lg state@(SearchState ns ls _ pq _ _) = case Heap.view pq of
+  Nothing -> getComorphismCompositions ns ls
+  Just ((dist, nId), pq') ->
+    let curNode =
+          fromMaybe
+            ( error $
+                printf "processSearchState, incorrect nId=%d" nId
+            )
+            $ HMap.lookup nId ns
+        -- remove parent node from global map of nodes
+        -- as we don't need it there anymore so GC can utilize
+        -- it if required
+        ns' = HMap.delete (parentId curNode) ns
+        -- remove parent node from set of leaves and put current node there
+        ls' = HSet.insert nId $ HSet.delete (parentId curNode) ls
+     in processSearchState lg $
+          processNeighbours
+            lg
+            nId
+            dist
+            ( state
+                { searchNodes = ns',
+                  leaves = ls',
+                  pQueue = pq'
+                }
+            )
+
+getComorphismCompositions ::
+  HMap.HashMap Int SearchNode -> -- nodes of search graph
+  HSet.HashSet Int -> -- leaves in this graph
+  [AnyComorphism]
+getComorphismCompositions sNodes lvs =
+  let res =
+        concat $
+          map
+            ( \i ->
+                let leaf = HMap.lookup i sNodes
+                 in reverse $
+                      cCompositions $
+                        fromMaybe
+                          ( error $
+                              printf "getComorphismComositions, incorrect i=%d key for HashMap" i
+                          )
+                          $ leaf
+            )
+            $ HSet.toList $ lvs
+   in res
+
+getComorphism :: LogicGraph -> String -> AnyComorphism
+getComorphism lg cn =
+  fromMaybe (error (printf "getComorphism, incorrect comorphismName=%s key for HashMap" cn)) $
+    Map.lookup cn (comorphisms lg)
+
+getTargetLogicName :: AnyComorphism -> String
+getTargetLogicName (Comorphism cid) = language_name $ targetLogic cid
+
+-- | given node in tree generate candidate nodes and put them in priority queue
+processNeighbours :: LogicGraph -> Int -> Int -> SearchState -> SearchState
+processNeighbours lg nId dist state@(SearchState ns _ ds pq ltcs nni) =
+  let curNode =
+        fromMaybe (error $ printf "processNeighbours, incorrect nId=%d key for HashMap" nId) $
+          HMap.lookup nId ns
+      lName = logicName curNode
+      comCandidates = HMap.lookupDefault [] lName ltcs
+      comCandidates' = filter (\name -> not $ HSet.member name (usedComorphisms curNode)) comCandidates
+      -- create SearchNodes when possible due to restrictions and add ids later
+      -- this code can be expressed as map (create_SearchNode) $ filter (can_create_SearchNode?)
+      -- but implemented this way without map-filter separation
+      childrenNodes =
+        catMaybes $
+          map
+            ( \name ->
+                let c = getComorphism lg name
+                    targetLogicName = getTargetLogicName c
+                    tlu = HMap.lookupDefault 0 targetLogicName (timesLogicUsed curNode)
+                    newComposition =
+                      compComorphism (head $ cCompositions curNode) c
+                    cw = HMap.lookupDefault (maxWeight + 1) name comorphismWeight
+                 in if (isJust newComposition && tlu <= times_logic_in_branch && cw + dist <= weight_limit)
+                      then
+                        Just $
+                          SearchNode
+                            { nodeId = -1, -- dummy value for now, changed later in processNeighbours
+                              parentId = nId,
+                              logicName = targetLogicName,
+                              usedComorphisms = HSet.insert name (usedComorphisms curNode),
+                              timesLogicUsed = HMap.insert targetLogicName (tlu + 1) (timesLogicUsed curNode),
+                              cCompositions = (fromJust newComposition) : (cCompositions curNode),
+                              comName = name,
+                              comWeight = cw
+                            }
+                      else Nothing
+            )
+            comCandidates'
+
+      -- add ids to SearchNodes
+      (childrenNodes', next_nni) = foldl (\(acc, i) sn -> (sn{ nodeId = i } : acc, i + 1)) ([], nni) childrenNodes
+
+      -- update map of nodes
+      ns' = foldl (\_ns sn -> HMap.insert (nodeId sn) sn _ns) ns childrenNodes'
+      -- update distances in SearchState
+      ds' = foldl (\_ds sn -> HMap.insert (nodeId sn) (dist + comWeight sn) _ds) ds childrenNodes'
+      -- update priority queue
+      pq' = foldl (\_pq sn -> Heap.insert (dist + comWeight sn, nodeId sn) _pq) pq childrenNodes'
+   in state {searchNodes = ns', distance = ds', pQueue = pq', nextNodeId = next_nni}
+
+mapLogicsToComorphisms :: LogicGraph -> HMap.HashMap String [String]
+mapLogicsToComorphisms lg =
+  foldr
+    ( \(cName, Comorphism cId) acc ->
+        let sourceLogicName = language_name $ sourceLogic cId
+            l = HMap.lookupDefault [] sourceLogicName acc
+         in HMap.insert sourceLogicName (cName : l) acc
+    )
+    HMap.empty
+    $ Map.toList $ comorphisms lg
+
+-- | assign weights to comorphisms
+
+maxWeight :: Int
+maxWeight = 5
+
+comorphismWeight :: HMap.HashMap String Int
+comorphismWeight =
+  HMap.fromList
+    [ ("CASL2CoCASL", 5),
+      ("CASL2CspCASL", 5),
+      ("CASL2ExtModal", 5),
+      ("CASL2HasCASL", 5),
+      ("CASL2Hybrid", 5),
+      ("CASL2Modal", 5),
+      ("CASL2VSE", 5),
+      ("CASL2VSEImport", 5),
+      ("CASL2VSERefine", 5),
+      ("HasCASL2IsabelleDeprecated", 5),
+      ("OWL22NeSyPatterns", 5),
+      ("CASL_DL2CASL", 4),
+      ("CASL2Propositional", 4),
+      ("CASL2OWL", 4),
+      ("OWL22CommonLogic", 4),
+      ("Propositional2CommonLogic", 4),
+      ("Propositional2OWL2", 4),
+      ("Propositional2QBF", 4),
+      ("SoftFOL2CommonLogic", 4),
+      ("THFP_P2HasCASL", 3),
+      ("CspCASL2Modal", 3),
+      ("OWL22CASL", 2),
+      ("Propositional2CASL", 2),
+      ("CoCASL2Isabelle", 2),
+      ("CommonLogic2Isabelle", 2),
+      ("CASL2Isabelle", 2),
+      ("CommonLogicModuleElimination", 2),
+      ("CspCASL2CspCASL_Failure", 2),
+      ("CspCASL2CspCASL_Trace", 2),
+      ("HasCASL2IsabelleOption", 2),
+      ("THFP2THF0", 2),
+      ("THFP_P2THFP", 2),
+      ("Adl2CASL", 1),
+      ("CASL2NNF", 1),
+      ("CASL2PCFOL", 1),
+      ("CASL2PCFOLTopSort", 1),
+      ("CASL2Prenex", 1),
+      ("CASL2Skolem", 1),
+      ("CASL2SoftFOL", 1),
+      ("CASL2SoftFOLInduction", 1),
+      ("CASL2SoftFOLInduction2", 1),
+      ("CASL2SubCFOL", 1),
+      ("CASL2SubCFOLNoMembershipOrCast", 1),
+      ("CASL2SubCFOLSubsortBottoms", 1),
+      ("CASL2TPTP_FOF", 1),
+      ("CLFol2CFOL", 1),
+      ("CLFull2CFOL", 1),
+      ("CLImp2CFOL", 1),
+      ("CLSeq2CFOL", 1),
+      ("CoCASL2CoPCFOL", 1),
+      ("CoCASL2CoSubCFOL", 1),
+      ("CSMOF2CASL", 1),
+      ("DFOL2CASL", 1),
+      ("DMU2OWL2", 1),
+      ("ExtModal2CASL", 1),
+      ("ExtModal2ExtModalNoSubsorts", 1),
+      ("ExtModal2ExtModalTotal", 1),
+      ("ExtModal2HasCASL", 1),
+      ("ExtModal2OWL", 1),
+      ("ExtModal2OWL", 1),
+      ("HasCASL2HasCASLPrograms", 1),
+      ("HasCASL2THFP_P", 1),
+      ("HolLight2Isabelle", 1),
+      ("Hybrid2CASL", 1),
+      ("Maude2CASL", 1),
+      ("Modal2CASL", 1),
+      ("MonadicTranslation", 1),
+      ("NormalisingTranslation", 1),
+      ("QBF2Propositional", 1),
+      ("QVTR2CASL", 1),
+      ("RelScheme2CASL", 1)
+    ]

@@ -88,5 +88,5 @@ myDataToXml d =
 class ToXml a where
   asXml :: a -> Element
 
-instance Data a => ToXml a where
+instance {-# OVERLAPPABLE #-} Data a => ToXml a where
   asXml = myDataToXml . normalizeMyDataForSerialization . dataToMyData

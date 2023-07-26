@@ -12,6 +12,7 @@ utilities for writing new rules.
 
 module RuleUtils where
 
+import Prelude hiding ((<>))
 import Text.PrettyPrint.HughesPJ
 import DataP (Statement (..), Data (..), Type (..), Class,
               Body (..), Constructor)
@@ -74,8 +75,6 @@ commentBlock x = text "{-" <+> x <+> text "-}"
 
 -- Instances
 
-strippedName :: Data -> String
-strippedName = reverse . takeWhile (/= '.') . reverse . name
 
 -- instance header, handling class constraints etc.
 simpleInstance :: Class -> Data -> Doc
@@ -83,7 +82,7 @@ simpleInstance s d = hsep [text "instance"
                 , opt1 constr (\ x -> parenList x <+> text "=>")
                        ( \ x -> x <+> text "=>")
                 , text s
-                , opt1 (texts (strippedName d : vars d)) parenSpace id]
+                , opt1 (texts (name d : vars d)) parenSpace id]
    where
    constr = map (\ v -> text "Ord" <+> text v)
             (concatMap getSetVars . concatMap types $ body d)

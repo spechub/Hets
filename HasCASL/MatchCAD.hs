@@ -52,7 +52,7 @@ dmHeader :: String
 dmHeader = unlines
            [ "Usage: matchcad [OPTION...] [file]"
                   , ""
-                  , "matchcad /tmp/flange.het -sMatch -pFlangePattern -dComponent"
+                  , "matchcad /tmp/flange.dol -sMatch -pFlangePattern -dComponent"
                   , ""
                   ]
 

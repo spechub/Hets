@@ -120,7 +120,7 @@ addNSMapToEnv e ln nm nsm =
     e { nsymbMap = Map.insert (ln, nm) nsm $ nsymbMap e }
 
 lookupLib :: ImpEnv -> IRI -> Maybe (LibName, DGraph)
-lookupLib e u = Map.lookup (rmSuffix $ iriPath u) $ libMap e
+lookupLib e u = Map.lookup (rmSuffix $ show $ iriPath u) $ libMap e
 
 
 lookupNode :: ImpEnv -> CurrentLib -> IriCD
@@ -163,7 +163,7 @@ rPut2 e = rPutIfVerbose e 2
 -- * IRI Functions
 
 readFromURL :: (FilePath -> IO a) -> IRI -> IO a
-readFromURL f u = if isFileIRI u then f $ iriPath u
+readFromURL f u = if isFileIRI u then f $ show $ iriPath u
                   else error $ "readFromURL: Unsupported IRI-scheme "
                            ++ iriScheme u
 
@@ -173,7 +173,7 @@ toIRI s = case parseIRIReference s of
             _ -> error $ "toIRI: can't parse as iri " ++ s
 
 libNameFromURL :: String -> IRI -> LibName
-libNameFromURL s u = setFilePath (iriPath u) $ emptyLibName s
+libNameFromURL s u = setFilePath (show $ iriPath u) $ emptyLibName s
 
 -- | Compute an absolute IRI for a supplied IRI relative to the given filepath.
 resolveIRI :: IRI -> FilePath -> IRI
@@ -221,7 +221,7 @@ getLogicFromMeta mCD =
 cdInLib :: IriCD -> LibName -> Bool
 cdInLib ucd ln = case getIri ucd of
                    Nothing -> True
-                   Just url -> isFileIRI url && getFilePath ln == iriPath url
+                   Just url -> isFileIRI url && getFilePath ln == (show $ iriPath url)
 
 
 -- * Main translation functions

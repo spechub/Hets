@@ -46,6 +46,7 @@ import Text.ParserCombinators.Parsec
 import Text.XML.Light
 
 import Control.Monad.Trans (MonadIO (..))
+import qualified Control.Monad.Fail as Fail
 import Data.List
 
 import UML.ParseUMLAsLibDefn
@@ -56,6 +57,7 @@ mimeTypeMap =
   [ ("xml", DgXml)
   , ("html", HtmlIn)
   , ("rdf", OWLIn RdfXml)
+  , ("ofn", OWLIn Functional)
   , ("owl", OWLIn OwlXml)
   , ("obo", OWLIn OBO)
   , ("ttl", OWLIn Turtle)
@@ -84,7 +86,8 @@ findFiletype :: String -> InType
 findFiletype s =
   maybe GuessIn snd $ find (\ (r, _) -> isInfixOf ('/' : r) s) mimeTypeMap
 
-guessInput :: MonadIO m => HetcatsOpts -> Maybe String -> FilePath -> String
+guessInput :: (MonadIO m, Fail.MonadFail m) =>
+  HetcatsOpts -> Maybe String -> FilePath -> String
   -> m InType
 guessInput opts mr file input =
   let fty1 = guess file (intype opts)
@@ -92,9 +95,9 @@ guessInput opts mr file input =
       fty = joinFileTypes fty1 fty2
   in if elem fty $ GuessIn : DgXml : owlXmlTypes then
     case guessXmlContent (fty == DgXml) input of
-    Left ty -> fail ty
+    Left ty -> Fail.fail ty
     Right ty -> case ty of
-      DgXml -> fail "unexpected DGraph xml"
+      DgXml -> Fail.fail "unexpected DGraph xml"
       _ -> return $ joinFileTypes fty ty
   else return fty
 
@@ -105,7 +108,7 @@ readLibDefn :: LogicGraph -> HetcatsOpts -> Maybe String
   -> FilePath -> FilePath -> String -> ResultT IO [LIB_DEFN]
 
 readLibDefn lgraph opts mr file fileForPos input =
-    if null input then fail ("empty input file: " ++ file) else
+    if null input then Fail.fail ("empty input file: " ++ file) else
     case intype opts of
     ATermIn _ -> return [from_sml_ATermString input]
     FreeCADIn ->
@@ -113,7 +116,7 @@ readLibDefn lgraph opts mr file fileForPos input =
     _ -> do
      ty <- guessInput opts mr file input
      case ty of
-      HtmlIn -> fail "unexpected html input"
+      HtmlIn -> Fail.fail "unexpected html input"
       CommonLogicIn _ -> parseCL_CLIF file opts
 #ifdef RDFLOGIC
      -- RDFIn -> liftIO $ parseRDF file
@@ -123,13 +126,13 @@ readLibDefn lgraph opts mr file fileForPos input =
                                         Nothing -> error "empty XMI" 
                                         Just e -> case isUMLCDroot e of 
                                             True -> parseUMLCDasLibDefn file
-                                            False ->  parseXmi file 
-      Qvt -> liftIO $ fmap (: []) $ parseQvt file
+                                            False ->  parseXmi file input
+      Qvt -> liftIO $ fmap (: []) $ parseQvt file input
       TPTPIn -> parseTPTP opts file input
 #ifndef NOOWLLOGIC
       OWLIn _ -> parseOWLAsLibDefn (isStructured opts) file
 #endif
-      _ -> case runParser (library lgraph { dolOnly = ty == DOLIn })
+      _ -> case runParser (library lgraph { dolOnly = False })
            (emptyAnnos ()) fileForPos input of
-         Left err -> fail (showErr err)
+         Left err -> Fail.fail (showErr err)
          Right ast -> return [ast]

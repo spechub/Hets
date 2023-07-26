@@ -1,68 +1,184 @@
 sudo: required
-dist: trusty
-language: generic
-cache:
-  directories:
-  - $HOME/.stack
-  - $HOME/Hets-lib
-  - ./.stack-work
+dist: bionic
+language: minimal
+
 addons:
   apt:
     sources:
       - sourceline: ppa:hets/hets
-    packages:
-      - libgmp-dev
-      - latexmk
-      - software-properties-common
-      - dpkg-dev
-      - spass
-      - darwin
-      - openjdk-7-jdk
-before_install:
-  # Download and unpack the stack executable
-  - mkdir -p ~/.local/bin
-  - export PATH=$HOME/.local/bin:$PATH
-  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64 | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+
+
+# here 'git clone ...' happens
+
+
+env:
+  global:
+    # Set to 1 to skip the related stage
+    - SKIP_STACK=0  SKIP_BUILD=0  SKIP_TEST=0  SKIP_HADDOCK=0
+
+    # Unset to disable caching of native packages
+    - PKG_CACHE=/var/tmp/pkgs
+    # Unset to use dumb travis-ci caches, only (which usually breaks this or
+    # that jobs, because "artifacts" need to be rebuilt which takes more than
+    # 50 min and thus hits the time limit for non-private jobs and gets killed).
+    - SMART_CACHE=1
+    # Prevent building docs. Uncomment to build them.
+    - NO_DOCS=1
+    # Upload a copy of the build dir before and after syncing with the repo
+    #- MKDBG=1
+
+    # Uncomment the next line to build w/o stack
+    - STACK_ROOT=/var/tmp/stack
+
+    # Here we build and cache builds
+    - HETS_BASEDIR=/var/tmp/hets HETS_BUILD_DIR=${HETS_BASEDIR}/build
+
+    - PREFIX=/tmp/hets-install
+    - PATH=${PREFIX}/bin:${STACK_ROOT}/bin:${PATH}
+    - HETS_LIB=/var/tmp/Hets-lib
+    - HETS_MAGIC=${TRAVIS_BUILD_DIR}/magic/hets.magic
+    - TH=utils/travis-helper.sh
+
+
+cache:
+  # we push a lot, so 180s are sometimes not enough ...
+  timeout: 600
+  directories:
+  - ${STACK_ROOT:-/empty}
+  - ${PKG_CACHE:-/empty}
+  - ${HETS_LIB}
+  - ${HETS_BASEDIR}
+
 install:
-  - sudo apt-get install --no-install-recommends `dpkg-checkbuilddeps debian/control 2>&1 | cut -f3- -d":" | sed -e 's,([^)]*),,g' -e 's,openjdk-.*-jdk,,'` || true
-matrix:
+  - set >/tmp/set
+  - date '+%s' >/tmp/timestamp ; date
+  - ${TH} myShowCacheUsage
+  # because the context is important, we need to call 'set' explicitly _here_
+  - ls -al ${HOME}/.casher
+  - ${TH} myShowInfo short
+  - ${TH} myCheckStack
+  - ${TH} myGetMissingPkgs
+  - ${TH} myCheckHetslib
+
+before_cache:
+  - ksh -c 'printf "%(%s)T\n" now ; printf "%T\n" now'
+  - ${TH} myBefore_cache
+  - ${TH} myShowCacheUsage
+
+after_script:
+  - ksh -c 'printf "%(%s)T\n" now ; printf "%T\n" now'
+  - ls -al ${HOME}/.casher
+
+
+jobs:
   include:
-    - env: WITH_MAKE_CHECK=1
-    - env: WITH_HETS_LIB=1
-before_script:
-  - |
-    if [ -d $HOME/Hets-lib/.git ]
-    then
-      pushd $HOME/Hets-lib
-      git pull
-      popd
-    else
-      git clone --depth=1 https://github.com/spechub/Hets-lib.git $HOME/Hets-lib
-    fi
-script:
-  # For some reason, Travis CI sets this environment variable, which breaks the
-  # tests (_JAVA_OPTIONS=-Xmx2048m -Xms512m)
-  - unset _JAVA_OPTIONS
+    # .1
+    - stage: Stack
+      if: env(STACK_ROOT) IS present AND env(SKIP_STACK) != 1
+      before_install:
+        - echo stack >/tmp/JOB_NAME
+      script:
+        - ${TH} myPrepareBuildDir
+        - cd ${HETS_BUILD_DIR}
+        # Compile Hets
+        - make stack && touch ${STACK_ROOT}/bin/stack.done
+        - stack exec -- ghc -V
 
-  # Prepare to run Hets
-  - export HETS_MAGIC=$PWD/magic/hets.magic
 
-  # Compile Hets
-  - make stack
-  - stack exec -- ghc -V
-  - make
-  - ./hets -V
+    # .2
+    - stage: Build
+      if: type != push AND env(SKIP_BUILD) != 1
+      before_install:
+        - echo server >/tmp/JOB_NAME
+      script:
+        - ${TH} myPrepareBuildDir
+        - cd ${HETS_BUILD_DIR}
+        - utils/travisKnockKnock.sh -t 180 -i 15 -s 5120 -c 'make hets_server.bin' -x hets_server.bin
+        - ./hets_server.bin -V
 
-  # Run hets through Hets-lib
-  # Install Hets - this does not need to recompile Hets
-  - if [ -n "$WITH_HETS_LIB" ]; then export HETS_LIB=$HOME/Hets-lib; fi
-  - if [ -n "$WITH_HETS_LIB" ]; then export PREFIX=/tmp/hets-install; fi
-  - if [ -n "$WITH_HETS_LIB" ]; then export PATH=$PREFIX/bin:$PATH; fi
-  - if [ -n "$WITH_HETS_LIB" ]; then mkdir -p $PREFIX; fi
-  - if [ -n "$WITH_HETS_LIB" ]; then make install-hets; fi
-  - if [ -n "$WITH_HETS_LIB" ]; then make install-common; fi
-  - if [ -n "$WITH_HETS_LIB" ]; then make install-owl-tools; fi
-  - if [ -n "$WITH_HETS_LIB" ]; then test/hets-lib-check.sh; fi
+    # .3
+    - stage: Build
+      if: type != push AND env(SKIP_BUILD) != 1
+      before_install:
+        - echo desktop >/tmp/JOB_NAME
+      script:
+        - ${TH} myPrepareBuildDir
+        - cd ${HETS_BUILD_DIR}
+        - utils/travisKnockKnock.sh -t 180 -i 15 -s 5120 -c 'make hets.bin' -x hets.bin
+        - ./hets.bin -V
 
-  # Run make check
-  - if [ -n "$WITH_MAKE_CHECK" ]; then make check; fi
+    # owl is cheap - build on demand
+
+
+    # .4
+    - stage: test
+      if: type != push AND env(SKIP_TEST) != 1
+      before_install:
+        - echo check >/tmp/JOB_NAME
+      script:
+        - ${TH} myPrepareBuildDir
+        - cd ${HETS_BUILD_DIR}
+        # Run the test (make install not needed for this test)
+        - make check
+
+    # .5
+    - stage: test
+      if: type != push AND env(SKIP_TEST) != 1
+      before_install:
+        - echo hets-lib >/tmp/JOB_NAME
+      script:
+        - ${TH} myPrepareBuildDir
+        - cd ${HETS_BUILD_DIR}
+        - touch hets_server.bin
+        - utils/travisKnockKnock.sh -t 180 -i 15 -s 5120
+        - hets -V
+        # Run hets through Hets-lib
+        # Install Hets - this does not need to recompile Hets
+        - test/hets-lib-check.sh
+
+    # .6
+    - stage: test
+      if: type != push AND env(SKIP_TEST) != 1
+      before_install:
+        - echo pg >/tmp/JOB_NAME
+      script:
+        - ${TH} myShutdownPgDB
+        - ${TH} myPrepareBuildDir
+        - cd ${HETS_BUILD_DIR}
+        - touch hets.bin
+        - ksh93 utils/travisKnockKnock.sh -t 180 -i 15 -s 5120
+        - hets-server -V
+        # For some reason, Travis CI sets this environment variable, which
+        # breaks tests (_JAVA_OPTIONS=-Xmx2048m -Xms512m)
+        - unset _JAVA_OPTIONS
+        # Run hets_server through Hets-lib
+        # Install Hets - this does not need to recompile Hets
+        - test/hets-lib-database-check.sh 'PostgreSQL'
+
+    # .7
+    - stage: test
+      if: type != push AND env(SKIP_TEST) != 1
+      before_install:
+        - echo sqlite >/tmp/JOB_NAME
+      script:
+        - ${TH} myPrepareBuildDir
+        - cd ${HETS_BUILD_DIR}
+        - touch hets_server.bin
+        - utils/travisKnockKnock.sh -t 180 -i 15 -s 5120
+        - hets -V
+        # Run hets through Hets-lib
+        # Install Hets - this does not need to recompile Hets
+        - test/hets-lib-database-check.sh 'SQLite'
+
+    # .8
+    - stage: test
+      # docs can be buid in parallel to testing to safe a little bit time.
+      # Furthermore we do not want generated docs go into the travis-cache.
+      if: env(SKIP_HADDOCK) != 1
+      before_install:
+        - echo haddock >/tmp/JOB_NAME
+      script:
+        - ${TH} myPrepareBuildDir
+        - cd ${HETS_BUILD_DIR}
+        - make docs
+        - ${TH} myUploadDocs

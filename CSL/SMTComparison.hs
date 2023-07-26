@@ -161,7 +161,7 @@ smtVarConstraint' :: VarEnv -> String
 smtVarConstraint' m = h l where
     h [] = ""
     h l' = concat ["(assert (and ", concat l' , "))"]
-    l = Map.foldWithKey f [] $ varmap m
+    l = Map.foldrWithKey f [] $ varmap m
     g k = case Map.lookup k $ vartypes m of
             Just br -> ' ' : smtBoolExp br
             Nothing -> ""
@@ -224,7 +224,7 @@ emptyVarEnv mHdl =  VarEnv { varmap = Map.empty
 
 -- | Type alias and subtype definitions for the domain of the extended params
 smtTypeDef :: VarEnv -> String
-smtTypeDef m = Map.foldWithKey f "" $ varmap m
+smtTypeDef m = Map.foldrWithKey f "" $ varmap m
     where g k a = case Map.lookup k $ vartypes m of
                     Just br ->
                         concat [ "(define-type t", show a, " (subtype (x"
