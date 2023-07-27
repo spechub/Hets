@@ -21,6 +21,8 @@ import Text.ParserCombinators.Parsec.Pos (initialPos)
 
 import Data.Char
 
+import qualified Control.Monad.Fail as Fail
+
 data WhiteWord = WhiteWord
   { leading :: String -- ^ leading white space
   , word :: String }
@@ -72,7 +74,7 @@ parseArgument = do
 
 parseCommand :: [String] -> Parser String
 parseCommand cmd = case cmd of
-   [] -> fail ""
+   [] -> Fail.fail ""
    [c] -> string c
    c : r -> do
      string c

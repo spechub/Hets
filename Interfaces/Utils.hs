@@ -36,7 +36,7 @@ import Interfaces.History
 import Control.Monad (unless, filterM)
 
 import Data.Graph.Inductive.Graph
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (isNothing)
 import Data.List
 import Data.IORef
 
@@ -61,7 +61,6 @@ import Comorphisms.LogicGraph (logicGraph)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Common.IRI
-import Common.Utils (splitOn)
 import Common.Result
 import Common.LibName
 import qualified Common.Lib.SizedList as SizedList
@@ -69,6 +68,8 @@ import Common.Consistency
 import Common.ExtSign
 import Common.AS_Annotation (SenAttr (..), makeNamed, mapNamed)
 import qualified Common.Doc as Pretty
+import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 
 #ifdef UNI_PACKAGE
@@ -122,7 +123,7 @@ tryRemoveAbsolutePathComponent :: String -> IO String
 tryRemoveAbsolutePathComponent f
    | "/" `isPrefixOf` f = do
                            dir <- getCurrentDirectory
-                           return $ fromMaybe f (stripPrefix (dir ++ "/") f)
+                           return $ tryToStripPrefix (dir ++ "/") f
    | otherwise = return f
 
 -- Converts a list of proof-trees to a prove
@@ -217,18 +218,18 @@ conservativityChoser :: Bool -> [ConservativityChecker sign sentence morphism]
   -> IO (Result (ConservativityChecker sign sentence morphism))
 #ifdef UNI_PACKAGE
 conservativityChoser useGUI checkers = case checkers of
-  [] -> return $ fail "No conservativity checker available"
+  [] -> return $ Fail.fail "No conservativity checker available"
   hd : tl ->
     if useGUI && not (null tl) then do
       chosenOne <- listBox "Pick a conservativity checker"
                                 $ map checkerId checkers
       case chosenOne of
-        Nothing -> return $ fail "No conservativity checker chosen"
+        Nothing -> return $ Fail.fail "No conservativity checker chosen"
         Just i -> return $ return $ checkers !! i
    else
 #else
 conservativityChoser _ checkers = case checkers of
-  [] -> return $ fail "No conservativity checker available"
+  [] -> return $ Fail.fail "No conservativity checker available"
   hd : _ ->
 #endif
    return $ return hd
@@ -368,7 +369,7 @@ updateNodeProof ln ost (k, dgnode) thry =
         let le = i_libEnv iist
             dg = lookupDGraph ln le
             nn = getDGNodeName dgnode
-            newDg = computeDGraphTheories le $ changeDGH dg
+            newDg = computeDGraphTheories le ln $ changeDGH dg
               $ SetNodeLab dgnode (k, dgnode { dgn_theory = thry })
             history = reverse $ flatHistory $ snd $ splitHistory dg newDg
             nst = add2history

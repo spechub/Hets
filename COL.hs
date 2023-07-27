@@ -1,4 +1,9 @@
-{- | Unfinished attempt to integrate constructor-based observational logic
+{- |
+Description :  Constructor-based observational logic (unfinished)
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Unfinished attempt to integrate constructor-based observational logic
 (COL) into Hets.
 Description: Unfinished attempt to integrate constructor-based
              observational logic

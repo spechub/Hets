@@ -230,5 +230,5 @@ myDataToJson md =
 class ToJson a where
   asJson :: a -> Json
 
-instance Data a => ToJson a where
+instance {-# OVERLAPPABLE #-} Data a => ToJson a where
   asJson = myDataToJson . normalizeMyDataForSerialization . dataToMyData

@@ -235,13 +235,23 @@ https://www.debian.org/doc/debian-policy/ch-source.html#s-debianrules
 and basically do, what the document says they should do.
 
 
-Package-Versioning: A.B.C-n.m.r[.c]*
-====================================
+Package-Versioning: A.B.C[.D.E]-n.m.r[.c]*
+==========================================
 Actually for each intended package publication on the PPA, the related commit
-should be either propperly tagged OR ./version_nr should be updated using
+should be either propperly tagged OR `Driver/Version.hs` should be updated using
 a number tripple with no leading zero[s] (see semantic versioning). For now it
 is a twin pack only and thus we always add a '.1' and get "A.B.1" as our first
 part (in debian terms the "upstream_version").
+
+The optional .D.E part is used for unreleased versions/current builds of
+the master branch. For D the numbers 0..5 are reserved for us (hets maintainer),
+and might be used to express e.g. nightly, alpha, beta, RC, or FCS builts.
+All other numbers can be used as needed by people/organizations/etc., which
+build their own hets packages. This way they are always able to let their own
+packages supersede packages built by hets developers/PPA without violating the
+version semantics and still get next releases (A.B.C+1) w/o having to do
+anything. On [new] releases we set .D.E back to .0.0 and thus gets ommitted
+(more than 3 numbers: trailing zero pairs get deleted).
 
 The second part (in debian terms the "debian_revision") is made of the string
 n.m.r[.c] whereby n denotes number of pkg build modification count wrt. the

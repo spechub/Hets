@@ -13,6 +13,8 @@ OWL 2 signature and sentences
 
 module OWL2.Sign where
 
+
+import Common.IRI
 import OWL2.AS
 
 import qualified Data.Set as Set
@@ -35,7 +37,7 @@ data Sign = Sign
               -- data properties
             , annotationRoles :: Set.Set AnnotationProperty
               -- annotation properties
-            , individuals :: Set.Set Individual  -- named individuals
+            , individuals :: Set.Set NamedIndividual  -- named individuals
             , labelMap :: Map.Map IRI String -- labels (for better readability)
             , prefixMap :: PrefixMap
             } deriving (Show, Typeable, Data)

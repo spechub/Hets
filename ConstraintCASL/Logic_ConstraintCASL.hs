@@ -9,13 +9,15 @@ Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  portable
 
-Here is the place where the class Logic is instantiated for CASL.
+Here is the place where the class Logic is instantiated for Constraint CASL.
    Also the instances for Syntax an Category.
 -}
 
 module ConstraintCASL.Logic_ConstraintCASL where
 
 import Logic.Logic
+
+import Common.DocUtils
 
 import ConstraintCASL.AS_ConstraintCASL
 import ConstraintCASL.Formula
@@ -46,8 +48,8 @@ instance Syntax ConstraintCASL ConstraintCASLBasicSpec
                 Symbol SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parse_basic_spec ConstraintCASL = Just $ basicSpec constraintKeywords
-         parse_symb_items ConstraintCASL = Just $ symbItems []
-         parse_symb_map_items ConstraintCASL = Just $ symbMapItems []
+         parse_symb_items ConstraintCASL = Just . const $ symbItems []
+         parse_symb_map_items ConstraintCASL = Just . const $ symbMapItems []
 
 -- lattices (for sublogics) is missing
 
@@ -55,6 +57,7 @@ instance Sentences ConstraintCASL ConstraintCASLFORMULA
                    ConstraintCASLSign ConstraintCASLMor Symbol where
       map_sen ConstraintCASL m = return . mapSen (const id) m
       sym_of ConstraintCASL = symOf
+      symKind ConstraintCASL = show . pretty . symbolKind . symbType
       symmap_of ConstraintCASL = morphismToSymbMap
       sym_name ConstraintCASL = symName
 

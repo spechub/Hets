@@ -3,49 +3,54 @@ Section: misc
 Priority: optional
 Maintainer: Hets packaging team Uni Bremen/Magdeburg <hets-devel@informatik.uni-bremen.de>
 Build-Depends:
- dpkg, dpkg-dev,
- ghc (>= 7.6.3),
- happy,
- ghc-haddock,
- libghc-parsec3-dev,
- libghc-tar-dev,
- libghc-glade-dev,
- libghc-haskeline-dev,
- libghc-hexpat-dev,
- libghc-http-dev,
- libghc-fgl-dev,
- libghc-xml-dev,
- libghc-aterm-dev,
- libghc-uni-udrawgraph-dev,
- libghc-wai-extra-dev,
- libghc-warp-dev,
- libghc-random-dev,
- libghc-haxml-dev,
- ant,
- openjdk-7-jdk | openjdk-8-jdk,
- ksh,
- zip,
- xz-utils,
- tar,
- texlive-latex-base,
- texlive-latex-extra,
- texlive-pictures,
- texlive-fonts-recommended
+ dpkg-dev, lsb-release,
+ openjdk-7-jdk | openjdk-8-jdk-headless, ant,
+ ksh, perl-base, tar, xz-utils, zip,
+ texlive-latex-base, texlive-latex-extra, texlive-fonts-recommended, latexmk,
+ libmysqlclient-dev,
+ ghc-haddock, libghc-missingh-dev,
+ ghc (>= 7.10.3), happy,
+ libghc-haxml-dev, libghc-tar-dev, libghc-random-dev, libghc-parsec3-dev,
+ libghc-fgl-dev, libghc-xml-dev,
+ libghc-http-dev, libghc-warp-dev, libghc-wai-extra-dev,
+ libghc-split-dev, libghc-file-embed-dev, libghc-monad-logger-dev,
+ libghc-yaml-dev, libghc-esqueleto-dev (>= 2.5.3),
+ libghc-persistent-dev (>= 2.7.0), libghc-persistent-template-dev (>= 2.5.2),
+ libghc-persistent-postgresql-dev (>= 2.6.1),
+ libghc-persistent-sqlite-dev (>= 2.6.2),
+ libghc-persistent-mysql-dev,
+ libghc-hexpat-dev, libghc-aterm-dev,
+ libghc-uni-udrawgraph-dev, libghc-gtk-dev,
+# Previous two packages are only required to build the desktop version.
+ libghc-http-client-dev (>= 0.5.7.1), libghc-http-client-tls-dev (>= 0.3.5.1),
+# Since focal/jammy (0.107.0)
+ libghc-network-bsd-dev, libghc-relation-dev,
+# For testing the build, but not required to build.
+ vampire, darwin, eprover
+Build-Conflicts: libghc-gtk3-dev
 Standards-Version: 3.9.3
 Homepage: https://github.com/spechub/Hets
 
 Package: hets-common
-Architecture: all
-Depends: libc6, libgcc1, libstdc++6
+Architecture: amd64
+Depends: hets-libs,
+ libatomic1, libc6, libssl1.1, libexpat1, libffi7, libgmp10, libmysqlclient21,
+ libpcre3, libsqlite3-0, libyaml-0-2, zlib1g, libzstd1,
+ openjdk-8-jre-headless | openjdk-7-jre-headless,
+ ksh, graphviz, wget, patch, file, perl,
+ owltools, darwin, eprover, spass
 Description: Data used by the hets-server as well as hets-desktop package.
- This package contains the intersection of architecture independent libraries,
- supporting scripts and other data of the hets-server and hets-desktop working
- set. It also contains some hets related user guides and basic papers which may
- help to dive into hets. For more information about hets see http://hets.eu/.
+ This meta package contains the intersection of the package dependency sets of
+ the hets-server and hets-desktop.
 
 Package: hets-desktop
-Architecture: i386 amd64
-Depends: hets-common, hets-libs, owltools, ksh, darwin, eprover, spass, openjdk-8-jre | openjdk-7-jre, graphviz, wget, patch, file, perl, udrawgraph [i386] | udrawgraph:i386 [amd64],    libatk1.0-0, libc6, libffi6, libgdk-pixbuf2.0-0, libglade2-0, libglib2.0-0, libgmp10, libgtk2.0-0, libpango-1.0-0, libtinfo5
+Architecture: amd64
+Depends: hets-common,
+ libatk1.0-0, libcairo2, libfontconfig1,
+ libfreetype6, libgtk2.0-0, libgdk-pixbuf2.0-0, libglib2.0-0, libharfbuzz0b,
+ libpango-1.0-0, libpangocairo-1.0-0, libpangoft2-1.0-0, libtinfo6,
+ udrawgraph:i386 | udrawgraph:amd64
+Recommends: tk
 Description: The Heterogeneous Tool Set (hets) - desktop version.
  This package contains the desktop version of the Heterogeneous Tool Set (hets).
  Hets is a parsing, static analysis and proof management tool combining
@@ -57,8 +62,9 @@ Description: The Heterogeneous Tool Set (hets) - desktop version.
  translations. Hence, Hets is based on a graph of logics and languages.
 
 Package: hets-server
-Architecture: i386 amd64
-Depends: hets-common, hets-libs, owltools, ksh, darwin, eprover, spass, openjdk-8-jre-headless | openjdk-7-jre-headless, graphviz, wget, patch, file, perl,    libc6, libffi6, libgmp10
+Architecture: amd64
+Depends: hets-common,
+ libpq5
 Description: The Heterogeneous Tool Set (hets) - server version.
  This package contains the server version of the Heterogeneous Tool
  Set (hets).  Hets is a parsing, static analysis and proof management
@@ -75,30 +81,32 @@ Description: The Heterogeneous Tool Set (hets) - server version.
  appropriate for server environments.
 
 ############################################################################
-# TBD: hets-provers, hets-desktop-all, hets-server-all
+# MetaPackages: hets-provers, hets-desktop-all, hets-server-all
 ############################################################################
 Package: hets-provers
-Architecture: i386 amd64
-Depends:     cvc3, darwin, edarwin, eprover, fact++, hol-light, maude, minisat, spass, z3
-# 	TBD: cvc3 -> cvc4, edarwin -> e-darwin, ekrhyper (n/a), leo2 (n/a), kodkodi (n/a), satallax (n/a), twelf (n/a), yices (n/a), zchaff (n/a)
-#	NOTE: z3 @since 15.10, darwin/edarwin/eprover (PPA)
+Architecture: amd64
+Depends:     cvc-47, darwin, e-darwin, e-krhyper, eprover, fact++, hol-light, leo2, maude, minisat, pellet, satallax, spass, vampire, yices, z3, zchaff
+# 	Optional: kodkodi (n/a), twelf (n/a)
 Description: Provers for Hets.
  This meta-package bundles all known provers which might be useful in hets
  related environments. It is just for convinience to be able to install all
  prover packages at once (and find out later the details).
 
 Package: hets-desktop-all
-Architecture: i386 amd64
-Depends: hets-desktop, hets-provers, pellet, isabelle-installer
+Architecture: amd64
+Depends: hets-desktop, hets-provers
+#	Optional: isabelle-installer
 # TBD: protege4 (n/a), protege4-plugins (n/a)
 Description: The Heterogeneous Tool Set (hets) - desktop plus.
  This is a meta-package which pulls in the hets-desktop as well as all any
  other known package, which might be helpful when dealing with hets.
 
 Package: hets-server-all
-Architecture: i386 amd64
-Depends: hets-server, hets-provers, pellet, isabelle-installer
+Architecture: amd64
+Depends: hets-server, hets-provers
+#	Optional: isabelle-installer
 Description: The Heterogeneous Tool Set (hets) - server plus.
  This is a meta-package which pulls in the hets-server as well as all any
  other known non-GUI package, which might be helpful when using hets as a
  service.
+# EOMP

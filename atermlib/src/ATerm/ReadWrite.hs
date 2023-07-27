@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {- |
 Module      :  ./atermlib/src/ATerm/ReadWrite.hs
 Description :  read and write ATerms to and from strings
@@ -46,6 +47,10 @@ module ATerm.ReadWrite (
 
         accidental support for the empty aterm: ShAAppl "" [] []
 -}
+
+#if __GLASGOW_HASKELL__ >= 803
+import Prelude hiding ((<>))
+#endif
 
 import ATerm.AbstractSyntax
 import ATerm.SimpPretty

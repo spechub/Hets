@@ -34,23 +34,25 @@ import Common.SFKT
 import Common.Id
 import Common.IRI
 import Common.Utils (nubOrd)
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
+-- | computes the colimit of one development graph in a LibEnv
 computeColimit :: LibName -> LibEnv -> Result LibEnv
 computeColimit ln le = do
   let dgraph = lookupDGraph ln le
-  (_, nextDGraph) <- insertColimitInGraph le dgraph (nodesDG dgraph)
+  (_, nextDGraph) <- insertColimitInGraph le ln dgraph (nodesDG dgraph)
                                          (labEdgesDG dgraph) $
                                          makeName $
                                          simpleIdToIRI $ genToken "Colimit"
   return $ Map.insert ln nextDGraph le
 
-insertColimitInGraph :: LibEnv -> DGraph -> [Node] -> [LEdge DGLinkLab] -> NodeName
+insertColimitInGraph :: LibEnv -> LibName -> DGraph -> [Node] -> [LEdge DGLinkLab] -> NodeName
                      -> Result (NodeSig, DGraph)
-insertColimitInGraph le dgraph cNodes cEdges colimName = do
+insertColimitInGraph le ln dgraph cNodes cEdges colimName = do
   let diag = makeDiagram dgraph cNodes cEdges
   (gth, morFun) <- gWeaklyAmalgamableCocone diag
   let
@@ -64,7 +66,7 @@ insertColimitInGraph le dgraph cNodes cEdges colimName = do
       newDg = changesDGH dgraph changes
       newGraph = changeDGH newDg $ SetNodeLab newNode
         (newNodeNr, newNode
-        { globalTheory = computeLabelTheory le newDg (newNodeNr, newNode) })
+        { globalTheory = computeLabelTheory le ln newDg (newNodeNr, newNode) })
       nsig = NodeSig newNodeNr (signOf gth)
       dg = groupHistory dgraph (DGRule "Compute-Colimit") newGraph
   return (nsig, dg)
@@ -106,14 +108,14 @@ gWeaklyAmalgamableCocone diag
                              (mor Map.! n) startMorId)) $
          labNodes graph
     return (gth, morFun)
- | not $ isConnected diag = fail "Graph is not connected"
- | not $ isThin $ removeIdentities diag = fail "Graph is not thin"
+ | not $ isConnected diag = Fail.fail "Graph is not connected"
+ | not $ isThin $ removeIdentities diag = Fail.fail "Graph is not thin"
  | otherwise = do
    let funDesc = initDescList diag
    -- graph <- observe $ hetWeakAmalgCocone diag funDesc
    allGraphs <- runM Nothing $ hetWeakAmalgCocone diag funDesc
    case allGraphs of
-    [] -> fail "could not compute cocone"
+    [] -> Fail.fail "could not compute cocone"
     _ -> do
      let graph = head allGraphs
      {- TO DO: modify this function so it would return

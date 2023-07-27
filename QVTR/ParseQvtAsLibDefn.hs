@@ -25,6 +25,7 @@ import Common.AS_Annotation
 import Common.IRI
 import Common.Id
 import Common.LibName
+import Common.Utils
 
 import Text.XML.Light
 
@@ -33,12 +34,9 @@ import System.FilePath (replaceBaseName, replaceExtension, takeBaseName)
 
 import Text.ParserCombinators.Parsec
 
-parseQvt :: FilePath -> IO LIB_DEFN
-parseQvt fp =
-  do
-    handle <- openFile fp ReadMode
-    input <- hGetContents handle
-    case runParser pTransformation () fp input of  -- Either ParseError String
+parseQvt :: FilePath -> String -> IO LIB_DEFN
+parseQvt fp input =
+  case runParser pTransformation () fp input of  -- Either ParseError String
       Left erro -> do
                   print erro
                   return (Lib_defn (emptyLibName (convertFileToLibStr fp)) [] nullRange [])
@@ -56,8 +54,9 @@ replaceName fp = replaceBaseName (replaceExtension fp "xmi")
 
 
 parseXmiMetamodel :: FilePath -> IO Metamodel
-parseXmiMetamodel fp =
+parseXmiMetamodel fullFileName =
   do
+    let fp = tryToStripPrefix "file://" fullFileName
     handle <- openFile fp ReadMode
     contents <- hGetContents handle
     case parseXMLDoc contents of

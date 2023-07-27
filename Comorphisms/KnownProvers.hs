@@ -72,7 +72,7 @@ import Comorphisms.HasCASL2PCoClTyConsHOL
 #ifdef PROGRAMATICA
 import Comorphisms.Haskell2IsabelleHOLCF
 #endif
-import Comorphisms.SuleCFOL2SoftFOL
+import Comorphisms.SuleCFOL2TPTP
 import Comorphisms.LogicList
 
 type KnownProversMap = Map.Map String [AnyComorphism]
@@ -179,7 +179,8 @@ spassComorphisms =
            max_sub_SPASS = max_nosub_SPASS { sub_features = LocFilSub }
            idCASL_sub = Comorphism (mkIdComorphism CASL max_sub_SPASS)
            idCASL_nosub = Comorphism (mkIdComorphism CASL max_nosub_SPASS)
-           compSPASS x = compComorphism x (Comorphism suleCFOL2SoftFOL)
+           compSPASS x = compComorphism x (Comorphism suleCFOL2TPTP) 
+                         -- use translation to TPTP instead of one to SoftFOL
        partOut <- compComorphism idCASL_sub (Comorphism defaultCASL2SubCFOL)
                    >>= compSPASS
        partSubOut <- compComorphism (Comorphism CASL2PCFOL)
@@ -204,7 +205,7 @@ spassComorphisms =
        mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
        CommonLogic -}
        return
-         [ Comorphism suleCFOL2SoftFOL
+         [ Comorphism suleCFOL2TPTP
          , partOut
          , partSubOut
 #ifdef CASLEXTENSIONS

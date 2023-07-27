@@ -39,7 +39,8 @@ data Modal = Modal deriving Show
 
 instance Language Modal where
  description _ = unlines
-  [ "ModalCASL extends CASL by modal operators. Syntax for ordinary"
+  [ "ModalCASL extends CASL by modal operators."
+  , "Syntax for ordinary"
   , "modalities, multi-modal logics as well as  term-modal"
   , "logic (also covering dynamic logic) is provided."
   , "Specific modal logics can be obtained via restrictions to"
@@ -54,8 +55,8 @@ instance SignExtension ModalSign where
 
 instance Syntax Modal M_BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec Modal = Just $ basicSpec modal_reserved_words
-    parse_symb_items Modal = Just $ symbItems modal_reserved_words
-    parse_symb_map_items Modal = Just $ symbMapItems modal_reserved_words
+    parse_symb_items Modal = Just . const $ symbItems modal_reserved_words
+    parse_symb_map_items Modal = Just . const $ symbMapItems modal_reserved_words
 
 -- Modal logic
 
@@ -123,5 +124,5 @@ instance Logic Modal ()
                MSign
                ModalMor
                Symbol RawSymbol () where
-         stability _ = Unstable
+         stability _ = Testing
          empty_proof_tree _ = ()

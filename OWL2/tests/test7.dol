@@ -1,0 +1,13 @@
+logic OWL serialization Manchester
+
+spec onto7 = 
+
+AnnotationProperty: ap
+
+    
+Class: A
+
+    Annotations: 
+        ap "true"
+    
+with AnnotationProperty ap |-> bp

@@ -13,45 +13,47 @@ Extraction of all the entities in the ontology
 
 module OWL2.Extract where
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.MS
 import OWL2.Sign
 
 import Control.Monad
 import Common.Lib.State
 
+import Common.IRI
+
 import qualified Data.Set as Set
 
-fromObjPropExpr :: ObjectPropertyExpression -> State Sign ()
-fromObjPropExpr = addEntity . mkEntity ObjectProperty . objPropToIRI
+fromObjPropExpr :: AS.ObjectPropertyExpression -> State Sign ()
+fromObjPropExpr = addEntity . AS.mkEntity AS.ObjectProperty . AS.objPropToIRI
 
-fromDataPropExpr :: DataPropertyExpression -> State Sign ()
-fromDataPropExpr = addEntity . mkEntity DataProperty
+fromDataPropExpr :: AS.DataPropertyExpression -> State Sign ()
+fromDataPropExpr = addEntity . AS.mkEntity AS.DataProperty
 
-fromIndividual :: Individual -> State Sign ()
-fromIndividual ind =
-    unless (iriType ind == NodeID) $ addEntity $ mkEntity NamedIndividual ind
+fromIndividual :: AS.Individual -> State Sign ()
+fromIndividual ind =  unless (isBlankNode ind) $
+ addEntity $ AS.mkEntity AS.NamedIndividual ind
 
-fromAnnoProp :: AnnotationProperty -> State Sign ()
-fromAnnoProp = addEntity . mkEntity AnnotationProperty
+fromAnnoProp :: AS.AnnotationProperty -> State Sign ()
+fromAnnoProp = addEntity . AS.mkEntity AS.AnnotationProperty
 
-fromLiteral :: Literal -> State Sign ()
+fromLiteral :: AS.Literal -> State Sign ()
 fromLiteral l = case l of
-    Literal _ ty -> case ty of
-        Typed u -> addEntity $ mkEntity Datatype u
+    AS.Literal _ ty -> case ty of
+        AS.Typed u -> addEntity $ AS.mkEntity AS.Datatype u
         _ -> return ()
     _ -> return ()
 
-fromDType :: Datatype -> State Sign ()
-fromDType dt = unless (isDatatypeKey dt) $ addEntity $ mkEntity Datatype dt
+fromDType :: AS.Datatype -> State Sign ()
+fromDType dt = unless (AS.isDatatypeKey dt) $ addEntity $ AS.mkEntity AS.Datatype dt
 
 -- | Adds the DataRange to the Signature and returns it as a State Sign ()
-fromDataRange :: DataRange -> State Sign ()
+fromDataRange :: AS.DataRange -> State Sign ()
 fromDataRange dr = case dr of
-  DataJunction _ lst -> mapM_ fromDataRange lst
-  DataComplementOf r -> fromDataRange r
-  DataOneOf cs -> mapM_ fromLiteral cs
-  DataType r fcs -> do
+  AS.DataJunction _ lst -> mapM_ fromDataRange lst
+  AS.DataComplementOf r -> fromDataRange r
+  AS.DataOneOf cs -> mapM_ fromLiteral cs
+  AS.DataType r fcs -> do
     fromDType r
     mapM_ (fromLiteral . snd) fcs
 
@@ -65,35 +67,35 @@ fromFact f = case f of
       fromDataPropExpr dpe
 
 -- | Adds the Description to the Signature. Returns it as a State
-fromDescription :: ClassExpression -> State Sign ()
+fromDescription :: AS.ClassExpression -> State Sign ()
 fromDescription desc = case desc of
-  Expression u ->
-      unless (isThing u) $ addEntity $ mkEntity Class u
-  ObjectJunction _ ds -> mapM_ fromDescription ds
-  ObjectComplementOf d -> fromDescription d
-  ObjectOneOf is -> mapM_ fromIndividual is
-  ObjectValuesFrom _ opExpr d -> do
+  AS.Expression u ->
+      unless (AS.isThing u) $ addEntity $ AS.mkEntity AS.Class u
+  AS.ObjectJunction _ ds -> mapM_ fromDescription ds
+  AS.ObjectComplementOf d -> fromDescription d
+  AS.ObjectOneOf is -> mapM_ fromIndividual is
+  AS.ObjectValuesFrom _ opExpr d -> do
     fromObjPropExpr opExpr
     fromDescription d
-  ObjectHasSelf opExpr -> fromObjPropExpr opExpr
-  ObjectHasValue opExpr i -> do
+  AS.ObjectHasSelf opExpr -> fromObjPropExpr opExpr
+  AS.ObjectHasValue opExpr i -> do
     fromObjPropExpr opExpr
     fromIndividual i
-  ObjectCardinality (Cardinality _ _ opExpr md) -> do
+  AS.ObjectCardinality (AS.Cardinality _ _ opExpr md) -> do
     fromObjPropExpr opExpr
     maybe (return ()) fromDescription md
-  DataValuesFrom _ dExp r -> do
-    fromDataPropExpr dExp
+  AS.DataValuesFrom _ dExp r -> do
+    fromDataPropExpr (head dExp)
     fromDataRange r
-  DataHasValue dExp c -> do
+  AS.DataHasValue dExp c -> do
     fromDataPropExpr dExp
     fromLiteral c
-  DataCardinality (Cardinality _ _ dExp mr) -> do
+  AS.DataCardinality (AS.Cardinality _ _ dExp mr) -> do
     fromDataPropExpr dExp
     maybe (return ()) fromDataRange mr
 
-fromAnno :: Annotation -> State Sign ()
-fromAnno (Annotation as apr _) = do
+fromAnno :: AS.Annotation -> State Sign ()
+fromAnno (AS.Annotation as apr _) = do
     fromAnnoProp apr
     fromAnnos as
 
@@ -107,10 +109,10 @@ fromAnnoList f al = do
 
 {- | Adds possible ListFrameBits to the Signature by calling
 bottom level functions -}
-fromLFB :: Maybe Relation -> ListFrameBit -> State Sign ()
+fromLFB :: Maybe AS.Relation -> ListFrameBit -> State Sign ()
 fromLFB r lfb = case lfb of
     AnnotationBit ab ->
-      unless (r `elem` [Just (DRRelation ADomain), Just (DRRelation ARange)])
+      unless (r `elem` [Just (AS.DRRelation AS.ADomain), Just (AS.DRRelation AS.ARange)])
         $ fromAnnoList fromAnnoProp ab
     ExpressionBit al -> fromAnnoList fromDescription al
     ObjectBit anob -> fromAnnoList fromObjPropExpr anob
@@ -157,22 +159,255 @@ fromExt ext = case ext of
     ClassEntity ce -> fromDescription ce
     Misc ans -> fromAnnos ans
 
+fromIndividualArg :: AS.IndividualArg -> State Sign ()
+fromIndividualArg arg = case arg of
+  AS.IArg i -> fromIndividual i
+  _ -> return ()
+
+fromDataArg :: AS.DataArg -> State Sign ()
+fromDataArg d = case d of
+  AS.DArg l -> fromLiteral l
+  _ -> return ()
+
+fromDLAtom :: AS.Atom -> State Sign ()
+fromDLAtom atom = case atom of
+  AS.ClassAtom c iArg -> do
+    fromDescription c
+    fromIndividualArg iArg
+  AS.DataRangeAtom r d -> do
+    fromDataRange r
+    fromDataArg d
+  AS.ObjectPropertyAtom o i1 i2 -> do
+    fromObjPropExpr o
+    fromIndividualArg i1
+    fromIndividualArg i2
+  AS.DataPropertyAtom p i d -> do
+    fromDataPropExpr p
+    fromIndividualArg i
+    fromDataArg d
+  AS.BuiltInAtom _ _ -> return () -- built in atoms don't change the sign
+  AS.SameIndividualAtom i1 i2 -> do
+    fromIndividualArg i1
+    fromIndividualArg i2
+  AS.DifferentIndividualsAtom i1 i2 -> do
+    fromIndividualArg i1
+    fromIndividualArg i2
+  _ -> return () -- unknown atoms are eliminated in static analysis
+
+fromDGAtom :: AS.DGAtom -> State Sign ()
+fromDGAtom a = case a of
+  AS.DGClassAtom c i -> do
+    fromDescription c
+    fromIndividualArg i
+  AS.DGObjectPropertyAtom o i1 i2 -> do
+    fromObjPropExpr o
+    fromIndividualArg i1
+    fromIndividualArg i2
+
+fromAxiom :: AS.Axiom -> State Sign ()
+fromAxiom a = case a of
+    AS.Declaration anns e -> do
+      fromAnnos anns
+      addEntity e
+    
+    AS.ClassAxiom cax -> case cax of
+        AS.SubClassOf anns sub sup -> do
+          fromAnnos anns
+          fromDescription sub
+          fromDescription sup
+          
+        AS.EquivalentClasses anns clExprs -> do
+          fromAnnos anns
+          mapM_ fromDescription clExprs
+          
+        AS.DisjointClasses anns clExprs -> do
+          fromAnnos anns
+          mapM_ fromDescription clExprs
+          
+        AS.DisjointUnion anns clIri clExprs -> do
+          fromAnnos anns
+          fromDescription (AS.Expression clIri)
+          mapM_ fromDescription clExprs
+
+    AS.ObjectPropertyAxiom opax -> case opax of
+        AS.SubObjectPropertyOf anns subObjProp supObjProp -> do
+          fromAnnos anns
+          fromObjPropExpr supObjProp
+          case subObjProp of
+            AS.SubObjPropExpr_obj op -> fromObjPropExpr op
+            AS.SubObjPropExpr_exprchain ops -> mapM_ fromObjPropExpr ops
+             
+        AS.EquivalentObjectProperties anns ops -> do
+          fromAnnos anns 
+          mapM_ fromObjPropExpr ops
+
+        AS.DisjointObjectProperties anns ops -> do
+          fromAnnos anns
+          mapM_ fromObjPropExpr ops
+          
+        AS.InverseObjectProperties anns op1 op2 -> do
+          fromAnnos anns
+          mapM_ fromObjPropExpr [op1, op2]
+
+        AS.ObjectPropertyDomain anns op des -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          fromDescription des
+
+        AS.ObjectPropertyRange anns op des -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          fromDescription des
+
+        AS.FunctionalObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+           
+        AS.InverseFunctionalObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+           
+        AS.ReflexiveObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          
+        AS.IrreflexiveObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          
+        AS.SymmetricObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+
+        AS.AsymmetricObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          
+        AS.TransitiveObjectProperty anns op -> do
+          fromAnnos anns
+          fromObjPropExpr op
+          
+    AS.DataPropertyAxiom dpa -> case dpa of
+        AS.SubDataPropertyOf anns dpSub dpSup -> do
+          fromAnnos anns
+          mapM_ fromDataPropExpr [dpSub, dpSup]
+          
+        AS.EquivalentDataProperties anns dps -> do
+          fromAnnos anns
+          mapM_ fromDataPropExpr dps
+
+        AS.DisjointDataProperties anns dps -> do
+          fromAnnos anns
+          mapM_ fromDataPropExpr dps
+
+        AS.DataPropertyDomain anns dp des -> do
+          fromAnnos anns
+          fromDataPropExpr dp
+          fromDescription des
+
+        AS.DataPropertyRange anns dp r -> do
+          fromAnnos anns
+          fromDataPropExpr dp
+          fromDataRange r
+
+        AS.FunctionalDataProperty anns dp -> do
+          fromAnnos anns
+          fromDataPropExpr dp
+           
+    AS.DatatypeDefinition anns dt dr -> do
+      fromAnnos anns
+      fromDType dt
+      fromDataRange dr
+
+    AS.HasKey anns des ops dps -> do
+      fromAnnos anns
+      fromDescription des
+      mapM_ fromObjPropExpr ops
+      mapM_ fromDataPropExpr dps
+       
+    AS.Assertion assertion -> case assertion of
+        AS.SameIndividual anns inds -> do
+          fromAnnos anns
+          mapM_ fromIndividual inds
+          
+        AS.DifferentIndividuals anns inds -> do 
+          fromAnnos anns
+          mapM_ fromIndividual inds
+          
+        AS.ClassAssertion anns c i -> do
+          fromAnnos anns
+          fromDescription c
+          fromIndividual i
+        AS.ObjectPropertyAssertion anns o s t -> do
+          fromAnnos anns
+          fromObjPropExpr o
+          fromIndividual s
+          fromIndividual t
+        AS.NegativeObjectPropertyAssertion anns o s t -> do
+          fromAnnos anns
+          fromObjPropExpr o
+          fromIndividual s
+          fromIndividual t
+        AS.DataPropertyAssertion anns d s t -> do
+          fromAnnos anns
+          fromDataPropExpr d
+          fromIndividual s
+          fromLiteral t
+        AS.NegativeDataPropertyAssertion anns d s t -> do
+          fromAnnos anns
+          fromDataPropExpr d
+          fromIndividual s
+          fromLiteral t
+          
+    AS.AnnotationAxiom ax -> case ax of
+        AS.AnnotationAssertion anns p _ v -> do
+          fromAnnos anns
+          fromAnnoProp p
+          case v of
+            AS.AnnValLit l -> fromLiteral l
+            _ -> return ()
+        AS.SubAnnotationPropertyOf anns sub sup -> do
+          fromAnnos anns
+          fromAnnoProp sub
+          fromAnnoProp sup
+        AS.AnnotationPropertyDomain anns p _ -> do
+          fromAnnos anns
+          fromAnnoProp p
+        AS.AnnotationPropertyRange anns p _ -> do
+          fromAnnos anns
+          fromAnnoProp p
+    AS.Rule r -> case r of
+      AS.DLSafeRule anns b h -> do
+        fromAnnos anns
+        mapM_ fromDLAtom b
+        mapM_ fromDLAtom h
+      AS.DGRule anns b h -> do
+        fromAnnos anns
+        mapM_ fromDGAtom b
+        mapM_ fromDGAtom h
+    AS.DGAxiom anns _ nodes edges classes -> do
+      fromAnnos anns
+      mapM_ (\(AS.DGNodeAssertion c _) -> fromDescription (AS.Expression c)) nodes
+      mapM_ (\(AS.DGEdgeAssertion o _ _) -> fromObjPropExpr (AS.ObjectProp o)) edges
+      mapM_ (fromDescription . AS.Expression) classes
+
 {- | Top level function: takes the OntologyDocument and completes
 the signature by calling completeSignForFrame -}
-extractSign :: OntologyDocument -> State Sign ()
-extractSign = mapM_ fromFrame . ontFrames . ontology
+extractSign :: AS.OntologyDocument -> State Sign ()
+extractSign = mapM_ fromAxiom . AS.axioms . AS.ontology
 
-toDecl :: Sign -> [Frame]
+toDecl :: Sign -> [AS.Axiom]
 toDecl s =
-    let cls = map (mkEntity Class) $ Set.toList (concepts s)
-        dt = map (mkEntity Datatype) $ Set.toList (datatypes s)
-        op = map (mkEntity ObjectProperty) $ Set.toList (objectProperties s)
-        dp = map (mkEntity DataProperty) $ Set.toList (dataProperties s)
-        i = map (mkEntity NamedIndividual) $ Set.toList (individuals s)
-        ans = map (mkEntity AnnotationProperty) $ Set.toList (annotationRoles s)
-    in map (\ c -> Frame (mkExtendedEntity c)
-        [AnnFrameBit [] $ AnnotationFrameBit Declaration])
-            (cls ++ dt ++ op ++ dp ++ i ++ ans)
+    let cls = map (AS.mkEntity AS.Class) $ Set.toList (concepts s)
+        dt = map (AS.mkEntity AS.Datatype) $ Set.toList (datatypes s)
+        op = map (AS.mkEntity AS.ObjectProperty) $ Set.toList (objectProperties s)
+        dp = map (AS.mkEntity AS.DataProperty) $ Set.toList (dataProperties s)
+        i = map (AS.mkEntity AS.NamedIndividual) $ Set.toList (individuals s)
+        ans = map (AS.mkEntity AS.AnnotationProperty) $ Set.toList (annotationRoles s)
+    in map (AS.Declaration []) (cls ++ dt ++ op ++ dp ++ i ++ ans)
 
+-- signToFrames :: [Frame] -> [Frame]
+-- signToFrames f = let s = mapM_ fromFrame f in toDecl $ execState s emptySign
+-- TODO: commented out in 1993
 signToFrames :: [Frame] -> [Frame]
-signToFrames f = let s = mapM_ fromFrame f in toDecl $ execState s emptySign
+signToFrames = id

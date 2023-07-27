@@ -58,7 +58,7 @@ symbols for all nodes are shown as declarations, otherwise (the
 default) only declaration for basic spec nodes are shown that are
 sufficient to reconstruct the development from the xml output. -}
 dGraph :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> Element
-dGraph full lenv ln dg =
+dGraph opts lenv ln dg =
   let body = dgBody dg
       ga = globalAnnos dg
       lnodes = labNodes body
@@ -71,9 +71,9 @@ dGraph full lenv ln dg =
                , mkAttr "nextlinkid" . showEdgeId $ getNewEdgeId dg ]
      . unode "DGraph" $
          subnodes "Global" (annotations ga . convertGlobalAnnos
-                            $ removeHetCASLprefixes ga)
-         ++ map (lnode full ga lenv) lnodes
-         ++ map (ledge full ga dg) ledges
+                            $ removeDOLprefixes ga)
+         ++ map (lnode opts ga lenv) lnodes
+         ++ map (ledge opts ga dg) ledges
 
 gmorph :: HetcatsOpts -> GlobalAnnos -> GMorphism -> Element
 gmorph opts ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
@@ -86,7 +86,7 @@ gmorph opts ga gm@(GMorphism cid (ExtSign ssig _) _ tmor _) =
         in add_attr (mkNameAttr $ language_name cid)
            $ unode "GMorphism" $
              (if fullTheories opts then [] else subnodes "ComorphismAxioms"
-             $ map (showSen (targetLogic cid) ga Nothing tsig) tsens)
+             $ map (showSen opts (targetLogic cid) ga Nothing tsig) tsens)
              ++ map (\ (s, t) -> unode "map" [showSym tid s, showSym tid t]) sl
 
 prettyRangeElem :: (GetRange a, Pretty a) => String -> GlobalAnnos -> a
@@ -98,13 +98,15 @@ prettySymbol :: (GetRange a, Pretty a) => GlobalAnnos -> a -> Element
 prettySymbol = prettyRangeElem "Symbol"
 
 lnode :: HetcatsOpts -> GlobalAnnos -> LibEnv -> LNode DGNodeLab -> Element
-lnode full ga lenv (_, lbl) =
+lnode opts ga lenv (nodeId, lbl) =
   let nm = dgn_name lbl
       (spn, xp) = case reverse $ xpath nm of
           ElemName s : t -> (s, showXPath t)
           l -> ("?", showXPath l)
   in add_attrs (mkNameAttr (showName nm)
     : rangeAttrs (srcRange nm)
+    ++ [mkAttr "id" $ show nodeId]
+    ++ [mkAttr "internal" (map toLower $ show $ isInternal nm)]
     ++ mkAttr "reference" (map toLower $ show $ isDGRef lbl)
     : case signOf $ dgn_theory lbl of
         G_sign slid _ _ -> mkAttr "logic" (show slid)
@@ -131,20 +133,20 @@ lnode full ga lenv (_, lbl) =
       ++ case dgn_theory lbl of
         G_theory lid _ (ExtSign sig _) _ thsens _ -> let
           (axs, thms) = OMap.partition isAxiom thsens in
-          (if fullSign full
+          (if fullSign opts
            then subnodes "Symbols" (map (showSym lid) $ symlist_of lid sig)
            else [])
           ++ subnodes "Axioms"
-                    (map (showSen lid ga Nothing sig) $ toNamedList axs)
+                    (map (showSen opts lid ga Nothing sig) $ toNamedList axs)
           ++ subnodes "Theorems"
-                    (map (\ (s, t) -> showSen lid ga
+                    (map (\ (s, t) -> showSen opts lid ga
                          (Just $ isProvenSenStatus t) sig $ toNamed s t)
                          $ OMap.toList thms)
-          ++ if fullTheories full then case globalTheory lbl of
+          ++ if fullTheories opts then case globalTheory lbl of
                Just (G_theory glid _ _ _ allSens _) -> case
                    coerceThSens glid lid "xml-lnode" allSens of
                  Just gsens -> subnodes "ImpAxioms"
-                    $ map (showSen lid ga Nothing sig) $ toNamedList
+                    $ map (showSen opts lid ga Nothing sig) $ toNamedList
                      $ OMap.filter ((`notElem` map sentence
                                     (OMap.elems thsens)) . sentence) gsens
                  _ -> []
@@ -179,6 +181,8 @@ ledge opts ga dg (f, t, lbl) = let
   ([ mkAttr "source" $ getNameOfNode f dg
   , mkAttr "target" $ getNameOfNode t dg
   , mkAttr "linkid" $ showEdgeId $ dgl_id lbl
+  , mkAttr "id_source" $ show f
+  , mkAttr "id_target" $ show t
   ] ++ case dgl_origin lbl of
          DGLinkView i _ ->
            [mkNameAttr . iriToStringShortUnsecure $ setAngles False i]
@@ -207,29 +211,29 @@ dgrule r =
       _ -> []
 
 -- | collects all symbols from dg and displays them as xml
-dgSymbols :: DGraph -> Element
-dgSymbols dg = let ga = globalAnnos dg in unode "Ontologies"
+dgSymbols :: HetcatsOpts -> DGraph -> Element
+dgSymbols opts dg = let ga = globalAnnos dg in unode "Ontologies"
   $ map (\ (i, lbl) -> let ins = getImportNames dg i in
-    showSymbols ins ga lbl) $ labNodesDG dg
+    showSymbols opts ins ga lbl) $ labNodesDG dg
 
-showSymbols :: [String] -> GlobalAnnos -> DGNodeLab -> Element
-showSymbols ins ga lbl = showSymbolsTh ins (getDGNodeName lbl) ga
+showSymbols :: HetcatsOpts -> [String] -> GlobalAnnos -> DGNodeLab -> Element
+showSymbols opts ins ga lbl = showSymbolsTh opts ins (getDGNodeName lbl) ga
   $ dgn_theory lbl
 
-showSymbolsTh :: [String] -> String -> GlobalAnnos -> G_theory -> Element
-showSymbolsTh ins name ga th = case th of
+showSymbolsTh :: HetcatsOpts -> [String] -> String -> GlobalAnnos -> G_theory -> Element
+showSymbolsTh opts ins name ga th = case th of
   G_theory lid _ (ExtSign sig _) _ sens _ -> add_attrs
      [ mkAttr "logic" $ language_name lid
      , mkNameAttr name ]
      . unode "Ontology"
      $ [ unode "Symbols" . map (showSym lid) $ symlist_of lid sig
-       , unode "Axioms" . map (showSen lid ga Nothing sig) $ toNamedList sens ]
+       , unode "Axioms" . map (showSen opts lid ga Nothing sig) $ toNamedList sens ]
      ++ map (unode "Import") ins
 
 showSen :: ( GetRange sentence, Pretty sentence
            , Sentences lid sentence sign morphism symbol) =>
-   lid -> GlobalAnnos -> Maybe Bool -> sign -> Named sentence -> Element
-showSen lid ga mt sig ns =
+   HetcatsOpts -> lid -> GlobalAnnos -> Maybe Bool -> sign -> Named sentence -> Element
+showSen opts lid ga mt sig ns =
  let s = sentence ns in add_attrs
     (case mt of
        Nothing -> []
@@ -245,7 +249,9 @@ showSen lid ga mt sig ns =
           ++ case senMark ns of
                "" -> []
                m -> [unode "ComorphismOrigin" m]
-          ++ [unode "AST" $ asXml s]
+          ++ if printAST opts
+             then [unode "AST" $ asXml s]
+             else []
 
 showSym :: (Sentences lid sentence sign morphism symbol) =>
            lid -> symbol -> Element

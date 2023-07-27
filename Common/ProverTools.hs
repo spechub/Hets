@@ -18,13 +18,6 @@ import Common.Utils
 import System.Directory
 import System.FilePath
 
-executableWithDefault :: String -> String -> IO String
-executableWithDefault ex def = do
-  mPath <- findExecutable ex
-  case mPath of
-    Nothing -> return def
-    Just _ -> return ex
-
 missingExecutableInPath :: String -> IO Bool
 missingExecutableInPath name = do
   mp <- findExecutable name
@@ -46,11 +39,14 @@ check4FileAux name env = do
 
 -- | Checks if a file exists in PATH
 checkBinary :: String -> IO (Maybe String)
-checkBinary name = fmap
-  (\ l -> if null l
+checkBinary name =
+  fmap
+    ( \l ->
+        if null l
           then Just $ "missing binary in $PATH: " ++ name
-          else Nothing)
-  $ check4FileAux name "PATH"
+          else Nothing
+    )
+    $ check4FileAux name "PATH"
 
 -- | Checks if a file exists
 check4File :: String -- ^ file name

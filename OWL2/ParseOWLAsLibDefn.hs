@@ -13,9 +13,7 @@ analyse OWL files by calling the external Java parser.
 module OWL2.ParseOWLAsLibDefn (parseOWLAsLibDefn) where
 
 import OWL2.AS
-import OWL2.MS
 
-import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 
@@ -24,6 +22,7 @@ import Common.IRI
 import Common.LibName
 import Common.ResultT
 import Common.AS_Annotation
+import Common.Utils
 
 import Logic.Grothendieck
 
@@ -33,7 +32,6 @@ import OWL2.ParseOWL
 import Syntax.AS_Library
 import Syntax.AS_Structured
 
-
 -- | call for owl parser (env. variable $HETS_OWL_TOOLS muss be defined)
 parseOWLAsLibDefn :: Bool                  -- ^ Sets Option.quick
          -> FilePath              -- ^ local filepath or uri
@@ -41,10 +39,6 @@ parseOWLAsLibDefn :: Bool                  -- ^ Sets Option.quick
 parseOWLAsLibDefn quick fn = do
    (imap, ontodocs) <- parseOWL quick fn
    return $ map (convertToLibDefN imap) ontodocs
-
-qNameToIRI :: QName -> SPEC_NAME
-qNameToIRI qn = let s = showQN qn in
-  fromMaybe (error $ "qNameToIRI " ++ s) $ parseIRICurie s
 
 createSpec :: OntologyDocument -> [SPEC_NAME] -> Annoted SPEC
 createSpec o imps = addImports imps . makeSpec $ G_basic_spec OWL2 o
@@ -59,11 +53,11 @@ convertToLibDefN imap o = Lib_defn ln
         il = Map.toList imap
         is = map snd il
         ln = case lookup libstr $ map (\ (a, b) -> (b, a)) il of
-            Just s -> setFilePath $ fromMaybe s $ stripPrefix "file:" s
+            Just s -> setFilePath $ tryToStripPrefix "file:" s
             Nothing -> setFilePath libstr
           $ iriLibName oname
-        imps = map qNameToIRI $ imports ont
+        imps = importsDocuments ont
         imps2 = filter ((`elem` is) . show . setAngles False) imps
-        oname = qNameToIRI $ name ont
+        oname = fromMaybe nullIRI $ mOntologyIRI ont
         libstr = show $ setAngles False oname
         imp_libs = map (addDownload False) imps2

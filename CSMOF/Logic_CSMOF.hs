@@ -21,21 +21,22 @@ import Logic.Logic
 
 import Common.DefaultMorphism
 
-import Data.Monoid
+import Data.Monoid ()
 
 data CSMOF = CSMOF deriving Show
 
 instance Language CSMOF where
-  description _ = "CSMOF conformance relation"
+  description _ = "OMG's meta-object facility, a language for the specification of metamodels"
 
 type Morphism = DefaultMorphism Sign
 
 
 -- CSMOF logic
 
+instance Semigroup Metamodel where
+  _ <> _ = error "Not implemented!"
 instance Monoid Metamodel where
   mempty = error "Not implemented!"
-  mappend _ _ = error "Not implemented!"
 
 instance Sentences CSMOF
   Sen

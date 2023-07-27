@@ -16,7 +16,8 @@ References  :  <http://www.w3.org/TR/owl2-manchester-syntax/>
 module OWL2.MS where
 
 import Common.Id
-import OWL2.AS
+import Common.IRI
+import qualified OWL2.AS as AS
 
 import Data.Data
 import qualified Data.Map as Map
@@ -24,27 +25,27 @@ import qualified Data.Set as Set
 
 {- | annotions are annotedAnnotationList that must be preceded by the keyword
   @Annotations:@ if non-empty -}
-type Annotations = [Annotation]
+type Annotations = [AS.Annotation]
 
 type AnnotatedList a = [(Annotations, a)]
 
 -- | this datatype extends the Manchester Syntax to also allow GCIs
 data Extended =
     Misc Annotations
-  | ClassEntity ClassExpression
-  | ObjectEntity ObjectPropertyExpression
-  | SimpleEntity Entity
+  | ClassEntity AS.ClassExpression
+  | ObjectEntity AS.ObjectPropertyExpression
+  | SimpleEntity AS.Entity
     deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | frames with annotated lists
 data ListFrameBit =
-    AnnotationBit (AnnotatedList AnnotationProperty) -- relation
-  | ExpressionBit (AnnotatedList ClassExpression) -- relation
-  | ObjectBit (AnnotatedList ObjectPropertyExpression) -- relation
-  | DataBit (AnnotatedList DataPropertyExpression) -- relation
-  | IndividualSameOrDifferent (AnnotatedList Individual) -- relation
-  | ObjectCharacteristics (AnnotatedList Character)
-  | DataPropRange (AnnotatedList DataRange)
+    AnnotationBit (AnnotatedList AS.AnnotationProperty) -- relation
+  | ExpressionBit (AnnotatedList AS.ClassExpression) -- relation
+  | ObjectBit (AnnotatedList AS.ObjectPropertyExpression) -- relation
+  | DataBit (AnnotatedList AS.DataPropertyExpression) -- relation
+  | IndividualSameOrDifferent (AnnotatedList AS.NamedIndividual) -- relation
+  | ObjectCharacteristics (AnnotatedList AS.Character)
+  | DataPropRange (AnnotatedList AS.DataRange)
   | IndividualFacts (AnnotatedList Fact)
     deriving (Show, Eq, Ord, Typeable, Data)
 
@@ -55,19 +56,19 @@ data AnnoType = Declaration | Assertion | XmlError String
 data AnnFrameBit =
     AnnotationFrameBit AnnoType
   | DataFunctional
-  | DatatypeBit DataRange
-  | ClassDisjointUnion [ClassExpression]
-  | ClassHasKey [ObjectPropertyExpression] [DataPropertyExpression]
-  | ObjectSubPropertyChain [ObjectPropertyExpression]
+  | DatatypeBit AS.DataRange
+  | ClassDisjointUnion [AS.ClassExpression]
+  | ClassHasKey [AS.ObjectPropertyExpression] [AS.DataPropertyExpression]
+  | ObjectSubPropertyChain [AS.ObjectPropertyExpression]
     deriving (Show, Eq, Ord, Typeable, Data)
 
 data Fact =
-    ObjectPropertyFact PositiveOrNegative ObjectPropertyExpression Individual
-  | DataPropertyFact PositiveOrNegative DataPropertyExpression Literal
+    ObjectPropertyFact AS.PositiveOrNegative AS.ObjectPropertyExpression AS.NamedIndividual
+  | DataPropertyFact AS.PositiveOrNegative AS.DataPropertyExpression AS.Literal
   deriving (Show, Eq, Ord, Typeable, Data)
 
 data FrameBit =
-    ListFrameBit (Maybe Relation) ListFrameBit
+    ListFrameBit (Maybe AS.Relation) ListFrameBit
   | AnnFrameBit Annotations AnnFrameBit
     deriving (Show, Eq, Ord, Typeable, Data)
 
@@ -86,10 +87,10 @@ data Axiom = PlainAxiom
 
 -}
 
-mkExtendedEntity :: Entity -> Extended
-mkExtendedEntity e@(Entity _ ty iri) = case ty of
-  Class -> ClassEntity $ Expression iri
-  ObjectProperty -> ObjectEntity $ ObjectProp iri
+mkExtendedEntity :: AS.Entity -> Extended
+mkExtendedEntity e@(AS.Entity _ ty iri) = case ty of
+  AS.Class -> ClassEntity $ AS.Expression iri
+  AS.ObjectProperty -> ObjectEntity $ AS.ObjectProp iri
   _ -> SimpleEntity e
 
 getAxioms :: Frame -> [Axiom]
@@ -102,27 +103,27 @@ instance GetRange Axiom where
   getRange = Range . joinRanges . map rangeSpan . Set.toList . symsOfAxiom
 
 data Ontology = Ontology
-    { name :: OntologyIRI
-    , imports :: [ImportIRI]
+    { name :: AS.OntologyIRI
+    , imports :: [AS.ImportIRI]
     , ann :: [Annotations]
     , ontFrames :: [Frame]
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 data OntologyDocument = OntologyDocument
-    { prefixDeclaration :: PrefixMap
+    { prefixDeclaration :: AS.PrefixMap
     , ontology :: Ontology
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange OntologyDocument
 
 emptyOntology :: [Frame] -> Ontology
-emptyOntology = Ontology nullQName [] []
+emptyOntology = Ontology nullIRI [] []
 
 emptyOntologyDoc :: OntologyDocument
 emptyOntologyDoc = OntologyDocument Map.empty $ emptyOntology []
 
 isEmptyOntology :: Ontology -> Bool
-isEmptyOntology (Ontology oiri annoList impList fs) = isNullQName oiri
+isEmptyOntology (Ontology oiri annoList impList fs) = isNullIRI oiri
     && null annoList && null impList && null fs
 
 isEmptyOntologyDoc :: OntologyDocument -> Bool
@@ -132,61 +133,61 @@ isEmptyOntologyDoc (OntologyDocument ns onto) =
 emptyAnnoList :: [a] -> AnnotatedList a
 emptyAnnoList = map $ \ x -> ([], x)
 
-symsOfAxiom :: Axiom -> Set.Set Entity
+symsOfAxiom :: Axiom -> Set.Set AS.Entity
 symsOfAxiom (PlainAxiom e f) = Set.union (symsOfExtended e) $ symsOfFrameBit f
 
-symsOfExtended :: Extended -> Set.Set Entity
+symsOfExtended :: Extended -> Set.Set AS.Entity
 symsOfExtended e = case e of
   Misc as -> symsOfAnnotations as
   SimpleEntity s -> Set.singleton s
   ObjectEntity o -> symsOfObjectPropertyExpression o
   ClassEntity c -> symsOfClassExpression c
 
-symsOfObjectPropertyExpression :: ObjectPropertyExpression -> Set.Set Entity
+symsOfObjectPropertyExpression :: AS.ObjectPropertyExpression -> Set.Set AS.Entity
 symsOfObjectPropertyExpression o = case o of
-  ObjectProp i -> Set.singleton $ mkEntity ObjectProperty i
-  ObjectInverseOf i -> symsOfObjectPropertyExpression i
+  AS.ObjectProp i -> Set.singleton $ AS.mkEntity AS.ObjectProperty i
+  AS.ObjectInverseOf i -> symsOfObjectPropertyExpression i
 
-symsOfClassExpression :: ClassExpression -> Set.Set Entity
+symsOfClassExpression :: AS.ClassExpression -> Set.Set AS.Entity
 symsOfClassExpression ce = case ce of
-  Expression c -> Set.singleton $ mkEntity Class c
-  ObjectJunction _ cs -> Set.unions $ map symsOfClassExpression cs
-  ObjectComplementOf c -> symsOfClassExpression c
-  ObjectOneOf is -> Set.fromList $ map (mkEntity NamedIndividual) is
-  ObjectValuesFrom _ oe c -> Set.union (symsOfObjectPropertyExpression oe)
+  AS.Expression c -> Set.singleton $ AS.mkEntity AS.Class c
+  AS.ObjectJunction _ cs -> Set.unions $ map symsOfClassExpression cs
+  AS.ObjectComplementOf c -> symsOfClassExpression c
+  AS.ObjectOneOf is -> Set.fromList $ map (AS.mkEntity AS.NamedIndividual) is
+  AS.ObjectValuesFrom _ oe c -> Set.union (symsOfObjectPropertyExpression oe)
     $ symsOfClassExpression c
-  ObjectHasValue oe i -> Set.insert (mkEntity NamedIndividual i)
+  AS.ObjectHasValue oe i -> Set.insert (AS.mkEntity AS.NamedIndividual i)
     $ symsOfObjectPropertyExpression oe
-  ObjectHasSelf oe -> symsOfObjectPropertyExpression oe
-  ObjectCardinality (Cardinality _ _ oe mc) -> Set.union
+  AS.ObjectHasSelf oe -> symsOfObjectPropertyExpression oe
+  AS.ObjectCardinality (AS.Cardinality _ _ oe mc) -> Set.union
     (symsOfObjectPropertyExpression oe)
     $ maybe Set.empty symsOfClassExpression mc
-  DataValuesFrom _ de dr -> Set.insert (mkEntity DataProperty de)
+  AS.DataValuesFrom _ de dr -> Set.union (Set.fromList $ map (AS.mkEntity AS.DataProperty) de)
     $ symsOfDataRange dr
-  DataHasValue de _ -> Set.singleton $ mkEntity DataProperty de
-  DataCardinality (Cardinality _ _ d m) -> Set.insert (mkEntity DataProperty d)
+  AS.DataHasValue de _ -> Set.singleton $ AS.mkEntity AS.DataProperty de
+  AS.DataCardinality (AS.Cardinality _ _ d m) -> Set.insert (AS.mkEntity AS.DataProperty d)
     $ maybe Set.empty symsOfDataRange m
 
-symsOfDataRange :: DataRange -> Set.Set Entity
+symsOfDataRange :: AS.DataRange -> Set.Set AS.Entity
 symsOfDataRange dr = case dr of
-  DataType t _ -> Set.singleton $ mkEntity Datatype t
-  DataJunction _ ds -> Set.unions $ map symsOfDataRange ds
-  DataComplementOf d -> symsOfDataRange d
-  DataOneOf _ -> Set.empty
+  AS.DataType t _ -> Set.singleton $ AS.mkEntity AS.Datatype t
+  AS.DataJunction _ ds -> Set.unions $ map symsOfDataRange ds
+  AS.DataComplementOf d -> symsOfDataRange d
+  AS.DataOneOf _ -> Set.empty
 
-symsOfAnnotation :: Annotation -> Set.Set Entity
-symsOfAnnotation (Annotation as p _) = Set.insert
-   (mkEntity AnnotationProperty p) $ Set.unions (map symsOfAnnotation as)
+symsOfAnnotation :: AS.Annotation -> Set.Set AS.Entity
+symsOfAnnotation (AS.Annotation as p _) = Set.insert
+   (AS.mkEntity AS.AnnotationProperty p) $ Set.unions (map symsOfAnnotation as)
 
-symsOfAnnotations :: Annotations -> Set.Set Entity
+symsOfAnnotations :: Annotations -> Set.Set AS.Entity
 symsOfAnnotations = Set.unions . map symsOfAnnotation
 
-symsOfFrameBit :: FrameBit -> Set.Set Entity
+symsOfFrameBit :: FrameBit -> Set.Set AS.Entity
 symsOfFrameBit fb = case fb of
   ListFrameBit _ lb -> symsOfListFrameBit lb
   AnnFrameBit as af -> Set.union (symsOfAnnotations as) $ symsOfAnnFrameBit af
 
-symsOfAnnFrameBit :: AnnFrameBit -> Set.Set Entity
+symsOfAnnFrameBit :: AnnFrameBit -> Set.Set AS.Entity
 symsOfAnnFrameBit af = case af of
   AnnotationFrameBit _ -> Set.empty
   DataFunctional -> Set.empty
@@ -194,29 +195,29 @@ symsOfAnnFrameBit af = case af of
   ClassDisjointUnion cs -> Set.unions $ map symsOfClassExpression cs
   ClassHasKey os ds -> Set.union
     (Set.unions $ map symsOfObjectPropertyExpression os)
-    . Set.fromList $ map (mkEntity DataProperty) ds
+    . Set.fromList $ map (AS.mkEntity AS.DataProperty) ds
   ObjectSubPropertyChain os ->
     Set.unions $ map symsOfObjectPropertyExpression os
 
-symsOfListFrameBit :: ListFrameBit -> Set.Set Entity
+symsOfListFrameBit :: ListFrameBit -> Set.Set AS.Entity
 symsOfListFrameBit lb = case lb of
   AnnotationBit l -> annotedSyms
-    (Set.singleton . mkEntity AnnotationProperty) l
+    (Set.singleton . AS.mkEntity AS.AnnotationProperty) l
   ExpressionBit l -> annotedSyms symsOfClassExpression l
   ObjectBit l -> annotedSyms symsOfObjectPropertyExpression l
-  DataBit l -> annotedSyms (Set.singleton . mkEntity DataProperty) l
+  DataBit l -> annotedSyms (Set.singleton . AS.mkEntity AS.DataProperty) l
   IndividualSameOrDifferent l -> annotedSyms
-    (Set.singleton . mkEntity NamedIndividual) l
+    (Set.singleton . AS.mkEntity AS.NamedIndividual) l
   ObjectCharacteristics l -> annotedSyms (const Set.empty) l
   DataPropRange l -> annotedSyms symsOfDataRange l
   IndividualFacts l -> annotedSyms symsOfFact l
 
-symsOfFact :: Fact -> Set.Set Entity
+symsOfFact :: Fact -> Set.Set AS.Entity
 symsOfFact fact = case fact of
-  ObjectPropertyFact _ oe i -> Set.insert (mkEntity NamedIndividual i)
+  ObjectPropertyFact _ oe i -> Set.insert (AS.mkEntity AS.NamedIndividual i)
     $ symsOfObjectPropertyExpression oe
-  DataPropertyFact _ d _ -> Set.singleton $ mkEntity DataProperty d
+  DataPropertyFact _ d _ -> Set.singleton $ AS.mkEntity AS.DataProperty d
 
-annotedSyms :: (a -> Set.Set Entity) -> AnnotatedList a -> Set.Set Entity
+annotedSyms :: (a -> Set.Set AS.Entity) -> AnnotatedList a -> Set.Set AS.Entity
 annotedSyms f l = Set.union (Set.unions $ map (symsOfAnnotations . fst) l)
   . Set.unions $ map (f . snd) l

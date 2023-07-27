@@ -42,6 +42,7 @@ import Common.GlobalAnnotations (GlobalAnnos)
 import qualified Data.Map as Map
 import Common.SExpr
 import Common.IO
+import Common.Utils
 
 import Comorphisms.LogicGraph
 
@@ -63,6 +64,8 @@ import qualified Static.PrintDevGraph as DG
 import Static.ComputeTheory
 import qualified Static.ToXml as ToXml
 import qualified Static.ToJson as ToJson
+import qualified Persistence.DevGraph
+import qualified Persistence.LogicGraph
 
 import CASL.Logic_CASL
 import CASL.CompositionTable.Pretty2
@@ -73,6 +76,8 @@ import CASL.CompositionTable.ParseTable2
 
 import OWL2.Medusa
 import OWL2.MedusaToJson
+import OWL2.XMLConversion (xmlOntologyDoc)
+import OWL2.Sign (emptySign)
 
 #ifdef PROGRAMATICA
 import Haskell.CreateModules
@@ -86,6 +91,9 @@ import SoftFOL.CreateDFGDoc
 import SoftFOL.DFGParser
 import SoftFOL.ParseTPTP
 
+import TPTP.Logic_TPTP
+import qualified TPTP.Pretty as TPTPPretty
+
 import FreeCAD.XMLPrinter (exportXMLFC)
 import FreeCAD.Logic_FreeCAD
 
@@ -96,8 +104,7 @@ import VSE.ToSExpr
 import OWL2.CreateOWL
 import OWL2.Logic_OWL2
 import OWL2.ParseOWL (convertOWL)
-import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory)
-import qualified OWL2.ManchesterParser as OWL2 (basicSpec)
+import qualified OWL2.ManchesterPrint as OWL2 (prepareBasicTheory, convertBasicTheory)
 #endif
 
 #ifdef RDFLOGIC
@@ -118,7 +125,8 @@ import OMDoc.XmlInterface (xmlOut)
 import OMDoc.Export (exportLibEnv)
 
 writeVerbFile :: HetcatsOpts -> FilePath -> String -> IO ()
-writeVerbFile opts f str = do
+writeVerbFile opts fullFileName str = do
+    let f = tryToStripPrefix "file://" fullFileName
     putIfVerbose opts 2 $ "Writing file: " ++ f
     writeEncFile (ioEncoding opts) f str
 
@@ -139,10 +147,11 @@ writeLibEnv opts filePrefix lenv ln ot =
              >>= writeVerbFile opts f
       XmlOut -> writeVerbFile opts f $ ppTopElement
           $ ToXml.dGraph opts lenv ln dg
+      DbOut -> Persistence.DevGraph.exportLibEnv opts lenv
       JsonOut -> writeVerbFile opts f $ ppJson
           $ ToJson.dGraph opts lenv ln dg
       SymsXml -> writeVerbFile opts f $ ppTopElement
-          $ ToXml.dgSymbols dg
+          $ ToXml.dgSymbols opts dg
       OmdocOut -> do
           let Result ds mOmd = exportLibEnv (recurse opts) (outdir opts) ln lenv
           showDiags opts ds
@@ -207,6 +216,10 @@ writeIsaFile opts filePrefix raw_gTh ln i = do
            in writeVerbFile opts tf $ shows
                    (printIsaTheory tnf sign $ s : axs) "\n") rest
 
+wrongLogicMsg :: String -> String -> String -> String            
+wrongLogicMsg file expected found =
+  "expected " ++ expected ++ " theory for: " ++ file ++ " but found " ++ found
+
 writeTheory :: [String] -> String -> HetcatsOpts -> FilePath -> GlobalAnnos
   -> G_theory -> LibName -> IRI -> OutType -> IO ()
 writeTheory ins nam opts filePrefix ga
@@ -220,7 +233,12 @@ writeTheory ins nam opts filePrefix ga
     FreeCADOut -> writeFreeCADFile opts filePrefix raw_gTh
     ThyFile -> writeIsaFile opts filePrefix raw_gTh ln i
     DfgFile c -> writeSoftFOL opts f raw_gTh i c 0 "DFG"
-    TPTPFile c -> writeSoftFOL opts f raw_gTh i c 1 "TPTP"
+    TPTPFile
+        | lang == language_name TPTP -> do
+            th2 <- coerceBasicTheory lid TPTP "" th
+            let tptpText = show (TPTPPretty.printBasicTheory th2)
+            writeVerbFile opts f tptpText
+        | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "TPTP" lang
     TheoryFile d -> do
       if null $ show d then
         writeVerbFile opts f $ shows (DG.printTh ga i raw_gTh) "\n"
@@ -241,7 +259,7 @@ writeTheory ins nam opts filePrefix ga
         writeVerbFile opts (f ++ ".sexpr")
           $ shows (prettySExpr $ vseSignToSExpr sign') "\n"
     SymXml -> writeVerbFile opts f $ ppTopElement
-           $ ToXml.showSymbolsTh ins nam ga raw_gTh
+           $ ToXml.showSymbolsTh opts ins nam ga raw_gTh
 #ifdef PROGRAMATICA
     HaskellOut -> case printModule raw_gTh of
         Nothing ->
@@ -255,7 +273,7 @@ writeTheory ins nam opts filePrefix ga
           case res of
             Just td -> writeVerbFile opts f $ tableXmlStr td
             Nothing -> return ()
-        else putIfVerbose opts 0 $ "expected CASL theory for: " ++ f
+        else putIfVerbose opts 0 $ wrongLogicMsg f "CASL" lang
     MedusaJson -> if lang == language_name OWL2 then do
           th2 <- coerceBasicTheory lid OWL2 "" th
           let Result ds res = medusa i th2
@@ -263,32 +281,33 @@ writeTheory ins nam opts filePrefix ga
           case res of
             Just td -> writeVerbFile opts f $ medusaToJsonString td
             Nothing -> return ()
-        else putIfVerbose opts 0 $ "expected OWL2 theory for: " ++ f
+        else putIfVerbose opts 0 $ wrongLogicMsg f "OWL2" lang
 #ifdef RDFLOGIC
     RDFOut
         | lang == language_name RDF -> do
             th2 <- coerceBasicTheory lid RDF "" th
             let rdftext = shows (RDF.printRDFBasicTheory th2) "\n"
             writeVerbFile opts f rdftext
-        | otherwise -> putIfVerbose opts 0 $ "expected RDF theory for: " ++ f
+        | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "RDF" lang
 #endif
 #ifndef NOOWLLOGIC
     OWLOut ty -> case ty of
-      Manchester -> case createOWLTheory raw_gTh of
+      Manchester -> writeOWL2VerbFile opts ty f raw_gTh "Manchester"
+
+      --  TODO: implement OWL2 RDF parser/printer
+      -- RdfXml -> trace "-- RdfXml" $ case createOWLTheory raw_gTh of
+
+      Functional -> writeOWL2VerbFile opts ty f raw_gTh "Functional"
+
+      OwlXml -> case createOWLTheory raw_gTh of
         Result _ Nothing ->
-          putIfVerbose opts 0 $ "expected OWL theory for: " ++ f
+          putIfVerbose opts 0 $ wrongLogicMsg f "OWL" $ show ty
         Result ds (Just th2) -> do
-            let sy = defSyntax opts
-                ms = if null sy then Nothing
-                     else Just $ simpleIdToIRI $ mkSimpleId sy
-                owltext = shows
-                  (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
+            let owltext =
+                  ppTopElement $ xmlOntologyDoc emptySign $ OWL2.convertBasicTheory th2
             showDiags opts ds
-            when (null sy)
-                $ case parse (OWL2.basicSpec Map.empty >> eof) f owltext of
-              Left err -> putIfVerbose opts 0 $ show err
-              _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f owltext
+
       _ -> let flp = getFilePath ln in case guess flp GuessIn of
         OWLIn _ -> writeVerbFile opts f =<< convertOWL flp (show ty)
         _ -> putIfVerbose opts 0
@@ -303,16 +322,31 @@ writeTheory ins nam opts filePrefix ga
               Left err -> putIfVerbose opts 0 $ show err
               _ -> putIfVerbose opts 3 $ "reparsed: " ++ f
             writeVerbFile opts f cltext
-      | otherwise -> putIfVerbose opts 0 $ "expected Common Logic theory for: "
-                                                                            ++ f
+      | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "Common Logic" lang
     KIFOut
       | lang == language_name CommonLogic -> do
             (_, th2) <- coerceBasicTheory lid CommonLogic "" th
             let kiftext = shows (Print_KIF.exportKIF th2) "\n"
             writeVerbFile opts f kiftext
-      | otherwise -> putIfVerbose opts 0 $ "expected Common Logic theory for: "
-                                                                            ++ f
+      | otherwise -> putIfVerbose opts 0 $ wrongLogicMsg f "Common Logic" lang
     _ -> return () -- ignore other file types
+
+allowedOWL2Syntaxes :: [String]
+allowedOWL2Syntaxes = ["Functional", "Manchester"]
+
+writeOWL2VerbFile :: HetcatsOpts -> OWLFormat -> FilePath -> G_theory -> String -> IO ()
+writeOWL2VerbFile opts ty f raw_gTh syntax = case createOWLTheory raw_gTh of
+  Result _ Nothing ->
+    putIfVerbose opts 0 $ wrongLogicMsg f "OWL" $ show ty
+  Result ds (Just th2) -> if elem syntax allowedOWL2Syntaxes
+    then do 
+      let sy = syntax
+          ms = Just $ simpleIdToIRI $ mkSimpleId sy
+          owltext = shows
+            (printTheory ms OWL2 $ OWL2.prepareBasicTheory th2) "\n"
+      showDiags opts ds
+      writeVerbFile opts f owltext
+    else putIfVerbose opts 0 $ "Syntax '" ++ syntax ++ "' is not allowed for OWL2."
 
 modelSparQCheck :: HetcatsOpts -> G_theory -> IO ()
 modelSparQCheck opts gTh@(G_theory lid _ (ExtSign sign0 _) _ sens0 _) =
@@ -348,7 +382,7 @@ writeTheoryFiles opts specOutTypes filePrefix lenv ga ln i n =
             let tr = transNames opts
                 Result es mTh = if null tr then return (raw_gTh0, "") else do
                    comor <- lookupCompComorphism (map tokStr tr) logicGraph
-                   tTh <- mapG_theory comor raw_gTh0
+                   tTh <- mapG_theory (lossyTrans opts) comor raw_gTh0
                    return (tTh, "Translated using comorphism " ++ show comor)
                 (raw_gTh, tStr) =
                   fromMaybe (raw_gTh0, "Keeping untranslated theory") mTh
@@ -377,7 +411,7 @@ writeSpecFiles opts file lenv ln dg = do
         specOutTypes = filter ( \ ot -> case ot of
             ThyFile -> True
             DfgFile _ -> True
-            TPTPFile _ -> True
+            TPTPFile -> True
             XmlOut -> True
             JsonOut -> True
             OmdocOut -> True
@@ -416,7 +450,7 @@ writeSpecFiles opts file lenv ln dg = do
          (simpleIdToIRI $ genToken $ 'n' : show n) n)
       $ if ignore || not allSpecs then [] else
       nodesDG dg
-      \\ Map.fold ( \ e l -> case e of
+      \\ Map.foldr ( \ e l -> case e of
             SpecEntry (ExtGenSig _ (NodeSig n _)) -> n : l
             _ -> l) [] gctx
     doDump opts "GlobalAnnos" $ putStrLn $ showGlobalDoc ga ga ""
@@ -430,11 +464,19 @@ writeSpecFiles opts file lenv ln dg = do
 writeLG :: HetcatsOpts -> IO ()
 writeLG opts = do
     doDump opts "LogicGraph" $ putStrLn $ showDoc logicGraph ""
-    if elem JsonOut $ outtypes opts then do
-      lG <- lGToJson logicGraph
-      writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.json")
-        $ ppJson lG
-      else do
-      lG <- lGToXml logicGraph
-      writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
-        $ ppTopElement lG
+    let writeLGXML = do
+          lG <- lGToXml logicGraph
+          writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.xml")
+            $ ppTopElement lG
+    if null $ outtypes opts
+    then writeLGXML
+    else
+      mapM_ (\ outtype -> case outtype of
+              XmlOut -> writeLGXML
+              JsonOut -> do
+                lG <- lGToJson logicGraph
+                writeVerbFile opts { verbose = 2 } (outdir opts </> "LogicGraph.json")
+                  $ ppJson lG
+              DbOut -> Persistence.LogicGraph.exportLogicGraph opts
+              _ -> return ()
+            ) $ outtypes opts

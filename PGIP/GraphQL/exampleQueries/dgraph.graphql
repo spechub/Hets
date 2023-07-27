@@ -1,0 +1,51 @@
+query DGraph {
+  document(locId: "Basic/RelationsAndOrders.casl") {
+    __typename
+    displayName
+    documentLinksSource: documentLinks(limit: null, origin: source) {
+      source {
+        locId
+      }
+      target {
+        locId
+      }
+    }
+    documentLinksTarget: documentLinks(limit: null, origin: target) {
+      source {
+        locId
+      }
+      target {
+        locId
+      }
+    }
+    locId
+    name
+    version
+    ... on NativeDocument {
+      oms {
+        description
+        displayName
+        labelHasFree
+        labelHasHiding
+        locId
+        name
+        nameExtension
+        nameExtensionIndex
+        origin
+      }
+    }
+    ... on Library {
+      omsList: oms(limit: null) {
+        description
+        displayName
+        labelHasFree
+        labelHasHiding
+        locId
+        name
+        nameExtension
+        nameExtensionIndex
+        origin
+      }
+    }
+  }
+}

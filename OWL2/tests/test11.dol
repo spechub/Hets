@@ -1,0 +1,45 @@
+logic OWL serialization Functional
+
+spec a = 
+Prefix(:=<http://example.com/#>)
+Prefix(dc:=<http://purl.org/dc/elements/1.1/>)
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Prefix(rdf:=<http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
+Prefix(vin:=<http://www.w3.org/2002/03owlt/miscellaneous/consistent001#>)
+Prefix(xml:=<http://www.w3.org/XML/1998/namespace>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Prefix(food:=<http://www.w3.org/2002/03owlt/miscellaneous/consistent002#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+Prefix(owl11:=<http://www.w3.org/2006/12/owl11#>)
+Prefix(pizza:=<http://www.co-ode.org/ontologies/pizza/pizza.owl#>)
+
+
+Ontology(
+Declaration(Class(:Woman))
+Declaration(ObjectProperty(:fatherOf))
+Declaration(NamedIndividual(:Meg))
+Declaration(NamedIndividual(:Peter))
+Declaration(NamedIndividual(:Stewie))
+
+
+############################
+#   Named Individuals
+############################
+
+# Individual: :Meg (:Meg)
+
+ClassAssertion(:Woman :Meg)
+
+# Individual: :Peter (:Peter)
+
+ClassAssertion(ObjectMaxCardinality(1 :fatherOf :Woman) :Peter)
+ObjectPropertyAssertion(:fatherOf :Peter :Meg)
+ObjectPropertyAssertion(:fatherOf :Peter :Stewie)
+
+# Individual: :Stewie (:Stewie)
+
+
+
+DifferentIndividuals(:Meg :Stewie)
+)
+end

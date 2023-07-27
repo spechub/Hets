@@ -38,6 +38,7 @@ Assembles all the logics and comorphisms into a graph.
 
 module Comorphisms.LogicGraph
     ( logicGraph
+    , logicGraphForFile
     , lookupComorphism_in_LG
     , comorphismList
     , inclusionList
@@ -46,8 +47,11 @@ module Comorphisms.LogicGraph
     ) where
 
 import qualified Data.Map as Map
+import qualified Control.Monad.Fail as Fail
+import Data.Maybe (fromMaybe)
 
 import Common.Result
+import Common.IRI (nullIRI, parseIRI)
 import Logic.Logic
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -67,6 +71,7 @@ import Comorphisms.CFOL2IsabelleHOL
 import Comorphisms.CommonLogic2IsabelleHOL
 import Comorphisms.HolLight2Isabelle
 import Comorphisms.SuleCFOL2SoftFOL
+import Comorphisms.SuleCFOL2TPTP
 import Comorphisms.Prop2CASL
 import Comorphisms.CASL2Prop
 import Comorphisms.HasCASL2IsabelleHOL
@@ -119,6 +124,7 @@ import Comorphisms.Adl2CASL
 #ifndef NOOWLLOGIC
 import OWL2.DMU2OWL2
 import OWL2.OWL22CASL
+import OWL2.OWL22NeSyPatterns
 import OWL2.CASL2OWL
 import OWL2.OWL22CommonLogic
 import OWL2.Propositional2OWL2
@@ -207,6 +213,7 @@ comorphismList =
     , Comorphism OWL22CommonLogic
     , Comorphism DMU2OWL2
     , Comorphism CASL2OWL
+    , Comorphism OWL22NeSyPatterns
     , Comorphism Propositional2OWL2
 #ifdef CASLEXTENSIONS
     , Comorphism ExtModal2OWL
@@ -226,10 +233,13 @@ comorphismList =
     , Comorphism HasCASL2PCoClTyConsHOL
     , Comorphism HasCASL2HasCASL
     , Comorphism suleCFOL2SoftFOL
+    , Comorphism suleCFOL2TPTP
     , Comorphism CASL2PCFOL
     , Comorphism $ CASL2SubCFOL True FormulaDependent -- unique bottoms
     , Comorphism $ CASL2SubCFOL False SubsortBottoms -- keep free types
     , Comorphism $ CASL2SubCFOL False NoMembershipOrCast -- keep free types
+    , Comorphism $ CASL2SubCFOL False FormulaDependent
+      -- keep free types if all gen constraint constructors are total
     , Comorphism CASL2TopSort
     , Comorphism QBF2Prop
     , Comorphism Prop2QBF
@@ -244,7 +254,7 @@ addComps :: Map.Map (String, String) AnyComorphism
          -> Map.Map (String, String) AnyComorphism
 addComps cm = Map.unions
    $ cm : map (\ ((l1, l2), c1) ->
-         Map.foldWithKey (\ (l3, l4) c2 m -> if l3 == l2 then
+         Map.foldrWithKey (\ (l3, l4) c2 m -> if l3 == l2 then
               case compComorphism c1 c2 of
                 Just c3 -> Map.insert (l1, l4) c3 m
                 _ -> m
@@ -288,6 +298,11 @@ logicGraph = emptyLogicGraph
        Map.fromList $ map (\ x@(Comorphism c) -> (show (sourceLogic c), x))
                        qtaList}
 
+logicGraphForFile :: FilePath -> LogicGraph
+logicGraphForFile file = logicGraph {
+    prefixes = Map.singleton "" $ fromMaybe nullIRI $ parseIRI $ "file://" ++ file ++ "?"
+  }
+
 lookupSquare_in_LG :: AnyComorphism -> AnyComorphism -> Result [Square]
 lookupSquare_in_LG com1 com2 = lookupSquare com1 com2 logicGraph
 
@@ -308,4 +323,4 @@ lookupQTA_in_LG coname =
    qta = qTATranslations logicGraph
  in if coname `elem` Map.keys qta then
         return $ Map.findWithDefault (error "") coname qta
-      else fail "no translation found"
+      else Fail.fail "no translation found"

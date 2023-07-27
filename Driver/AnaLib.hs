@@ -1,13 +1,13 @@
 {- |
 Module      :  ./Driver/AnaLib.hs
-Description :  wrapper for static analysis of HetCASL
+Description :  wrapper for static analysis of DOL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable(Logic)
 
-wrapper for static analysis of HetCASL reading and writing prf-files
+wrapper for static analysis of DOL reading and writing prf-files
 -}
 
 module Driver.AnaLib
@@ -15,6 +15,8 @@ module Driver.AnaLib
     , anaLibExt
     , anaLibReadPrfs
     ) where
+
+import Common.Utils (FileInfo(..))
 
 import Proofs.Automatic
 import Proofs.NormalForm
@@ -24,6 +26,7 @@ import Static.History
 import Static.AnalysisLibrary
 import Static.ApplyChanges
 import Static.FromXml
+import System.Directory (removeFile)
 
 import Comorphisms.LogicGraph
 
@@ -59,24 +62,31 @@ anaLib :: HetcatsOpts -> FilePath -> IO (Maybe (LibName, LibEnv))
 anaLib opts origName = do
   let fname = useCatalogURL opts origName
       isPrfFile = isSuffixOf prfSuffix
-  ep <- getContent opts {intype = GuessIn}
+  ep <- getContentAndFileType opts {intype = GuessIn}
     $ if isPrfFile fname then rmSuffix fname else fname
   case ep of
     Left _ -> anaLibExt opts fname emptyLibEnv emptyDG
-    Right (file, content)
-      | isPrfFile file -> do
-            putIfVerbose opts 0 $ "a matching source file for proof history '"
-                             ++ file ++ "' not found."
-            return Nothing
-      | isDgXmlFile opts file content -> readDGXml opts file
-      | otherwise -> anaLibExt opts (keepOrigClifName opts origName file)
+    Right (_, _, fInfo, content)
+      | isPrfFile (filePath fInfo) -> do
+          putIfVerbose opts 0 $ "a matching source file for proof history '"
+                           ++ (filePath fInfo) ++ "' not found."
+          when (wasDownloaded fInfo) $ removeFile (filePath fInfo)
+          return Nothing
+      | isDgXmlFile opts (filePath fInfo) content -> do
+          res <- readDGXml opts (filePath fInfo)
+          when (wasDownloaded fInfo) $ removeFile (filePath fInfo)
+          return res
+      | otherwise -> do
+          res <- anaLibExt opts (keepOrigClifName opts origName (filePath fInfo))
             emptyLibEnv emptyDG
+          when (wasDownloaded fInfo) $ removeFile (filePath fInfo)
+          return res
 
 -- | read a file and extended the current library environment
 anaLibExt :: HetcatsOpts -> FilePath -> LibEnv -> DGraph
   -> IO (Maybe (LibName, LibEnv))
 anaLibExt opts file libEnv initDG = do
-    Result ds res <- runResultT $ anaLibFileOrGetEnv logicGraph opts
+    Result ds res <- runResultT $ anaLibFileOrGetEnv (logicGraphForFile file) opts
       Set.empty libEnv initDG Nothing file
     showDiags opts ds
     case res of

@@ -44,7 +44,7 @@ import Common.Id (Token (..), Id, mkId, nullRange)
 import Common.AS_Annotation (Named, SenAttr (..))
 import Common.Result
 
-import Control.Applicative
+import Control.Applicative ()
 import Control.Monad.State
 import Control.Monad.Identity
 

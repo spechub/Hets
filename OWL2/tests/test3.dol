@@ -1,0 +1,23 @@
+logic OWL serialization Manchester
+
+spec emptyontology =
+
+Class: Boy
+
+
+Class: Girl
+
+
+Class: Dog
+
+
+Individual: Stewie
+
+    Types:
+        Boy
+
+
+DisjointClasses:
+    Boy,Dog,Girl
+
+with Class Boy |-> YoungMan

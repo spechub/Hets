@@ -29,6 +29,7 @@ import HasCASL.HToken
 import HasCASL.ParseTerm
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 -- * adapted item list parser (using 'itemAux')
 
@@ -254,7 +255,7 @@ multiTypeScheme :: [PolyId] -> AParser st TypeScheme
 multiTypeScheme os = case os of
     p : r -> if null r || all ( \ (PolyId _ tys _) -> null tys) os
       then typeScheme p
-      else fail $ "instantiation list in identifier list: "
+      else Fail.fail $ "instantiation list in identifier list: "
                ++ show (map ( \ (PolyId i _ _) -> i) os)
     _ -> error "HasCASL.ParseItem.opDecl"
 

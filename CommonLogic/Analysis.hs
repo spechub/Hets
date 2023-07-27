@@ -32,6 +32,7 @@ import Common.IRI (parseIRIReference)
 import Common.DocUtils
 import Common.Lib.Graph
 import Common.SetColimit
+import qualified Control.Monad.Fail as Fail
 
 import CommonLogic.Symbol as Symbol
 import qualified CommonLogic.AS_CommonLogic as AS
@@ -275,7 +276,7 @@ inducedFromToMorphism m (ExtSign s sys) (ExtSign t ty) = let
        , sequenceMarkers = Set.map (applyMap p) $ sequenceMarkers s
        }
   in if isSubSigOf t2 t then return $ mkMorphism s t p else
-        fail $ "cannot map symbols from\n" ++ showDoc (sigDiff t2 t) "\nto\n"
+        Fail.fail $ "cannot map symbols from\n" ++ showDoc (sigDiff t2 t) "\nto\n"
           ++ showDoc t ""
 
 -- | negate sentence (text) - propagates negation to sentences

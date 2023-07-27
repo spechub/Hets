@@ -76,7 +76,7 @@ modPredType ws term m = PredType $ (if term then (m :) else id) [ws, ws]
 
 -- | the renaming as part of a morphism
 renMorphism :: Ord a => (Id -> Id) -> MapSet.MapSet Id a -> Map.Map (Id, a) Id
-renMorphism ren = Map.foldWithKey (\ i s ->
+renMorphism ren = Map.foldrWithKey (\ i s ->
    let j = ren i in
    if j == i then id else
        Map.union . Map.fromAscList . map (\ a -> ((j, a), j)) $ Set.toList s)

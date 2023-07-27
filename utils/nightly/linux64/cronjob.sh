@@ -23,8 +23,8 @@ createLogFiles
 
 runIsaBasic
 runSPASSBasic
-checkIsaOf Calculi/Time/AllenHayesLadkin_TACAS.het HC
-checkIsaOf Calculi/Space/RCCVerification.het HC2
+checkIsaOf Calculi/Time/AllenHayesLadkin_TACAS.dol HC
+checkIsaOf Calculi/Space/RCCVerification.dol HC2
 
 checkBins
 
