@@ -57,6 +57,18 @@ data Symbol
   | Rel Relation
     deriving (Eq, Ord, Show, Typeable, Data)
 
+data SymbolKind = ConK | RelK 
+  deriving (Eq, Ord, Show, Typeable, Data)
+
+sym_kind :: Symbol -> SymbolKind
+sym_kind (Con _) = ConK
+sym_kind (Rel _) = RelK
+
+
+instance Pretty SymbolKind where 
+ pretty ConK = text "concept"
+ pretty RelK = text "relation" 
+
 instance GetRange Symbol where
   getRange s = case s of
     Rel r -> getRange r

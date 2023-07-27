@@ -13,6 +13,7 @@ Declaration of the abstract datatypes of FreeCAD terms
 -}
 module FreeCAD.Translator where
 
+import Prelude
 import FreeCAD.As
 import Text.XML.Light
 import Data.Maybe
@@ -58,7 +59,7 @@ objList :: Element -> [Element]
 objList mbel = findChildren objQName (fromJust (objListEl mbel))
 
 firstThree :: String -> String
-firstThree = take 3
+firstThree = Prelude.take 3
 
 getName :: Element -> String
 getName el = fromJust (findAttr (unqual "name") el)

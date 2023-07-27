@@ -103,6 +103,10 @@ type SIMPLE_ID = Token
 mkSimpleId :: String -> Token
 mkSimpleId s = Token s nullRange
 
+-- | add a string to a token
+addStringToTok :: Token -> String -> Token 
+addStringToTok (Token s r) s' = Token (s ++ s') r
+ 
 -- | null token
 nullTok :: Token
 nullTok = mkSimpleId ""
@@ -173,6 +177,9 @@ data Id = Id
 instance Show Id where
   showsPrec _ = showId
 
+isNullId :: Id -> Bool
+isNullId (Id ts cs r) = null ts && null cs && isNullRange r
+
 -- | construct an 'Id' from a token list
 mkId :: [Token] -> Id
 mkId toks = Id toks [] nullRange
@@ -231,6 +238,20 @@ appendString (Id tokList idList range) s = let
                     prefixed with genNamePrefix or extended with a number -}
            ++ tokens
  in Id (genTok tokList [] s) idList range
+
+-- | prepend a string to the first token of an Id
+prependString :: String -> Id -> Id
+prependString s (Id [] comps range) =
+  Id [Token s nullRange] comps range
+prependString s (Id (Token t range1:toks) comps range2) =
+  Id (Token (s++t) range1:toks) comps range2
+
+-- | append two Ids
+appendId :: Id -> Id -> Id
+appendId i1 i2 =
+  Id (getTokens i1 ++ getTokens i2)
+     (getComps i1 ++ getComps i2)
+     (appRange (rangeOfId i1) (rangeOfId i2))
 
 -- | the name of injections
 injToken :: Token
@@ -466,6 +487,11 @@ idRange :: Id -> [Pos]
 idRange (Id ts _ r) =
     let (fs, rs) = splitMixToken ts
     in joinRanges $ map tokenRange fs ++ [outerRange r] ++ map tokenRange rs
+
+-- | add components to an Id
+addComponents :: Id -> ([Id], Range) -> Id
+addComponents i (comps,rs) = i { getComps = getComps i ++ comps
+                               , rangeOfId = appRange (rangeOfId i) rs}
 
 -- -- helper class -------------------------------------------------------
 

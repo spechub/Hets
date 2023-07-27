@@ -1,12 +1,14 @@
 *~
+*.DS_Store
 *.hi
 *.o
+*.p_o
 *.dyn_hi
 *.dyn_o
 .*.swp
 .hets*
 *.bin
-hets
+./hets
 hets_server
 hets.cgi
 rev.txt
@@ -23,6 +25,8 @@ doc/*.out
 doc/UserGuide.pdf
 doc/hs2isa.ps
 docs/
+__pycache__
+.idea
 programatica/
 OWL2/*.jar
 OWL2/java/build/
@@ -169,7 +173,6 @@ VSE/ATC_VSE.der.hs
 VSE/ATC_VSE.hs
 utils/DrIFT
 utils/DtdToHaskell
-utils/DtdToHaskell-src/DtdToHaskell/
 utils/appendHaskellPreludeString
 utils/genRules
 Hybrid/ATC_Hybrid.hs
@@ -187,3 +190,12 @@ TPTP/ATC_TPTP.der.hs
 TPTP/ATC_TPTP.hs
 test/*/*.th
 test/*/*.xml
+/_dependencies
+stack.yaml.lock
+consoleHistory.tmp
+/stack.yaml.lock
+/.old.stack-work
+NeSyPatterns/AS.hs
+NeSyPatterns/ATC_NeSyPatterns.der.hs
+NeSyPatterns/ATC_NeSyPatterns.hs
+OWL2/scripts/runTest

@@ -17,7 +17,7 @@ files are kept in one directory (casl_el in the example):
 
 (load-file "<path-to-here>/casl_el/casl.el")
 
-Afterwards the casl-mode is loaded for files ending with ".het" and
+Afterwards the casl-mode is loaded for files ending with ".het", ".dol" and
 ".casl" automatically.
 
 Running hets from the emacs mode:

@@ -11,17 +11,19 @@ module PGIP.Output.Proof
   ) where
 
 import PGIP.Output.Formatting
-import PGIP.Output.Mime
+import PGIP.Output.Mime ()
 import PGIP.Output.Provers (Prover, prepareFormatProver)
+import PGIP.Shared
 
 import Interfaces.GenericATPState (tsTimeLimit, tsExtraOpts)
-import Logic.Comorphism (AnyComorphism)
+import Logic.Comorphism ()
 
 import qualified Logic.Prover as LP
 
-import Proofs.AbstractState (G_proof_tree, ProverOrConsChecker)
+import Proofs.AbstractState (G_proof_tree)
 
-import Common.Json (ppJson, asJson)
+import Common.Json (asJson)
+import Common.JSONOrXML
 import Common.ToXml (asXml)
 import Common.Utils (readMaybe)
 
@@ -30,15 +32,11 @@ import Data.Time.LocalTime
 
 import Numeric
 
-import Text.XML.Light (ppTopElement)
+import Text.XML.Light ()
 import Text.Printf (printf)
 
-type ProofResult = (String, String, String, ProverOrConsChecker,
-                -- (goalName, goalResult, goalDetails, prover,
-                    AnyComorphism, Maybe (LP.ProofStatus G_proof_tree))
-                -- translation, proofStatusM)
 type ProofFormatter =
-    ProofFormatterOptions -> [(String, [ProofResult])] -> (String, String)
+    ProofFormatterOptions -> [(String, [ProofResult])] -> JSONOrXML
                           -- [(dgNodeName, result)]  -> (responseType, response)
 
 data ProofFormatterOptions = ProofFormatterOptions
@@ -60,11 +58,11 @@ formatProofs format options proofs = case format of
   proof :: [Proof]
   proof = map convertProof proofs
 
-  formatAsJSON :: (String, String)
-  formatAsJSON = (jsonC, ppJson $ asJson proof)
+  formatAsJSON :: JSONOrXML
+  formatAsJSON = JSON $ asJson proof
 
-  formatAsXML :: (String, String)
-  formatAsXML = (xmlC, ppTopElement $ asXml proof)
+  formatAsXML :: JSONOrXML
+  formatAsXML = XML $ asXml proof
 
   convertProof :: (String, [ProofResult]) -> Proof
   convertProof (nodeName, proofResults) = Proof
@@ -74,7 +72,7 @@ formatProofs format options proofs = case format of
 
   convertGoal :: ProofResult -> ProofGoal
   convertGoal (goalName, goalResult, goalDetails, proverOrConsChecker,
-               translation, proofStatusM) =
+               translation, proofStatusM, _) =
     ProofGoal
       { name = goalName
       , result = goalResult

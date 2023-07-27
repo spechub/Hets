@@ -122,7 +122,7 @@ mkProver binary_name prover_name sublogics runTheProver =
 
 mkTheoryFileName :: String -> Named Sentence -> String
 mkTheoryFileName theoryName namedGoal =
-  theoryName ++ '_' : senAttr namedGoal ++ ".tptp"
+  basename (theoryName ++ '_' : senAttr namedGoal ++ ".tptp")
 
 getTimeLimit :: GenericConfig ProofTree -> Int
 getTimeLimit cfg = fromMaybe 100 $ timeLimit cfg
@@ -179,8 +179,17 @@ atpRetValAndProofStatus :: GenericConfig ProofTree
                         -> String
                         -> String
                         -> (ATPRetval, ProofStatus ProofTree)
-atpRetValAndProofStatus cfg namedGoal timeUsed axiomsUsed szsStatusLine prover_name =
-  let statuses = proofStatuses cfg namedGoal timeUsed axiomsUsed prover_name
+atpRetValAndProofStatus cfg namedGoal = atpRetValAndProofStatus' cfg $ senAttr namedGoal
+
+atpRetValAndProofStatus' :: GenericConfig ProofTree
+                        -> String
+                        -> TimeOfDay
+                        -> [String]
+                        -> String
+                        -> String
+                        -> (ATPRetval, ProofStatus ProofTree)
+atpRetValAndProofStatus' cfg nameOfGoal timeUsed axiomsUsed szsStatusLine prover_name =
+  let statuses = proofStatuses' cfg nameOfGoal timeUsed axiomsUsed prover_name
   in selectRetValAndProofStatus statuses szsStatusLine
 
 selectRetValAndProofStatus :: (ProofStatus ProofTree,
@@ -204,9 +213,20 @@ proofStatuses :: GenericConfig ProofTree
               -> (ProofStatus ProofTree,
                   ProofStatus ProofTree,
                   ProofStatus ProofTree)
-proofStatuses cfg namedGoal timeUsed axiomsUsed prover_name =
+proofStatuses cfg namedGoal =
+  proofStatuses' cfg (senAttr namedGoal)
+
+proofStatuses' :: GenericConfig ProofTree
+              -> String
+              -> TimeOfDay
+              -> [String]
+              -> String
+              -> (ProofStatus ProofTree,
+                  ProofStatus ProofTree,
+                  ProofStatus ProofTree)
+proofStatuses' cfg nameOfGoal timeUsed axiomsUsed prover_name =
   let defaultPS =
-        (openProofStatus (senAttr namedGoal) prover_name emptyProofTree)
+        (openProofStatus nameOfGoal prover_name emptyProofTree)
           { usedTime = timeUsed
           , tacticScript = TacticScript $ show ATPTacticScript
              { tsTimeLimit = configTimeLimit cfg

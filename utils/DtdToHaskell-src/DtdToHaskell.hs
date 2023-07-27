@@ -10,7 +10,7 @@ to read and write XML files with your Haskell programs. -}
 import System.Environment
 import System.Exit
 import System.IO
-import Data.List (nub, takeWhile, dropWhile)
+import Data.List (nub)
 import Control.Monad
 
 -- import Text.XML.HaXml.Wrappers   (fix2Args)
@@ -20,7 +20,7 @@ import Text.XML.HaXml.Types (DocTypeDecl (..))
 import Text.XML.HaXml.Namespaces (localName)
 #endif
 import Text.XML.HaXml.Parse (dtdParse)
-import DtdToHaskell.TypeDef (TypeDef, ppTypeDef, mangle)
+import DtdToHaskell.TypeDef (ppTypeDef, mangle)
 import DtdToHaskell.Convert (dtd2TypeDef)
 import DtdToHaskell.Instance (mkInstance)
 import Text.PrettyPrint.HughesPJ (render, vcat)

@@ -33,6 +33,7 @@ import Common.Lib.Graph as Tree
 import Common.ExtSign
 import Common.Result
 import Common.LogicT
+import qualified Control.Monad.Fail as Fail
 
 import Logic.Logic
 import Logic.Comorphism
@@ -212,7 +213,7 @@ dijkstra graph source target = do
    in if u == tn then shortPath sn p1 c1 [] tn
      else mainloop gr sn tn q1 d1 p1 c1
   shortPath sn p1 c s u =
-   if u `notElem` Map.keys p1 then fail "path not found"
+   if u `notElem` Map.keys p1 then Fail.fail "path not found"
     else let
     x = Map.findWithDefault (error $ show u) u p1 in
     if x == sn then return (u : s, c)
@@ -298,8 +299,8 @@ computeCoeqs graph funDesc (n1, gt1) (n2, gt2)
  _rho2@(GMorphism cid4 _ _ mor4 _) <- dijkstra graph n n2
  com1 <- compComorphism (Comorphism cid1) (Comorphism cid3)
  com2 <- compComorphism (Comorphism cid1) (Comorphism cid3)
- if com1 /= com2 then fail "Unable to compute coequalizer" else do
-   _gtM@(G_theory lidM _ signM _idxM _ _) <- mapG_theory com1 gt
+ if com1 /= com2 then Fail.fail "Unable to compute coequalizer" else do
+   _gtM@(G_theory lidM _ signM _idxM _ _) <- mapG_theory False com1 gt
    s1 <- coerceSign lidM tlid "coequalizers" signM
    mor3' <- coerceMorphism (targetLogic cid3) (sourceLogic cid1) "coeqs" mor3
    mor4' <- coerceMorphism (targetLogic cid4) (sourceLogic cid2) "coeqs" mor4
@@ -339,7 +340,8 @@ commonDesc funDesc n1 n2 = case glb funDesc n1 n2 of
                             Nothing -> maxBounds funDesc n1 n2
 
 -- returns a weakly amalgamable square of lax triangles
-pickSquare :: (MonadPlus t) => Result GMorphism -> Result GMorphism -> t Square
+pickSquare :: (MonadPlus t, Fail.MonadFail t) => Result GMorphism -> Result GMorphism
+  -> t Square
 pickSquare (Result _ (Just phi1@(GMorphism cid1 _ _ _ _)))
            (Result _ (Just phi2@(GMorphism cid2 _ _ _ _))) =
    if isHomogeneous phi1 && isHomogeneous phi2 then
@@ -356,8 +358,8 @@ pickSquare (Result _ (Just phi1@(GMorphism cid1 _ _ _ _)))
           Nothing -> msum $ map return defaultSquare
           Just sqList -> msum $ map return $ sqList ++ defaultSquare
 
-pickSquare (Result _ Nothing) _ = fail "Error computing comorphisms"
-pickSquare _ (Result _ Nothing) = fail "Error computing comorphisms"
+pickSquare (Result _ Nothing) _ = Fail.fail "Error computing comorphisms"
+pickSquare _ (Result _ Nothing) = Fail.fail "Error computing comorphisms"
 
 -- builds the span for which the colimit is computed
 buildSpan :: GDiagram ->
@@ -394,9 +396,9 @@ buildSpan graph
           n n1 n2
           maxNodes
            = do
- sig@(G_theory _lid0 _ _sign0 _ _ _) <- mapG_theory d gt -- phi^d(Sigma)
- sig1 <- mapG_theory e1 gt1 -- phi^e1(Sigma1)
- sig2 <- mapG_theory e2 gt2 -- phi^e2(Sigma2)
+ sig@(G_theory _lid0 _ _sign0 _ _ _) <- mapG_theory False d gt -- phi^d(Sigma)
+ sig1 <- mapG_theory False e1 gt1 -- phi^e1(Sigma1)
+ sig2 <- mapG_theory False e2 gt2 -- phi^e2(Sigma2)
  mor1' <- coerceMorphism (targetLogic cid1) (sourceLogic cidE1) "buildSpan" mor1
  eps1 <- map_morphism cidE1 mor1' -- phi^e1(sigma1)
  sign' <- coerceSign lid (sourceLogic $ sourceComorphism cidM1) "buildSpan" sign
@@ -426,7 +428,8 @@ nrMaxNodes :: Gr a b -> Int
 nrMaxNodes graph = length $ filter (\ n -> outdeg graph n == 0) $ nodes graph
 
 -- | backtracking function for heterogeneous weak amalgamable cocones
-hetWeakAmalgCocone :: (Monad m, LogicT t, MonadPlus (t m)) =>
+hetWeakAmalgCocone :: (Fail.MonadFail m, LogicT t, MonadPlus (t m),
+                      Fail.MonadFail (t m)) =>
                      GDiagram -> Map.Map Int [(Int, G_theory)] -> t m GDiagram
 hetWeakAmalgCocone graph funDesc =
  if nrMaxNodes graph == 1 then return graph

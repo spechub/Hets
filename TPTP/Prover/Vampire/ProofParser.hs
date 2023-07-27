@@ -28,12 +28,12 @@ parseStatus = fromMaybe "Unknown" . foldr parseStatusIfStatusline Nothing
     parseStatusIfStatusline :: String -> Maybe String -> Maybe String
     parseStatusIfStatusline line mStatus = case mStatus of
       Nothing -> case () of
-        _ | isPrefixOf "Termination reason: Time limit" line -> Just "Timeout"
-        _ | isPrefixOf "Termination reason: Memory limit" line -> Just "MemoryOut"
-        _ | isPrefixOf "Termination reason: Refutation not found" line -> Just "GaveUp"
-        _ | isPrefixOf "Termination reason: Refutation" line -> Just "Theorem"
-        _ | isPrefixOf "Termination reason: Satisfiable" line -> Just "CounterSatisfiable" -- this is a model
-        _ | isPrefixOf "Termination reason: Unknown" line -> Just "Unknown"
+        _ | isInfixOf "Termination reason: Time limit" line -> Just "Timeout"
+        _ | isInfixOf "Termination reason: Memory limit" line -> Just "MemoryOut"
+        _ | isInfixOf "Termination reason: Refutation not found" line -> Just "GaveUp"
+        _ | isInfixOf "Termination reason: Refutation" line -> Just "Theorem"
+        _ | isInfixOf "Termination reason: Satisfiable" line -> Just "CounterSatisfiable" -- this is a model
+        _ | isInfixOf "Termination reason: Unknown" line -> Just "Unknown"
         _ -> mStatus
       _ -> mStatus
 

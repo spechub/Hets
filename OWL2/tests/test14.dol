@@ -1,0 +1,30 @@
+logic OWL serialization Functional
+
+spec a = 
+Prefix(a:=<http://a>)
+Prefix(b:=<http://b>)
+Prefix(dc:=<http://purl.org/dc/elements/1.1/>)
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Prefix(rdf:=<http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
+Prefix(xml:=<http://www.w3.org/XML/1998/namespace>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+
+
+Ontology(
+Declaration(Class(a:Boy))
+Declaration(Class(a:Dog))
+Declaration(Class(b:Girl))
+Declaration(NamedIndividual(a:Stewie))
+
+############################
+#   Named Individuals
+############################
+
+# Individual: a:Stewie (a:Stewie)
+
+ClassAssertion(a:Boy a:Stewie)
+
+
+)
+end

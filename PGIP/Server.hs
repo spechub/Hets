@@ -12,17 +12,20 @@ Portability :  non-portable (via imports)
 
 module PGIP.Server (hetsServer) where
 
-#ifdef WARP3
-import Control.Exception.Base (SomeException)
-#endif
-
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 import PGIP.Output.Proof
 import PGIP.Output.Translations
 import qualified PGIP.Output.Provers as OProvers
 
+import PGIP.GraphQL
+
+import PGIP.ReasoningParameters as ReasoningParameters
 import PGIP.Query as Query
+import PGIP.RequestCache
+import PGIP.Server.WebAssets
+import PGIP.Shared
+import qualified PGIP.Server.Examples as Examples
 
 import Driver.Options
 import Driver.ReadFn
@@ -44,6 +47,7 @@ import Network.Wai.Parse as W
 
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.ByteString.Char8 as B8
+import qualified Control.Monad.Fail as Fail
 
 import Static.AnalysisLibrary
 import Static.ApplyChanges
@@ -58,6 +62,9 @@ import Static.History (changeDGH)
 import Static.PrintDevGraph
 import qualified Static.ToJson as ToJson
 import Static.ToXml as ToXml
+
+import qualified Persistence.DevGraph
+import qualified Persistence.Reasoning
 
 import Logic.LGToXml
 
@@ -78,17 +85,17 @@ import Logic.Logic
 import Proofs.AbstractState as AbsState
 import Proofs.ConsistencyCheck
 
-import Text.ParserCombinators.Parsec (parse)
-
 import Text.XML.Light
-import Text.XML.Light.Cursor
+import Text.XML.Light.Cursor hiding (lefts, rights)
 
 import Common.AutoProofUtils
 import Common.Doc
 import Common.DocUtils (pretty, showGlobalDoc, showDoc)
 import Common.ExtSign (ExtSign (..))
 import Common.GtkGoal
-import Common.Json (Json (..), pJson, ppJson)
+import Common.IO
+import Common.Json (Json (..), ppJson)
+import Common.JSONOrXML
 import Common.LibName
 import Common.PrintLaTeX
 import Common.Result
@@ -99,9 +106,12 @@ import Common.XUpdate
 import Common.GlobalAnnotations
 
 import Control.Monad
-import Control.Exception (throwTo)
+import Control.Exception (catch, throwTo)
+import Control.Exception.Base (SomeException)
 import Control.Concurrent (myThreadId, ThreadId)
 
+import qualified Data.Aeson as Aeson
+import Data.Either
 import qualified Data.IntMap as IntMap
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -123,21 +133,9 @@ import System.FilePath
 import System.IO
 import System.Posix.Process (getProcessID)
 import System.Posix.Signals
-
-data Session = Session
-  { sessLibEnv :: LibEnv
-  , sessLibName :: LibName
-  , sessPath :: [String]
-  , sessKey :: Int
-  , sessStart :: UTCTime
-  , lastAccess :: UTCTime
-  , usage :: Int
-  , sessCleanable :: Bool } deriving (Show)
+import System.Posix.Temp
 
 data UsedAPI = OldWebAPI | RESTfulAPI deriving (Show, Eq, Ord)
-
-type SessMap = Map.Map [String] Session
-type Cache = IORef (IntMap.IntMap Session, SessMap)
 
 randomKey :: IO Int
 randomKey = randomRIO (100000000, 999999999)
@@ -167,12 +165,6 @@ matchIP4 ip mask = case mask of
 
 matchWhite :: [String] -> [[String]] -> Bool
 matchWhite ip l = null l || any (matchIP4 ip) l
-
-#ifdef WARP1
-type RsrcIO a = ResourceT IO a
-#else
-type RsrcIO a = IO a
-#endif
 
 #ifdef WARP3
 type WebResponse = (Response -> IO ResponseReceived) -> IO ResponseReceived
@@ -227,6 +219,12 @@ hetsServer' opts1 = do
       bl = blacklist opts1
       prList ll = intercalate ", " $ map (intercalate ".") ll
   createDirectoryIfMissing False tempLib
+
+  -- create a mutable Cache that saves all Requests/Responses
+  cachedRequestsResponses <- createNewRequestCache
+  -- store the current requestBody bytestring
+  currentRequestBodyBS <- newIORef (BS.empty)
+
   writeFile logFile ""
   unless (null wl) . appendFile logFile
     $ "white list: " ++ prList wl ++ "\n"
@@ -239,12 +237,19 @@ hetsServer' opts1 = do
   runSettings (setOnExceptionResponse catchException $
                setPort port $
                setTimeout 86400 defaultSettings)
-    $ \ re respond -> do
+    $ \ re respond' -> do
 #else
   run port $ \ re -> do
-   let respond = liftIO . return
+   let respond' = liftIO . return
 #endif
-   let rhost = shows (remoteHost re) "\n"
+   let
+       respond = \response -> do
+          -- Before updating cache check if request was successful
+          if statusCode (responseStatus response) == 200 then do
+            updateCache currentRequestBodyBS re response cachedRequestsResponses
+            respond' response
+          else respond' response
+       rhost = shows (remoteHost re) "\n"
        ip = getIP4 rhost
        white = matchWhite ip wl
        black = any (matchIP4 ip) bl
@@ -276,28 +281,43 @@ hetsServer' opts1 = do
          Left err -> queryFail err respond
          Right (qr2, fs2) ->
            let newOpts = foldl makeOpts opts $ fs ++ map snd fs2
-           in if isRESTful pathBits then do
-              requestBodyParams <- parseRequestParams re
+           in if isGraphQL meth pathBits then do
+                   responseString <- processGraphQL newOpts sessRef re
+                   respond $ mkOkResponse "application/json" responseString
+              else if isRESTful pathBits then do
+              requestBodyBS <- strictRequestBody re
+              requestBodyParams <- parseRequestParams re requestBodyBS
               let unknown = filter (`notElem` allQueryKeys) $ map fst qr2
+
+              -- store the requestBody because the original one in the request is consumed
+              atomicWriteIORef currentRequestBodyBS requestBodyBS
+              requestKey <- convertRequestToMapKey re requestBodyBS
+              cacheLookupResult <- lookupCache requestKey cachedRequestsResponses
+              -- check if cache should be used
+              let cacheEntry = if (elem ("useCache", Just "true") qr2)
+                               then cacheLookupResult
+                               else Nothing
               if null unknown
-              then parseRESTful newOpts sessRef pathBits
-                    (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs)
-                    qr2 requestBodyParams meth respond
+              then
+                -- return cache if request is already cached and should be used
+                case cacheEntry of
+                  Nothing -> do
+                    parseRESTful newOpts sessRef pathBits
+                      (map fst fs2 ++ map (\ (a, b) -> a ++ "=" ++ b) vs) qr2
+                      requestBodyBS requestBodyParams meth tempDir respond
+                  Just cacheResponse ->
+                    -- Return directly cached response without updating the cache
+                    respond' cacheResponse
               else queryFail ("unknown query key(s): " ++ show unknown) respond
            -- only otherwise stick to the old response methods
            else oldWebApi newOpts tempLib sessRef re pathBits qr2
              meth respond
 
-parseRequestParams :: Request -> RsrcIO Json
-parseRequestParams request =
+parseRequestParams :: Request -> BS.ByteString -> RsrcIO Json
+parseRequestParams request requestBodyBS =
   let
     noParams :: Json
     noParams = JNull
-
-    parseJson :: String -> Maybe Json
-    parseJson s = case parse pJson "" s of
-      Left _ -> Nothing
-      Right json -> Just json
 
     lookupHeader :: String -> Maybe String
     lookupHeader s =
@@ -316,39 +336,33 @@ parseRequestParams request =
         (formDataB8, _) <- parseRequestBody lbsBackEnd request
         return $ parseJson $ toJsonObject formDataB8
 
-    jsonBody :: RsrcIO (Maybe Json)
-    jsonBody = liftM (parseJson . B8.unpack) receivedRequestBody
-
-    receivedRequestBody :: RsrcIO B8.ByteString
-    receivedRequestBody = liftM (B8.pack . BS.unpack) $ lazyRequestBody request
-
 #ifdef WARP1
     lazyRequestBody :: Request -> ResourceT IO BS.ByteString
     lazyRequestBody = fmap BS.fromChunks . lazyConsume . requestBody
 #endif
   in
     liftM (fromMaybe noParams) $ case lookupHeader "Content-Type" of
-      Just "application/json" -> jsonBody
+      Just "application/json" -> jsonBody requestBodyBS
       Just "multipart/form-data" -> formParams
       _ -> formParams
 
 -- | the old API that supports downloading files and interactive stuff
 oldWebApi :: HetcatsOpts -> FilePath -> Cache -> Request -> [String]
   -> [QueryPair] -> String -> WebResponse
-oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
-  = case meth of
+oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond =
+  case meth of
       "GET" -> if isJust $ lookup "menus" splitQuery
          then mkMenuResponse respond else do
          let path = intercalate "/" pathBits
          dirs@(_ : cs) <- liftIO $ getHetsLibContent opts path splitQuery
-         if not (null cs) || null path then mkHtmlPage path dirs respond
+         if not (null cs) || null path then htmlResponse path dirs respond
            -- AUTOMATIC PROOFS (parsing)
            else if isJust $ getVal splitQuery "autoproof" then
              let qr k = Query (DGQuery k Nothing) $
                    anaAutoProofQuery splitQuery in do
                Result ds ms <- liftIO $ runResultT
                  $ case readMaybe $ head pathBits of
-                 Nothing -> fail "cannot read session id for automatic proofs"
+                 Nothing -> Fail.fail "cannot read session id for automatic proofs"
                  Just k' -> getHetsResult opts [] sessRef (qr k')
                               Nothing OldWebAPI proofFormatterOptions
                respond $ case ms of
@@ -358,6 +372,11 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
            else getHetsResponse opts [] sessRef pathBits splitQuery respond
       "POST" -> do
         (params, files) <- parseRequestBody lbsBackEnd re
+        let opts' = case lookup (B8.pack "input-type") params of
+                      Nothing -> opts
+                      Just inputType -> if null $ B8.unpack inputType
+                                        then opts
+                                        else opts { intype = read $ B8.unpack inputType }
         mTmpFile <- case lookup "content"
                    $ map (\ (a, b) -> (B8.unpack a, b)) params of
               Nothing -> return Nothing
@@ -366,12 +385,12 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
                    tmpFile <- getTempFile content "temp.het"
                    return $ Just tmpFile
         let res tmpFile =
-              getHetsResponse opts [] sessRef [tmpFile] splitQuery respond
+              getHetsResponse opts' [] sessRef [tmpFile] splitQuery respond
             mRes = maybe (queryFail "nothing submitted" respond)
               res mTmpFile
         case files of
           [] -> if isJust $ getVal splitQuery "prove" then
-               getHetsResponse opts [] sessRef pathBits
+               getHetsResponse opts' [] sessRef pathBits
                  (splitQuery ++ map (\ (a, b)
                  -> (B8.unpack a, Just $ B8.unpack b)) params) respond
             else mRes
@@ -383,7 +402,7 @@ oldWebApi opts tempLib sessRef re pathBits splitQuery meth respond
              maybe (res tmpFile) res mTmpFile
             else mRes
           _ -> getHetsResponse
-                 opts (map snd files) sessRef pathBits splitQuery respond
+                 opts' (map snd files) sessRef pathBits splitQuery respond
       _ -> respond $ mkResponse "" status400 ""
 
 -- extract what we need to know from an autoproof request
@@ -413,9 +432,9 @@ isRESTful pathBits = case pathBits of
 
 listRESTfulIdentifiers :: [String]
 listRESTfulIdentifiers =
-  [ "libraries", "sessions", "menus", "filetype", "hets-lib", "dir"]
+  [ "libraries", "sessions", "menus", "filetype", "hets-lib", "dir", "folder"]
   ++ nodeEdgeIdes ++ newRESTIdes
-  ++ ["available-provers"]
+  ++ ["available-provers", "uploadFile"]
 
 nodeEdgeIdes :: [String]
 nodeEdgeIdes = ["nodes", "edges"]
@@ -429,17 +448,17 @@ queryFail :: String -> WebResponse
 queryFail msg respond = respond $ mkResponse textC status400 msg
 
 allQueryKeys :: [String]
-allQueryKeys = [updateS, "library", "consistency-checker"]
-  ++ globalCommands ++ knownQueryKeys
-
+allQueryKeys = [updateS, "library", "consistency-checker", "overwrite",
+  "useCache"] ++ globalCommands ++ knownQueryKeys
 
 data RequestBodyParam = Single String | List [String]
 
 -- query is analysed and processed in accordance with RESTful interface
 parseRESTful :: HetcatsOpts -> Cache -> [String] -> [String] -> [QueryPair]
-  -> Json -> String -> WebResponse
+  -> BS.ByteString -> Json -> String -> FilePath -> WebResponse
 parseRESTful
-  opts sessRef pathBits qOpts splitQuery requestBodyParams meth respond = let
+  opts sessRef pathBits qOpts splitQuery requestBodyBS requestBodyParams meth
+  tempDir respond = let
   {- some parameters from the paths query part might be needed more than once
   (when using lookup upon querybits, you need to unpack Maybe twice) -}
   lookupQueryStringParam :: String -> Maybe String
@@ -460,13 +479,6 @@ parseRESTful
           Just (Single s) -> Just s
           _ -> Nothing
 
-  lookupListParam :: String -> [String]
-  lookupListParam key = case meth of
-    "GET" -> mSplitOnComma $ lookupQueryStringParam key
-    _ -> case lookupBodyParam key requestBodyParams of
-          Just (List ps) -> ps
-          _ -> []
-
   isParamTrue :: Bool -> String -> Bool
   isParamTrue def key = case fmap (map toLower) $ lookupSingleParam key of
     Nothing -> def
@@ -475,19 +487,12 @@ parseRESTful
 
   session = lookupSingleParam "session" >>= readMaybe
   library = lookupSingleParam "library"
-  format = lookupSingleParam "format"
+  format_ = lookupSingleParam "format"
   nodeM = lookupSingleParam "node"
   includeDetails = isParamTrue True "includeDetails"
   includeProof = isParamTrue True "includeProof"
-  theorems = lookupListParam "theorems"
   transM = lookupSingleParam "translation"
-  proverM = lookupSingleParam "prover"
-  consM = lookupSingleParam "consistency-checker"
-  inclM = lookupSingleParam "include"
-  axioms = lookupListParam "axioms"
-  incl = maybe False (\ s ->
-              notElem (map toLower s) ["f", "false"]) inclM
-  timeout = lookupSingleParam "timeout" >>= readMaybe
+  reasoningParametersE = parseReasoningParametersEither requestBodyBS
   queryFailure = queryFail
     ("this query does not comply with RESTful interface: "
     ++ showPathQuery pathBits splitQuery) respond
@@ -502,7 +507,7 @@ parseRESTful
       in return . Query (DGQuery sId (Just p)) . nodeQuery (getFragment p)
   -- call getHetsResult with the properly generated query (Final Result)
   getResponseAux myOpts qr = do
-    let format' = Just $ fromMaybe "xml" format
+    let format' = Just $ fromMaybe "xml" format_
     Result ds ms <- liftIO $ runResultT $
       getHetsResult myOpts [] sessRef qr format' RESTfulAPI pfOptions
     respond $ case ms of
@@ -520,20 +525,40 @@ parseRESTful
       "dir" : r -> do
         let path' = intercalate "/" r
         dirs <- liftIO $ getHetsLibContent opts path' splitQuery
-        mkHtmlPage path' dirs respond
+        htmlResponse path' dirs respond
       ["version"] -> respond $ mkOkResponse textC hetsVersion
       ["numeric-version"] ->
         respond $ mkOkResponse textC hetsVersionNumeric
       ["available-provers"] ->
          liftIO (usableProvers logicGraph)
          >>= respond . mkOkResponse xmlC . ppTopElement
+      -- return an unique folder for uploading a file
+      ["folder"] -> do
+        uniqueFolderName <- mkdtemp (tempDir ++ [pathSeparator] ++ "hetsUserFolder_")
+        respond $ mkOkResponse textC uniqueFolderName
+      -- upload a user file to folder for future proving
+      "uploadFile" : folderIri : fileNameIri : _-> do
+        let userFileContent = BS.unpack requestBodyBS
+        let userFilePath = tempDir ++ [pathSeparator] ++ folderIri ++ [pathSeparator] ++ fileNameIri
+        fileExists <- doesFileExist userFilePath
+        -- Check if file already exists and no overwrite flag is set
+        if fileExists && not (elem ("overwrite", Just "true") splitQuery)
+          then
+            Fail.fail ("the file you wish to upload already exists, for overwrite" ++
+                      "please set the corresponding flag")
+          else do
+            -- write file
+            handleUserFile <- openFile userFilePath ReadWriteMode
+            hPutStr handleUserFile userFileContent
+            hClose handleUserFile
+            respond $ mkOkResponse textC userFilePath
       -- get dgraph from file
       "filetype" : libIri : _ -> mkFiletypeResponse opts libIri respond
       "hets-lib" : r -> let file = intercalate "/" r in
-        getResponse $ Query (NewDGQuery file []) $ DisplayQuery format
+        getResponse $ Query (NewDGQuery file []) $ DisplayQuery format_
       -- get library (complies with get/hets-lib for now)
       ["libraries", libIri, "development_graph"] ->
-        getResponse $ Query (NewDGQuery libIri []) $ DisplayQuery format
+        getResponse $ Query (NewDGQuery libIri []) $ DisplayQuery format_
       -- get previously created session
       "sessions" : sessId : cmd -> case readMaybe sessId of
           Nothing -> queryFail ("failed to read session number from " ++ sessId)
@@ -543,13 +568,13 @@ parseRESTful
               Just ndIri -> parseNodeQuery ndIri sId $ case cmd of
                 ["provers"] -> return $ NcProvers GlProofs transM
                 ["translations"] -> return $ NcTranslations Nothing
-                _ -> fail $ "unknown node command for a GET-request: "
+                _ -> Fail.fail $ "unknown node command for a GET-request: "
                       ++ intercalate "/" cmd
               Nothing -> fmap (Query (DGQuery sId Nothing)) $ case cmd of
-                [] -> return $ DisplayQuery format
+                [] -> return $ DisplayQuery format_
                 ["provers"] -> return $ GlProvers GlProofs transM
                 ["translations"] -> return GlTranslations
-                _ -> fail $ "unknown global command for a GET-request: "
+                _ -> Fail.fail $ "unknown global command for a GET-request: "
                   ++ intercalate "/" cmd) >>= getResponse
       -- get node or edge view
       nodeOrEdge : p : c | elem nodeOrEdge nodeEdgeIdes -> let
@@ -573,43 +598,52 @@ parseRESTful
               cmdOptList
             newOpts = foldl makeOpts opts $ mapMaybe (`lookup` optionFlags)
               optFlags
-        in if elem newIde newRESTIdes && all (`elem` globalCommands) cmdList
-        then let
-         qkind = case newIde of
-           "translations" -> case nodeM of
-             Nothing -> GlTranslations
-             Just n -> nodeQuery n $ NcTranslations Nothing
-           _ | elem newIde ["provers", "consistency-checkers"] ->
-             let pm = if newIde == "provers" then GlProofs else GlConsistency
-             in case nodeM of
-             Nothing -> GlProvers pm transM
-             Just n -> nodeQuery n $ NcProvers pm transM
-           _ | elem newIde ["prove", "consistency-check"] ->
-             let isProve = newIde == "prove"
-                 pm = if isProve then GlProofs else GlConsistency
-                 pc = ProveCmd pm
-                        (not (isProve && isJust inclM) || incl)
-                        (if isProve then proverM else consM)
-                        transM timeout theorems True axioms
-             in case nodeM of
-             Nothing -> GlAutoProve pc
-             Just n -> nodeQuery n $ ProveNode pc
-           "dg" -> case transM of
-             Nothing -> DisplayQuery (Just $ fromMaybe "xml" format)
-             Just tr -> Query.DGTranslation tr
-           "theory" -> case transM of
-             Nothing -> case nodeM of
-                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
-                                   $ NcCmd Query.Theory
-                         Nothing -> error "REST: theory"
-             Just tr -> case nodeM of
-                         Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
-                                   $ NcCmd $ Query.Translate tr
-                         Nothing -> error "REST: theory"
-           _ -> error $ "REST: unknown " ++ newIde
-         in getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
-            ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
-                 else queryFailure
+            validReasoningParams = isRight reasoningParametersE <=
+              elem newIde ["prove", "consistency-check"]
+        in
+          if elem newIde newRESTIdes
+                  && all (`elem` globalCommands) cmdList
+                  && validReasoningParams
+            then let
+            qkind = case newIde of
+              "translations" -> case nodeM of
+                Nothing -> GlTranslations
+                Just n -> nodeQuery n $ NcTranslations Nothing
+              _ | elem newIde ["provers", "consistency-checkers"] ->
+                let pm = if newIde == "provers" then GlProofs else GlConsistency
+                in case nodeM of
+                Nothing -> GlProvers pm transM
+                Just n -> nodeQuery n $ NcProvers pm transM
+              _ | elem newIde ["prove", "consistency-check"] ->
+                case reasoningParametersE of
+                  Left message_ -> error ("Invalid parameters: " ++ message_) -- cannot happen
+                  Right reasoningParameters ->
+                    let proverMode = if newIde == "prove"
+                                      then GlProofs
+                                      else GlConsistency
+                    in GlAutoProveREST proverMode reasoningParameters
+              "dg" -> case transM of
+                Nothing -> DisplayQuery (Just $ fromMaybe "xml" format_)
+                Just tr -> Query.DGTranslation tr
+              "theory" -> case transM of
+                Nothing -> case nodeM of
+                            Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
+                                      $ NcCmd Query.Theory
+                            Nothing -> error "development graph node missing. Please use <url>?node=<number>"
+                Just tr -> case nodeM of
+                            Just x -> NodeQuery (maybe (Right x) Left $ readMaybe x)
+                                      $ NcCmd $ Query.Translate tr
+                            Nothing -> error "development graph node missing. Please specifiy ?node=<number>"
+              _ -> error $ "REST: unknown " ++ newIde
+            in getResponseAux newOpts . Query (NewDGQuery libIri $ cmdList
+                ++ Set.toList (Set.fromList $ optFlags ++ qOpts)) $ qkind
+            else if validReasoningParams
+                then queryFailure
+                else case reasoningParametersE of
+                        Left message_ ->
+                          queryFail ("Invalid parameters: " ++ message_) respond
+                        Right _ ->
+                          error "Unexpected error in PGIP.Server.parseRESTful"
       _ -> queryFailure
     "PUT" -> case pathBits of
       {- execute global commands
@@ -626,33 +660,28 @@ parseRESTful
         Nothing -> queryFail ("failed to read sessionId from " ++ sessId)
           respond
         Just sId -> case cmd of
-          "prove" ->
-            let pc = ProveCmd GlProofs incl proverM transM timeout [] False
-                        axioms
-            in case nodeM of
-                -- prove all nodes if no singleton is selected
-                Nothing -> return $ Query (DGQuery sId Nothing)
-                  $ GlAutoProve pc
-                -- otherwise run prover for single node only
-                Just ndIri -> parseNodeQuery ndIri sId $ return
-                  $ ProveNode pc
+          "prove" -> case reasoningParametersE of
+              Left message_ -> Fail.fail ("Invalid parameters: " ++ message_)
+              Right reasoningParameters ->
+                return $ Query (DGQuery sId Nothing) $
+                  GlAutoProveREST GlProofs reasoningParameters
               >>= getResponse
           -- on other cmd look for (optional) specification of node or edge
           _ -> case (nodeM, lookupSingleParam "edge") of
               -- fail if both are specified
               (Just _, Just _) ->
-                fail "please specify only either node or edge"
+                Fail.fail "please specify only either node or edge"
               -- call command upon a single node
               (Just ndIri, Nothing) -> parseNodeQuery ndIri sId
                 $ case lookup cmd $ map (\ a -> (showNodeCmd a, a)) nodeCmds of
                   Just nc -> return $ NcCmd nc
-                  _ -> fail $ "unknown node command '" ++ cmd ++ "' "
+                  _ -> Fail.fail $ "unknown node command '" ++ cmd ++ "' "
               -- call (the only) command upon a single edge
               (Nothing, Just edIri) -> case readMaybe $ getFragOfCode edIri of
                 Just i -> return $ Query (DGQuery sId Nothing)
                   $ EdgeQuery i "edge"
                 Nothing ->
-                  fail $ "failed to read edgeId from edgeIRI: " ++ edIri
+                  Fail.fail $ "failed to read edgeId from edgeIRI: " ++ edIri
               -- call of global command
               _ -> return $ Query (DGQuery sId Nothing) $ GlobCmdQuery cmd
            >>= getResponse
@@ -661,6 +690,9 @@ parseRESTful
     {- create failure response if request method is not known
     (should never happen) -}
     _ -> respond $ mkResponse "" status400 ""
+
+parseReasoningParametersEither :: BS.ByteString -> Either String ReasoningParameters
+parseReasoningParametersEither requestBodyBS = Aeson.eitherDecode requestBodyBS
 
 mSplitOnComma :: Maybe String -> [String]
 mSplitOnComma mstr = case mstr of
@@ -679,17 +711,16 @@ mkMenus = menuTriple "" "Get menu triples" "menus"
   ++ map (\ nc -> menuTriple "/DGraph/DGNode" ("Show " ++ nc) nc) nodeCommands
   ++ [menuTriple "/DGraph/DGLink" "Show edge info" "edge"]
 
-status422 :: Status
-status422 = Status 422 $ B8.pack "Unprocessable Entity"
-
 mkFiletypeResponse :: HetcatsOpts -> String -> WebResponse
 mkFiletypeResponse opts libIri respond = do
   res <- liftIO $ getContentAndFileType opts libIri
   respond $ case res of
     Left err -> mkResponse textC status422 err
-    Right (mr, _, fn, _) -> case mr of
-      Nothing -> mkResponse textC status422 $ fn ++ ": unknown file type"
-      Just r -> mkOkResponse textC $ fn ++ ": " ++ r
+    Right (mr, _, fInfo, _) -> 
+      let fn = filePath fInfo in
+      case mr of
+        Nothing -> mkResponse textC status422 $ fn ++ ": unknown file type"
+        Just r -> mkOkResponse textC $ fn ++ ": " ++ r
 
 menuTriple :: String -> String -> String -> Element
 menuTriple q d c = unode "triple"
@@ -697,39 +728,263 @@ menuTriple q d c = unode "triple"
                 , unode "displayname" d
                 , unode "command" c ]
 
-metaRobots :: Element
-metaRobots = add_attrs
-  [mkNameAttr "robots", mkAttr "content" "noindex,nofollow"]
-  $ unode "meta" ()
+htmlResponse :: FilePath -> [Element] -> WebResponse
+htmlResponse path listElements respond = respond . mkOkResponse htmlC
+  $ htmlPageWithTopContent path listElements
 
-mkHtmlString :: FilePath -> [Element] -> String
-mkHtmlString path dirs = htmlHead ++ mkHtmlElem
-  ("Listing of" ++ if null path then " repository" else ": " ++ path)
-  (unode "h1" hetsVersion : unode "p"
-     [ bold "Hompage:"
-     , aRef "http://hets.eu" "hets.eu"
-     , bold "Contact:"
-     , aRef "mailto:hets-devel@informatik.uni-bremen.de"
-       "hets-devel@informatik.uni-bremen.de" ]
-   : headElems path ++ [unode "ul" dirs])
+htmlPageWithTopContent :: FilePath -> [Element] -> String
+htmlPageWithTopContent path listElements =
+  htmlPage (if null path then "Start Page" else path) []
+    (pageHeader ++ pageOptions path listElements)
+    ""
 
-mkHtmlElem :: String -> [Element] -> String
-mkHtmlElem title = mkHtmlElemAux title [metaRobots]
+htmlPage :: String -> String -> [Element] -> String -> String
+htmlPage title javascripts body rawHtmlPageFooter = htmlHead title javascripts
+  ++ intercalate "\n" (map ppElement body)
+  ++ htmlWrapBottomContent rawHtmlPageFooter
+  ++ htmlFoot
 
-mkHtmlElemAux :: String -> [Element] -> [Element] -> String
-mkHtmlElemAux title headers body = ppElement $ unode "html"
-      [ unode "head" $ unode "title" title : headers, unode "body" body ]
+htmlHead :: String -> String -> String
+htmlHead title javascript =
+  "<!DOCTYPE html>\n"
+  ++ "<html lang=\"en\">\n"
+  ++ "  <head>\n"
+  ++ "    <meta charset=\"utf-8\">\n"
+  ++ "    <meta content=\"width=device-width,initial-scale=1,shrink-to-fit=no\" name=\"viewport\">\n"
+  ++ "    <meta content=\"#000000\" name=\"theme-color\">\n"
+  ++ "    <meta name=\"robots\" content=\"noindex,nofollow\">\n"
+  ++ "    <title>Hets, the DOLiator - " ++ title ++ "</title>\n"
+  ++ "    <!-- Semantic UI stylesheet -->\n"
+  ++ "    <style type=\"text/css\">\n"
+  ++ semanticUiCss ++ "\n"
+  ++ "    </style>\n"
+  ++ "    <!-- Hets stylesheet -->\n"
+  ++ "    <style type=\"text/css\">\n"
+  ++ hetsCss ++ "\n"
+  ++ "    </style>\n"
+  ++ "  </head>\n"
+  ++ "  <body>\n"
+  ++ "    <!-- jQuery -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ jQueryJs ++ "\n"
+  ++ "    </script>\n"
+  ++ "    <!-- Semantic UI Javascript -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ semanticUiJs ++ "\n"
+  ++ "    </script>\n"
+  ++ "    <!-- Static Hets Javascript -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ hetsJs ++ "\n"
+  ++ "    </script>\n"
+  ++ "    <!-- Dynamic Hets Javascript -->\n"
+  ++ "    <script type=\"text/javascript\">\n"
+  ++ javascript ++ "\n"
+  ++ "    </script>\n"
+  ++ "    <div class=\"ui left aligned doubling stackable centered relaxed grid container\">\n"
 
--- include a script within page
-mkHtmlElemScript :: String -> String -> [Element] -> String
-mkHtmlElemScript title scr =
-  mkHtmlElemAux title [ metaRobots
-  , add_attr (mkAttr "type" "text/javascript") . unode "script"
-    . Text $ CData CDataRaw scr Nothing] -- scr must not be encoded!
+htmlWrapBottomContent :: String -> String
+htmlWrapBottomContent content =
+  if null content then "" else
+    "      <div class=\"ui segment pushable left aligned\" style=\"overflow: auto;\">\n"
+    ++ content
+    ++ "       </div>\n"
 
-mkHtmlPage :: FilePath -> [Element] -> WebResponse
-mkHtmlPage path es respond = respond . mkOkResponse htmlC
-  $ mkHtmlString path es
+htmlFoot :: String
+htmlFoot =
+  "    </div>\n"
+  ++ "  </body>\n"
+  ++ "</html>\n"
+
+pageHeader :: [Element]
+pageHeader =
+  [ add_attr (mkAttr "class" "row") $ unode "div" $ unode "h1" "Hets, the DOLiator"
+  , add_attr (mkAttr "class" "row") $ unode "div" $
+      add_attr (mkAttr "class" "ui text container raised segment center aligned") $
+      unode "div" [ unode "p" "Welcome to DOLiator, the web interface to our implementation of the Distributed Ontology, Modeling and Specification Language (DOL)"
+                  , add_attr (mkAttr "class" "ui horizontal list") $ unode "div"
+                      [ add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://dol-omg.org/" "DOL Homepage"
+                      , add_attr (mkAttr "target" "_blank") $ add_attr (mkAttr "class" "item") $ aRef "http://hets.eu/" "Hets Homepage"
+                      , add_attr (mkAttr "class" "item") $ aRef "mailto:hets-devel@informatik.uni-bremen.de" "Contact"
+                      ]
+                  ]
+  ]
+
+pageOptions :: String -> [Element] -> [Element]
+pageOptions path listElements =
+  [ add_attr (mkAttr "class" "row") $ unode "div" $
+      add_attr (mkAttr "class" "ui relaxed grid container segment") $ unode "div"
+        [ add_attr (mkAttr "class" "row centered") $ unode "div" $
+            unode "p" "Select a local DOL file as library or enter a DOL specification in the text area or choose one of the minimal examples from the right hand side and press \"Submit\"."
+        , add_attr (mkAttr "class" "three column row") $ unode "div"
+            [ pageOptionsFile
+            , pageOptionsExamples (not $ null path) listElements
+            ]
+        ]
+  ]
+
+pageOptionsFile :: Element
+pageOptionsFile =
+  add_attr (mkAttr "class" "ui container ten wide column left aligned") $ unode "div" $
+    add_attr (mkAttr "class" "ui row") $ unode "div" pageOptionsFileForm
+
+
+pageOptionsExamples :: Bool -> [Element] -> Element
+pageOptionsExamples moreExamplesAreOpen listElements =
+  add_attr (mkAttr "class" "ui container six wide column left aligned") $ unode "div"
+    [ unode "h4" "Minimal Examples"
+    , add_attr (mkAttr "class" "ui list") $ unode "div" $
+        map (\ (elementName, inputType, exampleText) ->
+              add_attr (mkAttr "class" "item") $ unode "div" $
+                add_attrs [ mkAttr "class" "insert-example-into-user-input-text"
+                          , mkAttr "data-text" exampleText
+                          , mkAttr "data-input-type" inputType
+                          ] $ unode "span" elementName
+              ) [ ("DOL", "dol", Examples.dol)
+                , ("CASL", "casl", Examples.casl)
+                , ("OWL", "owl", Examples.owl)
+                , ("CLIF", "clif", Examples.clif)
+                , ("Propositional", "dol", Examples.propositional)
+                , ("RDF", "rdf", Examples.rdf)
+                , ("TPTP", "tptp", Examples.tptp)
+                , ("HasCASL", "dol", Examples.hascasl)
+                , ("Modal", "dol", Examples.modal)
+                ]
+    , pageMoreExamples moreExamplesAreOpen listElements
+    ]
+
+pageOptionsFileForm :: Element
+pageOptionsFileForm = add_attr (mkAttr "id" "user-file-form") $
+  mkForm "/" [ pageOptionsFilePickerInput
+             , horizontalDivider "OR"
+             , pageOptionsFileTextArea
+             , add_attrs [mkAttr "class" "ui relaxed grid", mkAttr "style" "margin-top: 1em"] $ unode "div"
+                 [ add_attr (mkAttr "class" "six wide column") $ unode "div" inputTypeDropDown
+                 , add_attr (mkAttr "class" "ten wide column right aligned") $ unode "div" submitButton
+                 ]
+             ]
+
+inputTypeDropDown :: Element
+inputTypeDropDown = singleSelectionDropDown
+  "Input Type of File or Text Field"
+  "input-type"
+  (Just "user-file-input-type")
+  ( ("", "[Try to determine automatically]", [])
+    : map (\ inType -> (show inType, show inType, [])) plainInTypes
+  )
+
+singleSelectionDropDown :: String -> String -> Maybe String -> [(String, String, [Attr])] -> Element
+singleSelectionDropDown label inputName htmlIdM options = unode "div"
+   [ add_attr (mkAttr "class" "ui sub header") $ unode "div" label
+   , add_attrs ( mkAttr "name" inputName
+               : maybe [] (\ htmlId -> [mkAttr "id" htmlId]) htmlIdM
+               ) $ unode "select" $
+         map (\ (optionValue, optionLabel, attributes) ->
+               add_attrs (mkAttr "value" optionValue : attributes) $
+                 unode "option" optionLabel
+             ) options
+   ]
+
+checkboxElement :: String -> [Attr] -> Element
+checkboxElement label attributes =
+  add_attr (mkAttr "class" "four wide column") $ unode "div" $
+    add_attr (mkAttr "class" "ui checkbox") $ unode "div"
+      [ add_attrs
+          ([ mkAttr "type" "checkbox"
+          , mkAttr "tabindex" "0"
+          , mkAttr "class" "hidden"
+          ] ++ attributes) $ unode "input" ""
+      , unode "label" label
+      ]
+
+pageOptionsFileTextArea :: Element
+pageOptionsFileTextArea = add_attrs
+  [ mkAttr "cols" "68"
+  , mkAttr "rows" "22"
+  , mkAttr "name" "content"
+  , mkAttr "id" "user-input-text"
+  , mkAttr "style" "font-family: monospace;"
+  ] $ unode "textarea" ""
+
+pageOptionsFilePickerInput :: Element
+pageOptionsFilePickerInput = filePickerInputElement "file" "file" "Choose File..."
+
+pageOptionsFormat :: String -> String -> Element
+pageOptionsFormat delimiter path =
+  let defaultFormat = "default"
+  in  dropDownElement "Output Format" $
+        map (\ f ->
+              aRef (if f == defaultFormat then "/" </> path else "/" </> path ++ delimiter ++ f) f
+            ) (defaultFormat : displayTypes)
+
+filePickerInputElement :: String -> String -> String -> Element
+filePickerInputElement idArgument nameArgument title =
+  add_attr (mkAttr "class" "field") $ unode "div" $
+    add_attr (mkAttr "class" "ui fluid file input action") $ unode "div"
+      [ add_attrs [mkAttr "type" "text", mkAttr "readonly" "true"] $ unode "input" ""
+      , add_attrs [ mkAttr "type" "file"
+                  , mkAttr "id" idArgument
+                  , mkAttr "name" nameArgument
+                  , mkAttr "autocomplete" "off"
+                  ] $ unode "input" ""
+      , add_attr (mkAttr "class" "ui button") $ unode "div" title
+      ]
+
+dropDownElement :: String -> [Element] -> Element
+dropDownElement title items =
+  add_attr (mkAttr "class" "ui dropdown button") $ unode "div"
+    [ add_attr (mkAttr "class" "text") $ unode "div" title
+    , add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
+    , dropDownSubMenu items
+    ]
+
+linkButtonElement :: String -> String -> Element
+linkButtonElement address label =
+  add_attr (mkAttr "class" "ui button") $ aRef address label
+
+htmlRow :: Element -> Element
+htmlRow = add_attr (mkAttr "class" "row") . unode "div"
+
+dropDownToLevelsElement :: String -> [(Element, [Element])] -> Element
+dropDownToLevelsElement title twoLeveledItems =
+  add_attr (mkAttr "class" "ui dropdown button") $ unode "div"
+    [ add_attr (mkAttr "class" "text") $ unode "div" title
+    , add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
+    , add_attr (mkAttr "class" "menu") $ unode "div" $
+        map (\ (label, items) ->
+              add_attr (mkAttr "class" "item") $ unode "div"
+                (
+                  ( if null items
+                    then []
+                    else [add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""]
+                  )
+                  ++ [add_attr (mkAttr "class" "text") $ unode "div" label]
+                  ++ if null items then [] else [dropDownSubMenu items]
+                )
+            ) twoLeveledItems
+    ]
+
+dropDownSubMenu :: [Element] -> Element
+dropDownSubMenu items =
+  add_attr (mkAttr "class" "menu") $ unode "div" $
+    map (add_attr (mkAttr "class" "item")) items
+
+pageMoreExamples :: Bool -> [Element] -> Element
+pageMoreExamples isOpen listElements =
+  let activeClass = if isOpen then "active " else "" in
+  add_attr (mkAttr "class" "ui ten wide column container left aligned") $ unode "div" $
+    add_attr (mkAttr "class" "ui styled accordion") $ unode "div"
+      [ add_attr (mkAttr "class" (activeClass ++ "title")) $ unode "div"
+          [ add_attr (mkAttr "class" "dropdown icon") $ unode "i" ""
+          , unode "span" "More Examples"
+          ]
+      , add_attr (mkAttr "class" (activeClass ++ "content")) $ unode "div" $
+          add_attr (mkAttr "class" "transistion hidden") $ unode "div" $
+            unode "ul" listElements
+      ]
+
+horizontalDivider :: String -> Element
+horizontalDivider label =
+  add_attr (mkAttr "class" "ui horizontal divider") $ unode "div" label
 
 mkResponse :: String -> Status -> String -> Response
 mkResponse ty st = responseLBS st
@@ -821,7 +1076,7 @@ modifySessionAndCache errorMessage f sess sessRef k =
 
 ppDGraph :: DGraph -> Maybe PrettyType -> ResultT IO (String, String)
 ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
-    Nothing -> fail "parsed LIB-DEFN not avaible"
+    Nothing -> Fail.fail "parsed LIB-DEFN not avaible"
     Just ld ->
       let d = prettyLG logicGraph ld
           latex = renderLatex Nothing $ toLatex ga d
@@ -830,7 +1085,7 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
         PrettyXml -> return
           (xmlC, ppTopElement $ xmlLibDefn logicGraph ga ld)
         PrettyAscii _ -> return (textC, renderText ga d ++ "\n")
-        PrettyHtml -> return (htmlC, htmlHead ++ renderHtml ga d)
+        PrettyHtml -> return (htmlC, renderHtml ga d)
         PrettyLatex _ -> return ("application/latex", latex)
       Nothing -> lift $ do
          tmpDir <- getTemporaryDirectory
@@ -857,6 +1112,8 @@ ppDGraph dg mt = let ga = globalAnnos dg in case optLibDefn dg of
              else return (textC, "could not create pdf:\n"
                   ++ unlines [out1, err1, out2, err2])
 
+-- | Increase the amount how often a library has been accessed.
+-- | Returns the analysis library from cache.
 increaseUsage :: Cache -> Session -> ResultT IO (Session, Int)
 increaseUsage sessRef sess = do
   time <- lift getCurrentTime
@@ -872,20 +1129,29 @@ getDGraph opts sessRef dgQ = do
     NewDGQuery file cmdList -> do
       let cl = mapMaybe (\ s -> find ((== s) . cmdlGlobCmd)
                   $ map fst allGlobLibAct) cmdList
-      mf <- lift $ getContentAndFileType opts file
+      -- use the file path if file is an url to a web ressource
+      -- otherwise if file is a local file use the absolute path instead
+      absolutPathToFile <- if checkUri file
+                             then return file
+                             else do
+                               fileExists <- liftIO $ doesFileExist file
+                               if fileExists
+                                 then liftIO $ catchIOException file $ makeAbsolute file
+                                 else return file
+      mf <- lift $ getContentAndFileType opts absolutPathToFile
       case mf of
-        Left err -> fail err
+        Left err -> Fail.fail err
         Right (_, mh, f, cont) -> case mh of
-          Nothing -> fail $ "could determine checksum for: " ++ file
-          Just h -> let q = file : h : cmdList in
+          Nothing -> Fail.fail $ "could determine checksum for: " ++ file
+          Just h -> let q = absolutPathToFile : h : cmdList in
             case Map.lookup q lm of
-            Just sess -> increaseUsage sessRef sess
+            Just sess -> increaseUsage sessRef sess -- Return result from cache.
             Nothing -> do
-              (ln, le1) <- if isDgXmlFile opts f cont
-                then readDGXmlR opts f Map.empty
+              (ln, le1) <- if isDgXmlFile opts (filePath f) cont
+                then readDGXmlR opts (filePath f) Map.empty
                 else anaSourceFile logicGraph opts
                   { outputToStdout = False }
-                  Set.empty emptyLibEnv emptyDG file
+                  Set.empty emptyLibEnv emptyDG absolutPathToFile
               le2 <- foldM (\ e c -> liftR
                   $ fromJust (lookup c allGlobLibAct) ln e) le1 cl
               time <- lift getCurrentTime
@@ -901,7 +1167,7 @@ getDGraph opts sessRef dgQ = do
               k <- lift $ addNewSess sessRef sess
               return (sess, k)
     DGQuery k _ -> case IntMap.lookup k m of
-      Nothing -> fail "unknown development graph"
+      Nothing -> Fail.fail "unknown development graph"
       Just sess -> increaseUsage sessRef sess
 
 getSVG :: String -> String -> DGraph -> ResultT IO String
@@ -910,7 +1176,7 @@ getSVG title url dg = do
           $ dotGraph title False url dg
         case exCode of
           ExitSuccess -> liftR $ extractSVG dg out
-          _ -> fail err
+          _ -> Fail.fail err
 
 enrichSVG :: DGraph -> Element -> Element
 enrichSVG dg e = processSVG dg $ fromElement e
@@ -955,7 +1221,7 @@ addSVGAttribs dg c = case c of
 
 extractSVG :: DGraph -> String -> Result String
 extractSVG dg str = case parseXMLDoc str of
-  Nothing -> fail "did not recognize svg element"
+  Nothing -> Fail.fail "did not recognize svg element"
   Just e -> return $ showTopElement $ enrichSVG dg e
 
 cmpFilePath :: FilePath -> FilePath -> Ordering
@@ -968,7 +1234,7 @@ getHetsResponse :: HetcatsOpts -> [W.FileInfo BS.ByteString]
 getHetsResponse opts updates sessRef pathBits query respond = do
   Result ds ms <- liftIO $ runResultT $ case anaUri pathBits query
     $ updateS : globalCommands of
-    Left err -> fail err
+    Left err -> Fail.fail err
     Right q -> getHetsResult opts updates sessRef q Nothing OldWebAPI
                   proofFormatterOptions
   respond $ case ms of
@@ -978,21 +1244,30 @@ getHetsResponse opts updates sessRef pathBits query respond = do
 getHetsResult :: HetcatsOpts -> [W.FileInfo BS.ByteString]
   -> Cache -> Query.Query -> Maybe String -> UsedAPI -> ProofFormatterOptions
   -> ResultT IO (String, String)
-getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
-      let getCom n = let ncoms = filter (\(Comorphism cid) -> language_name cid == n) comorphismList
-                     in case ncoms of
-                         [c] -> c
-                         [] -> error $ "comorphism not found:" ++ n
-                         _ -> error $ "more than one comorphism found for:" ++ n
+getHetsResult opts updates sessRef (Query dgQ qk) format_ api pfOptions = do
+      let semicolon n = map (\ c -> if c == ':' then ';' else c) n
+      let getCom n = case lookupComorphism (semicolon n) logicGraph of
+                         Just c -> c
+                         Nothing -> error $ "comorphism not found: " ++ n
       sk@(sess', k) <- getDGraph opts sessRef dgQ
       sess <- lift $ makeSessCleanable sess' sessRef k
       let libEnv = sessLibEnv sess
-      (ln, dg) <- maybe (fail "unknown development graph") return
+      (ln, dg) <- maybe (Fail.fail "unknown development graph") return
         $ sessGraph dgQ sess
       let title = libToFileName ln
       let svg = getSVG title ('/' : show k) dg
       case qk of
-            DisplayQuery ms -> case format `mplus` ms of
+            DisplayQuery ms -> case format_ `mplus` ms of
+              Just "db" -> do
+                result <- liftIO $ Control.Exception.catch
+                  (do
+                    Persistence.DevGraph.exportLibEnv opts libEnv
+                    return (jsonC, "{\"savedToDatabase\": true}")
+                  )
+                  (\ exception ->
+                    return (jsonC, "{\"savedToDatabase\": false, \"error\": " ++ show (exception :: SomeException) ++ "}")
+                  )
+                liftR $ return result
               Just "svg" -> fmap (\ s -> (svgC, s)) svg
               Just "xml" -> liftR $ return (xmlC, ppTopElement
                 $ ToXml.dGraph opts libEnv ln dg)
@@ -1011,7 +1286,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               -- compose the comorphisms passed in translation
                let coms = map getCom $ splitOn ',' path
                com <- foldM compComorphism (head coms) $ tail coms
-               dg' <- liftR $ dg_translation libEnv dg com
+               dg' <- liftR $ dg_translation libEnv ln dg com
                liftR $ return (xmlC, ppTopElement
                 $ ToXml.dGraph opts libEnv ln dg')
             GlProvers mp mt -> do
@@ -1019,15 +1294,26 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               return $ case api of
                 OldWebAPI -> (xmlC, formatProvers mp $
                   proversToStringAux availableProvers)
-                RESTfulAPI -> OProvers.formatProvers format mp availableProvers
+                RESTfulAPI -> OProvers.formatProvers format_ mp availableProvers
             GlTranslations -> do
               availableComorphisms <- liftIO $ getFullComorphList dg
               return $ case api of
                 OldWebAPI ->
                   (xmlC, formatComorphs availableComorphisms)
                 RESTfulAPI ->
-                  formatTranslations format availableComorphisms
+                  formatTranslations format_ availableComorphisms
             GlShowProverWindow prOrCons -> showAutoProofWindow dg k prOrCons
+            GlAutoProveREST proverMode reasoningParameters -> case api of
+              RESTfulAPI -> do
+                (newLib, nodesAndProofResults) <-
+                  reasonREST opts libEnv ln dg proverMode (queryLib dgQ) reasoningParameters
+                if all (null . snd) nodesAndProofResults
+                then return (textC, "nothing to prove")
+                else do
+                  lift $ nextSess newLib sess sessRef k
+                  processProofResult format_ pfOptions nodesAndProofResults (opts, libEnv, ln, dg)
+              _ -> Fail.fail ("The GlAutoProveREST path is only "
+                         ++ "available in the REST interface.")
             GlAutoProve (ProveCmd prOrCons incl mp mt tl nds xForm axioms) -> do
               (newLib, nodesAndProofResults) <-
                 proveMultiNodes prOrCons libEnv ln dg incl mp mt tl nds axioms
@@ -1035,17 +1321,15 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               then return (textC, "nothing to prove")
               else do
                 lift $ nextSess newLib sess sessRef k
-                return $ case api of
+                case api of
                   OldWebAPI -> let
                     sens = foldr (\ (dgNodeName, proofResults) res ->
                         formatResultsAux xForm prOrCons dgNodeName proofResults
                         : res
                       ) [] nodesAndProofResults
-                    in (htmlC, formatResultsMultiple xForm k sens prOrCons)
-                  RESTfulAPI -> formatProofs
-                    format
-                    pfOptions
-                    nodesAndProofResults
+                    in return (htmlC, formatResultsMultiple xForm k sens prOrCons)
+                  RESTfulAPI ->
+                    processProofResult format_ pfOptions nodesAndProofResults (opts, libEnv, ln, dg)
             GlobCmdQuery s ->
               case find ((s ==) . cmdlGlobCmd . fst) allGlobLibAct of
               Nothing -> if s == updateS then
@@ -1057,7 +1341,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                   newSess <- lift $ nextSess newLib sess sessRef k
                   sessAns newLn svg (newSess, k)
                 [] -> sessAns ln svg sk
-                else fail "getHetsResult.GlobCmdQuery"
+                else Fail.fail "getHetsResult.GlobCmdQuery"
               Just (_, act) -> do
                 newLib <- liftR $ act ln libEnv
                 newSess <- lift $ nextSess newLib sess sessRef k
@@ -1069,13 +1353,13 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
               nl@(i, dgnode) <- case ein of
                 Right n -> case lookupNodeByName n dg of
                   p : _ -> return p
-                  [] -> fail $ "no node name: " ++ n
+                  [] -> Fail.fail $ "no node name: " ++ n
                 Left i -> case lab (dgBody dg) i of
-                  Nothing -> fail $ "no node id: " ++ show i
+                  Nothing -> Fail.fail $ "no node id: " ++ show i
                   Just dgnode -> return (i, dgnode)
               let fstLine = (if isDGRef dgnode then ("reference " ++) else
                     if isInternalNode dgnode then ("internal " ++) else id)
-                    "node " ++ getDGNodeName dgnode ++ " (#" ++ show i ++ ")\n"
+                    "Node " ++ getDGNodeName dgnode ++ " (#" ++ show i ++ ")\n"
                   ins = getImportNames dg i
                   showN d = showGlobalDoc (globalAnnos dg) d "\n"
               case nc of
@@ -1085,7 +1369,7 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                            $ showSymbols opts ins (globalAnnos dg) dgnode)
                    _ -> return (textC, fstLine ++ showN dgnode)
                 _ -> case maybeResult $ getGlobalTheory dgnode of
-                  Nothing -> fail $
+                  Nothing -> Fail.fail $
                     "cannot compute global theory of:\n" ++ fstLine
                   Just gTh -> let subL = sublogicOfTh gTh in case nc of
                     ProveNode (ProveCmd pm incl mp mt tl thms xForm axioms) ->
@@ -1097,31 +1381,30 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                         then return (textC, "nothing to prove")
                         else do
                           lift $ nextSess newLib sess sessRef k
-                          return $ case api of
-                            OldWebAPI -> (htmlC,
-                              formatResults xForm k i . unode "results" $
-                                formatGoals True proofResults)
-                            RESTfulAPI -> formatProofs
-                              format
-                              pfOptions
-                              [(getDGNodeName dgnode, proofResults)]
+                          case api of
+                            OldWebAPI -> return (htmlC,
+                              formatResults xForm k i .
+                                add_attr (mkAttr "class" "results") $
+                                unode "div" $ formatGoals True proofResults)
+                            RESTfulAPI -> processProofResult format_ pfOptions
+                              [(getDGNodeName dgnode, proofResults)] (opts, libEnv, ln, dg)
                       GlConsistency -> do
-                        (newLib, [(_, res, txt, _, _, _)]) <-
+                        (newLib, [(_, res, txt, _, _, _, _)]) <-
                           consNode libEnv ln dg nl subL incl mp mt tl
                         lift $ nextSess newLib sess sessRef k
                         return (xmlC, ppTopElement $ formatConsNode res txt)
                     _ -> case nc of
                       NcCmd Query.Theory -> case api of
                           OldWebAPI -> lift $ fmap (\ t -> (htmlC, t))
-                                       $ showGlobalTh dg i gTh k fstLine
-                          RESTfulAPI -> lift $ fmap (\ t -> (xmlC, t))
-                                       $ showNodeXml opts (globalAnnos dg) libEnv dg i
+                                       $ showGlobalTh dg i gTh k fstLine False
+                          RESTfulAPI -> return $ 
+                                          showNode opts (globalAnnos dg) libEnv dg i format_
                       NcCmd (Query.Translate x) -> do
                           -- compose the comorphisms passed in translation
                           let coms = map getCom $ splitOn ',' x
                           com <- foldM compComorphism (head coms) $ tail coms
                           -- translate the theory of i along com
-                          gTh1 <- liftR $ mapG_theory com gTh
+                          gTh1 <- liftR $ mapG_theory False com gTh
                           -- insert the translation of i in dg
                           let n1 = getNewNodeDG dg
                               labN1 = newInfoNodeLab
@@ -1134,57 +1417,91 @@ getHetsResult opts updates sessRef (Query dgQ qk) format api pfOptions = do
                           let (_, dg2) = insLEdgeDG
                                           (i, n1, globDefLink gmor SeeSource) -- origin to be corrected
                                           dg1
-                          -- show the theory of n1 in xml format
-                          lift $ fmap (\ t -> (xmlC, t)) $ showNodeXml opts (globalAnnos dg2) libEnv dg2 n1
+                          case api of
+                            OldWebAPI -> 
+                                 lift $ fmap (\ t -> (htmlC, t))
+                                          $ showGlobalTh dg n1 gTh1 k fstLine True
+                            RESTfulAPI ->
+                            -- show the theory of n1 in xml format
+                              return $ showNode opts (globalAnnos dg2) libEnv dg2 n1 format_
                       NcProvers mp mt -> do
                         availableProvers <- liftIO $ getProverList mp mt subL
                         return $ case api of
                           OldWebAPI -> (xmlC, formatProvers mp $
                             proversToStringAux availableProvers)
                           RESTfulAPI ->
-                            OProvers.formatProvers format mp availableProvers
+                            OProvers.formatProvers format_ mp availableProvers
                       NcTranslations mp -> do
                         availableComorphisms <- liftIO $ getComorphs mp subL
                         return $ case api of
                           OldWebAPI ->
                             (xmlC, formatComorphs availableComorphisms)
                           RESTfulAPI ->
-                            formatTranslations format availableComorphisms
-                      _ -> error "getHetsResult.NodeQuery."
+                            formatTranslations format_ availableComorphisms
+                      q -> error ("getHetsResult.NodeQuery: unnkown query"++show q)
             EdgeQuery i _ ->
               case getDGLinksById (EdgeId i) dg of
               [e@(_, _, l)] ->
                 return (textC, showLEdge e ++ "\n" ++ showDoc l "")
-              [] -> fail $ "no edge found with id: " ++ show i
-              _ -> fail $ "multiple edges found with id: " ++ show i
+              [] -> Fail.fail $ "no edge found with id: " ++ show i
+              _ -> Fail.fail $ "multiple edges found with id: " ++ show i
+
+processProofResult :: Maybe String
+                   -> ProofFormatterOptions
+                   -> [(String, [ProofResult])]
+                   -> (HetcatsOpts, LibEnv, LibName, DGraph)
+                   -> ResultT IO (String, String)
+processProofResult (Just "db") _ _ _ =
+  return (jsonC, "{\"savedToDatabase\": true}")
+processProofResult format_ options nodesAndProofResults (opts, libEnv, ln, dg) =
+  do
+    joinedResult <- liftR $ getJSONOrXMLResult format_ options nodesAndProofResults opts libEnv ln dg
+    let result = prettyWithTag joinedResult
+    return result
+
+-- returns the joined data consisting of the development graph and prover results
+getJSONOrXMLResult :: Maybe String -> ProofFormatterOptions
+                   -> [(String, [ProofResult])] -> HetcatsOpts -> LibEnv
+                   -> LibName -> DGraph -> Result JSONOrXML
+getJSONOrXMLResult format_ options nodesAndProofResults opts libEnv ln dg =
+  let
+    proverResults = ("prover_output", formatProofs format_ options nodesAndProofResults)
+  in
+    case format_ of
+      Just "xml" -> joinData ("dgraph", (XML (ToXml.dGraph opts libEnv ln dg)))
+                             proverResults
+      _ -> joinData ("dgraph", (JSON (ToJson.dGraph opts libEnv ln dg)))
+                    proverResults
 
 formatGoals :: Bool -> [ProofResult] -> [Element]
 formatGoals includeDetails =
-  map (\ (n, e, d, _, _, mps) -> unode "goal"
-    ([unode "name" n, unode "result" e]
-    ++ [unode "details" d | includeDetails]
+  map (\ (n, e, d, _, _, mps, _) -> add_attr (mkAttr "class" "results-goal") $ unode "div"
+    ([ unode "h3" ("Results for " ++ n ++ " (" ++ e ++ ")") ]
+    ++ [add_attr (mkAttr "class" "results-details") $ unode "div" d | includeDetails]
     ++ case mps of
         Nothing -> []
         Just ps -> formatProofStatus ps))
 
 formatProofStatus :: ProofStatus G_proof_tree -> [Element]
 formatProofStatus ps =
-  [ unode "usedProver" $ usedProver ps
+  [ unode "h5" "Used Prover"
+  , add_attr (mkAttr "class" "usedProver") $ unode "p" $ usedProver ps
   -- `read` makes this type-unsafe
-  , unode "tacticScript" $ formatTacticScript $ read $
+  , unode "h5" "Tactic Script"
+  , add_attr (mkAttr "class" "tacticScript") $ unode "p" $ formatTacticScript $ read $
       (\ (TacticScript ts) -> ts) $ tacticScript ps
-  , unode "proofTree" $ show $ proofTree ps
-  , unode "usedTime" $ formatUsedTime $ usedTime ps
-  , unode "usedAxioms" $ formatUsedAxioms $ usedAxioms ps
-  , unode "proverOutput" $ formatProverOutput $ proofLines ps
+  , unode "h5" "Proof Tree"
+  , add_attr (mkAttr "class" "proofTree") $ unode "div" $ show $ proofTree ps
+  , unode "h5" "Used Time"
+  , add_attr (mkAttr "class" "usedTime") $ unode "div" $ formatUsedTime $ usedTime ps
+  , unode "h5" "Used Axioms"
+  , add_attr (mkAttr "class" "usedAxioms") $ unode "div" $ formatUsedAxioms $ usedAxioms ps
+  , unode "h5" "Prover Output"
+  , add_attr (mkAttr "class" "proverOutput") $ unode "div" $ formatProverOutput $ proofLines ps
   ]
 
-formatProverOutput :: [String] -> CData
-formatProverOutput ls =
-  CData { cdVerbatim = CDataVerbatim
-        , cdData = unlines ls
-        , cdLine = Nothing
-        }
+formatProverOutput :: [String] -> Element
+formatProverOutput = unode "pre" . unlines
 
 formatTacticScript :: ATPTacticScript -> [Element]
 formatTacticScript ts =
@@ -1215,84 +1532,125 @@ formatResultsMultiple xForm sessId rs prOrCons =
     GlConsistency -> aRef ('/' : show sessId ++ "?consistency") "return"
     GlProofs -> aRef ('/' : show sessId ++ "?autoproof") "return"
   goBack2 = aRef ('/' : show sessId) "return to DGraph"
-  in ppElement $ unode "html" ( unode "head"
-    [ unode "title" "Results", add_attr ( mkAttr "type" "text/css" )
-    $ unode "style" resultStyles, goBack1, plain " ", goBack2 ]
-    : foldr (\ el r -> unode "h4" (qName $ elName el) : el : r) [] rs )
+  in htmlPage "Results" []
+       [ htmlRow $ unode "h1" "Results"
+       , htmlRow $ unode "div" [goBack1, goBack2]
+       , htmlRow $ unode "div" $
+           foldr (\ el r -> unode "h4" (qName $ elName el) : el : r) [] rs
+       ] ""
 
 -- | display results of proving session (single node)
 formatResults :: Bool -> Int -> Int -> Element -> String
 formatResults xForm sessId i rs =
   if xForm || sessId <= 0 then ppTopElement rs else let
-  goBack1 = aRef ('/' : show sessId ++ "?theory=" ++ show i) "return to Theory"
-  goBack2 = aRef ('/' : show sessId) "return to DGraph"
-  in ppElement $ unode "html" [ unode "head"
-    [ unode "title" "Results", add_attr ( mkAttr "type" "text/css" )
-    $ unode "style" resultStyles, goBack1, plain " ", goBack2 ], rs ]
-
-resultStyles :: String
-resultStyles = unlines
-  [ "results { margin: 5px; padding:5px; display:block; }"
-  , "goal { display:block; margin-left:15px; }"
-  , "name { display:inline; margin:5px; padding:10px; font-weight:bold; }"
-  , "result { display:inline; padding:30px; }" ]
+  goBack1 = linkButtonElement ('/' : show sessId ++ "?theory=" ++ show i) "return to Theory"
+  goBack2 = linkButtonElement ('/' : show sessId) "return to DGraph"
+  in htmlPage "Results" []
+       [ htmlRow $ unode "h1" "Results"
+       , htmlRow $ unode "div" [goBack1, goBack2]
+       , htmlRow $ add_attr (mkAttr "class" "ui relaxed grid raised segment container left aligned") $ unode "div" rs
+       ] ""
 
 showBool :: Bool -> String
 showBool = map toLower . show
 
-showNodeXml :: HetcatsOpts -> GlobalAnnos -> LibEnv -> DGraph -> Int -> IO String
-showNodeXml opts ga lenv dg n = let
- lNodeN = lab (dgBody dg) n
- in case lNodeN of
-     Just lNode -> return $ ppTopElement $ ToXml.lnode opts ga lenv (n,lNode)
-     Nothing -> error $ "no node for " ++ show n
+showNode :: HetcatsOpts -> GlobalAnnos -> LibEnv -> DGraph -> Int -> Maybe String -> (String,String)
+showNode opts ga lenv dg n format_ = 
+ let lNodeN = case lab (dgBody dg) n of
+       Just lNode -> lNode
+       Nothing -> error $ "no node for " ++ show n
+ in case format_ of 
+           Just "xml" -> (xmlC,ppTopElement $ ToXml.lnode opts ga lenv (n,lNodeN)) 
+           Just "json" -> (jsonC,ppJson $ ToJson.lnode opts ga lenv (n,lNodeN))
+           Just str | elem str ["dol","het","text"]
+                      -> (textC,showGlobalDoc (globalAnnos dg) (dgn_theory lNodeN) "\n")
+           _ -> error ("unknown format: "++show format_)
 
 {- | displays the global theory for a node with the option to prove theorems
 and select proving options -}
-showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> IO String
-showGlobalTh dg i gTh sessId fstLine = case simplifyTh gTh of
-  sGTh@(G_theory lid _ (ExtSign sig _) _ thsens _) -> let
+showGlobalTh :: DGraph -> Int -> G_theory -> Int -> String -> Bool -> IO String
+showGlobalTh dg i gTh sessId fstLine isTrans = case simplifyTh gTh of
+  sGTh@(G_theory lid _ (ExtSign sig _) _ thsens _) -> do
+   let
+    paths = findComorphismPaths logicGraph (sublogicOfTh gTh) 
+    comorSelection = map (\ cm -> let c = showComorph cm in
+                              (c, c, [])
+                         ) paths
     ga = globalAnnos dg
     -- links to translations and provers xml view
-    transBt = aRef ('/' : show sessId ++ "?translations=" ++ show i)
-      "translations"
-    prvsBt = aRef ('/' : show sessId ++ "?provers=" ++ show i) "provers"
-    headr = unode "h3" fstLine
+    headr = htmlRow $ unode "h3" fstLine
     thShow = renderHtml ga $ vcat $ map (print_named lid) $ toNamedList thsens
     sbShow = renderHtml ga $ pretty sig
-    in case getThGoals sGTh of
+    theoryHeader = htmlRow $ unode "h4" (if isTrans then "Translated theory" else "Theory")
+    transForm = if isTrans then []
+                else [ htmlRow $ unode "h4" "Translate Theory"
+                     , translationForm comorSelection]
+    gs = getThGoals sGTh
+    in if null gs || isTrans
       -- show simple view if no goals are found
-      [] -> return $ mkHtmlElem fstLine [ headr, transBt, prvsBt,
-        unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
+       then return $ htmlPage fstLine ""
+                       ([ headr ] ++ transForm ++
+                        [ theoryHeader
+                        ]) $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
       -- else create proving functionality
-      gs -> do
+       else do
         -- create list of theorems, selectable for proving
-        let thmSl = map (\ (nm, bp) ->
-              let gSt = maybe GOpen basicProofToGStatus bp
-              in add_attrs
-                 [ mkAttr "type" "checkbox", mkAttr "name" $ escStr nm
-                 , mkAttr "unproven" $ showBool $ elem gSt [GOpen, GTimeout]]
-              $ unode "input" $ nm ++ "   (" ++ showSimple gSt ++ ")" ) gs
+        let thmSl =
+              map (\ (nm, bp) ->
+                    let gSt = maybe GOpen basicProofToGStatus bp
+                    in checkboxElement (nm ++ "   (" ++ showSimple gSt ++ ")")
+                       [ mkAttr "name" $ escStr nm
+                       , mkAttr "unproven" $ showBool $ elem gSt [GOpen, GTimeout]
+                       ]
+                ) gs
         -- select unproven, all or none theorems by button
             (btUnpr, btAll, btNone, jvScr1) = showSelectionButtons True
         -- create prove button and prover/comorphism selection
         (prSl, cmrSl, jvScr2) <- showProverSelection GlProofs [sublogicOfTh gTh]
         let (prBt, timeout) = showProveButton True
-        -- hidden param field
+        -- hidden param field with "prove=nodeid"
             hidStr = add_attrs [ mkAttr "name" "prove"
               , mkAttr "type" "hidden", mkAttr "style" "display:none;"
               , mkAttr "value" $ show i ] inputNode
         -- combine elements within a form
-            thmMenu = let br = unode "br " () in add_attrs
-              [ mkAttr "name" "thmSel", mkAttr "method" "get"]
-              . unode "form"
-              $ [hidStr, prSl, cmrSl, br, btUnpr, btAll, btNone, timeout]
-              ++ intersperse br (prBt : thmSl)
+            thmMenu =
+              add_attrs [ mkAttr "name" "thmSel", mkAttr "method" "get"]
+                . add_attr (mkAttr "class" "ui form") $ unode "form"
+                $ add_attr (mkAttr "class" "ui relaxed grid container left aligned") $ unode "div"
+                $ [ add_attr (mkAttr "class" "row") $ unode "div" [hidStr, prSl, cmrSl]
+                  , add_attr (mkAttr "class" "row") $ unode "div" [btUnpr, btAll, btNone, timeout]
+                  , add_attr (mkAttr "class" "row") $ unode "div" thmSl
+                  , add_attr (mkAttr "class" "row") $ unode "div" prBt
+                  ]
         -- save dg and return to svg-view
-            goBack = aRef ('/' : show sessId) "return to DGraph"
-        return $ mkHtmlElemScript fstLine (jvScr1 ++ jvScr2)
-          [ headr, transBt, prvsBt, plain " ", goBack, unode "h4" "Theorems"
-          , thmMenu, unode "h4" "Theory" ] ++ sbShow ++ "\n<br />" ++ thShow
+            goBack = linkButtonElement ('/' : show sessId) "Return to DGraph"
+        return $ htmlPage fstLine (jvScr1 ++ jvScr2)
+         ([ headr
+          , goBack ] ++ transForm ++
+          [ htmlRow $ unode "h4" "Theorems"
+          , thmMenu
+          , theoryHeader
+          ]) $ "<pre>\n" ++ sbShow ++ "\n<br />" ++ thShow ++ "\n</pre>\n"
+  where
+    translationForm comorSelection =
+      let selectElement =
+            add_attr (mkAttr "class" "eight wide column") $ unode "div" $
+              singleSelectionDropDown "Translation" "translation" Nothing comorSelection
+        -- hidden param field with "theory=nodeid"
+          hideStr = add_attrs [ mkAttr "name" "theory"
+              , mkAttr "type" "hidden", mkAttr "style" "display:none;"
+              , mkAttr "value" $ show i ] inputNode
+          translateButton =
+            add_attr (mkAttr "class" "eight wide column") $ unode "div" $
+              add_attrs [mkAttr "value" "Translate"] submitButton
+      in  add_attrs [ mkAttr "name" "translation-form", mkAttr "method" "get"]
+            $ add_attr (mkAttr "class" "ui form")
+            $ unode "form"
+            $ add_attr (mkAttr "class" "ui relaxed grid container left aligned")
+            $ unode "div"
+            $ add_attr (mkAttr "class" "row")
+            $ unode "div" [hideStr, selectElement, translateButton]
+
 
 -- | show window of the autoproof function
 showAutoProofWindow :: DGraph -> Int -> ProverMode
@@ -1330,7 +1688,7 @@ showAutoProofWindow dg sessId prOrCons = let
       [] -> return ("", plain "nothing to prove (graph has no nodes)")
       -- otherwise
       (_, nd) : _ -> case maybeResult $ getGlobalTheory nd of
-        Nothing -> fail $ "cannot compute global theory of:\n" ++ show nd
+        Nothing -> Fail.fail $ "cannot compute global theory of:\n" ++ show nd
         Just gTh -> do
           let br = unode "br " ()
           (prSel, cmSel, jvSc) <- lift $ showProverSelection prOrCons
@@ -1340,30 +1698,47 @@ showAutoProofWindow dg sessId prOrCons = let
             . unode "form" $
             [ hidStr, prSel, cmSel, br, btAll, btNone, btUnpr, timeout
             , include ] ++ intersperse br (prBt : nodeSel))
-    return (htmlC, mkHtmlElemScript title (jvScr1 ++ jvScr2)
-               [ goBack, plain " ", nodeMenu ])
+    return (htmlC, htmlPage title (jvScr1 ++ jvScr2)
+               [ goBack, plain " ", nodeMenu ] "")
 
 showProveButton :: Bool -> (Element, Element)
 showProveButton isProver = (prBt, timeout) where
-        prBt = [ mkAttr "type" "submit", mkAttr "value"
-               $ if isProver then "Prove" else "Check"]
-               `add_attrs` inputNode
+        prBt = add_attrs
+          [ mkAttr "type" "submit"
+          , mkAttr "class" "ui button"
+          , mkAttr "value" $ if isProver then "Prove" else "Check"
+          ] inputNode
         -- create timeout field
-        timeout = add_attrs [mkAttr "type" "text", mkAttr "name" "timeout"
-               , mkAttr "value" "1", mkAttr "size" "3"]
-               $ unode "input" "Sec/Goal "
+        timeout = add_attr (mkAttr "class" "three wide field") $ unode "div"
+          [ unode "label" "Timeout (Sec/Goal)"
+          , add_attrs
+              [ mkAttr "type" "text"
+              , mkAttr "name" "timeout"
+              , mkAttr "placeholder" "Timeout (Sec/Goal)"
+              , mkAttr "value" "1"
+              ] $ unode "input" ""
+          ]
 
 -- | select unproven, all or none theorems by button
 showSelectionButtons :: Bool -> (Element, Element, Element, String)
 showSelectionButtons isProver = (selUnPr, selAll, selNone, jvScr)
   where prChoice = if isProver then "SPASS" else "darwin"
-        selUnPr = add_attrs [mkAttr "type" "button"
+        selUnPr = add_attrs
+          [ mkAttr "type" "button"
+          , mkAttr "class" "ui button"
           , mkAttr "value" $ if isProver then "Unproven" else "Unchecked"
-          , mkAttr "onClick" "chkUnproven()"] inputNode
-        selAll = add_attrs [mkAttr "type" "button", mkAttr "value" "All"
-          , mkAttr "onClick" "chkAll(true)"] inputNode
-        selNone = add_attrs [mkAttr "type" "button", mkAttr "value" "None"
-          , mkAttr "onClick" "chkAll(false)"] inputNode
+          , mkAttr "onClick" "chkUnproven()"
+          ] inputNode
+        selAll = add_attrs
+          [ mkAttr "type" "button", mkAttr "value" "All"
+          , mkAttr "class" "ui button"
+          , mkAttr "onClick" "chkAll(true)"
+          ] inputNode
+        selNone = add_attrs
+          [ mkAttr "type" "button", mkAttr "value" "None"
+          , mkAttr "class" "ui button"
+          , mkAttr "onClick" "chkAll(false)"
+          ] inputNode
         -- javascript features
         jvScr = unlines
           -- select unproven goals by button
@@ -1443,15 +1818,17 @@ showProverSelection prOrCons subLs = do
     GlConsistency -> getConsCheckersAux) Nothing) subLs
   let allPrCm = nub $ concat pcs
   -- create prover selection (drop-down)
-      prs = add_attr (mkAttr "name" "prover") $ unode "select" $ map (\ p ->
-        add_attrs [mkAttr "value" p, mkAttr "onClick"
-                  $ "updCmSel('" ++ p ++ "')"]
-        $ unode "option" p) $ showProversOnly allPrCm
+      prs = add_attr (mkAttr "class" "eight wide column") $ unode "div" $
+        singleSelectionDropDown "Prover" "prover" Nothing $
+          map (\ p ->
+                (p, p, [mkAttr "onClick" $ "updCmSel('" ++ p ++ "')"])
+              ) $ showProversOnly allPrCm
   -- create comorphism selection (drop-down)
-      cmrs = add_attr (mkAttr "name" "translation") $ unode "select"
-        $ map (\ (cm, ps) -> let c = showComorph cm in
-        add_attrs [mkAttr "value" c, mkAttr "4prover" $ intercalate ";" ps]
-          $ unode "option" c) allPrCm
+      cmrs = add_attr (mkAttr "class" "eight wide column") $ unode "div" $
+        singleSelectionDropDown "Translation" "translation" Nothing $
+          map (\ (cm, ps) -> let c = showComorph cm in
+                (c, c, [mkAttr "4prover" $ intercalate ";" ps])
+              ) allPrCm
   return (prs, cmrs, jvScr)
 
 showHtml :: FNode -> String
@@ -1557,44 +1934,247 @@ consNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab)
   -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
   -> ResultT IO (LibEnv, [ProofResult])
 consNode le ln dg nl@(i, lb) subL useTh mp mt tl = do
-  consList <- lift $ getFilteredConsCheckers mt subL
-  let findCC x = filter ((== x ) . getCcName . fst) consList
-      mcc = maybe (findCC "darwin") findCC mp
-  case mcc of
-        [] -> fail "no cons checker found"
-        ((cc, c) : _) -> lift $ do
-          cstat <- consistencyCheck useTh cc c ln le dg nl $ fromMaybe 1 tl
-          -- Consistency Results are stored in LibEnv via DGChange object
-          let cSt = sType cstat
-              le'' = if cSt == CSUnchecked then le else
-                     Map.insert ln (changeDGH dg $ SetNodeLab lb
-                       (i, case cSt of
-                             CSInconsistent -> markNodeInconsistent "" lb
-                             CSConsistent -> markNodeConsistent "" lb
-                             _ -> lb)) le
-          return (le'', [(" ", drop 2 $ show cSt, show cstat,
-                          AbsState.ConsChecker cc, c, Nothing)])
+  (cc, c) <- liftIO $ findConsChecker mt subL mp
+  lift $ do
+    cstat <- consistencyCheck useTh cc c ln le dg nl $ fromMaybe 1 tl
+    -- Consistency Results are stored in LibEnv via DGChange object
+    let cSt = sType cstat
+        le'' = if cSt == CSUnchecked then le else
+               Map.insert ln (changeDGH dg $ SetNodeLab lb
+                 (i, case cSt of
+                       CSInconsistent -> markNodeInconsistent "" lb
+                       CSConsistent -> markNodeConsistent "" lb
+                       _ -> lb)) le
+    return (le'', [(" ", drop 2 $ show cSt, show cstat,
+                    AbsState.ConsChecker cc, c, Nothing, Just $ sMessage cstat)])
 
-proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab) -> G_theory
-  -> G_sublogics -> Bool -> Maybe String -> Maybe String -> Maybe Int
-  -> [String] -> [String] -> ResultT IO (LibEnv, [ProofResult])
+findConsChecker :: Maybe String -> G_sublogics -> Maybe String
+                -> IO (G_cons_checker, AnyComorphism)
+findConsChecker translationM gSublogic consCheckerNameM = do
+  consList <- getFilteredConsCheckers translationM gSublogic
+  let findCC x = filter ((== x ) . getCcName . fst) consList
+      consCheckersL = maybe (findCC "darwin") findCC consCheckerNameM
+  case consCheckersL of
+        [] -> Fail.fail "no cons checker found"
+        (gConsChecker, comorphism) : _ -> return (gConsChecker, comorphism)
+
+reasonREST :: HetcatsOpts -> LibEnv -> LibName -> DGraph -> ProverMode
+           -> String -> ReasoningParameters
+           -> ResultT IO (LibEnv, [(String, [ProofResult])])
+reasonREST opts libEnv libName dGraph_ proverMode location reasoningParameters = do
+  reasoningCacheE <- liftIO buildReasoningCache
+  failOnLefts reasoningCacheE
+  let reasoningCache1 = rights reasoningCacheE
+  reasoningCache2 <- liftIO $ PGIP.Server.setupReasoning opts reasoningCache1
+  (libEnv', cacheGoalsAndProofResults) <-
+    PGIP.Server.performReasoning opts libEnv libName
+      dGraph_ location reasoningCache2
+  let nodesAndProofResults = map
+        (\ (nodeLabel, proofResults) ->
+          (show (getName $ dgn_name nodeLabel), proofResults)
+        )
+        cacheGoalsAndProofResults
+  return (libEnv', nodesAndProofResults)
+  where
+    useDatabase :: Bool
+    useDatabase = format reasoningParameters == Just "db"
+
+    failOnLefts :: ReasoningCacheE -> ResultT IO ()
+    failOnLefts reasoningCache =
+      let lefts_ = lefts reasoningCache
+      in  unless (null lefts_) $ Fail.fail $ unlines lefts_
+
+    buildReasoningCache :: IO ReasoningCacheE
+    buildReasoningCache =
+      let reasoningParametersGroupedByNodeName =
+            groupBy (\ a b ->
+                      ReasoningParameters.node a == ReasoningParameters.node b
+                    ) $ ReasoningParameters.goals reasoningParameters
+      in  foldM buildReasoningCacheForNode [] reasoningParametersGroupedByNodeName
+
+    buildReasoningCacheForNode :: ReasoningCacheE
+                               -> [ReasoningParameters.GoalConfig]
+                               -> IO ReasoningCacheE
+    buildReasoningCacheForNode reasoningCacheE goalConfigsOfSameNode =
+      let nodeName = ReasoningParameters.node $ head goalConfigsOfSameNode
+          nodeM = find (\ (_, nodeLabel) ->
+                         showName (dgn_name nodeLabel) == nodeName
+                       ) $ labNodesDG dGraph_
+      in  case nodeM of
+            Nothing ->
+              return (Left ("Node \"" ++ nodeName ++ "\" not found")
+                       : reasoningCacheE)
+            Just node_@(_, nodeLabel) -> do
+              let gTheoryM = maybeResult $ getGlobalTheory nodeLabel
+              gTheory <- case gTheoryM of
+                Nothing ->
+                  Fail.fail ("Cannot compute global theory of: "
+                        ++ showName (dgn_name nodeLabel) ++ "\n")
+                Just gTheory -> return gTheory
+              let gSublogic = sublogicOfTh gTheory
+              foldM (buildReasoningCacheForGoal nodeName node_ gTheory gSublogic)
+                reasoningCacheE goalConfigsOfSameNode
+
+    buildReasoningCacheForGoal :: String
+                               -> (Int, DGNodeLab)
+                               -> G_theory
+                               -> G_sublogics
+                               -> ReasoningCacheE
+                               -> ReasoningParameters.GoalConfig
+                               -> IO ReasoningCacheE
+    buildReasoningCacheForGoal nodeName node_ gTheory gSublogic reasoningCacheE goalConfig =
+      let reasonerM = reasoner $ reasonerConfiguration goalConfig
+          translationM = translation goalConfig
+          timeLimit_ = ReasoningParameters.timeLimit $
+            reasonerConfiguration goalConfig
+          caseReasoningCacheEntry = ReasoningCacheGoal
+            { rceProverMode = proverMode
+            , rceNode = node_
+            , rceGoalNameM = Nothing
+            , rceGoalConfig = goalConfig
+            , rceGTheory = gTheory
+            , rceGSublogic = gSublogic
+            , rceReasoner = undefined -- will be overwritten a few lines below
+            , rceComorphism = undefined -- will be overwritten a few lines below
+            , rceTimeLimit = timeLimit_
+            , rceUseDatabase = useDatabase
+            , rceReasonerConfigurationKeyM = Nothing
+            , rceReasoningAttemptKeyM = Nothing
+            }
+      in  case proverMode of
+            GlConsistency -> do
+              (gConsChecker, comorphism) <-
+                findConsChecker translationM gSublogic reasonerM
+              return ((Right $ caseReasoningCacheEntry
+                       { rceReasoner = AbsState.ConsChecker gConsChecker
+                       , rceComorphism = comorphism
+                       }
+                     ) : reasoningCacheE)
+            GlProofs -> do
+              proversAndComorphisms <-
+                getProverAndComorph reasonerM translationM gSublogic
+              (gProver, comorphism) <- case proversAndComorphisms of
+                [] -> Fail.fail ("No matching translation or prover found for "
+                            ++ nodeName ++ "\n")
+                (gProver, comorphism) : _ ->
+                  return (gProver, comorphism)
+              let possibleGoalNames = map fst $ getThGoals gTheory :: [String]
+              let goalNames = (case conjecture goalConfig of
+                    Nothing -> possibleGoalNames
+                    Just goalName_ ->
+                      filter (== goalName_) possibleGoalNames) :: [String]
+              return
+                (map (\ goalName_ -> Right $ caseReasoningCacheEntry
+                       { rceGoalNameM = Just goalName_
+                       , rceReasoner = AbsState.Prover gProver
+                       , rceComorphism = comorphism
+                       }
+                     ) goalNames ++ reasoningCacheE)
+
+setupReasoning :: HetcatsOpts -> ReasoningCache -> IO ReasoningCache
+setupReasoning opts reasoningCache =
+  mapM (\ reasoningCacheGoal -> do
+         reasoningConfigurationKey <-
+           Persistence.Reasoning.setupReasoning opts reasoningCacheGoal
+         return reasoningCacheGoal
+           { rceReasonerConfigurationKeyM = reasoningConfigurationKey }
+       ) reasoningCache
+
+
+performReasoning :: HetcatsOpts -> LibEnv -> LibName -> DGraph
+                 -> String -> ReasoningCache
+                 -> ResultT IO (LibEnv, [(DGNodeLab, [ProofResult])])
+performReasoning opts libEnv libName dGraph_ location reasoningCache = do
+  (libEnv', nodesAndProofResults') <- liftIO $ foldM
+    (\ (libEnvAcc1, nodesAndProofResults1) reasoningCacheGoalsByNode -> do
+      let nodeLabel = snd $ rceNode $ head reasoningCacheGoalsByNode
+      (libEnvAcc2, proofResults2) <-
+        foldM
+          (\ (libEnvAcc3, proofResults3) reasoningCacheGoal -> do
+            -- update state
+            let gTheoryM = maybeResult $ getGlobalTheory nodeLabel
+            gTheory_ <- case gTheoryM of
+              Nothing ->
+                Fail.fail ("Cannot compute global theory of: "
+                      ++ showName (dgn_name nodeLabel) ++ "\n")
+              Just gTheory_ -> return gTheory_
+            let reasoningCacheGoal' = reasoningCacheGoal { rceGTheory = gTheory_ }
+
+            -- preprocess (with database)
+            (premisesM, reasoningCacheGoal3) <-
+              Persistence.Reasoning.preprocessReasoning opts location
+                reasoningCacheGoal'
+
+            -- run the reasoner
+            Result _ (Just (libEnvAcc4, proofResult : _)) <- runResultT $
+              runReasoning libEnvAcc3 libName dGraph_ reasoningCacheGoal3 premisesM
+
+            -- postprocess (with database)
+            Persistence.Reasoning.postprocessReasoning opts reasoningCacheGoal3
+              premisesM proofResult
+
+            -- update state
+            let proofResults4 = proofResult : proofResults3
+            return (libEnvAcc4, proofResults4)
+          )
+          (libEnvAcc1, [])
+          reasoningCacheGoalsByNode
+      return (libEnvAcc2, (nodeLabel, proofResults2) : nodesAndProofResults1)
+    )
+    (libEnv, []) $
+    groupBy sameNode reasoningCache
+  return (libEnv', nodesAndProofResults')
+  where
+    sameNode :: ReasoningCacheGoal -> ReasoningCacheGoal -> Bool
+    sameNode a b = fst (rceNode a) == fst (rceNode b)
+
+runReasoning :: LibEnv -> LibName -> DGraph
+             -> ReasoningCacheGoal -> Maybe [String]
+             -> ResultT IO (LibEnv, [ProofResult])
+runReasoning libEnv libName dGraph_ reasoningCacheGoal premisesM =
+  let node_ = rceNode reasoningCacheGoal
+      gTheory_ = rceGTheory reasoningCacheGoal
+      gSublogic = rceGSublogic reasoningCacheGoal
+      useTheorems_ = fromMaybe True $ useTheorems $ rceGoalConfig reasoningCacheGoal
+      reasonerM = reasoner $ reasonerConfiguration $ rceGoalConfig reasoningCacheGoal
+      translationM = translation $ rceGoalConfig reasoningCacheGoal
+      timeLimitM = Just $ ReasoningParameters.timeLimit $ reasonerConfiguration $
+                     rceGoalConfig reasoningCacheGoal
+      goalName_ = fromJust $ rceGoalNameM reasoningCacheGoal
+      premises = fromMaybe [] premisesM
+  in  case rceProverMode reasoningCacheGoal of
+        GlConsistency -> consNode libEnv libName dGraph_ node_ gSublogic
+          useTheorems_ reasonerM translationM timeLimitM
+        GlProofs -> proveNode libEnv libName dGraph_ node_ gTheory_ gSublogic
+          useTheorems_ reasonerM translationM timeLimitM [goalName_] premises
+
+proveNode :: LibEnv -> LibName -> DGraph -> (Int, DGNodeLab)
+  -> G_theory -> G_sublogics -> Bool
+  -> Maybe String -> Maybe String -> Maybe Int
+  -> [String] -> [String]
+  -> ResultT IO (LibEnv, [ProofResult])
 proveNode le ln dg nl gTh subL useTh mp mt tl thms axioms = do
  ps <- lift $ getProverAndComorph mp mt subL
  case ps of
-  [] -> fail "no matching translation or prover found"
+  [] -> Fail.fail "no matching translation or prover found"
   cp : _ -> do
     let ks = map fst $ getThGoals gTh
         diffs = Set.difference (Set.fromList thms)
                 $ Set.fromList ks
-    unless (Set.null diffs) . fail $ "unknown theorems: " ++ show diffs
-    when (null thms && null ks) $ fail "no theorems to prove"
-    ((nTh, sens), (_, proofStatuses)) <- autoProofAtNode useTh
-                                            (maybe 1 (max 1) tl)
-      (if null thms then ks else thms) axioms gTh cp
-    return (if null sens then le else
-        Map.insert ln ( updateLabelTheory le dg nl nTh) le
-                      , combineToProofResult sens cp proofStatuses
-                      )
+    unless (Set.null diffs) . Fail.fail $ "unknown theorems: " ++ show diffs
+    when (null thms && null ks) $ Fail.fail "no theorems to prove"
+    let selectedGoals_ = if null thms then ks else thms
+    let timeLimit_ = maybe 1 (max 1) tl
+    (nTh, sens, proofStatuses) <- do
+      let premises = axioms
+      ((nTh, sens), (_, proofStatuses)) <-
+        autoProofAtNode useTh timeLimit_ selectedGoals_ premises gTh cp
+      return (nTh, sens, proofStatuses)
+    return ( if null sens
+             then le
+             else Map.insert ln ( updateLabelTheory le ln dg nl nTh) le
+           , combineToProofResult sens cp proofStatuses
+           )
 
 combineToProofResult :: [(String, String, String)] -> (G_prover, AnyComorphism)
   -> [ProofStatus G_proof_tree] -> [ProofResult]
@@ -1606,12 +2186,12 @@ combineToProofResult sens (prover, comorphism) proofStatuses = let
       (ps : _) -> Just ps
   combineSens :: (String, String, String) -> ProofResult
   combineSens (n, e, d) = (n, e, d, AbsState.Prover prover, comorphism,
-                           findProofStatusByName n)
+                           findProofStatusByName n, Nothing)
   in map combineSens sens
 
 -- run over multiple dgnodes and prove available goals for each
-proveMultiNodes :: ProverMode -> LibEnv -> LibName -> DGraph -> Bool
-  -> Maybe String -> Maybe String -> Maybe Int -> [String] -> [String]
+proveMultiNodes :: ProverMode -> LibEnv -> LibName -> DGraph
+  -> Bool -> Maybe String -> Maybe String -> Maybe Int -> [String] -> [String]
   -> ResultT IO (LibEnv, [(String, [ProofResult])])
 proveMultiNodes pm le ln dg useTh mp mt tl nodeSel axioms = let
   runProof :: LibEnv -> G_theory -> (Int, DGNodeLab)
@@ -1629,18 +2209,21 @@ proveMultiNodes pm le ln dg useTh mp mt tl nodeSel axioms = let
             GlProofs -> hasOpenGoals . snd
     _ -> (`elem` nodeSel) . getDGNodeName . snd) $ labNodesDG dg
   in foldM
-  (\ (le', res) nl@(_, dgn) -> case maybeResult $ getGlobalTheory dgn of
-      Nothing -> fail $
+  (\ (le', res) nl@(_, dgn) ->
+    case maybeResult $ getGlobalTheory dgn of
+      Nothing -> Fail.fail $
                     "cannot compute global theory of:\n" ++ show dgn
       Just gTh -> do
         (le'', proofResults) <- runProof le' gTh nl
-        return (le'', (getDGNodeName dgn, proofResults) : res))
-          (le, []) nodes2check
+        return (le'', (getDGNodeName dgn, proofResults) : res)
+  )
+  (le, [])
+  nodes2check
 
 formatResultsAux :: Bool -> ProverMode -> String -> [ProofResult] -> Element
 formatResultsAux xF pm nm sens = unode nm $ case (sens, pm) of
-    ([(_, e, d, _, _, _)], GlConsistency) | xF -> formatConsNode e d
-    _ -> unode "results" $ formatGoals xF sens
+    ([(_, e, d, _, _, _, _)], GlConsistency) | xF -> formatConsNode e d
+    _ -> add_attr (mkAttr "class" "results") $ unode "div" $ formatGoals xF sens
 
 mkPath :: Session -> LibName -> Int -> String
 mkPath sess l k =
@@ -1665,24 +2248,30 @@ sessAnsAux libName svg (sess, k) =
   let libEnv = sessLibEnv sess
       ln = libToFileName libName
       libref l =
-        aRef (mkPath sess l k) (libToFileName l) : map (\ d ->
-         aRef (extPath sess l k ++ d) d) displayTypes
+        ( aRef (mkPath sess l k) (libToFileName l)
+        , aRef (mkPath sess l k) "default"
+            : map (\ d -> aRef (extPath sess l k ++ d) d) displayTypes
+        )
       libPath = extPath sess libName k
       ref d = aRef (libPath ++ d) d
       autoProofBt = aRef ('/' : show k ++ "?autoproof") "automatic proofs"
       consBt = aRef ('/' : show k ++ "?consistency") "consistency checker"
 -- the html quicklinks to nodes and edges have been removed with R.16827
-  in (htmlC, htmlHead ++ mkHtmlElem
-           ('(' : shows k ")" ++ ln)
-           (bold ("library " ++ ln)
-            : map ref displayTypes
-            ++ menuElement : loadXUpdate (libPath ++ updateS)
-            : plain "tools:" : mkUnorderedList [autoProofBt, consBt]
-            : plain "commands:"
-            : mkUnorderedList (map ref globalCommands)
-            : plain "imported libraries:"
-            : [mkUnorderedList $ map libref $ Map.keys libEnv]
-           ) ++ svg)
+  in  ( htmlC
+      , htmlPage
+          ("Hets, the DOLiator - (" ++ shows k ")" ++ ln)
+          []
+          [ add_attr (mkAttr "class" "row") (unode "div" $ unode "h1" ("Library " ++ ln))
+          , add_attr (mkAttr "class" "row") $ unode "div"
+              [ pageOptionsFormat "" libPath
+              , dropDownElement "Tools" [autoProofBt, consBt]
+              , dropDownElement "Commands" (map ref globalCommands)
+              , dropDownToLevelsElement "Imported Libraries" $ map libref $ Map.keys libEnv
+              ]
+          , add_attr (mkAttr "class" "row") $ unode "div" $ unode "h3" "Development Graph (click on node or edge)"
+          ]
+          svg
+      )
 
 getHetsLibContent :: HetcatsOpts -> String -> [QueryPair] -> IO [Element]
 getHetsLibContent opts dir query = do
@@ -1712,75 +2301,23 @@ mkHtmlRef query entry = unode "dir" $ aRef
   (entry ++ if null query then "" else '?' : intercalate "&"
          (map (\ (x, ms) -> x ++ maybe "" ('=' :) ms) query)) entry
 
-mkUnorderedList :: Node t => [t] -> Element
-mkUnorderedList = unode "ul" . map (unode "li")
-
-italic :: String -> Element
-italic = unode "i"
-
-bold :: String -> Element
-bold = unode "b"
-
 plain :: String -> Element
 plain = unode "p"
-
-headElems :: String -> [Element]
-headElems path = let d = "default" in unode "strong" "Choose a display type:" :
-  map (\ q -> aRef (if q == d then "/" </> path else '?' : q) q)
-      (d : displayTypes)
-  ++ [ unode "p"
-       [ unode "small" "internal command overview as XML:"
-       , menuElement ]
-     , plain $ "Select a local file as library or "
-       ++ "enter a DOL specification in the text area and press \"submit\""
-       ++ ", or browse through our Hets-lib library below."
-     , uploadHtml ]
-
-menuElement :: Element
-menuElement = aRef "?menus" "menus"
-
-htmlHead :: String
-htmlHead =
-    let dtd = "PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\""
-        url = "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\""
-    in concat ["<!DOCTYPE html ", dtd, " ", url, ">\n"]
 
 inputNode :: Element
 inputNode = unode "input" ()
 
-loadNode :: String -> Element
-loadNode nm = add_attrs
-    [ mkAttr "type" "file"
-    , mkAttr "name" nm
-    , mkAttr "size" "40"]
-    inputNode
-
-submitNode :: Element
-submitNode = add_attrs
+submitButton :: Element
+submitButton = add_attrs
     [ mkAttr "type" "submit"
-    , mkAttr "value" "submit"]
-    inputNode
+    , mkAttr "value" "submit"
+    , mkAttr "class" "ui button"
+    ] inputNode
 
 mkForm :: String -> [Element] -> Element
-mkForm a = add_attrs
-  [ mkAttr "action" a
-  , mkAttr "enctype" "multipart/form-data"
-  , mkAttr "method" "post" ]
-  . unode "form"
-
-uploadHtml :: Element
-uploadHtml = mkForm "/"
-  [ loadNode "file"
-  , unode "p" $ add_attrs
-    [ mkAttr "cols" "68"
-    , mkAttr "rows" "22"
-    , mkAttr "name" "content" ] $ unode "textarea" ""
-  , submitNode ]
-
-loadXUpdate :: String -> Element
-loadXUpdate a = mkForm a
-  [ italic xupdateS
-  , loadNode xupdateS
-  , italic "impacts"
-  , loadNode "impacts"
-  , submitNode ]
+mkForm a =
+  add_attrs [ mkAttr "action" a
+            , mkAttr "enctype" "multipart/form-data"
+            , mkAttr "method" "post"
+            , mkAttr "class" "ui basic form"
+            ] . unode "form"

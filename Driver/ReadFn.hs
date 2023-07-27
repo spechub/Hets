@@ -50,15 +50,11 @@ import Common.Utils
 
 import Text.XML.Light
 
-import System.Exit
 import System.FilePath
-import System.IO
 import System.Directory
 
-import Control.Monad
-
 import Data.Char (isSpace)
-import Data.List (isPrefixOf, stripPrefix)
+import Data.List (isPrefixOf)
 import Data.Maybe
 
 noPrefix :: QName -> Bool
@@ -169,7 +165,7 @@ loadAccessUri opts fn = do
         "" -> ""
         t -> '?' : accessTokenS ++ "=" ++ t
   putIfVerbose opts 4 $ "downloading " ++ u
-  loadFromUri u
+  loadFromUri opts u
 
 downloadSource :: HetcatsOpts -> FilePath -> IO (Either String String)
 downloadSource opts fn =
@@ -184,7 +180,7 @@ tryDownload :: HetcatsOpts -> [FilePath] -> FilePath
 tryDownload opts fnames fn = case fnames of
   [] -> return $ Left $ "no input found for: " ++ fn
   fname : fnames' -> do
-       let fname' = fromMaybe fname $ stripPrefix "file://" fname
+       let fname' = tryToStripPrefix "file://" fname
        mRes <- downloadSource opts fname'
        case mRes of
          Left err -> do
@@ -203,7 +199,7 @@ getContent opts = getExtContent opts (getExtensions opts)
 getExtContent :: HetcatsOpts -> [String] -> FilePath
   -> IO (Either String (FilePath, String))
 getExtContent opts exts fp =
-  let fn = fromMaybe fp $ stripPrefix "file://" fp
+  let fn = tryToStripPrefix "file://" fp
       fs = getFileNames exts fn
       ffs = if checkUri fn || isAbsolute fn then fs else
            concatMap (\ d -> map (d </>) fs) $ "" : libdirs opts
@@ -213,7 +209,7 @@ getExtContent opts exts fp =
 inputs are hets options, optional argument for the file program,
 and the library or file name. -}
 getContentAndFileType :: HetcatsOpts -> FilePath
-  -> IO (Either String (Maybe String, Maybe String, FilePath, String))
+  -> IO (Either String (Maybe String, Maybe String, FileInfo, String))
 getContentAndFileType opts fn = do
   eith <- getContent opts fn
   case eith of
@@ -224,16 +220,20 @@ getContentAndFileType opts fn = do
       Result ds mr <- runResultT $ getMagicFileType (Just "--mime-type") f
       Result es mc <- runResultT $ getChecksum f
       showDiags opts (ds ++ es)
-      when isUri $ removeFile f
-      return $ Right (mr, mc, nFn, cont)
+      let fInfo = FileInfo {
+          wasDownloaded = isUri,
+          filePath = if isUri then f else nFn
+        }
+      return $ Right (mr, mc, fInfo, cont)
 
 showFileType :: HetcatsOpts -> FilePath -> IO ()
 showFileType opts fn = do
   eith <- getContentAndFileType opts fn
   case eith of
     Left err -> hetsIOError err
-    Right (mr, _, nFn, _) ->
-      let fstr = (if nFn == fn then fn else nFn ++ " (via " ++ fn ++ ")")
+    Right (mr, _, fInfo, _) ->
+      let nFn = filePath fInfo
+          fstr = (if nFn == fn then fn else nFn ++ " (via " ++ fn ++ ")")
              ++ ": "
       in case mr of
         Just s -> putStrLn $ fstr ++ s
@@ -247,3 +247,4 @@ keepOrigClifName opts origName file =
          CommonLogicIn _ -> origName
          _ -> origName ++ '.' : show ext
        _ -> file
+

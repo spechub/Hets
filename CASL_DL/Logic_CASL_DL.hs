@@ -18,6 +18,7 @@ import qualified Data.Set as Set
 import qualified Common.Lib.Rel as Rel
 import Common.Result
 import Common.ProofTree
+import Common.DocUtils
 
 import CASL_DL.AS_CASL_DL
 import CASL_DL.Sign
@@ -44,7 +45,7 @@ data CASL_DL = CASL_DL deriving Show
 
 instance Language CASL_DL where
  description _ = unlines
-  [ "CASL_DL is at the same time an extension and a restriction of CASL."
+  [ "CASL_DL is the restriction of CASL to OWL 1 expressivity."
   , "It additionally provides cardinality restrictions in a description logic"
   , "sense; and it limits the expressivity of CASL to the description logic"
   , "SHOIN(D). Hence it provides the following sublogics:"
@@ -63,9 +64,9 @@ instance Syntax CASL_DL DL_BASIC_SPEC
                 Symbol SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parse_basic_spec CASL_DL = Just $ basicSpec casl_DL_reserved_words
-         parse_symb_items CASL_DL = Just $ symbItems casl_DL_reserved_words
+         parse_symb_items CASL_DL = Just . const $ symbItems casl_DL_reserved_words
          parse_symb_map_items CASL_DL =
-             Just $ symbMapItems casl_DL_reserved_words
+              Just . const $ symbMapItems casl_DL_reserved_words
 
 -- CASL_DL logic
 
@@ -80,6 +81,7 @@ map_DL_FORMULA mor (Cardinality ct pn varT natT qualT r) =
 instance Sentences CASL_DL DLFORMULA DLSign DLMor Symbol where
       map_sen CASL_DL m = return . mapSen map_DL_FORMULA m
       sym_of CASL_DL = symOf
+      symKind CASL_DL = show . pretty . symbolKind . symbType
       symmap_of CASL_DL = morphismToSymbMap
       sym_name CASL_DL = symName
       simplify_sen CASL_DL = simplifySen minDLForm simplifyCD
@@ -136,7 +138,7 @@ instance Logic CASL_DL CASL_DL_SL
                DLSign
                DLMor
                Symbol RawSymbol ProofTree where
-         stability _ = Unstable
+         stability _ = Experimental
          top_sublogic _ = SROIQ
          all_sublogics _ = [SROIQ]
 

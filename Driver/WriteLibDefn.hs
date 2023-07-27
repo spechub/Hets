@@ -73,8 +73,9 @@ getFilePrefixGeneric suffs odir' file =
 -}
 writeLibDefn :: LogicGraph -> GlobalAnnos -> FilePath -> HetcatsOpts
   -> LIB_DEFN -> IO ()
-writeLibDefn lg ga file opts ld = do
-    let (odir, filePrefix) = getFilePrefix opts file
+writeLibDefn lg ga fullFileName opts ld = do
+    let file = tryToStripPrefix "file://" fullFileName
+        (odir, filePrefix) = getFilePrefix opts file
         printXml fn = writeFile fn $ ppTopElement (xmlLibDefn lg ga ld)
         printAscii b fn = writeEncFile (ioEncoding opts) fn
           $ renderExtText (StripComment b) ga (prettyLG lg ld) ++ "\n"
@@ -117,8 +118,9 @@ writeShATermFileSDoc fp atcon =
 
 writeFileInfo :: ShATermLG a => HetcatsOpts -> LibName
               -> FilePath -> LIB_DEFN -> a -> IO ()
-writeFileInfo opts ln file ld gctx =
-  let envFile = snd (getFilePrefix opts file) ++ envSuffix in
+writeFileInfo opts ln fullFileName ld gctx =
+  let file = tryToStripPrefix "file://" fullFileName
+      envFile = snd (getFilePrefix opts file) ++ envSuffix in
   case analysis opts of
   Basic -> do
       putIfVerbose opts 2 ("Writing file: " ++ envFile)

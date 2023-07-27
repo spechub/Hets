@@ -358,7 +358,7 @@ checkSymbolMapDL rsm =
     let checkSourceSymbol sSym _ =
               if any (`matches` sSym) symOfPredefinedSign then
                   (sSym :) else id
-        syms = Map.foldWithKey checkSourceSymbol [] rsm
+        syms = Map.foldrWithKey checkSourceSymbol [] rsm
     in if null syms
        then return rsm
        else mkError "Predefined CASL_DL symbols cannot be mapped" syms

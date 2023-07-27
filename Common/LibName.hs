@@ -14,7 +14,7 @@ Abstract syntax of HetCASL/DOL specification library names.
 -}
 
 module Common.LibName
-  ( LibName (LibName, getLibId, locIRI, mimeType)
+  ( LibName (LibName, getLibId, locIRI, mimeType, libVersion)
   , VersionNumber (VersionNumber)
   , isQualNameFrom
   , isQualName
@@ -22,6 +22,7 @@ module Common.LibName
   , unQualName
   , setFilePath
   , libToFileName
+  , libToString
   , getFilePath
   , iriLibName
   , filePathToLibId
@@ -30,6 +31,7 @@ module Common.LibName
   , mkLibStr
   , setMimeType
   , mkLibName
+  , libNameToId
   ) where
 
 import Common.Doc
@@ -114,7 +116,13 @@ setMimeType m ln = ln { mimeType = m }
 
 -- | interpret library IRI as file path
 libToFileName :: LibName -> FilePath
-libToFileName = iriToStringUnsecure . setAngles False . getLibId
+libToFileName ln = let iri = getLibId ln in
+  if hasFullIRI iri then showIRIFull . setAngles False $ iri else showIRI iri
+
+-- | interpret library IRI as path. Uses CURIE if available.
+libToString :: LibName -> String
+libToString = iriToStringUnsecure . setAngles False . getLibId
+
 
 -- | extract location IRI as file name
 getFilePath :: LibName -> FilePath

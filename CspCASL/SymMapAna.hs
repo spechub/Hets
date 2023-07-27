@@ -70,10 +70,10 @@ cspInducedFromMorphism rmap sigma = do
       csig = extendedInfo sigma
       newSRel = Rel.transClosure . sortRel $ mtarget m
   -- compute the channel name map (as a Map)
-  cm <- Map.foldWithKey (chanFun sigma rmap sm)
+  cm <- Map.foldrWithKey (chanFun sigma rmap sm)
               (return Map.empty) (MapSet.toMap $ chans csig)
   -- compute the process name map (as a Map)
-  proc_Map <- Map.foldWithKey (procFun sigma rmap sm newSRel cm)
+  proc_Map <- Map.foldrWithKey (procFun sigma rmap sm newSRel cm)
               (return Map.empty) (MapSet.toMap $ procSet csig)
   let em = emptyCspAddMorphism
         { channelMap = cm

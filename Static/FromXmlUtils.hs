@@ -29,6 +29,7 @@ import Text.ParserCombinators.Parsec
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified Control.Monad.Fail as Fail
 
 data BasicExtResponse = Failure Bool  -- True means fatal (give up)
   | Success G_theory Int (Set.Set G_symbol) Bool
@@ -68,10 +69,10 @@ deleteHiddenSymbols :: String -> G_sign -> Result G_sign
 deleteHiddenSymbols syms gs@(G_sign lid (ExtSign sig _) _) = let
   str = trimLeft syms in if null str then return gs else
     case parse_symb_items lid of
-      Nothing -> fail $ "no symbol parser for " ++ language_name lid
-      Just sbpa -> case runParser (sepBy1 sbpa anComma << eof)
+      Nothing -> Fail.fail $ "no symbol parser for " ++ language_name lid
+      Just sbpa -> case runParser (sepBy1 (sbpa mempty) anComma << eof)
                    (emptyAnnos ()) "" str of
-        Left err -> fail $ show err
+        Left err -> Fail.fail $ show err
         Right sms -> do
           rm <- stat_symb_items lid sig sms
           let sym1 = symset_of lid sig
@@ -87,10 +88,10 @@ getMorphism (G_sign lid (ExtSign sig _) _) syms =
     let str = trimLeft syms in
     if null str then return $ mkG_morphism lid $ ide sig else
     case parse_symb_map_items lid of
-      Nothing -> fail $ "no symbol map parser for " ++ language_name lid
-      Just smpa -> case runParser (sepBy1 smpa anComma << eof)
+      Nothing -> Fail.fail $ "no symbol map parser for " ++ language_name lid
+      Just smpa -> case runParser (sepBy1 (smpa mempty) anComma << eof)
                    (emptyAnnos ()) "" str of
-        Left err -> fail $ show err
+        Left err -> Fail.fail $ show err
         Right sms -> do
           rm <- stat_symb_map_items lid sig Nothing sms
           fmap (mkG_morphism lid) $ induced_from_morphism lid rm sig

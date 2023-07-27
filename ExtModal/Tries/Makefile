@@ -2,9 +2,9 @@
 
 .PHONY: check
 
-check: hets
-	../../hets -v2 -o pp.het,th Try?.het
-	../../hets -v2 -o pp.het,th Try?.pp.het
+check: hets_available
+	HETS_MAGIC=../../magic/hets.magic ../../hets -v2 -o pp.dol,th Try?.dol
+	HETS_MAGIC=../../magic/hets.magic ../../hets -v2 -o pp.dol,th Try?.pp.dol
 
 %:
 	(cd ../..; $(MAKE) $@)

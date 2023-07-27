@@ -23,6 +23,7 @@ import Common.Utils
 
 import Data.List
 import qualified Control.Concurrent as Conc
+import qualified Control.Monad.Fail as Fail
 
 import HTk.Toolkit.Separator
 import HTk.Widgets.Space
@@ -299,7 +300,7 @@ proofManagementGUI prGuiAcs thName warningTxt th
   -- main window
   main <- createToplevel [text $ thName ++ " - Select Goal(s) and Prove"]
   Conc.tryTakeMVar guiMVar >>=
-         let err s = fail $ "ProofManagementGUI: (" ++ s ++ ") MVar must be "
+         let err s = Fail.fail $ "ProofManagementGUI: (" ++ s ++ ") MVar must be "
                ++ "filled with Nothing when entering proofManagementGUI"
          in maybe (err "not filled")
                   (maybe (Conc.putMVar guiMVar $ Just main)
@@ -643,7 +644,7 @@ proofManagementGUI prGuiAcs thName warningTxt th
       +> closeWindow >>> Conc.takeMVar lockMVar
   -- clean up locking of window
   Conc.tryTakeMVar guiMVar >>=
-         let err s = fail $ "ProofManagementGUI: (" ++ s ++ ") MVar must be "
+         let err s = Fail.fail $ "ProofManagementGUI: (" ++ s ++ ") MVar must be "
                ++ "filled with Nothing when entering proofManagementGUI"
          in maybe (err "not filled")
                   (maybe (err "filled with Nothing")

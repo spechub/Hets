@@ -33,30 +33,34 @@ import TPTP.Prover.Vampire
 import TPTP.Sign
 import TPTP.Sublogic as Sublogic
 import TPTP.StaticAnalysis
+import TPTP.ProveHyper
+import TPTP.ConsChecker
 
 import ATC.ProofTree ()
 import Common.DefaultMorphism
 import Common.ProofTree
 import Logic.Logic as Logic
 
-import Data.Monoid
+import Data.Monoid ()
 import qualified Data.Set as Set
+import qualified SoftFOL.ProveDarwin as Darwin
 
 data TPTP = TPTP deriving (Show, Ord, Eq)
 
 instance Language TPTP
   where
     description _ =
-      "The TPTP (Thousands of Problems for Theorem Provers) Language" ++
+      "The TPTP (Thousands of Problems for Theorem Provers) Language\n" ++
       "See http://www.cs.miami.edu/~tptp/"
 
 instance Syntax TPTP BASIC_SPEC Symbol () ()
   where
     parse_basic_spec TPTP = Just parseBasicSpec
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 instance Sentences TPTP Sentence Sign Morphism Symbol
   where
@@ -78,10 +82,12 @@ instance StaticAnalysis TPTP BASIC_SPEC Sentence () () Sign Morphism Symbol ()
 
 instance Logic TPTP Sublogic BASIC_SPEC Sentence () () Sign Morphism Symbol () ProofTree
   where
-    stability _ = Testing
+    stability _ = Stable
     all_sublogics TPTP = [CNF, FOF, TFF, THF]
     provers TPTP = [cvc4, darwin, eprover, geo3, isabelle, leo2, satallax,
                     spass, vampire]
+    cons_checkers TPTP = [hyperConsChecker] ++ 
+                         map darwinConsChecker Darwin.tptpProvers 
 
 
 instance SublogicName Sublogic where

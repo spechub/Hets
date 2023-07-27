@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {- |
 Module      :  $Id$
+Description :  main Hets module (providing binary executable)
 Copyright   :  (c) Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -20,13 +21,15 @@ module Main where
 import System.Environment (getArgs)
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Driver.Options
-import Driver.AnaLib
 import Driver.ReadFn (showFileType)
+import Driver.ReadMain
 import Driver.WriteFn
 
 import Static.DevGraph
+import Logic.PrintLogics
 
 #ifdef UNI_PACKAGE
 import GUI.ShowGraph
@@ -48,20 +51,10 @@ import PGIP.XMLstate (isRemote)
 import PGIP.Server
 #endif
 
-import Maude.Maude2DG (anaMaudeFile)
-import LF.Twelf2DG (anaTwelfFile)
-import OMDoc.Import (anaOMDocFile)
-#ifdef HEXPAT
-import HolLight.HolLight2DG (anaHolLightFile)
-#endif
-
-#ifdef HAXML
-import Isabelle.Isa2DG (anaIsaFile, anaThyFile)
-#endif
 
 main :: IO ()
 main =
-    getArgs >>= hetcatsOpts >>= \ opts -> let imode = interactive opts in
+  getArgs >>= hetcatsOpts >>= \ opts -> let imode = interactive opts in
     printOptionsWarnings opts >>
 #ifdef SERVER
      if serve opts then hetsServer opts else
@@ -70,7 +63,10 @@ main =
        then cmdlRun opts >>= displayGraph "" opts . getMaybeLib . intState
        else do
          putIfVerbose opts 3 $ "Options: " ++ show opts
-         case (infiles opts, outputLogicGraph opts) of
+         if outputLogicList opts
+            then printLogics
+         else  
+          case (infiles opts, outputLogicGraph opts) of
            ([], lg) -> case guiType opts of
              UseGui ->
 #ifdef UNI_PACKAGE
@@ -85,49 +81,30 @@ main =
              "option -G is illegal together with file arguments (use -g)"
 
 noUniPkg :: IO ()
-noUniPkg = fail $ "No graph display interface; \n"
+noUniPkg = Fail.fail $ "No graph display interface; \n"
             ++ "UNI_PACKAGE option has been "
             ++ "disabled during compilation of Hets"
 
 processFile :: HetcatsOpts -> FilePath -> IO ()
-processFile opts file =
-  if fileType opts then showFileType opts file else do
+processFile opts file = if fileType opts then showFileType opts file else do
     putIfVerbose opts 3 ("Processing input: " ++ file)
     let doExit = guiType opts == UseGui
-    res <- case guess file (intype opts) of
-#ifdef PROGRAMATICA
-      HaskellIn -> putStr "this is HaskellIn" >> anaHaskellFile opts file
-#endif
-#ifdef HEXPAT
-      HolLightIn -> anaHolLightFile opts file
-#endif
-#ifdef HAXML
-      IsaIn -> anaIsaFile opts file
-      ThyIn -> anaThyFile opts file
-#endif
-      PrfIn -> anaLibReadPrfs opts file
-      ProofCommand -> do
-        st <- cmdlProcessFile doExit opts file
-        liftM (getMaybeLib . intState)
-          $ (if interactive opts then cmdlRunShell else return) st
-      MaudeIn -> anaMaudeFile opts file
-      TwelfIn -> anaTwelfFile opts file
-      OmdocIn -> anaOMDocFile opts file
-      _ -> anaLib opts file
+    res <- if guess file (intype opts) == ProofCommand then do
+                st <- cmdlProcessFile doExit opts file
+                liftM (getMaybeLib . intState)
+                 $ (if interactive opts then cmdlRunShell else return) st
+           else readAndAnalyse file opts
     case res of
       Just (ln, nEnv) ->
         writeSpecFiles opts file nEnv ln $ lookupDGraph ln nEnv
       _ -> hetsIOError ""
     if guess file (intype opts) /= ProofCommand && interactive opts
-      then cmdlRun opts >> return ()
-      else displayGraph file opts res
+      then cmdlRun opts >> return () else displayGraph file opts res
 
 displayGraph :: FilePath -> HetcatsOpts -> Maybe (LibName, LibEnv) -> IO ()
-displayGraph file opts res = case guiType opts of
-    NoGui -> return ()
-    UseGui ->
+displayGraph _ (HcOpt {guiType = NoGui}) _ = return ()
 #ifdef UNI_PACKAGE
-      showGraph file opts res
+displayGraph file opts res = showGraph file opts res
 #else
-      noUniPkg
+displayGraph _ _ _ = noUniPkg
 #endif

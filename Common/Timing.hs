@@ -22,8 +22,10 @@ import System.Posix.Types
 import Data.Time.Clock
 #endif
 
+import Data.Fixed
 import Data.Time
 import Control.Monad
+import Numeric
 
 newtype HetsTime = HetsTime
 #ifdef UNIX
@@ -40,6 +42,14 @@ getHetsTime = liftM HetsTime
   getCurrentTime
 #endif
 
+measureWallTime :: IO a -> IO (a, TimeOfDay)
+measureWallTime f = do
+  startTime <- getHetsTime
+  result <- f
+  endTime <- getHetsTime
+  let wallTimeUsed = diffHetsTime endTime startTime
+  return (result, wallTimeUsed)
+
 diffHetsTime :: HetsTime -> HetsTime -> TimeOfDay
 diffHetsTime (HetsTime t1) (HetsTime t2) =
    timeToTimeOfDay $ secondsToDiffTime $ round
@@ -50,3 +60,15 @@ diffHetsTime (HetsTime t1) (HetsTime t2) =
    diffUTCTime
 #endif
                t1 t2) :: Double)
+
+timeOfDayToSeconds :: TimeOfDay -> Int
+timeOfDayToSeconds TimeOfDay { todHour = hours
+                             , todMin = minutes
+                             , todSec = seconds
+                             } =
+  (floor . toDouble) seconds + 60 * (minutes + 60 * hours)
+  where
+    toDouble :: Pico -> Double
+    toDouble s = case readSigned readFloat $ show s of
+      [(x, "")] -> x
+      _ -> error $ "timeOfDayToSeconds: Failed reading the number " ++ show s

@@ -82,7 +82,7 @@ signToSPLogicalPart s =
                    $ map (xTerm . snd) $ number args] }
     predArgRestrictions =
           SPFormulaList { originType = SPOriginAxioms
-                        , formulae = Map.foldWithKey toArgRestriction []
+                        , formulae = Map.foldrWithKey toArgRestriction []
                                      $ predMap s
                         }
     toArgRestriction psym tset acc
@@ -123,7 +123,7 @@ signToSPLogicalPart s =
         | null t = []
         | otherwise = [SPPredDecl {predSym = p, sortSyms = t}]
 
-    genDecl = Map.foldWithKey (\ ssym ->
+    genDecl = Map.foldrWithKey (\ ssym ->
                        maybe id (\ gen ->
                              (SPGenDecl {sortSym = ssym,
                                   freelyGenerated = freely gen,
@@ -218,7 +218,7 @@ checkArities s =
     checkPredArities (predMap s) && checkFuncArities (funcMap s)
 
 checkPredArities :: PredMap -> Bool
-checkPredArities = Map.fold checkSet True
+checkPredArities = Map.foldr checkSet True
     where checkSet s bv = bv && not (Set.null s) &&
                   all (\ x -> length x == length hd) tl
                       where hd : tl = Set.toList s
