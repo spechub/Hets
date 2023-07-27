@@ -11,17 +11,10 @@
         <property name="type">popup</property>
         <property name="window-position">center-on-parent</property>
         <property name="default-width">600</property>
-        <property name="default-height">260</property>
+        <property name="default-height">300</property>
         <property name="destroy-with-parent">True</property>
         <signal name="delete-event" handler="on_close" swapped="no"/>
         <child>
-            <!--            <object class="GtkOverlay">-->
-            <!--                <child type="overlay">-->
-            <!--            <object class="GtkGrid">-->
-            <!--                <property name="row-homogeneous">False</property>-->
-            <!--                <property name="column-spacing">14</property>-->
-            <!--                <property name="row-spacing">4</property>-->
-
             <object class="GridWithToolComorphismSelector" id="_consistency_checker_comorphism_selector">
                 <property name="border-width">10</property>
                 <property name="start-top">1</property>
@@ -91,43 +84,41 @@
                         <property name="top-attach">4</property>
                     </packing>
                 </child>
-                <!--                    </object>-->
-                <!--                </child>-->
-                <!--                <child type="overlay">-->
-                <!--                    <object class="GtkBox" id="_box_spinner">-->
-                <!--                        <property name="no-show-all">True</property>-->
-                <!--                        <child>-->
-                <!--                            <object class="GtkBox">-->
-                <!--                                <property name="visible">True</property>-->
-                <!--                                <property name="valign">center</property>-->
-                <!--                                <property name="halign">center</property>-->
-                <!--                                <property name="orientation">GTK_ORIENTATION_VERTICAL</property>-->
-                <!--                                <child>-->
-                <!--                                    <object class="GtkSpinner">-->
-                <!--                                        <property name="active">True</property>-->
-                <!--                                        <property name="height-request">40</property>-->
-                <!--                                        <property name="visible">True</property>-->
-                <!--                                    </object>-->
-                <!--                                </child>-->
-                <!--                                <child>-->
-                <!--                                    <object class="GtkLabel">-->
-                <!--                                        <property name="label">Checking consistency...</property>-->
-                <!--                                        <property name="visible">True</property>-->
-                <!--                                    </object>-->
-                <!--                                </child>-->
-                <!--                            </object>-->
-                <!--                            <packing>-->
-                <!--                                <property name="expand">True</property>-->
-                <!--                                <property name="fill">True</property>-->
-                <!--                            </packing>-->
-                <!--                        </child>-->
-                <!--                        <style>-->
-                <!--                            <class name="overlay"/>-->
-                <!--                        </style>-->
+                <child>
+                    <object class="GtkLabel">
+                        <property name="label">Consistency check output:</property>
+                        <property name="halign">GTK_ALIGN_START</property>
+                    </object>
+                    <packing>
+                        <property name="left-attach">0</property>
+                        <property name="width">2</property>
+                        <property name="top-attach">5</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkScrolledWindow">
+                        <property name="vexpand">True</property>
+                        <child>
+                            <object class="GtkLabel" id="_lbl_output">
+                                <property name="halign">GTK_ALIGN_CENTER</property>
+                                <property name="valign">GTK_ALIGN_START</property>
+                                <property name="label">&lt;i&gt;No output&lt;/i&gt;</property>
+                                <property name="use-markup">True</property>
+                                <property name="selectable">True</property>
+                            </object>
+                        </child>
+                        <style>
+                            <class name="cc-output"/>
+                        </style>
+                    </object>
+                    <packing>
+                        <property name="left-attach">0</property>
+                        <property name="width">2</property>
+                        <property name="top-attach">6</property>
+                    </packing>
+                </child>
             </object>
         </child>
-        <!--            </object>-->
-        <!--        </child>-->
         <child type="titlebar">
             <object class="GtkHeaderBar">
                 <property name="visible">True</property>

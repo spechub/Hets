@@ -21,6 +21,7 @@ class ConsistencyCheckWindow(Gtk.Window):
     _switch_include_proven_theorems: Gtk.Switch = Gtk.Template.Child()
     _txt_timeout: Gtk.SpinButton = Gtk.Template.Child()
     _lbl_status: Gtk.Label = Gtk.Template.Child()
+    _lbl_output: Gtk.Label = Gtk.Template.Child()
 
     @property
     def selected_comorphism(self) -> typing.Optional[Comorphism]:
@@ -96,6 +97,16 @@ class ConsistencyCheckWindow(Gtk.Window):
     def _finish_checking_progress(self, status: ConsistencyKind, message: str):
         self._btn_check.set_sensitive(True)
         self._update_status(status)
+
+        message = message.strip()
+        if len(message) > 0:
+            self._lbl_output.set_lines(len(message.split("\n")))
+            self._lbl_output.set_text(message)
+            self._lbl_output.set_halign(Gtk.Align.START)
+        else:
+            self._lbl_output.set_lines(1)
+            self._lbl_output.set_markup("<i>No output</i>")
+            self._lbl_output.set_halign(Gtk.Align.CENTER)
 
     def _init_checking_progress(self):
         self._btn_check.set_sensitive(False)

@@ -6,3 +6,5 @@
 .consistency-kind-defined { background: seagreen; color: white}
 .consistency-kind-timed_out { background: blue; color: white}
 .consistency-kind-error { background: darkred; color: white}
+
+.cc-output { border: 1px solid @borders; background: @theme_base_color; }
