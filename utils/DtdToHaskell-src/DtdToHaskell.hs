@@ -10,7 +10,7 @@ to read and write XML files with your Haskell programs. -}
 import System.Environment
 import System.Exit
 import System.IO
-import Data.List (nub, takeWhile, dropWhile)
+import Data.List (nub)
 import Control.Monad
 
 -- import Text.XML.HaXml.Wrappers   (fix2Args)

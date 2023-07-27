@@ -102,11 +102,9 @@ processFile opts file = if fileType opts then showFileType opts file else do
       then cmdlRun opts >> return () else displayGraph file opts res
 
 displayGraph :: FilePath -> HetcatsOpts -> Maybe (LibName, LibEnv) -> IO ()
-displayGraph file opts res = case guiType opts of
-    NoGui -> return ()
-    UseGui ->
+displayGraph _ (HcOpt {guiType = NoGui}) _ = return ()
 #ifdef UNI_PACKAGE
-      showGraph file opts res
+displayGraph file opts res = showGraph file opts res
 #else
-      noUniPkg
+displayGraph _ _ _ = noUniPkg
 #endif
