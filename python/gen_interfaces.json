@@ -1,0 +1,21 @@
+[
+    {
+        "name": "HetsAPI.Python",
+        "imports": [
+            ".custom",
+            ".Prelude",
+            ".Internal",
+            ".OMap"
+        ],
+        "ignore": [
+            "genericProveBatch"
+        ]
+    },
+    {
+        "name": "HetsAPI.Internal",
+        "imports": [
+            ".custom",
+            ".Prelude"
+        ]
+    }
+]
