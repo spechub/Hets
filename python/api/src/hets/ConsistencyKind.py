@@ -18,22 +18,22 @@ class ConsistencyKind(Enum):
 
     PCONS = 2
     """
-    The theory is proven consistent
+    The theory is proof-theoretically conservative
     """
 
     CONS = 3
     """
-    The theory is proven consistent
+    The theory is conservative
     """
 
     MONO = 4
     """
-    TODO
+    The theory is monomorphic
     """
 
     DEFINED = 5
     """
-    The theory is defined to be consistent
+    The theory is definitional
     """
 
     ERROR = 6

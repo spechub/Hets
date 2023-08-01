@@ -66,7 +66,6 @@ module HetsAPI.Python (
     -- Unchanged re-export from Hets.ProveCommands
     , HP.checkConservativityNode
     , HP.recomputeNode
-    , HP.genericProveBatch
 
     -- Unchanged re-export from Hets.Commands
     , HC.automatic

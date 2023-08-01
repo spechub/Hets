@@ -11,7 +11,7 @@ from .ConsistencyKind import ConsistencyKind
 from .ConsistencyStatus import ConsistencyStatus
 from .DevelopmentGraph import DevelopmentGraph
 from .DevGraphEdge import DevGraphEdge, DefinitionDevGraphEdge, TheoremDevGraphEdge, EdgeKind
-from .DevGraphNode import DevGraphNode
+from .DevGraphNode import DevGraphNode, ReferenceDevGraphNode, LocalDevGraphNode
 from .GlobalAnnotations import GlobalAnnotations
 from .GMorphism import GMorphism
 from .Library import Library, load_library
@@ -36,6 +36,8 @@ __all__ = [
     "TheoremDevGraphEdge",
     "EdgeKind",
     "DevGraphNode",
+    "ReferenceDevGraphNode",
+    "LocalDevGraphNode",
     "GMorphism",
     "GlobalAnnotations",
     "Library",

@@ -29,7 +29,8 @@
     <template class="ProveWindow" parent="GtkWindow">
         <property name="type">popup</property>
         <property name="window-position">center-on-parent</property>
-        <property name="default-width">800</property>
+        <property name="default-width">1200</property>
+        <property name="default-height">600</property>
         <property name="destroy-with-parent">True</property>
         <signal name="delete-event" handler="on_close" />
         <child>

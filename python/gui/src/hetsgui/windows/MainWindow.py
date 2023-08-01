@@ -8,6 +8,7 @@ from typing import List, Callable, Any, Optional
 
 from gi.repository import GLib, Gtk, Gio
 
+from hets import Library, ReferenceDevGraphNode
 from ..GtkSmartTemplate import GtkSmartTemplate
 from ..widgets.EdgeInfoDialog import EdgeInfoDialog
 from ..widgets.GraphvizGraphWidget import GraphvizGraphWidget
@@ -83,6 +84,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_actions.append(self._action("proofs.lib_flat_heterogen", self.on_lib_flat_heterogen))
         self._library_actions.append(self._action("proofs.qualify_lib_env", self.on_qualify_lib_env))
 
+        self._action("open_win_for_lib", self._on_open_win_for_lib, "i")
+
         self._action("open_library_settings", self.on_open_library_settings)
 
         self._set_library_actions_enabled(False)
@@ -105,16 +108,21 @@ class MainWindow(Gtk.ApplicationWindow):
         self.add_action(action)
         return action
 
+    def use_library(self, library: Library):
+        self._loaded_library = library
+
+        if self._ui_graph:
+            self._ui_graph.load_graph(self._loaded_library.development_graph())
+
+        self.set_title(f"{library.name().location()} - Heterogeneous Toolset")
+
+        self._set_library_actions_enabled(True)
+
     def open_file(self, file: str):
         try:
             self._opened_file = file
-            self._loaded_library = hets.load_library(file, self._settings)
-
-            if self._ui_graph:
-                self._ui_graph.load_graph(self._loaded_library.development_graph())
-
-            self.set_title(f"{file} - Heterogeneous Toolset")
-            self._set_library_actions_enabled(True)
+            library = hets.load_library(file, self._settings)
+            self.use_library(library)
         except Exception as e:
             self._set_library_actions_enabled(False)
             self._logger.error(f"Failed to load file '{file}': %s", e)
@@ -316,3 +324,36 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self._library_settings_window.close()
         self._library_settings_window = None
+
+    def _on_open_win_for_lib(self, action: Gio.SimpleAction, parameter: GLib.Variant):
+        if self._loaded_library is None:
+            return
+
+        node_id = parameter.get_int32()
+        node = self._loaded_library.development_graph().node_by_id(node_id)
+        if node is None:
+            self._logger.error(f"Attempted to load referenced library for node {node_id} but the node could not be found in the development graph.")
+
+            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.CLOSE, text=f"Failed to referenced library!")
+            dialog.format_secondary_text(f"The node of the referenced library was not found in the development graph. Please contact the developers.")
+            dialog.run()
+            dialog.destroy()
+
+        if isinstance(node, ReferenceDevGraphNode):
+            name = node.referenced_libname()
+            library = self._loaded_library.referenced_library(name)
+
+            window = MainWindow(application=self.get_application())
+            window.use_library(library)
+
+            window.show_all()
+            window.present()
+
+        else:
+            self._logger.error(f"Attempted to load referenced library for node {node_id} but the node is not a reference node!")
+
+            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.CLOSE, text=f"Failed to referenced library!")
+            dialog.format_secondary_text(f"The node of the referenced library is not a reference node. Please contact the developers.")
+            dialog.run()
+            dialog.destroy()
+

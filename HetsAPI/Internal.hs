@@ -36,6 +36,8 @@ module HetsAPI.Internal (
     , isProvenConsStatusLink
     , showConsistencyStatus
     , isInternalNode
+    , referencedNodeLibName
+    , isNodeReferenceNode
     , ExtSign
     , plainSign
     , nonImportedSymbols
@@ -51,7 +53,8 @@ module HetsAPI.Internal (
     , Token
     , Id
 
-    , LibName
+    , LibName(..)
+    , getFilePath
     , LibEnv
 
     , IRI
@@ -126,10 +129,10 @@ import Common.Consistency(Conservativity(..), showConsistencyStatus)
 import Common.GlobalAnnotations
 import Common.Id
 import Common.IRI
-import Common.LibName (LibName)
+import Common.LibName (LibName(..), getFilePath)
 import Common.Result (Result, resultToMaybe, Diagnosis)
 import Driver.Options (HetcatsOpts(..), defaultHetcatsOpts)
-import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), DGNodeInfo(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType)
+import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), DGNodeInfo(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType, isDGRef, dgn_libname)
 import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName, DGNodeType(..), DGEdgeType(..), DGEdgeTypeModInc(..), Scope(..), ThmTypes(..), FreeOrCofree(..), ConsStatus(..), getEdgeNum)
 import Logic.Prover (ProofStatus(..), GoalStatus(..), TacticScript(..))
 import Proofs.AbstractState (ProofState)
@@ -215,6 +218,12 @@ getDevGraphLinkType l = case edgeTypeModInc (getRealDGLinkType l) of
     where
         inclusion = isInc . getRealDGLinkType $ l
 
+
+referencedNodeLibName :: DGNodeLab -> LibName
+referencedNodeLibName = dgn_libname
+
+isNodeReferenceNode :: DGNodeLab -> Bool
+isNodeReferenceNode = isDGRef
 
 
 -- optsWithAnalysis :: HetcatsOpts -> AnaType -> HetcatsOpts

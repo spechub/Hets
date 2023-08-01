@@ -35,15 +35,24 @@ class HetsApplication(Gtk.Application):
         self.add_main_option("log", ord('l'), GLib.OptionFlags.NONE, GLib.OptionArg.STRING, "Log level", "<debug|info|warning|error>")
         self.connect("handle-local-options", self.on_handle_local_options)
 
+        action = Gio.SimpleAction.new("app.open_win_for_lib", GLib.VariantType("s"))
+        self.add_action(action)
+
     def on_handle_local_options(self, application, options: GLib.VariantDict):
         log_value = options.lookup_value("log")
+        log_level_int = logging.WARN
         if log_value is not None:
             log_level = log_value.get_string().upper()
             log_level_int = getattr(logging, log_level.upper(), None)
             if not isinstance(log_level_int, int):
                 print('Invalid log level: %s' % log_level, file=sys.stderr)
                 return 1
-            logging.basicConfig(level=log_level_int)
+        
+        logging.basicConfig(
+            level=log_level_int,
+            format='[%(asctime)s.%(msecs)03d] [ %(levelname)-7s ] [%(name)s] %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
+            )
 
         return -1
 

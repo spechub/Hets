@@ -233,21 +233,31 @@ class GraphvizGraphWidget(ExtendedDotWidget):
     def _menu_for_node(self, node_id: str) -> Gtk.Menu:
         menu = Gio.Menu()
 
+        node = self.development_graph.node_by_id(int(node_id))
+        if node is not None:
+            self._logger.warning(f"Trying to open a menu for node {node_id} but the node was not found in the development graph")
+
         menu_item_prove = Gio.MenuItem()
         menu_item_prove.set_label("Prove")
         menu_item_prove.set_action_and_target_value("win.node.prove", GLib.Variant.new_string(node_id))
         menu.append_item(menu_item_prove)
 
-        menu_item_consistency = Gio.MenuItem()
-        menu_item_consistency.set_label("Check consistency")
-        menu_item_consistency.set_action_and_target_value("win.node.check_consistency",
-                                                          GLib.Variant.new_string(node_id))
-        menu.append_item(menu_item_consistency)
-
         menu_item_info = Gio.MenuItem()
         menu_item_info.set_label("Show node info")
         menu_item_info.set_action_and_target_value("win.node.show_info", GLib.Variant.new_string(node_id))
         menu.append_item(menu_item_info)
+
+        if node.is_reference_node():
+            menu_item_open_ref = Gio.MenuItem()
+            menu_item_open_ref.set_label("Open " + node.name())
+            menu_item_open_ref.set_action_and_target_value("win.open_win_for_lib", GLib.Variant.new_int32(node.id()))
+            menu.append_item(menu_item_open_ref)
+        else:
+            menu_item_consistency = Gio.MenuItem()
+            menu_item_consistency.set_label("Check consistency")
+            menu_item_consistency.set_action_and_target_value("win.node.check_consistency",
+                                                              GLib.Variant.new_string(node_id))
+            menu.append_item(menu_item_consistency)
 
         return Gtk.Menu.new_from_model(menu)
 
@@ -258,6 +268,12 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         menu_item_info.set_label("Show edge info")
         menu_item_info.set_action_and_target_value("win.edge.show_info", get_variant([src_id, dst_id]))
         menu.append_item(menu_item_info)
+
+        menu_item_consistency = Gio.MenuItem()
+        menu_item_consistency.set_label("Check conservativity")
+        menu_item_consistency.set_action_and_target_value("win.edge.check_conservativity",
+                                                          GLib.Variant.new_tuple(GLib.Variant.new_string(src_id), GLib.Variant.new_string(dst_id)))
+        menu.append_item(menu_item_consistency)
 
         return Gtk.Menu.new_from_model(menu)
 

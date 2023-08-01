@@ -11,6 +11,7 @@ from .ConsistencyKind import ConsistencyKind
 from .Comorphism import Comorphism
 from .result import result_or_raise
 from .ConsistencyChecker import ConsistencyChecker
+from .LibName import LibName
 from .ProofDetails import ProofDetails
 from .Prover import Prover
 from .HsWrapper import HsHierarchyElement
@@ -20,7 +21,7 @@ from .haskell import snd, theoryOfNode, DGNodeLab, fst, Just, Nothing, PyProver,
     PyConsCheckingOptions, checkConsistencyAndRecord, TheoryPointer, globalTheory, recomputeNode, fromJust, \
     developmentGraphNodeLabelName, getDevelopmentGraphNodeType, nodeTypeIsReference, nodeTypeIsProven, \
     nodeTypeIsProvenConsistent, isInternalNode, showGlobalDoc, consistencyStatusType, CSUnchecked, CSTimeout, CSError, \
-    CSInconsistent, CSConsistent, consistencyStatusMessage
+    CSInconsistent, CSConsistent, consistencyStatusMessage, isNodeReferenceNode, referencedNodeLibName
 
 from .Theory import Theory
 
@@ -43,14 +44,14 @@ class DevGraphNode(HsHierarchyElement):
     def id(self) -> int:
         return fst(self._hs_node)
 
-    def label(self) -> DGNodeLab:
+    def _label(self) -> DGNodeLab:
         return snd(self._hs_node)
 
     def name(self) -> str:
-        return developmentGraphNodeLabelName(self.label())
+        return developmentGraphNodeLabelName(self._label())
 
     def is_internal(self) -> bool:
-        return isInternalNode(self.label())
+        return isInternalNode(self._label())
 
     def _theory_pointer(self) -> TheoryPointer:
         node = self.hs_obj()
@@ -136,11 +137,6 @@ class DevGraphNode(HsHierarchyElement):
         else:
             return ConsistencyKind.UNKNOWN, status_message
 
-    def consistency_status(self) -> ConsistencyStatus:
-        node_lab = snd(self._hs_node)
-        hs_cons_status = node_lab.getNodeConsStatus()
-        return ConsistencyStatus(hs_cons_status)
-
     def global_theory(self) -> Optional[Theory]:
         node_lab = snd(self._hs_node)
 
@@ -173,14 +169,34 @@ class DevGraphNode(HsHierarchyElement):
         return self._theory
 
     def is_reference_node(self) -> bool:
-        return nodeTypeIsReference(getDevelopmentGraphNodeType(self.label()))
+        return nodeTypeIsReference(getDevelopmentGraphNodeType(self._label()))
 
     def is_proven_node(self) -> bool:
-        return nodeTypeIsProven(getDevelopmentGraphNodeType(self.label()))
+        return nodeTypeIsProven(getDevelopmentGraphNodeType(self._label()))
 
     def is_consistency_proven(self) -> bool:
-        return nodeTypeIsProvenConsistent(getDevelopmentGraphNodeType(self.label()))
+        return nodeTypeIsProvenConsistent(getDevelopmentGraphNodeType(self._label()))
 
     def info(self) -> str:
         dev_graph = self.parent()
-        return showGlobalDoc(dev_graph.global_annotations()._hs_global_annos, self.label(), "")
+        return showGlobalDoc(dev_graph.global_annotations()._hs_global_annos, self._label(), "")
+
+
+class LocalDevGraphNode(DevGraphNode):
+    def consistency_status(self) -> ConsistencyStatus:
+        node_lab = snd(self._hs_node)
+        hs_cons_status = node_lab.getNodeConsStatus()
+        return ConsistencyStatus(hs_cons_status)
+
+
+class ReferenceDevGraphNode(DevGraphNode):
+    def referenced_libname(self) -> LibName:
+        return LibName(referencedNodeLibName(self._label()))
+
+
+def dev_graph_node_from_hs(hs_node: Tuple[int, DGNodeLab], parent: Optional[HsHierarchyElement]) -> DevGraphNode:
+    label = snd(hs_node)
+    if isNodeReferenceNode(label):
+        return ReferenceDevGraphNode(hs_node, parent)
+    else:
+        return LocalDevGraphNode(hs_node, parent)

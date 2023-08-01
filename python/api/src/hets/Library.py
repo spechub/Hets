@@ -17,17 +17,23 @@ from .haskell import loadLibrary as loadHsLibrary, fst, snd, getGraphForLibrary,
     computeColimit as computeColimitHs, normalForm as normalFormHs, triangleCons as triangleConsHs, \
     freeness as freenessHs, libFlatImports as libFlatImportsHs, libFlatDUnions as libFlatDUnionsHs, \
     libFlatRenamings as libFlatRenamingsHs, libFlatHiding as libFlatHidingHs, libFlatHeterogen as libFlatHeterogenHs, \
-    qualifyLibEnv as qualifyLibEnvHs
+    qualifyLibEnv as qualifyLibEnvHs, LibName as HsLibName
 from .result import result_or_raise
+from .LibName import LibName
 
 
 class Library(HsHierarchyElement):
     def __init__(self, hs_library) -> None:
         super().__init__(None)
+        # if isinstance(hs_library, tuple):
+        #     self._name = hs_library[0]
+        #     self._env = hs_library[1]
+        # else:
         self._name = fst(hs_library)
         self._env = snd(hs_library)
 
         self._dgraph: Optional[DevelopmentGraph] = None
+        self._referenced_libraries = {}
 
     def hs_obj(self):
         return self._name, self._env
@@ -38,6 +44,18 @@ class Library(HsHierarchyElement):
         if self._dgraph:
             hs_graph = getGraphForLibrary(self._name, self._env)
             self._dgraph.hs_update(hs_graph)
+
+        for lib in self._referenced_libraries.values():
+            lib.hs_update(new_env)
+
+    def referenced_library(self, name: LibName):
+        if name not in self._referenced_libraries:
+            self._referenced_libraries[name] = Library((name._hs_libname, self._env))
+
+        return self._referenced_libraries[name]
+
+    def name(self) -> LibName:
+        return LibName(self._name)
 
     def development_graph(self) -> DevelopmentGraph:
         if self._dgraph is None:
