@@ -266,13 +266,12 @@ class GraphvizGraphWidget(ExtendedDotWidget):
 
         menu_item_info = Gio.MenuItem()
         menu_item_info.set_label("Show edge info")
-        menu_item_info.set_action_and_target_value("win.edge.show_info", get_variant([src_id, dst_id]))
+        menu_item_info.set_action_and_target_value("win.edge.show_info", get_variant((src_id, dst_id)))
         menu.append_item(menu_item_info)
 
         menu_item_consistency = Gio.MenuItem()
         menu_item_consistency.set_label("Check conservativity")
-        menu_item_consistency.set_action_and_target_value("win.edge.check_conservativity",
-                                                          GLib.Variant.new_tuple(GLib.Variant.new_string(src_id), GLib.Variant.new_string(dst_id)))
+        menu_item_consistency.set_action_and_target_value("win.edge.check_conservativity", get_variant((src_id, dst_id)))
         menu.append_item(menu_item_consistency)
 
         return Gtk.Menu.new_from_model(menu)

@@ -60,7 +60,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_actions.append(self._action("node.prove", self._on_prove_node, "s"))
         self._library_actions.append(self._action("node.check_consistency", self._on_check_consistency_node, "s"))
         self._library_actions.append(self._action("node.show_info", self._on_show_node_info, "s"))
-        self._library_actions.append(self._action("edge.show_info", self._on_show_edge_info, "av"))
+        self._library_actions.append(self._action("edge.check_conservativity", self._on_check_conservativity_edge, "(ss)"))
+        self._library_actions.append(self._action("edge.show_info", self._on_show_edge_info, "(ss)"))
+
         self._library_actions.append(self._action_toggle("toggle_show_names", self._on_toggle_show_names))
         self._library_actions.append(self._action_toggle("toggle_show_edges", self._on_toggle_show_edges))
 
@@ -212,6 +214,20 @@ class MainWindow(Gtk.ApplicationWindow):
 
             info_dialog = EdgeInfoDialog(edge)
             info_dialog.run()
+        else:
+            self._logger.warning(f'Action: Show info for edge {origin_id}->{target_id}. But no library is loaded!')
+
+    def _on_check_conservativity_edge(self, action, parameter: GLib.Variant):
+        origin_id = parameter.get_child_value(0).get_child_value(0).get_string()
+        target_id = parameter.get_child_value(1).get_child_value(0).get_string()
+        if self._loaded_library:
+            edge = [e for e in self._loaded_library.development_graph().edges() if
+                    str(e.origin()) == origin_id and str(e.target()) == target_id][0]
+
+            dialog = Gtk.MessageDialog(title="Not implemented", message_type=Gtk.MessageType.INFO)
+            dialog.format_secondary_text("This functionality is not yet implemented.")
+            dialog.run()
+            dialog.destroy()
         else:
             self._logger.warning(f'Action: Show info for edge {origin_id}->{target_id}. But no library is loaded!')
 

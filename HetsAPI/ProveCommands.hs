@@ -32,7 +32,7 @@ import HetsAPI.DataTypes
 
 import Data.Functor ()
 import qualified Data.Map as Map
-import Data.Graph.Inductive (LNode)
+import Data.Graph.Inductive (LNode, LEdge)
 
 import Control.Monad.Trans ( MonadTrans(lift) )
 
@@ -44,7 +44,7 @@ import Common.ResultT (ResultT, liftR)
 
 import Comorphisms.LogicGraph (logicGraph)
 
-import qualified Interfaces.Utils (checkConservativityNode)
+import qualified Interfaces.Utils (checkConservativityNode, checkConservativityEdge)
 
 import Logic.Comorphism (AnyComorphism)
 import Logic.Grothendieck (findComorphismPaths)
@@ -56,7 +56,7 @@ import Proofs.ConsistencyCheck (ConsistencyStatus, SType(..), consistencyCheck, 
 import Proofs.BatchProcessing (genericProveBatch)
 
 import Static.ComputeTheory(updateLabelTheory, recomputeNodeLabel)
-import Static.DevGraph (LibEnv, DGraph, DGNodeLab, ProofHistory, DGChange(..), globalTheory, markNodeInconsistent, markNodeConsistent)
+import Static.DevGraph (LibEnv, DGraph, DGNodeLab, DGLinkLab, ProofHistory, DGChange(..), globalTheory, markNodeInconsistent, markNodeConsistent)
 import Static.GTheory (G_theory (..), sublogicOfTh, coerceThSens)
 import Static.History (changeDGH)
 import Data.Maybe (fromJust)
@@ -196,6 +196,10 @@ checkConsistencyAndRecord p opts = do
 checkConservativityNode ::LNode DGNodeLab -> LibEnv -> LibName
   -> IO (String, LibEnv, ProofHistory)
 checkConservativityNode = Interfaces.Utils.checkConservativityNode False
+
+checkConservativityEdge :: LEdge DGLinkLab -> LibEnv -> LibName 
+    -> IO (String, LibEnv, LEdge DGLinkLab, ProofHistory)
+checkConservativityEdge = Interfaces.Utils.checkConservativityEdge False
 
 recomputeNode :: TheoryPointer -> LibEnv
 recomputeNode (name, env, graph, node@(i, label)) =

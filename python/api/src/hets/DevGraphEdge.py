@@ -79,6 +79,8 @@ class DevGraphEdge(HsHierarchyElement):
     def info(self) -> str:
         return showDoc(self._label(), "")
 
+    # def check_conservativity(self) -> :
+
 
 class DefinitionDevGraphEdge(DevGraphEdge):
     pass
