@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Static/DgUtils.hs
 Description :  auxiliary datastructures for development graphs
 Copyright   :  (c) DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -17,7 +18,9 @@ import Common.Id
 import Common.Utils
 import Common.LibName
 import Common.Consistency
+import qualified Control.Monad.Fail as Fail
 
+import Data.Data
 import Data.List
 import Data.Maybe
 
@@ -26,7 +29,7 @@ import qualified Data.Set as Set
 
 -- ** node label types
 
-data XPathPart = ElemName String | ChildIndex Int deriving Show
+data XPathPart = ElemName String | ChildIndex Int deriving (Show, Typeable, Data)
 
 {- | name of a node in a DG; auxiliary nodes may have extension string
      and non-zero number (for these, names are usually hidden). -}
@@ -36,7 +39,7 @@ data NodeName = NodeName
   , extIndex :: Int
   , xpath :: [XPathPart]
   , srcRange :: Range
-  } deriving Show
+  } deriving (Show, Typeable, Data)
 
 instance Ord NodeName where
   compare n1 n2 = compare (showName n1) (showName n2)
@@ -44,14 +47,14 @@ instance Ord NodeName where
 instance Eq NodeName where
   n1 == n2 = compare n1 n2 == EQ
 
-readXPath :: Monad m => String -> m [XPathPart]
+readXPath :: Fail.MonadFail m => String -> m [XPathPart]
 readXPath = mapM readXPathComp . splitOn '/'
 
-readXPathComp :: Monad m => String -> m XPathPart
+readXPathComp :: Fail.MonadFail m => String -> m XPathPart
 readXPathComp s = case splitAt 5 s of
   ("Spec[", s') -> case readMaybe $ takeWhile (/= ']') s' of
         Just i -> return $ ChildIndex i
-        Nothing -> fail "cannot read nodes ChildIndex"
+        Nothing -> Fail.fail "cannot read nodes ChildIndex"
   _ -> return $ ElemName s
 
 isInternal :: NodeName -> Bool
@@ -68,7 +71,7 @@ data DGNodeType = DGNodeType
   , isProvenNode :: Bool
   , isProvenCons :: Bool
   , isInternalSpec :: Bool }
-  deriving (Eq, Ord, Show)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 listDGNodeTypes :: [DGNodeType]
 listDGNodeTypes = let bs = [False, True] in
@@ -89,7 +92,7 @@ data NodeMod = NodeMod
   , addSen :: Bool
   , delSym :: Bool
   , addSym :: Bool }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | an unmodified node
 unMod :: NodeMod
@@ -144,7 +147,8 @@ mergeNodeMod NodeMod
 -- ** edge types
 
 -- | unique number for edges
-newtype EdgeId = EdgeId { getEdgeNum :: Int } deriving (Eq, Ord)
+newtype EdgeId = EdgeId { getEdgeNum :: Int }
+  deriving (Eq, Ord, Typeable, Data)
 
 instance Show EdgeId where
   show = show . getEdgeNum
@@ -162,7 +166,7 @@ showEdgeId (EdgeId i) = show i
 
 -- | a set of used edges
 newtype ProofBasis = ProofBasis { proofBasis :: Set.Set EdgeId }
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Typeable, Data)
 
 instance Show ProofBasis where
   show = show . Set.toList . proofBasis
@@ -175,10 +179,11 @@ data DGRule =
   | DGRuleWithEdge String EdgeId
   | DGRuleLocalInference [(String, String)] -- renamed theorems
   | Composition [EdgeId]
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | proof status of a link
-data ThmLinkStatus = LeftOpen | Proven DGRule ProofBasis deriving (Show, Eq)
+data ThmLinkStatus = LeftOpen | Proven DGRule ProofBasis
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 isProvenThmLinkStatus :: ThmLinkStatus -> Bool
 isProvenThmLinkStatus tls = case tls of
@@ -195,19 +200,24 @@ updProofBasisOfThmLinkStatus tls pB = case tls of
   LeftOpen -> tls
   Proven r _ -> Proven r pB
 
-data Scope = Local | Global deriving (Show, Eq, Ord)
+data Scope = Local | Global deriving (Show, Eq, Ord, Typeable, Data)
 
-data LinkKind = DefLink | ThmLink ThmLinkStatus deriving (Show, Eq)
+data LinkKind = DefLink | ThmLink ThmLinkStatus
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data FreeOrCofree = Free | Cofree | NPFree | Minimize
-  deriving (Show, Eq, Ord, Enum, Bounded, Read)
+  deriving (Show, Eq, Ord, Enum, Bounded, Read, Typeable, Data)
 
 fcList :: [FreeOrCofree]
 fcList = [minBound .. maxBound]
 
 -- | required and proven conservativity (with a proof)
-data ConsStatus = ConsStatus Conservativity Conservativity ThmLinkStatus
-  deriving (Show, Eq)
+data ConsStatus = ConsStatus
+  { requiredConservativity :: Conservativity,
+    provenConservativity :: Conservativity,
+    linkStatus :: ThmLinkStatus
+  }
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 isProvenConsStatusLink :: ConsStatus -> Bool
 isProvenConsStatusLink = not . hasOpenConsStatus False
@@ -254,7 +264,7 @@ getDGEdgeTypeModIncName et = case et of
 data DGEdgeType = DGEdgeType
   { edgeTypeModInc :: DGEdgeTypeModInc
   , isInc :: Bool }
-  deriving (Eq, Ord, Show)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data DGEdgeTypeModInc =
     GlobalDef
@@ -266,14 +276,14 @@ data DGEdgeTypeModInc =
             , isProvenEdge :: Bool
             , isConservativ :: Bool
             , isPending :: Bool }
-  deriving (Eq, Ord, Show)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data ThmTypes =
     HidingThm
   | FreeOrCofreeThm FreeOrCofree
   | GlobalOrLocalThm { thmScope :: Scope
                      , isHomThm :: Bool }
-  deriving (Eq, Ord, Show)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | Creates a list with all DGEdgeType types
 listDGEdgeTypes :: [DGEdgeType]
@@ -322,7 +332,7 @@ data RTPointer =
  | NPComp (Map.Map IRI RTPointer)
          {- here the leaves can be NPUnit or NPComp
          and roots are needed for inserting edges -}
- deriving (Show, Eq)
+ deriving (Show, Eq, Ord, Typeable, Data)
 
 -- map nodes
 
@@ -347,7 +357,7 @@ compPointer (NPBranch n1 f1) (NPComp f2) =
        NPBranch n1 (Map.unionWith (\ _ y -> y) f1 f2 )
 compPointer (NPComp f1) (NPComp f2) =
        NPComp (Map.unionWith (\ _ y -> y) f1 f2)
-compPointer x y = error $ "compPointer:" ++ show x ++ " " ++ show y
+compPointer x y = error $ "compPointer:" ++ show x ++ " composed with " ++ show y
 
 -- sources
 
@@ -358,7 +368,7 @@ refSource (NPRef n _) = n
 refSource x = error ("refSource:" ++ show x)
 
 data RTLeaves = RTLeaf Int | RTLeaves (Map.Map IRI RTLeaves)
- deriving Show
+ deriving (Show, Typeable, Data)
 
 refTarget :: RTPointer -> RTLeaves
 refTarget (NPUnit n) = RTLeaf n

@@ -1,6 +1,6 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/TreePO.hs
 Description :  Handling of tree-like partial ordering relations
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -23,16 +23,17 @@ module CSL.TreePO
     ) -}
     where
 
+import Data.Data
 import qualified Data.Set as Set
-
 
 {- ----------------------------------------------------------------------
 Datatypes for comparison
 ---------------------------------------------------------------------- -}
 
-data Incomparable = Disjoint | Overlap deriving (Eq, Show)
+data Incomparable = Disjoint | Overlap deriving (Eq, Show, Typeable, Data)
 
-data SetOrdering = Comparable Ordering | Incomparable Incomparable deriving Eq
+data SetOrdering = Comparable Ordering | Incomparable Incomparable
+  deriving (Eq, Typeable, Data)
 
 instance Show SetOrdering where
     show (Comparable LT) = "<"
@@ -64,7 +65,7 @@ instance Show SetOrdering where
    Analogously we represent a right opened one ending at y as a closed one
    ending at '(x, EpsLeft)'.
 -}
-data InfDev = EpsLeft | Zero | EpsRight deriving (Eq, Show)
+data InfDev = EpsLeft | Zero | EpsRight deriving (Eq, Show, Typeable, Data)
 
 instance Ord InfDev where
     compare x y
@@ -75,7 +76,7 @@ instance Ord InfDev where
               (EpsRight, _) -> GT
               _ -> swapCompare $ compare y x
 
-newtype CIType a = CIType (a, InfDev) deriving (Eq, Show)
+newtype CIType a = CIType (a, InfDev) deriving (Eq, Show, Typeable, Data)
 
 {- | This type with the given ordering is to represent opened/closed intervals
 over 'a' as closed intervals over '(a, InfDev)' -}
@@ -89,13 +90,15 @@ instance Ord a => Ord (CIType a) where
 -- | A finite set or an interval. True = closed, False = opened interval border.
 data SetOrInterval a = Set (Set.Set a)
                      | IntVal (a, Bool) (a, Bool)
-                       deriving (Eq, Ord, Show)
+                       deriving (Eq, Ord, Show, Typeable, Data)
 
 -- | A closed interval
-data ClosedInterval a = ClosedInterval a a deriving (Eq, Ord, Show)
+data ClosedInterval a = ClosedInterval a a
+  deriving (Eq, Ord, Show, Typeable, Data)
 
 -- | Infinite integers = integers augmented by -Infty and +Infty
-data InfInt = PosInf | NegInf | FinInt Integer deriving (Show, Eq)
+data InfInt = PosInf | NegInf | FinInt Integer
+  deriving (Show, Eq, Typeable, Data)
 
 instance Ord InfInt where
     compare x y

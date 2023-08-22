@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./RDF/ParseRDFAsLibDefn.hs
 Copyright   :  Felix Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -29,6 +29,8 @@ import Syntax.AS_Structured
 import System.Exit
 import System.Process
 
+import qualified Control.Monad.Fail as Fail
+
 {- | top-level function for parsing RDF; it first tries to parse RDF-XML and
 if this fails, it tries to parse ntriples; the output file is in ntriples
 format -}
@@ -45,7 +47,7 @@ parseRDF filename = do
                 ++ " --ntriples > " ++ triplesFile ++ " 2> /dev/null"
             case ec2 of
                 ExitSuccess -> parseNTriplesToLibDefn triplesFile
-                _ -> fail $ filename ++ ": unsupported RDF format"
+                _ -> Fail.fail $ filename ++ ": unsupported RDF format"
     system $ "rm " ++ triplesFile
     return libdefn
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Hybrid/Logic_Hybrid.hs
 Description :  Instance of class Logic for Hybrid CASL
 
 
@@ -44,8 +44,8 @@ instance SignExtension HybridSign where
 
 instance Syntax Hybrid H_BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec Hybrid = Just $ basicSpec hybrid_reserved_words
-    parse_symb_items Hybrid = Just $ symbItems hybrid_reserved_words
-    parse_symb_map_items Hybrid = Just $ symbMapItems hybrid_reserved_words
+    parse_symb_items Hybrid = Just . const $ symbItems hybrid_reserved_words
+    parse_symb_map_items Hybrid = Just . const $ symbMapItems hybrid_reserved_words
 
 -- Hybrid logic
 map_H_FORMULA :: MapSen H_FORMULA HybridSign (DefMorExt HybridSign)

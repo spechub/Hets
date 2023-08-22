@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Temporal/Symbol.hs
 Description :  Symbols of propositional logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -28,14 +29,17 @@ module Temporal.Symbol
 import qualified Common.Id as Id
 import Common.Doc
 import Common.DocUtils
+
+import Data.Data
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+
 import qualified Temporal.Sign as Sign
 import qualified Temporal.Morphism as Morphism
 
 -- | Datatype for symbols
 newtype Symbol = Symbol {symName :: Id.Id}
-            deriving (Show, Eq, Ord)
+            deriving (Show, Eq, Ord, Typeable)
 
 instance Pretty Symbol where
     pretty = printSymbol
@@ -53,7 +57,7 @@ symOf x = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty $
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
-getSymbolMap f = Map.foldWithKey
+getSymbolMap f = Map.foldrWithKey
                  (\ k a -> Map.insert Symbol {symName = k} Symbol {symName = a})
                  Map.empty $ Morphism.propMap f
 

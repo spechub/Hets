@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./VSE/Prove.hs
 Description :  Interface to the VSE prover
 Copyright   :  (c) C. Maeder, DFKI 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -20,6 +20,7 @@ import VSE.Ana
 import VSE.ToSExpr
 import Common.AS_Annotation
 import Common.IO
+import Common.ProverTools
 import Common.SExpr
 import Common.Utils
 
@@ -45,7 +46,8 @@ mkVseProofStatus n axs = (openProofStatus n vseProverName ())
    , usedAxioms = axs }
 
 vse :: Prover VSESign Sentence VSEMor () ()
-vse = mkProverTemplate vseProverName () prove
+vse = (mkProverTemplate vseProverName () prove)
+  { proverUsable = vseBinary >>= checkBinary }
 
 nameP :: String
 nameP = "SPECIFICATION-NAMES"
@@ -203,9 +205,12 @@ moveVSEFiles str = do
     renameFile allSpecInDir allSpecFile
 #endif
 
+vseBinary :: IO String
+vseBinary = getEnvDef "HETS_VSE" "hetsvse"
+
 prepareAndCallVSE :: IO (Handle, Handle, ProcessHandle)
 prepareAndCallVSE = do
-  vseBin <- getEnvDef "HETS_VSE" "hetsvse"
+  vseBin <- vseBinary
   (inp, out, _, cp) <-
       runInteractiveProcess vseBin ["-std"] Nothing Nothing
   readMyMsg cp out nameP

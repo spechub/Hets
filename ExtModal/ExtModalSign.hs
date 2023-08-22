@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./ExtModal/ExtModalSign.hs
 Copyright   :  DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -20,6 +21,7 @@ import CASL.Sign
 import Common.Id
 import qualified Common.Lib.MapSet as MapSet
 
+import Data.Data
 import qualified Data.Set as Set
 
 data EModalSign = EModalSign
@@ -29,7 +31,7 @@ data EModalSign = EModalSign
         , timeMods :: Set.Set Id
         , termMods :: Set.Set Id -- sorts that need to be mapped
         , nominals :: Set.Set Id
-        } deriving (Show, Eq, Ord)
+        } deriving (Show, Eq, Ord, Typeable, Data)
 
 nomPType :: PredType
 nomPType = PredType []

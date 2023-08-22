@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/Print_AS_Library.hs
 Description :  pretty printing of CASL specification libaries
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -88,14 +88,26 @@ instance PrettyLG LIB_ITEM where
             in topKey viewS <+>
                sep [sphead, prettyViewType ad lg vt, ppWithCommas ad]
                $+$ keyword endS
+        Entail_defn si et _ -> topKey entailmentS <+>
+            sep ((structIRI si <+> equals) : case et of
+                 Entail_type s1 s2 _ ->
+                   [ prettyLG lg s1
+                   , keyword entailsS
+                   , prettyLG lg s2 ]
+                 OMSInNetwork i nw s2 _ ->
+                   [ structIRI i <+> keyword inS
+                   , pretty nw
+                   , keyword entailsS
+                   , prettyLG lg s2 ])
+            $+$ keyword endS
         Equiv_defn si (Equiv_type as1 as2 _) sp _ -> topKey equivalenceS <+>
             sep [structIRI si <+> colon, sep
-                [ printGroupSpec lg $ emptyAnno as1
+                [ prettyLG lg as1
                 , text equiS
-                , printGroupSpec lg $ emptyAnno as2]
+                , prettyLG lg as2]
                 <+> equals, prettyLG lg sp]
             $+$ keyword endS
-        Align_defn si ar vt corresps _ ->
+        Align_defn si ar vt corresps aSem _ ->
             let spid = indexed (iriToStringShortUnsecure si)
                 sphead = case ar of
                   Nothing -> spid <+> colon
@@ -104,8 +116,8 @@ instance PrettyLG LIB_ITEM where
             in topKey alignmentS <+>
                sep ([sphead, prettyViewType [] lg vt]
                      ++ if null corresps then []
-                        else [equals,
-                              printCorrespondences corresps])
+                        else [ equals <+> printCorrespondences corresps
+                             , keyword "assuming" <+> keyword (show aSem)])
                $+$ keyword endS
         Module_defn mn mt rs _ ->
             let spid = indexed (iriToStringShortUnsecure mn)
@@ -114,7 +126,24 @@ instance PrettyLG LIB_ITEM where
                   Module_type sp1 sp2 _ -> sep
                     [prettyLG lg sp1, text ofS, prettyLG lg sp2]
             in topKey moduleS <+>
-               sep [sphead, spmt, text forS, sep $ map structIRI rs]
+               sep [sphead, spmt, text forS, pretty rs]
+        Query_defn qn vs sen spec mt _ -> topKey "query" <+>
+            fsep ([ structIRI qn <+> equals
+                  , keyword selectS <+> pretty vs
+                  , keyword whereS <+> pretty sen
+                  , keyword inS <+> prettyLG lg spec]
+                  ++ maybe []
+                  (\ r -> [keyword "along" <+> pretty r]) mt)
+            $+$ keyword endS
+        Subst_defn sn vt sm _ -> topKey "substitution" <+>
+            sep [ structIRI sn <+> colon, prettyViewType [] lg vt
+                , equals <+> pretty sm]
+            $+$ keyword endS
+        Result_defn rn sl sq b _ -> topKey resultS <+>
+            fsep ([ structIRI rn , ppWithCommas sl
+                  , keyword forS <+> pretty sq]
+                  ++ [keyword "%complete" | b])
+            $+$ keyword endS
         Arch_spec_defn si ab _ -> topKey archS <+>
             fsep [keyword specS, structIRI si <+> equals, prettyLG lg ab]
             $+$ keyword endS
@@ -124,15 +153,19 @@ instance PrettyLG LIB_ITEM where
         Ref_spec_defn si ab _ -> keyword refinementS <+>
             fsep [structIRI si <+> equals, prettyLG lg ab]
             $+$ keyword endS
-        Diagram_defn si is es _ -> keyword diagramS <+>
-            fsep ([structIRI si <+> equals, ppWithCommas is]
-              ++ if null es then [] else [keyword excludingS, ppWithCommas es])
+        Network_defn si n _ -> keyword networkS <+>
+            fsep [structIRI si <+> equals, pretty n]
             $+$ keyword endS
         Download_items l ab _ -> topKey fromS <+>
             fsep ((pretty l <+> keyword getS) : prettyDownloadItems ab)
-        Logic_decl aa _ -> sep [keyword logicS, pretty aa]
+        Logic_decl aa _ -> pretty aa
         Newlogic_defn nl _ -> pretty nl
         Newcomorphism_defn nc _ -> pretty nc
+
+instance PrettyLG OmsOrNetwork where
+   prettyLG lg s = case s of
+     MkOms o -> printGroupSpec lg o
+     MkNetwork n -> pretty n
 
 prettyDownloadItems :: DownloadItems -> [Doc]
 prettyDownloadItems d = case d of
@@ -193,13 +226,13 @@ printConfidence = text . ('(' :) . (++ ")") . show
 
 printRelationRef :: RELATION_REF -> Doc
 printRelationRef rref = case rref of
-  Subsumes -> text ">"
-  IsSubsumed -> text "<"
-  Equivalent -> text "="
+  Subsumes -> greater
+  IsSubsumed -> less
+  Equivalent -> equals
   Incompatible -> text "%"
-  HasInstance -> text "$\\ni$"
-  InstanceOf -> text "$\\in$"
-  DefaultRelation -> text "$\\mapsto$"
+  HasInstance -> keyword "ni"
+  InstanceOf -> keyword "in"
+  DefaultRelation -> mapsto
   Iri i -> structIRI i
 
 instance Pretty ItemNameMap where

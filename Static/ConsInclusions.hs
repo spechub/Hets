@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/ConsInclusions.hs
 Description :  dump conservative inclusion links
 Copyright   :  (c) C. Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -46,7 +46,7 @@ dumpConsIncl opts dg (s, t, l) = do
        tar = labDG dg t
        ga = globalAnnos dg
        nm = showEdgeId (dgl_id l)
-       file = "ConsIncl_" ++ nm ++ ".het"
+       file = "ConsIncl_" ++ nm ++ ".dol"
        g1 = globOrLocTh src
        g2 = globOrLocTh tar
    case g1 of

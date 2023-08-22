@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./RelationalScheme/Sign.hs
 Description :  signaturefor Relational Schemes
 Copyright   :  Dominik Luecke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt or LIZENZ.txt
@@ -28,6 +29,8 @@ module RelationalScheme.Sign
         , uniteSig
         , comp_rst_mor
         , RSSymbol (..)
+        , RSSymbolKind (..)
+        , sym_kind
         )
         where
 
@@ -39,7 +42,9 @@ import Common.DocUtils
 import Common.Id
 import Common.Result
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -49,7 +54,7 @@ data RSDatatype
   = RSboolean | RSbinary | RSdate | RSdatetime | RSdecimal | RSfloat
   | RSinteger | RSstring | RStext | RStime | RStimestamp | RSdouble
   | RSnonPosInteger | RSnonNegInteger | RSlong | RSPointer
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Typeable, Data)
 
 type RSRawSymbol = Id
 
@@ -59,7 +64,18 @@ data RSSymbol = STable Id |     -- id of a table
                     Id          -- id of the table
                     RSDatatype  -- datatype of the symbol
                     RSIsKey     -- is it a key?
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
+
+data RSSymbolKind = STableK | SColumnK 
+  deriving (Eq, Ord, Show, Typeable, Data)
+
+sym_kind :: RSSymbol -> RSSymbolKind
+sym_kind (STable _) = STableK
+sym_kind _ = SColumnK
+
+instance Pretty RSSymbolKind where
+ pretty STableK  = text "table"
+ pretty SColumnK = text "colum"
 
 instance GetRange RSSymbol
 
@@ -68,7 +84,7 @@ data RSColumn = RSColumn
                     , c_data :: RSDatatype
                     , c_key :: RSIsKey
                     }
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 data RSTable = RSTable
                 { t_name :: Id
@@ -76,24 +92,24 @@ data RSTable = RSTable
                 , rsannos :: [Annotation]
                 , t_keys :: Set.Set (Id, RSDatatype)
                 }
-                deriving Show
+                deriving (Show, Typeable, Data)
 
 data RSTables = RSTables
                     {
                         tables :: Set.Set RSTable
                     }
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 instance GetRange RSTables
 
 isRSSubsig :: RSTables -> RSTables -> Bool
 isRSSubsig t1 t2 = t1 <= t2
 
-uniteSig :: (Monad m) => RSTables -> RSTables -> m RSTables
+uniteSig :: (Fail.MonadFail m) => RSTables -> RSTables -> m RSTables
 uniteSig s1 s2 =
     if s1 `isRSSubsig` s2 || s2 `isRSSubsig` s1 || s1 `isDisjoint` s2
     then return $ RSTables $ tables s1 `Set.union` tables s2
-    else fail $ "Tables " ++ showDoc s1 "\nand "
+    else Fail.fail $ "Tables " ++ showDoc s1 "\nand "
              ++ showDoc s2 "\ncannot be united."
 
 type Sign = RSTables
@@ -102,7 +118,7 @@ data RSTMap = RSTMap
                 {
                    col_map :: Map.Map Id Id
                 }
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 data RSMorphism = RSMorphism
                     { domain :: RSTables
@@ -110,7 +126,7 @@ data RSMorphism = RSMorphism
                     , table_map :: Map.Map Id Id
                     , column_map :: Map.Map Id RSTMap
                     }
-                    deriving (Eq, Ord, Show)
+                    deriving (Eq, Ord, Show, Typeable, Data)
 
 -- I hope that this works right, I do not want to debug this
 apply_comp_c_map :: RSTable -> Map.Map Id Id -> RSMorphism -> RSMorphism

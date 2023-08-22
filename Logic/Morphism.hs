@@ -1,8 +1,14 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
-  , FlexibleInstances, UndecidableInstances, IncoherentInstances
-  , ExistentialQuantification, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE StandaloneDeriving #-}
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Morphism.hs
 Description :  interface (type class) for logic projections (morphisms) in Hets
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -27,12 +33,19 @@ module Logic.Morphism where
 
 import Logic.Logic
 import Logic.Comorphism
+
+import Data.Data
 import qualified Data.Set as Set
-import Data.Typeable
-import ATerm.Lib -- (ShATermConvertible)
+
+import ATerm.Lib
+
 import Common.DocUtils
 import Common.AS_Annotation
 import Common.Id
+import Common.Json
+import Common.ToXml
+
+import GHC.Generics (Generic)
 
 class (Language cid,
        Logic lid1 sublogics1
@@ -171,26 +184,27 @@ instance Language cid => Language (SpanDomain cid) where
 {- the category of signatures is exactly the category of signatures of
 the sublogic on which the morphism is defined, but with another name -}
 
-instance Morphism cid
+instance (Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
+         , Pretty sign_symbol1)
          => Syntax (SpanDomain cid) () sign_symbol1 () ()
 -- default is ok
 
 newtype S2 s = S2 { sentence2 :: s }
-  deriving (Eq, Ord, Show, Typeable, ShATermConvertible, Pretty)
+  deriving (Eq, Ord, Show, Typeable, ShATermConvertible, Pretty, GetRange, Data, Generic)
 
-instance GetRange s => GetRange (S2 s) where
-  getRange (S2 s) = getRange s
-  rangeSpan (S2 s) = rangeSpan s
+deriving instance {-# OVERLAPPING #-} Data a => ToJson (S2 a)
+deriving instance {-# OVERLAPPING #-} Data a => ToXml (S2 a)
 
-instance Morphism cid
+instance (Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
+         , Category sign1 morphism1, Ord sign_symbol1, GetRange sign_symbol1, Data sentence2)
     => Sentences (SpanDomain cid) (S2 sentence2) sign1 morphism1
        sign_symbol1 where
 
@@ -218,7 +232,8 @@ instance (Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
-                sign2 morphism2 sign_symbol2 symbol2 proof_tree2)
+                sign2 morphism2 sign_symbol2 symbol2 proof_tree2
+         , Ord symbol1, GetRange symbol1, Pretty symbol1, Typeable symbol1, Data sentence2)
         => StaticAnalysis (SpanDomain cid) () (S2 sentence2) () ()
            sign1 morphism1 sign_symbol1 symbol1 where
  ensures_amalgamability l _ = statFail l "ensures_amalgamability"
@@ -242,14 +257,14 @@ instance (SemiLatticeWithTop sublogics1, SemiLatticeWithTop sublogics2)
             lub (SublogicsPair x1 y1) (SublogicsPair x2 y2) =
                 SublogicsPair (lub x1 x2) (lub y1 y2)
 
-instance (SemiLatticeWithTop sublogics1, MinSublogic sublogics2 sentence2)
+instance {-# OVERLAPS #-} (SemiLatticeWithTop sublogics1, MinSublogic sublogics2 sentence2)
   => MinSublogic (SublogicsPair sublogics1 sublogics2) (S2 sentence2) where
   minSublogic (S2 sen2) = SublogicsPair top (minSublogic sen2)
 
 {- just a dummy implementation, it should be the sublogic of sen2 in J
 paired with its image through morMapSublogicSen? -}
 
-instance (MinSublogic sublogics1 alpha, SemiLatticeWithTop sublogics2)
+instance {-# OVERLAPS #-} (MinSublogic sublogics1 alpha, SemiLatticeWithTop sublogics2)
          => MinSublogic (SublogicsPair sublogics1 sublogics2) alpha where
   minSublogic x = SublogicsPair (minSublogic x) top
 
@@ -289,13 +304,14 @@ instance (SublogicName sublogics1, SublogicName sublogics2)
            in if null s1 then s2 else if null s2 then s1 else
               s1 ++ "|" ++ s2
 
-instance ( MinSublogic sublogics1 ()
+instance (MinSublogic sublogics1 ()
          , Morphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 sign_symbol1 symbol1 proof_tree1
             lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 sign_symbol2 symbol2 proof_tree2
-         ) => Logic (SpanDomain cid) (SublogicsPair sublogics1 sublogics2) ()
+         , Ord proof_tree2, Show proof_tree2, Data sentence2)
+         => Logic (SpanDomain cid) (SublogicsPair sublogics1 sublogics2) ()
           (S2 sentence2) () () sign1 morphism1 sign_symbol1 symbol1 proof_tree2
     where
       stability (SpanDomain _) = Experimental

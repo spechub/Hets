@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/test/TestDGTrans.hs
 Copyright   :  Heng Jiang, Uni Bremen 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -22,6 +22,7 @@ import Common.Result
 
 import Data.Maybe
 import System.Environment
+import qualified Control.Moand.Fail as Fail
 
 process :: HetcatsOpts -> FilePath -> IO (Maybe (LIB_NAME, LibEnv))
 process opts file = do
@@ -32,7 +33,7 @@ process opts file = do
                                       (Comorphism defaultCASL2SubCFOL)
              gcMap' <- trans gcMap ccomor
              return $ Just (libName, gcMap')
-      _ -> fail "analib error."
+      _ -> Fail.fail "analib error."
 
 trans :: LibEnv -> AnyComorphism -> IO LibEnv
 trans libEnv acm =
@@ -41,7 +42,7 @@ trans libEnv acm =
         printDiags 2 diags'
         case maybeLE of
           Just libEnv' -> return libEnv'
-          Nothing -> fail "no translation"
+          Nothing -> Fail.fail "no translation"
 
 main :: IO ()
 main = do

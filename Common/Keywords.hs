@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Keywords.hs
 Description :  String constants for CASL keywords to be used for parsing
   and printing
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
@@ -179,7 +179,22 @@ diamondS = "<>"
 greaterS :: String
 greaterS = ">"
 
+
+maxInclusiveS :: String
+maxInclusiveS = "maxInclusive"
+
+maxExclusiveS :: String
+maxExclusiveS = "maxExclusive"
+
 -- * OWL key signs
+
+minInclusiveS :: String
+minInclusiveS = "minInclusive"
+
+
+minExclusiveS :: String
+minExclusiveS = "minExclusive"
+
 
 lessEq :: String
 lessEq = "<="
@@ -291,11 +306,14 @@ alignmentS = "alignment"
 combineS :: String
 combineS = "combine"
 
-distributedOntologyS :: String
-distributedOntologyS = "distributed-ontology"
-
 excludingS :: String
 excludingS = "excluding"
+
+entailmentS :: String
+entailmentS = "entailment"
+
+entailsS :: String
+entailsS = "entails"
 
 forS :: String
 forS = "for"
@@ -309,8 +327,11 @@ moduleS = "module"
 ontologyS :: String
 ontologyS = "ontology"
 
-diagramS :: String
-diagramS = "diagram"
+networkS :: String
+networkS = "network"
+
+patternS :: String
+patternS = "pattern"
 
 relationS :: String
 relationS = "relation"
@@ -435,6 +456,9 @@ etypeS = "etype"
 existsS :: String
 existsS = "exists"
 
+extractS :: String
+extractS = "extract"
+
 falseS :: String
 falseS = "false"
 
@@ -449,6 +473,9 @@ floatingS = "floating"
 
 forallS :: String
 forallS = "forall"
+
+forgetS :: String
+forgetS = "forget"
 
 freeS :: String
 freeS = "free"
@@ -468,6 +495,9 @@ givenS = "given"
 hideS :: String
 hideS = "hide"
 
+keepS :: String
+keepS = "keep"
+
 approximateS :: String
 approximateS = "approximate"
 
@@ -485,6 +515,9 @@ instanceS = "instance"
 
 internalS :: String
 internalS = "internal"
+
+intersectS :: String
+intersectS = "intersect"
 
 lambdaS :: String
 lambdaS = "lambda"
@@ -550,6 +583,12 @@ refinedS = "refined"
 refinementS :: String
 refinementS = "refinement"
 
+rejectS :: String
+rejectS = "reject"
+
+removeS :: String
+removeS = "remove"
+
 resultS :: String
 resultS = "result"
 
@@ -564,6 +603,9 @@ rigidS = "rigid"
 
 sS :: String
 sS = "s"
+
+selectS :: String
+selectS = "select"
 
 sortS :: String
 sortS = "sort"

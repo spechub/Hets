@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./PGIP/Query.hs
 Description :  hets server queries
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -53,6 +53,8 @@ The default display for a LibEnv should be:
 
 import Common.Utils
 
+import PGIP.ReasoningParameters
+import PGIP.Shared
 import Control.Exception
 
 import Data.Char
@@ -60,9 +62,9 @@ import Data.List
 import Data.Maybe
 import qualified Data.Map as Map
 
-import Driver.Options
+import Common.Percent
 
-import Numeric
+import Driver.Options
 
 ppList :: [String]
 ppList = map (show . PrettyOut) prettyList ++ ["pdf"]
@@ -74,11 +76,11 @@ displayTypes =
 comorphs :: [String]
 comorphs = ["provers", "translations"]
 
-data NodeCmd = Node | Info | Theory | Symbols
-  deriving (Show, Eq, Bounded, Enum)
+data NodeCmd = Node | Info | Theory | Symbols | Translate String
+  deriving (Show, Eq)
 
 nodeCmds :: [NodeCmd]
-nodeCmds = [minBound .. maxBound]
+nodeCmds = [Node, Info, Theory, Symbols]
 
 showNodeCmd :: NodeCmd -> String
 showNodeCmd = map toLower . show
@@ -87,7 +89,8 @@ nodeCommands :: [String]
 nodeCommands = map showNodeCmd nodeCmds ++ comorphs ++ ["prove"]
 
 proveParams :: [String]
-proveParams = ["timeout", "include", "prover", "translation", "theorems"]
+proveParams = ["timeout", "include", "prover", "translation", "theorems",
+  "axioms", "includeDetails", "includeProof"]
 
 edgeCommands :: [String]
 edgeCommands = ["edge"]
@@ -104,12 +107,12 @@ data DGQuery = DGQuery
   | NewDGQuery
   { queryLib :: FilePath
   , commands :: [String]
-  }
+  } deriving Show
 
 data Query = Query
   { dgQuery :: DGQuery
   , queryKind :: QueryKind
-  }
+  } deriving Show
 
 type NodeIdOrName = Either Int String
 
@@ -117,25 +120,25 @@ type QueryPair = (String, Maybe String)
 
 showQuery :: [QueryPair] -> String
 showQuery = ('?' :) . intercalate "&" . map (\ (s, ms) ->
-  encodeForQuery s ++ maybe "" (('=' :) . encodeForQuery) ms)
+  encode s ++ maybe "" (('=' :) . encode) ms)
 
 showPath :: [String] -> String
-showPath = intercalate "/" . map encodeForQuery
+showPath = intercalate "/" . map encode
 
 showPathQuery :: [String] -> [QueryPair] -> String
 showPathQuery p q = showPath p ++ if null q then "" else showQuery q
 
 data QueryKind =
     DisplayQuery (Maybe String)
+  | DGTranslation String
   | GlobCmdQuery String
   | GlProvers ProverMode (Maybe String)
   | GlTranslations
   | GlShowProverWindow ProverMode
+  | GlAutoProveREST ProverMode ReasoningParameters
   | GlAutoProve ProveCmd
   | NodeQuery NodeIdOrName NodeCommand
-  | EdgeQuery Int String
-
-data ProverMode = GlProofs | GlConsistency
+  | EdgeQuery Int String deriving (Show, Eq)
 
 data ProveCmd = ProveCmd
   { pcProverMode :: ProverMode
@@ -144,13 +147,14 @@ data ProveCmd = ProveCmd
   , pcTranslation :: Maybe String
   , pcTimeout :: Maybe Int
   , pcTheoremsOrNodes :: [String]
-  , pcXmlResult :: Bool }
+  , pcXmlResult :: Bool
+  , pcAxioms :: [String] } deriving (Show, Eq)
 
 data NodeCommand =
     NcCmd NodeCmd
   | NcProvers ProverMode (Maybe String) -- optional comorphism
   | NcTranslations (Maybe String) -- optional prover name
-  | ProveNode ProveCmd
+  | ProveNode ProveCmd deriving (Show, Eq)
 
 -- | the path is not empty and leading slashes are removed
 anaUri :: [String] -> [QueryPair] -> [String] -> Either String Query
@@ -305,24 +309,11 @@ unEsc s = let m = Map.fromList $ map (\ (a, b) -> (b, a)) escMap
   'X' : c : r -> Map.findWithDefault c c m : unEsc r
   c : r -> c : unEsc r
 
-encodeForQuery :: String -> String
-encodeForQuery = concatMap (\ c -> let n = ord c in case c of
-  _ | isAscii c && isAlphaNum c || elem c "_.-" -> [c]
-  ' ' -> "+"
-  _ | n <= 255 -> '%' : (if n < 16 then "0" else "") ++ showHex n ""
-  _ -> "") -- ignore real unicode stuff
-
 decodePlus :: Char -> Char
 decodePlus c = if c == '+' then ' ' else c
 
 decodeQuery :: String -> String
-decodeQuery s = case s of
-  "" -> ""
-  '%' : h1 : h2 : r -> case readHex [h1, h2] of
-      (i, "") : _ -> [decodePlus $ chr i]
-      _ -> ['%', h1, h2]
-    ++ decodeQuery r
-  c : r -> decodePlus c : decodeQuery r
+decodeQuery = map decodePlus . decode
 
 getFragOfCode :: String -> String
 getFragOfCode = getFragment . decodeQuery
@@ -345,25 +336,26 @@ anaNodeQuery ans i moreTheorems incls pss =
           ++ case lookup "theorems" pps of
         Nothing -> []
         Just str -> map unEsc $ splitOn ' ' $ decodeQuery str
-      timeLimit = maybe Nothing readMaybe $ lookup "timeout" pps
+      timeLimit_ = maybe Nothing readMaybe $ lookup "timeout" pps
       pp = ProveNode $ ProveCmd GlProofs (not (null incls) || case incl of
         Nothing -> True
         Just str -> map toLower str `notElem` ["f", "false"])
-        prover trans timeLimit theorems False
+        prover trans timeLimit_ theorems False []
       noPP = null incls && null pps
-      noIncl = null incls && isNothing incl && isNothing timeLimit
+      noIncl = null incls && isNothing incl && isNothing timeLimit_
       cmds = map (\ a -> (showNodeCmd a, a)) nodeCmds
   in case ans of
        [] -> Right $ NodeQuery i
-         $ if noPP then NcCmd minBound else pp
+         $ if noPP then NcCmd Node else pp
        [cmd] -> case cmd of
          "prove" -> Right $ NodeQuery i pp
          "provers" | noIncl && isNothing prover ->
             Right $ NodeQuery i $ NcProvers GlProofs trans
          "translations" | noIncl && isNothing trans ->
             Right $ NodeQuery i $ NcTranslations prover
-         _ -> case lookup cmd cmds of
-           Just nc | noPP -> Right $ NodeQuery i $ NcCmd nc
+         _ -> case (lookup cmd cmds,trans) of
+           (Just nc,_) | noPP -> Right $ NodeQuery i $ NcCmd nc
+           (Just Theory, Just tr) -> Right $ NodeQuery i $ NcCmd $ Translate tr
            _ -> Left $ "unknown node command '" ++ cmd ++ "' "
                 ++ shows incls " " ++ show pss
        _ -> Left $ "non-unique node command " ++ show ans

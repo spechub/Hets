@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Parse_AS_Basic.hs
 Description :  Parsing CASL's SIG-ITEMS, BASIC-ITEMS and BASIC-SPEC
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

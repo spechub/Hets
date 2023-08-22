@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Framework/WriteLogicUtils.hs
 Description :  Utility functions for writing object logic instances
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

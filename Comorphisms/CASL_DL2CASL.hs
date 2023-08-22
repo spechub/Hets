@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL_DL2CASL.hs
 Description :  Inclusion of CASL_DL into CASL
 Copyright   :  (c) Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -24,6 +24,7 @@ import Common.AS_Annotation
 import Common.ProofTree
 import Common.Result
 import qualified Common.Lib.Rel as Rel
+import qualified Control.Monad.Fail as Fail
 
 -- CASL_DL = domain
 import CASL_DL.PredefinedCASLAxioms
@@ -190,12 +191,12 @@ trSentence inSig inF =
             return (Unparsed_formula str rn)
         Sort_gen_ax cstr ft ->
             return (Sort_gen_ax cstr ft)
-        QuantOp {} -> fail "CASL_DL2CASL.QuantOp"
-        QuantPred {} -> fail "CASL_DL2CASL.QuantPred"
+        QuantOp {} -> Fail.fail "CASL_DL2CASL.QuantOp"
+        QuantPred {} -> Fail.fail "CASL_DL2CASL.QuantPred"
         ExtFORMULA form ->
             case form of
               Cardinality {} ->
-                    fail "Mapping of cardinality not implemented"
+                    Fail.fail "Mapping of cardinality not implemented"
 
 -- | translation of terms
 trTerm :: DLSign -> TERM DL_FORMULA -> Result (TERM ())

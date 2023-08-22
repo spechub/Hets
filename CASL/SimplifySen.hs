@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/SimplifySen.hs
 Description : simplification of formulas and terms for output after analysis
 Copyright   :  (c) Heng Jiang, C. Maeder, Uni Bremen 2004-2005
 License     :  GPLv2 or higher, see LICENSE.txt

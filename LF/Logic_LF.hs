@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./LF/Logic_LF.hs
 Description :  Instances of classes defined in Logic.hs for the Edinburgh
                Logical Framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
@@ -29,7 +29,7 @@ import Common.Result
 import Common.ExtSign
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 data LF = LF deriving Show
 
@@ -43,14 +43,15 @@ instance Category Sign Morphism where
    composeMorphisms = compMorph
    isInclusion = Map.null . symMap . canForm
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 instance Syntax LF BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
    parse_basic_spec LF = Just basicSpec
-   parse_symb_items LF = Just symbItems
-   parse_symb_map_items LF = Just symbMapItems
+   parse_symb_items LF = Just . const $ symbItems
+   parse_symb_map_items LF = Just . const $ symbMapItems
 
 instance Sentences LF
    Sentence
@@ -60,6 +61,7 @@ instance Sentences LF
    where
    map_sen LF m = Result [] . translate m
    sym_of LF = singletonList . getSymbols
+   symKind LF _ = "const"
 
 instance Logic LF
    ()

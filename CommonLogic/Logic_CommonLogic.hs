@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Logic_CommonLogic.hs
 Description :  Instance of class Logic for common logic
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010, Eugen Kuksa and Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -33,14 +33,14 @@ import CommonLogic.OMDoc
 import CommonLogic.Sublogic
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 import Logic.Logic
 
 data CommonLogic = CommonLogic deriving Show
 
 instance Language CommonLogic where
-    description _ = "CommonLogic Logic\n"
+    description _ = "CommonLogic (an ISO standard)\n"
 
 instance Category Sign Morphism
     where
@@ -62,12 +62,13 @@ instance Sentences CommonLogic
       symmap_of CommonLogic = getSymbolMap -- returns the symbol map
       sym_name CommonLogic = getSymbolName -- returns the name of a symbol
       map_sen CommonLogic = mapSentence -- TODO
-      symsOfSen CommonLogic = symsOfTextMeta
+      symsOfSen CommonLogic _ = symsOfTextMeta
       symKind CommonLogic = Symbol.symKind
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 instance Syntax CommonLogic
     BASIC_SPEC
@@ -79,8 +80,8 @@ instance Syntax CommonLogic
         addSyntax "KIF" (KIF.basicSpec, Print_KIF.printBasicSpec)
         $ addSyntax "CLIF" (CLIF.basicSpec, pretty)
         $ makeDefault (CLIF.basicSpec, pretty)
-      parse_symb_items CommonLogic = Just CLIF.symbItems
-      parse_symb_map_items CommonLogic = Just CLIF.symbMapItems
+      parse_symb_items CommonLogic = Just . const $ CLIF.symbItems
+      parse_symb_map_items CommonLogic = Just . const $ CLIF.symbMapItems
 
 instance Logic CommonLogic
     CommonLogicSL     -- Sublogics
@@ -94,7 +95,7 @@ instance Logic CommonLogic
     Symbol            -- raw_symbol
     ProofTree         -- proof_tree
     where
-       stability CommonLogic = Testing
+       stability CommonLogic = Stable
        all_sublogics CommonLogic = sublogics_all
        empty_proof_tree CommonLogic = emptyProofTree
        provers CommonLogic = []
@@ -133,8 +134,9 @@ instance StaticAnalysis CommonLogic
       stat_symb_items CommonLogic = ()
       stat_symb_map_items CommonLogic = ()
       morphism_union CommonLogic = ()
-      signature_colimit CommonLogic = ()
 -}
+      signature_colimit CommonLogic = signColimit
+
 
 -- | Sublogics
 instance SemiLatticeWithTop CommonLogicSL where

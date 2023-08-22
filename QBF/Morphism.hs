@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./QBF/Morphism.hs
 Description :  Morphisms in Propositional logic extended with QBFs
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -32,16 +33,22 @@ module QBF.Morphism
   , morphismUnion
   ) where
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import Propositional.Sign as Sign
-import qualified Common.Result as Result
+
 import qualified QBF.AS_BASIC_QBF as AS_BASIC
+
 import Common.Id as Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
+import qualified Common.Result as Result
+
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
 
 {- | The datatype for morphisms in propositional logic as
 maps of sets -}
@@ -49,7 +56,7 @@ data Morphism = Morphism
   { source :: Sign
   , target :: Sign
   , propMap :: Map.Map Id Id
-  } deriving (Eq, Ord, Show)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty Morphism where
     pretty = printMorphism
@@ -66,7 +73,7 @@ isLegalMorphism pmor =
         pdom = Map.keysSet $ propMap pmor
         pcodom = Set.map (applyMorphism pmor) psource
     in unless (Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource)
-        $ fail "illegal QBF morphism"
+        $ Fail.fail "illegal QBF morphism"
 
 -- | Application funtion for morphisms
 applyMorphism :: Morphism -> Id -> Id

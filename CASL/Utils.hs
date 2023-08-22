@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Utils.hs
 Description :  Utilities for CASL and its comorphisms
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -25,37 +25,17 @@ import Common.Id
 import CASL.AS_Basic_CASL
 import CASL.Fold
 
-type FreshVARMap f = Map.Map VAR (TERM f)
-
-{- | buildVMap constructs a mapping between a list of old variables and
-corresponding fresh variables based on two lists of VAR_DECL -}
-buildVMap :: [VAR_DECL] -> [VAR_DECL] -> FreshVARMap f
-buildVMap vDecls fVDecls =
-    Map.fromList (concat (zipWith toTups vDecls fVDecls))
-    where toTups (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
-            if sor1 == sor2 then zipWith (toTup sor1) vars1 vars2
-            else error "CASL.Utils.buildVMap"
-          toTup s v1 v2 = (v1, mkVarTerm v2 s)
-
-{- | specialised lookup in FreshVARMap that ensures that the VAR with
-the correct type (SORT) is replaced -}
-lookupVMap :: VAR -> SORT -> FreshVARMap f -> Maybe (TERM f)
-lookupVMap v s =
-    maybe Nothing
-          (\ t -> case t of
-               Qual_var _ s' _ | s == s' -> Just t
-               _ -> Nothing)
-          . Map.lookup v
+type Subst f = Map.Map VAR (TERM f)
 
 -- | specialized delete that deletes all shadowed variables
-deleteVMap :: [VAR_DECL] -> FreshVARMap f -> FreshVARMap f
+deleteVMap :: [VAR_DECL] -> Subst f -> Subst f
 deleteVMap vDecls m = foldr Map.delete m
   $ concatMap (\ (Var_decl vs _ _) -> vs) vDecls
 
-replaceVarsRec :: FreshVARMap f -> (f -> f) -> Record f (FORMULA f) (TERM f)
+replaceVarsRec :: Subst f -> (f -> f) -> Record f (FORMULA f) (TERM f)
 replaceVarsRec m mf = (mapRecord mf)
-     { foldQual_var = \ qv v s _ ->
-           fromMaybe qv $ lookupVMap v s m
+     { foldQual_var = \ qv v _ _ ->
+           fromMaybe qv $ Map.lookup v m
      , foldQuantification = \ orig _ _ _ _ ->
                let Quantification q vs f ps = orig
                    nm = deleteVMap vs m
@@ -63,12 +43,22 @@ replaceVarsRec m mf = (mapRecord mf)
      }
 
 {- | replaceVars replaces all Qual_var occurences that are supposed
-to be replaced according to the FreshVARMap -}
-replaceVarsF :: FreshVARMap f
+to be replaced according to the Subst -}
+replaceVarsF :: Subst f
              -> (f -> f)
              -- ^ this function replaces Qual_var in ExtFORMULA
              -> FORMULA f -> FORMULA f
 replaceVarsF m = foldFormula . replaceVarsRec m
+
+{- | buildVMap constructs a mapping between a list of old variables and
+corresponding fresh variables based on two lists of VAR_DECL -}
+buildVMap :: [VAR_DECL] -> [VAR_DECL] -> Subst f
+buildVMap vDecls fVDecls =
+    Map.fromList (concat (zipWith toTups vDecls fVDecls))
+    where toTups (Var_decl vars1 sor1 _) (Var_decl vars2 sor2 _) =
+            if sor1 == sor2 then zipWith (toTup sor1) vars1 vars2
+            else error "CASL.Utils.buildVMap"
+          toTup s v1 v2 = (v1, mkVarTerm v2 s)
 
 codeOutUniqueRecord :: (f -> f) -> (f -> f) -> Record f (FORMULA f) (TERM f)
 codeOutUniqueRecord rf mf = (mapRecord mf)

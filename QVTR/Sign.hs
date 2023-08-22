@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./QVTR/Sign.hs
 Description :  QVTR signature and sentences
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -20,13 +21,14 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 
+import Data.Data
 import qualified Data.Map as Map
 
 
 data RuleDef = RuleDef { name :: String
                        , top :: Bool
                        , parameters :: [CSMOF.TypeClass]
-                       } deriving (Show, Eq, Ord)
+                       } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty RuleDef where
   pretty (RuleDef nam to pars) =
@@ -43,7 +45,7 @@ data Sign = Sign { sourceSign :: CSMOF.Sign
                  , nonTopRelations :: Map.Map String RuleDef
                  , topRelations :: Map.Map String RuleDef
                  , keyDefs :: [(String, String)]
-                 } deriving (Show, Eq, Ord)
+                 } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Sign where
   getRange _ = nullRange
@@ -63,9 +65,9 @@ instance Pretty Sign where
     $++$
     text "Definition of Relations"
     $+$
-    Map.fold (($+$) . pretty) empty topRel
+    Map.foldr (($+$) . pretty) empty topRel
     $+$
-    Map.fold (($+$) . pretty) empty nonRel
+    Map.foldr (($+$) . pretty) empty nonRel
     $++$
     text "Definition of Keys"
     $+$
@@ -82,7 +84,7 @@ emptySign = Sign { sourceSign = CSMOF.emptySign
 
 data Sen = KeyConstr { keyConst :: Key }
          | QVTSen { rule :: RelationSen }
-         deriving (Show, Eq, Ord)
+         deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Sen where
   getRange _ = nullRange
@@ -100,7 +102,7 @@ data RelationSen = RelationSen { ruleDef :: RuleDef
                                , targetPattern :: Pattern
                                , whenClause :: Maybe WhenWhere
                                , whereClause :: Maybe WhenWhere
-                               } deriving (Show, Eq, Ord)
+                               } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange RelationSen where
   getRange _ = nullRange
@@ -130,7 +132,7 @@ instance Pretty RelationSen where
 data Pattern = Pattern { patVarSet :: [RelVar]
                        , patRels :: [(CSMOF.PropertyT, RelVar, RelVar)]
                        , patPreds :: [(String, String, OCL)]
-                       } deriving (Show, Eq, Ord)
+                       } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Pattern where
   getRange _ = nullRange

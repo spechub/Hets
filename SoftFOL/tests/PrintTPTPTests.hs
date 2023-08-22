@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/tests/PrintTPTPTests.hs
 Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Sentence.hs
 Description :  Maude Sentences
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -29,13 +30,15 @@ import Common.Id (mkSimpleId, GetRange)
 import Common.Doc (vcat)
 import Common.DocUtils (Pretty (..))
 
+import Data.Data
+
 -- * The Sentence type
 
 -- | A 'Membership', 'Equation' or 'Rule'.
 data Sentence = Membership Membership
               | Equation Equation
               | Rule Rule
-              deriving (Show, Read, Ord, Eq)
+              deriving (Show, Read, Ord, Eq, Typeable, Data)
 
 -- ** Sentence Instances
 

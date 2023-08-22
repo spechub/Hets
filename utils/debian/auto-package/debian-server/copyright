@@ -1,0 +1,31 @@
+This work was packed for Debian by:
+
+    Corneliu-Claudiu Prodescu <cprodescu@googlemail.com> on Wed, 18 Aug 2010 22:00:00 +0000
+
+It was downloaded from:
+    https://svn-agbkb.informatik.uni-bremen.de/Hets
+
+Upstream authors:
+
+    University of Bremen <hets@informatik.uni-bremen.de>
+
+Copyright:
+    Copyright (C) 2000-2010, University of Bremen.  All rights reserved.
+
+License:
+
+GPLv2 or higher
+
+You can redistribute is and/or modify it under the terms of the GNU General
+Public License as published by Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+A copy of the license can be found at /usr/share/common-licenses/GPL
+
+The Debian packaging is:
+
+    Copyright (C) 2010 Corneliu-Claudiu Prodescu <cprodescu@googlemail.com>
+
+You can redistribute is and/or modify it under the terms of the GNU General
+Public License as published by Free Software Foundation; either version 2
+of the License, or (at your option) any later version.

@@ -1,0 +1,33 @@
+Source: hets-server
+Section: misc
+Priority: extra
+Maintainer: Corneliu-Claudiu Prodescu <cprodescu@googlemail.com>
+Build-Depends:
+ debhelper(>=7.4.15),
+ ghc,
+ libghc-parsec3-dev,
+ libghc-tar-dev,
+ libghc-hexpat-dev,
+ libghc-http-dev,
+ libghc-fgl-dev,
+ libghc-xml-dev,
+ libghc-aterm-dev,
+ libghc-programatica-dev,
+ libghc-wai-extra-dev,
+ libghc-warp-dev,
+ libghc-random-dev,
+ libghc-haxml-dev
+Standards-Version: 3.9.3
+Homepage: http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets/
+
+Package: hets-server-core
+Architecture: i386 amd64
+Depends: darwin, eprover, default-jre-headless, spass, graphviz, texlive-latex-base, ${shlibs:Depends}, ${misc:Depends}
+Recommends: man
+Description: Package containing the core of Hets - the Heterogeneous Tool Set.
+ Hets is a parsing, static analysis and proof management tool combining
+ various tools for different specification languages, thus providing a
+ tool for the heterogeneous specification language HetCASL. The structuring
+ constructs of this language are those of CASL, plus some new heterogeneous
+ constructs for indicating the language and for language translations. Hence,
+ Hets is based on a graph of logics and languages.

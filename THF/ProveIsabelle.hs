@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/ProveIsabelle.hs
 Description :  Interface to the Isabelle theorem prover.
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -36,22 +36,25 @@ pfun tool = ProverFuncs {
             (m : secs : _) = sp (== 'm') s
         in Just $ read m * 60 + read secs }
 
+createIsaSZSProver :: String -> String -> ProverFuncs -> ProverType
+createIsaSZSProver = createSZSProver "isabelle"
+
 isaProver :: ProverType
-isaProver = createSZSProver "Isabelle (automated)"
+isaProver = createIsaSZSProver "Isabelle (automated)"
  "Automated Isabelle calling all tools available"
  $ pfun "tptp_isabelle_demo"
 
 nitpickProver :: ProverType
-nitpickProver = createSZSProver "Isabelle (nitpick)"
+nitpickProver = createIsaSZSProver "Isabelle (nitpick)"
  "Nitpick for TPTP problems"
  $ pfun "tptp_nitpick"
 
 refuteProver :: ProverType
-refuteProver = createSZSProver "Isabelle (refute)"
+refuteProver = createIsaSZSProver "Isabelle (refute)"
  "refute for TPTP problems"
  $ pfun "tptp_refute"
 
 sledgehammerProver :: ProverType
-sledgehammerProver = createSZSProver "Isabelle (sledgehammer)"
+sledgehammerProver = createIsaSZSProver "Isabelle (sledgehammer)"
  "sledgehammer for TPTP problems"
  $ pfun "tptp_sledgehammer"

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Propositional/Parse_AS_Basic.hs
 Description :  Parser for basic specs
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -21,11 +21,12 @@ module Propositional.Parse_AS_Basic
   , impFormula
   ) where
 
-import qualified Common.AnnoState as AnnoState
-import qualified Common.AS_Annotation as Annotation
-import Common.Id as Id
-import Common.Keywords as Keywords
-import Common.Lexer as Lexer
+import Common.AnnoState
+import Common.AS_Annotation
+import Common.Id
+import Common.Keywords
+import Common.Lexer
+import Common.Token
 import Common.Parsec
 import Common.GlobalAnnotations (PrefixMap)
 
@@ -33,137 +34,135 @@ import Propositional.AS_BASIC_Propositional as AS_BASIC
 import Text.ParserCombinators.Parsec
 
 propKeywords :: [String]
-propKeywords =
-  [ Keywords.propS
-  , Keywords.notS
-  , Keywords.trueS
-  , Keywords.falseS ]
+propKeywords = criticalKeywords ++
+  [ propS
+  , notS
+  , trueS
+  , falseS ]
 
 -- | Toplevel parser for basic specs
-basicSpec :: PrefixMap -> AnnoState.AParser st AS_BASIC.BASIC_SPEC
+basicSpec :: PrefixMap -> AParser st AS_BASIC.BASIC_SPEC
 basicSpec _ =
-  fmap AS_BASIC.Basic_spec (AnnoState.annosParser parseBasicItems)
-  <|> (Lexer.oBraceT >> Lexer.cBraceT >> return (AS_BASIC.Basic_spec []))
+  fmap AS_BASIC.Basic_spec (annosParser parseBasicItems)
+  <|> (oBraceT >> cBraceT >> return (AS_BASIC.Basic_spec []))
 
 -- | Parser for basic items
-parseBasicItems :: AnnoState.AParser st AS_BASIC.BASIC_ITEMS
+parseBasicItems :: AParser st AS_BASIC.BASIC_ITEMS
 parseBasicItems = parsePredDecl <|> parseAxItems
 
 -- | parser for predicate declarations
-parsePredDecl :: AnnoState.AParser st AS_BASIC.BASIC_ITEMS
+parsePredDecl :: AParser st AS_BASIC.BASIC_ITEMS
 parsePredDecl = fmap AS_BASIC.Pred_decl predItem
 
 -- | parser for Axiom_items
-parseAxItems :: AnnoState.AParser st AS_BASIC.BASIC_ITEMS
+parseAxItems :: AParser st AS_BASIC.BASIC_ITEMS
 parseAxItems = do
-       d <- AnnoState.dotT
-       (fs, ds) <- aFormula `Lexer.separatedBy` AnnoState.dotT
-       (_, an) <- AnnoState.optSemi
-       let _ = Id.catRange (d : ds)
-           ns = init fs ++ [Annotation.appendAnno (last fs) an]
+       d <- dotT
+       (fs, ds) <- aFormula `separatedBy` dotT
+       (_, an) <- optSemi
+       let _ = catRange (d : ds)
+           ns = init fs ++ [appendAnno (last fs) an]
        return $ AS_BASIC.Axiom_items ns
 
 -- | Any word to token
-propId :: GenParser Char st Id.Token
-propId = Lexer.pToken $ reserved propKeywords Lexer.scanAnyWords
+propId :: GenParser Char st Token
+propId = pToken $ reserved propKeywords scanAnyWords
 
 -- | parser for predicates = propositions
-predItem :: AnnoState.AParser st AS_BASIC.PRED_ITEM
+predItem :: AParser st AS_BASIC.PRED_ITEM
 predItem = do
-      v <- AnnoState.asKey (Keywords.propS ++ Keywords.sS) <|>
-           AnnoState.asKey Keywords.propS
-      (ps, cs) <- propId `Lexer.separatedBy` AnnoState.anComma
-      return $ AS_BASIC.Pred_item ps $ Id.catRange $ v : cs
+      v <- asKey (propS ++ sS) <|>
+           asKey propS
+      (ps, cs) <- propId `separatedBy` anComma
+      return $ AS_BASIC.Pred_item ps $ catRange $ v : cs
 
 -- | Parser for implies @=>@
-implKey :: AnnoState.AParser st Id.Token
-implKey = AnnoState.asKey Keywords.implS
+implKey :: AParser st Token
+implKey = asKey implS
 
 -- | Parser for and @\/\ @
-andKey :: AnnoState.AParser st Id.Token
-andKey = AnnoState.asKey Keywords.lAnd
+andKey :: AParser st Token
+andKey = asKey lAnd
 
 -- | Parser for or @\\\/@
-orKey :: AnnoState.AParser st Id.Token
-orKey = AnnoState.asKey Keywords.lOr
+orKey :: AParser st Token
+orKey = asKey lOr
 
 -- | Parser for true
-trueKey :: AnnoState.AParser st Id.Token
-trueKey = AnnoState.asKey Keywords.trueS
+trueKey :: AParser st Token
+trueKey = asKey trueS
 
 -- | Parser for false
-falseKey :: AnnoState.AParser st Id.Token
-falseKey = AnnoState.asKey Keywords.falseS
+falseKey :: AParser st Token
+falseKey = asKey falseS
 
 -- | Parser for not
-notKey :: AnnoState.AParser st Id.Token
-notKey = AnnoState.asKey Keywords.notS
+notKey :: AParser st Token
+notKey = asKey notS
 
 -- | Parser for negation
-negKey :: AnnoState.AParser st Id.Token
-negKey = AnnoState.asKey Keywords.negS
+negKey :: AParser st Token
+negKey = asKey negS
 
 -- | Parser for equivalence @<=>@
-equivKey :: AnnoState.AParser st Id.Token
-equivKey = AnnoState.asKey Keywords.equivS
+equivKey :: AParser st Token
+equivKey = asKey equivS
 
 -- | Parser for primitive formulae
-primFormula :: AnnoState.AParser st AS_BASIC.FORMULA
+primFormula :: AParser st AS_BASIC.FORMULA
 primFormula =
     do c <- trueKey
-       return (AS_BASIC.True_atom $ Id.tokPos c)
+       return (AS_BASIC.True_atom $ tokPos c)
     <|>
     do c <- falseKey
-       return (AS_BASIC.False_atom $ Id.tokPos c)
+       return (AS_BASIC.False_atom $ tokPos c)
     <|>
     do c <- notKey <|> negKey <?> "\"not\""
        k <- primFormula
-       return (AS_BASIC.Negation k $ Id.tokPos c)
+       return (AS_BASIC.Negation k $ tokPos c)
     <|> parenFormula
     <|> fmap AS_BASIC.Predication propId
 
 -- | Parser for formulae containing 'and' and 'or'
-andOrFormula :: AnnoState.AParser st AS_BASIC.FORMULA
+andOrFormula :: AParser st AS_BASIC.FORMULA
 andOrFormula = do
-                  f <- primFormula
-                  do c <- andKey
-                     (fs, ps) <- primFormula `Lexer.separatedBy` andKey
-                     return (AS_BASIC.Conjunction (f : fs) (Id.catRange (c : ps)))
-                    <|>
-                    do c <- orKey
-                       (fs, ps) <- primFormula `Lexer.separatedBy` orKey
-                       return (AS_BASIC.Disjunction (f : fs) (Id.catRange (c : ps)))
-                    <|> return f
+  f <- primFormula
+  do c <- andKey
+     (fs, ps) <- primFormula `separatedBy` andKey
+     return . AS_BASIC.Conjunction (f : fs) . catRange $ c : ps
+   <|> do
+     c <- orKey
+     (fs, ps) <- primFormula `separatedBy` orKey
+     return . AS_BASIC.Disjunction (f : fs) . catRange $ c : ps
+   <|> return f
 
 -- | Parser for formulae with implications
-impFormula :: AnnoState.AParser st AS_BASIC.FORMULA
+impFormula :: AParser st AS_BASIC.FORMULA
 impFormula = do
-                f <- andOrFormula
-                do c <- implKey
-                   (fs, ps) <- andOrFormula `Lexer.separatedBy` implKey
-                   return (makeImpl (f : fs) (Id.catPosAux (c : ps)))
-                  <|>
-                  do c <- equivKey
-                     g <- andOrFormula
-                     return (AS_BASIC.Equivalence f g $ Id.tokPos c)
-                  <|> return f
-                    where makeImpl [f, g] p =
-                              AS_BASIC.Implication f g (Id.Range p)
-                          makeImpl (f : r) (c : p) = AS_BASIC.Implication f
-                              (makeImpl r p) (Id.Range [c])
-                          makeImpl _ _ =
-                              error "makeImpl got illegal argument"
+  f <- andOrFormula
+  do c <- implKey
+     (fs, ps) <- andOrFormula `separatedBy` implKey
+     return . makeImpl (f : fs) . catPosAux $ c : ps
+   <|> do
+     c <- equivKey
+     g <- andOrFormula
+     return . AS_BASIC.Equivalence f g $ tokPos c
+   <|> return f
+  where
+  makeImpl [f, g] p = AS_BASIC.Implication f g (Range p)
+  makeImpl (f : r) (c : p) = AS_BASIC.Implication f (makeImpl r p) (Range [c])
+  makeImpl _ _ = error "makeImpl got illegal argument"
 
 -- | Parser for formulae with parentheses
-parenFormula :: AnnoState.AParser st AS_BASIC.FORMULA
+parenFormula :: AParser st AS_BASIC.FORMULA
 parenFormula = do
-       Lexer.oParenT << AnnoState.addAnnos
-       f <- impFormula << AnnoState.addAnnos
-       Lexer.cParenT >> return f
+       oParenT << addAnnos
+       f <- impFormula << addAnnos
+       cParenT >> return f
 
 -- | Toplevel parser for formulae
-aFormula :: AnnoState.AParser st (Annotation.Annoted AS_BASIC.FORMULA)
-aFormula = AnnoState.allAnnoParser impFormula
+aFormula :: AParser st (Annoted AS_BASIC.FORMULA)
+aFormula = allAnnoParser impFormula
 
 -- | parsing a prop symbol
 symb :: GenParser Char st SYMB

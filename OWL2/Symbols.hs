@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Symbols.hs
 Copyright   :  (c) Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -13,18 +14,29 @@ Symbol items for Hets
 module OWL2.Symbols where
 
 import OWL2.AS
+import Common.IRI
+import Common.Id (Id)
+
+import Data.Data
 
 -- * SYMBOL ITEMS FOR HETS
 
-data ExtEntityType = AnyEntity | Prefix | EntityType EntityType
-  deriving (Show, Eq, Ord)
+data ExtEntityType = AnyEntity | PrefixO | EntityType EntityType
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 data SymbItems = SymbItems ExtEntityType [IRI]
-    deriving (Show, Eq)
+    deriving (Show, Eq, Typeable, Data)
+
+symbItemsName :: SymbItems -> [String]
+symbItemsName (SymbItems _ iris) = 
+ map showIRI iris
 
 data SymbMapItems = SymbMapItems ExtEntityType [(IRI, Maybe IRI)]
-    deriving (Show, Eq)
+    deriving (Show, Eq, Typeable, Data)
 
 -- | raw symbols
 data RawSymb = ASymbol Entity | AnUri IRI | APrefix String
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
+
+idToRaw :: Id -> RawSymb
+idToRaw = AnUri . idToIRI

@@ -1,0 +1,14 @@
+logic ExtModal
+
+spec Try2 =
+	time modality t
+	modalities a,b
+	sort N
+	flexible op s__: N -> N
+	flexible ops 0,1: N
+	. [a] >= 2 (not (s 0 = 1)) U X X true
+        . <(a)> <= 00 false S (X true U Y true)
+        . < > <=1 true U <> <=1 true
+        . <true?> <=1 true
+        . mu b. true %implied
+end

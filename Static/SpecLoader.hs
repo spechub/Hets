@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/SpecLoader.hs
 Description :  For loading of signatures and sentences from file
 Copyright   :  (c)  C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

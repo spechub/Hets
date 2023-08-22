@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./ExtModal/Sublogic.hs
 Description :  Sublogics for ExtModal logic
 Copyright   :  (c) DFKI 2012
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -18,6 +19,7 @@ import CASL.Sublogic
 
 import Common.AS_Annotation
 
+import Data.Data
 import Data.Function
 import Data.List
 import qualified Data.Set as Set
@@ -25,7 +27,8 @@ import qualified Data.Set as Set
 import ExtModal.AS_ExtModal
 import ExtModal.ExtModalSign
 
-data Frequency = None | One | Many deriving (Show, Eq, Ord, Enum)
+data Frequency = None | One | Many
+  deriving (Show, Eq, Ord, Enum, Typeable, Data)
 
 data Sublogic = Sublogic
     { hasModalities :: Frequency
@@ -35,7 +38,7 @@ data Sublogic = Sublogic
     , hasTimeMods :: Frequency
     , hasFixPoints :: Bool
     , hasFrameAxioms :: Bool
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 maxSublogic :: Sublogic
 maxSublogic = Sublogic

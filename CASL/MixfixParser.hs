@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/MixfixParser.hs
 Description :  Mixfix analysis of terms
 Copyright   :  Christian Maeder and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./QBF/Parse_AS_Basic.hs
 Description :  Parser for basic specs
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -25,6 +25,7 @@ import qualified Common.AS_Annotation as Annotation
 import Common.Id as Id
 import Common.Keywords as Keywords
 import Common.Lexer as Lexer
+import Common.Token
 import Common.Parsec
 import Common.GlobalAnnotations (PrefixMap)
 
@@ -32,7 +33,7 @@ import QBF.AS_BASIC_QBF as AS_BASIC
 import Text.ParserCombinators.Parsec
 
 propKeywords :: [String]
-propKeywords =
+propKeywords = criticalKeywords ++
   [ Keywords.propS
   , Keywords.notS
   , Keywords.trueS

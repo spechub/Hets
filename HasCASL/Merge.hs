@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/Merge.hs
 Description :  union of signature parts
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -36,6 +36,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Data.Maybe
 import Control.Monad (foldM)
+import qualified Control.Monad.Fail as Fail
 
 mergeTypeInfo :: ClassMap -> TypeInfo -> TypeInfo -> Result TypeInfo
 mergeTypeInfo cm t1 t2 = do
@@ -48,7 +49,7 @@ mergeTypeInfo cm t1 t2 = do
 mergeTypeDefn :: TypeDefn -> TypeDefn -> Result TypeDefn
 mergeTypeDefn d1 d2 = case (d1, d2) of
     (_, DatatypeDefn _) -> return d2
-    (PreDatatype, _) -> fail "expected data type definition"
+    (PreDatatype, _) -> Fail.fail "expected data type definition"
     (_, PreDatatype) -> return d1
     (NoTypeDefn, _) -> return d2
     (_, NoTypeDefn) -> return d1
@@ -59,7 +60,7 @@ mergeTypeDefn d1 d2 = case (d1, d2) of
 
 mergeAlias :: Type -> Type -> Result Type
 mergeAlias s1 s2 = if eqStrippedType s1 s2 then return s1 else
-    fail $ "wrong type" ++ expected s1 s2
+    Fail.fail $ "wrong type" ++ expected s1 s2
 
 mergeOpBrand :: OpBrand -> OpBrand -> OpBrand
 mergeOpBrand b1 b2 = case (b1, b2) of
@@ -88,9 +89,9 @@ mergeOpDefn d1 d2 = case (d1, d2) of
         let b = mergeOpBrand b1 b2
         return $ Definition b e1
     (ConstructData _, SelectData _ _) ->
-        fail "illegal selector as constructor redefinition"
+        Fail.fail "illegal selector as constructor redefinition"
     (SelectData _ _, ConstructData _) ->
-        fail "illegal constructor as selector redefinition"
+        Fail.fail "illegal constructor as selector redefinition"
     (ConstructData _, _) -> return d1
     (_, ConstructData _) -> return d2
     (SelectData _ _, _) -> return d1
@@ -123,7 +124,7 @@ merge e1 e2 = do
     let tAs = filterAliases tMap
     as <- mergeMap mergeOpInfos (assumps e1) $ assumps e2
     bs <- mergeMap (\ i1 i2 -> if i1 == i2 then return i1 else
-                    fail "conflicting operation for binder syntax")
+                    Fail.fail "conflicting operation for binder syntax")
          (binders e1) $ binders e2
     return initialEnv
       { classMap = clMap
@@ -133,7 +134,7 @@ merge e1 e2 = do
 
 mergeA :: (Pretty a, Eq a) => String -> a -> a -> Result a
 mergeA str t1 t2 = if t1 == t2 then return t1 else
-    fail ("different " ++ str ++ expected t1 t2)
+    Fail.fail ("different " ++ str ++ expected t1 t2)
 
 mergeTerm :: DiagKind -> Term -> Term -> Result Term
 mergeTerm k t1 t2 = if t1 == t2 then return t1 else

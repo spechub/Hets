@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./RDF/Morphism.hs
 Description :  RDF Morphism
 Copyright   :  (c) Francisc-Nicolae Bungiu, Felix Gabriel Mance, 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -20,7 +21,7 @@ import Common.Lib.State
 import Common.Lib.MapSet (setToMap)
 import Common.Result
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import RDF.AS
 -}
 import RDF.Sign
@@ -32,6 +33,7 @@ import RDF.Print ()
 import Control.Monad
 import Data.Maybe
 -}
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -39,7 +41,7 @@ data RDFMorphism = RDFMorphism
   { osource :: Sign
   , otarget :: Sign
   , mmaps :: MorphMap
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 {- }
 inclRDFMorphism :: Sign -> Sign -> RDFMorphism
 inclRDFMorphism s t = RDFMorphism

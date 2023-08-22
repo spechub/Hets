@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./atermlib/src/ATerm/Unshared.hs
 Description :  conversion between shared and (basically unused) unshared ATerms
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

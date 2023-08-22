@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASLProver/Utils.hs
 Description :  Utilities for CspCASLProver related to the actual
                construction of Isabelle theories.
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach,

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/Poly.hs
 Description :  Helper functions for coding out polymorphism
 Copyright   :  (c) J. von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -26,9 +26,11 @@ import Common.DocUtils
 
 import Control.Monad.State
 import qualified Data.Map (Map, lookup, insert, empty,
-                           mapAccumWithKey, foldWithKey,
-                           mapWithKey)
+                           mapAccumWithKey, foldrWithKey,
+                           mapWithKey, toList)
 import qualified Data.List (mapAccumL, elemIndex)
+import qualified Data.Set (fromList, toList)
+import Data.Maybe (catMaybes)
 
 sh :: Pretty a => a -> String
 sh = show . pretty
@@ -89,7 +91,7 @@ unifyType tp1 tp2_ =
       fatal_error ("Different type constructors! " ++
        " - " ++ s) r
      (_, MapType _ _) ->
-      fatal_error ("Different type constructor! " ++
+      fatal_error ("Different type constructors! " ++
        " - " ++ s) r
      (ProdType tps1, ProdType tps2) ->
       if length tps1 == length tps2 ||
@@ -183,7 +185,7 @@ getTypeCBF cm bf = case bf of
    let errMsg = "(In-)Equality requires (" ++
         sh uf1 ++ ") : (" ++ sh t1
         ++ ") and (" ++ sh uf2 ++ ") : ("
-        ++ sh t2 ++ " to have the same type"
+        ++ sh t2 ++ ") to have the same type"
    return (OType,
     cs1 ++ cs2 ++ [(t1, NormalC (errMsg, getRangeSpan bf, t2))])
   else do
@@ -277,13 +279,26 @@ getTypeCUF cm uf = case uf of
             constName = N_Atomic_Word $ c t,
             constType = tp,
             constAnno = Null}
- TUF_THF_Unary_Formula _ lf -> do
+ TUF_THF_Unary_Formula q lf -> do
   (lf', cs) <- getTypeCLF cm lf
-  let errMsg = "Unary Formula (" ++ sh lf ++ ") : ("
-               ++ sh lf' ++ ") is expected to be of type OType"
-  return (lf', cs ++ [(lf', NormalC (errMsg, getRangeSpan lf, OType))])
+  let errMsg = "Unary Formula (" ++ sh uf ++ ") : ("
+               ++ sh uf ++ ") is expected to be of type OType"
+      lf'' = case q of
+              Negation -> lf'
+              _ -> case lf' of
+                     MapType _ t -> t
+                     _ ->  error "TUF_THF_Unary_Formula"
+  return (lf'', cs ++ [(lf'', NormalC (errMsg, getRangeSpan uf, OType))])
  TUF_THF_Atom a -> case a of
-  TA_THF_Conn_Term _ -> not_supported a
+  TA_THF_Conn_Term c -> case c of
+   TCT_THF_Unary_Connective cn -> case cn of
+    Negation -> return (MapType OType OType,[])
+    _ -> do
+                    v <- numberedTok tmpV
+                    return (MapType (MapType (VType v) OType) OType,[])
+   TCT_Assoc_Connective _ -> return (MapType OType (MapType OType OType),[])
+   TCT_THF_Pair_Connective _ -> return (MapType OType (MapType OType OType),[])
+   _ -> not_supported a
   T0A_Constant c -> case Data.Map.lookup c cm of
    Just ti -> return (constType ti, [])
    Nothing -> case show $ toToken c of
@@ -295,7 +310,9 @@ getTypeCUF cm uf = case uf of
       v <- numberedTok tmpV
       return (VType v, [])
   -- fixme - add types for internal constants
-  T0A_Defined_Constant _ -> not_supported a
+  T0A_Defined_Constant c -> if (show c) == "true" || (show c) == "false"
+   then return (OType, [])
+   else not_supported a
   T0A_System_Constant _ -> not_supported a
   T0A_Variable v -> case Data.Map.lookup (A_Single_Quoted v) cm of
    Just ti -> return (constType ti, [])
@@ -319,7 +336,7 @@ getTypeCUF cm uf = case uf of
                                  (getRange tp)
            TV_Variable t -> do
             v' <- numberedTok tmpV
-            return (VType v' : l, ins t (VType v') cm')) ([], cm) vs
+            return (VType v' : l, ins t (VType v') cm')) ([], cm) (reverse vs)
   (uf'', cs) <- getTypeCUF cm' uf'
   case vst of
    [] -> lift $ fatal_error ("Invalid Abstraction: "
@@ -353,7 +370,7 @@ intToStr 0 = ""
 intToStr i = '_' : show i
 
 flattenMap :: Data.Map.Map Constant [a] -> Data.Map.Map Constant a
-flattenMap = Data.Map.foldWithKey
+flattenMap = Data.Map.foldrWithKey
  (\ k v new_m ->
   let ks = evalUnique $ replicateM (length v) $ do
        f <- fresh
@@ -364,9 +381,9 @@ flattenMap = Data.Map.foldWithKey
 
 type RewriteArg = Data.Map.Map Constant (Maybe Int)
 
-rewriteVariableList' :: (RewriteFuns RewriteArg, RewriteArg) ->
+rewriteVariableList_ :: (RewriteFuns RewriteArg, RewriteArg) ->
                         [THFVariable] -> Result [THFVariable]
-rewriteVariableList' (_, cm) vs = return $
+rewriteVariableList_ (_, cm) vs = return $
  map (\ v -> let t = case v of
                      TV_THF_Typed_Variable t' _ -> t'
                      TV_Variable t' -> t'
@@ -375,9 +392,9 @@ rewriteVariableList' (_, cm) vs = return $
                  t { tokStr = tokStr t ++ intToStr i }
                 _ -> v) vs
 
-rewriteConst' :: (RewriteFuns RewriteArg, RewriteArg) ->
+rewriteConst_ :: (RewriteFuns RewriteArg, RewriteArg) ->
                  Constant -> Result THFUnitaryFormula
-rewriteConst' (_, cm) c = return . TUF_THF_Atom . T0A_Constant $
+rewriteConst_ (_, cm) c = return . TUF_THF_Atom . T0A_Constant $
  case Data.Map.lookup c cm of
   Just (Just i) -> addSuffix (intToStr i) c
   _ -> c
@@ -424,12 +441,47 @@ infer cm fs =
                        constAnno = Null}) $ flattenMap cm'
       in do
            let r = rewriteTHF0 {
-             rewriteVariableList = rewriteVariableList',
-             rewriteConst = rewriteConst'
+             rewriteVariableList = rewriteVariableList_,
+             rewriteConst = rewriteConst_
            }
            fs' <- mapM (\ (f, i) -> rewriteSenFun (r, i) f)
             (zip fs instances)
            return (new_cm, fs')
+
+typeConstsOf :: Type -> [Constant]
+typeConstsOf (MapType tp1 tp2) = (typeConstsOf tp1) ++ (typeConstsOf tp2)
+typeConstsOf (ProdType tps) = concat $ map typeConstsOf tps
+typeConstsOf (CType c) = [c]
+typeConstsOf (ParType t) = typeConstsOf t
+typeConstsOf _ = []
+
+collectVariableTypes :: (AnaFuns a Constant, a) -> [THFVariable] -> Result [Constant]
+collectVariableTypes _ vs =
+ let tps = catMaybes $ map (\v -> case v of
+                                   TV_THF_Typed_Variable _ t ->
+                                    thfTopLevelTypeToType t 
+                                   _ -> Nothing) vs
+ in return . concat $ map typeConstsOf tps
+
+getSymbols :: SignTHF -> THFFormula -> [SymbolTHF]
+getSymbols s f =
+ let f' = makeNamed "tmp" f
+     cs = Data.Map.toList $ fst $ propagateErrors "THF.Poly.getSymbols" $
+                            infer (consts s) [f']
+     r = anaTHF0 { anaVariableList = collectVariableTypes }
+     ts' = propagateErrors "THF.Poly.getSymbols" $ anaSenFun (r, []) f'
+     ts = Data.Set.toList . Data.Set.fromList $ ts' ++
+          (concat (map (typeConstsOf . constType . snd) cs))
+     symsC = map (\(_,ci) -> Symbol { symId = constId ci,
+                                      symName = constName ci,
+                                      symType = ST_Const $ constType ci }) cs
+     symsT = map (\n -> case Data.Map.lookup n (types s) of
+                         Just t -> Symbol { symId = THF.Sign.typeId t,
+                                            symName = typeName t,
+                                            symType = ST_Type Kind}
+                         Nothing -> error $ "THF.Poly.getSymbols: " ++
+                                            "Unknown type " ++ (show n)) ts
+ in symsC ++ symsT
 
 type_check :: TypeMap -> ConstMap -> [Named THFFormula]
                -> Result [[(Token, Type)]]

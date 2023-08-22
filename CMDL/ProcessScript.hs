@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CMDL/ProcessScript.hs
 Description :  process script commands
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -43,7 +43,7 @@ isNotDisproved G_theory {gTheorySens = el} =
 checkList :: [BasicProof] -> Bool
 checkList [] = False
 checkList (l : ls) = case l of
-            BasicProof _ (ProofStatus _ b _ _ _ _ _) -> case b of
+            BasicProof _ (ProofStatus _ b _ _ _ _ _ _) -> case b of
               Disproved -> True
               _ -> checkList ls
             _ -> checkList ls

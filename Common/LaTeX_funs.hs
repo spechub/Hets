@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/LaTeX_funs.hs
 Description :  auxiliary functions for LaTeX printing
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Consistency.hs
 Description :  data types for consistency aka conservativity
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -18,6 +19,8 @@ import Common.DocUtils
 import Common.AS_Annotation
 import Common.Result
 
+import Data.Data
+
 {- | Conservativity annotations. For compactness, only the greatest applicable
      value is used in a DG. PCons stands for prooftheoretic conservativity as
      required for extending imports (no confusion) in Maude -}
@@ -29,7 +32,7 @@ data Conservativity =
   | Cons
   | Mono
   | Def
-    deriving (Show, Read, Eq, Ord)
+    deriving (Show, Read, Eq, Ord, Typeable, Data)
 
 showConsistencyStatus :: Conservativity -> String
 showConsistencyStatus cs = case cs of
@@ -49,6 +52,7 @@ along the morphism. They are axioms only and not identical to any
 translated sentence of the source. -}
 data ConservativityChecker sign sentence morphism = ConservativityChecker
     { checkerId :: String
+    , checkerUsable :: IO (Maybe String)
     , checkConservativity
         :: (sign, [Named sentence])
         -> morphism

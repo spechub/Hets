@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/Sign.hs
 Description :  Signature for THF
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -21,7 +22,7 @@ import Common.DefaultMorphism
 import Common.Id hiding (typeId)
 import Common.Result
 
-
+import Data.Data
 import qualified Data.Map as Map
 
 {- -----------------------------------------------------------------------------
@@ -37,7 +38,7 @@ data SignTHF = Sign
     { types :: TypeMap
     , consts :: ConstMap
     , symbols :: SymbolMap
-    } deriving (Show, Eq)
+    } deriving (Show, Eq, Typeable, Data)
 
 -- Ord instance that does not use symbols
 instance Ord SignTHF where
@@ -62,7 +63,7 @@ data TypeInfo = TypeInfo
     , typeName :: Name
     , typeKind :: Kind
     , typeAnno :: Annotations }
-    deriving (Show)
+    deriving (Show, Typeable, Data)
 
 -- Ord instance that neither uses typeDef nor typeAnno
 instance Ord TypeInfo where
@@ -83,7 +84,7 @@ data ConstInfo = ConstInfo
     , constName :: Name
     , constType :: Type
     , constAnno :: Annotations }
-    deriving (Show)
+    deriving (Show, Typeable, Data)
 
 -- Ord instance that neither uses constDef nor constAnno
 instance Ord ConstInfo where
@@ -116,14 +117,14 @@ toEitherLeftMap :: Map.Map c x -> EitherMap c x
 toEitherLeftMap = Map.map Left
 
 eitherMapHasDiagnosis :: EitherMap c x -> Bool
-eitherMapHasDiagnosis = Map.fold (\ a b -> case a of
+eitherMapHasDiagnosis = Map.foldr (\ a b -> case a of
     Right _ -> True
     _ -> b ) False
 
 -- only use after eitherMapHasDiagnosis returned true
 eitherMapGetDiagnosis :: EitherMap c x -> [Diagnosis]
 eitherMapGetDiagnosis =
-    Map.fold (\ e dl -> either (const dl) (: dl) e) []
+    Map.foldr (\ e dl -> either (const dl) (: dl) e) []
 
 -- only use after eitherMapHasDiagnosis returned false
 eitherMapGetMap :: EitherMap c x -> Map.Map c x

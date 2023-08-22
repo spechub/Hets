@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Propositional/AS_BASIC_Propositional.der.hs
 Description :  Abstract syntax for propositional logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -34,21 +35,23 @@ import Common.DocUtils
 import Common.Keywords
 import Common.AS_Annotation as AS_Anno
 
+import Data.Data
+
 -- DrIFT command
 {-! global: GetRange !-}
 
 -- | predicates = propotions
 data PRED_ITEM = Pred_item [Id.Token] Id.Range
-               deriving Show
+               deriving (Show, Typeable, Data)
 
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEMS]
-                  deriving Show
+                  deriving (Show, Typeable, Data)
 
 data BASIC_ITEMS =
     Pred_decl PRED_ITEM
     | Axiom_items [AS_Anno.Annoted FORMULA]
     -- pos: dots
-    deriving Show
+    deriving (Show, Typeable, Data)
 
 -- | Datatype for propositional formulas
 data FORMULA =
@@ -68,24 +71,24 @@ data FORMULA =
     -- pos: "=>"
   | Equivalence FORMULA FORMULA Id.Range
     -- pos: "<=>"
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data SYMB_ITEMS = Symb_items [SYMB] Id.Range
                   -- pos: SYMB_KIND, commas
-                  deriving (Show, Eq)
+                  deriving (Show, Eq, Ord, Typeable, Data)
 
 newtype SYMB = Symb_id Id.Token
             -- pos: colon
-            deriving (Show, Eq)
+            deriving (Show, Eq, Ord, Typeable, Data)
 
 data SYMB_MAP_ITEMS = Symb_map_items [SYMB_OR_MAP] Id.Range
                       -- pos: SYMB_KIND, commas
-                      deriving (Show, Eq)
+                      deriving (Show, Eq, Ord, Typeable, Data)
 
 data SYMB_OR_MAP = Symb SYMB
                  | Symb_map SYMB SYMB Id.Range
                    -- pos: "|->"
-                   deriving (Show, Eq)
+                   deriving (Show, Eq, Ord, Typeable, Data)
 
 {- All about pretty printing
 we chose the easy way here :) -}
@@ -136,13 +139,16 @@ sepByArbitrary :: Doc -> [Doc] -> Doc
 sepByArbitrary d = fsep . prepPunctuate (d <> space)
 
 printPredItem :: PRED_ITEM -> Doc
-printPredItem (Pred_item xs _) = fsep $ map pretty xs
+printPredItem (Pred_item xs _) =
+  keyword (propS ++ case xs of
+     [_] -> ""
+     _ -> "s") <+> ppWithCommas xs
 
 printBasicSpec :: BASIC_SPEC -> Doc
 printBasicSpec (Basic_spec xs) = vcat $ map pretty xs
 
 printBasicItems :: BASIC_ITEMS -> Doc
-printBasicItems (Axiom_items xs) = vcat $ map pretty xs
+printBasicItems (Axiom_items xs) = vcat $ map (addBullet . pretty) xs
 printBasicItems (Pred_decl x) = pretty x
 
 printSymbol :: SYMB -> Doc

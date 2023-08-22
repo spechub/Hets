@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Propositional/Prop2CASLHelpers.hs
 Description :  Helper functions for Prop2CASL
 Copyright   :  (c) Dominik Luecke and Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -106,7 +106,7 @@ trMor mp =
     let
         pt = CSign.PredType {CSign.predArgs = []}
     in
-      Map.foldWithKey
+      Map.foldrWithKey
              (\ k a ->
               Map.insert (k, pt) a
              )

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/testxupdate.hs
 Description :  analyse xml update input
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

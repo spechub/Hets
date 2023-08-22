@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-PATH=/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/Isabelle/Isabelle2013/bin:/home/linux-bkb/bin
+PATH=/bin:/usr/bin:/usr/X11R6/bin:/home/linux-bkb/Isabelle/Isabelle2014/bin:/home/linux-bkb/bin
 UDG_HOME=/home/linux-bkb/uDrawGraph-3.1
 HETS_LIB=/local/home/maeder/haskell/Hets-lib
 
@@ -31,8 +31,8 @@ createLogFiles
 
 runIsaBasic
 runSPASSBasic
-checkIsaOf Calculi/Time/AllenHayesLadkin_TACAS.het HC
-checkIsaOf Calculi/Space/RCCVerification.het HC2
+checkIsaOf Calculi/Time/AllenHayesLadkin_TACAS.dol HC
+checkIsaOf Calculi/Space/RCCVerification.dol HC2
 
 checkBins
 checkCats

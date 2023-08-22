@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL_DL/Sign.hs
 Description :  Signatures for DL logics, as extension of CASL signatures
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -13,7 +14,9 @@ Signatures for DL logics, as extension of CASL signatures.
 
 module CASL_DL.Sign where
 
+import Data.Data
 import qualified Data.Map as Map
+
 import Common.Id
 import Common.Doc
 import Common.DocUtils
@@ -28,17 +31,17 @@ import Control.Exception
 data CASL_DLSign =
     CASL_DLSign { annoProperties :: Map.Map SIMPLE_ID PropertyType
                 , annoPropertySens :: [AnnoAppl]
-                } deriving (Show, Eq, Ord)
+                } deriving (Show, Eq, Ord, Typeable, Data)
 
 data PropertyType = AnnoProperty
-                  | OntoProperty deriving (Show, Eq, Ord)
+                  | OntoProperty deriving (Show, Eq, Ord, Typeable, Data)
 
 data AnnoAppl = AnnoAppl SIMPLE_ID Id AnnoLiteral
-                deriving (Show, Eq, Ord)
+                deriving (Show, Eq, Ord, Typeable, Data)
 
 data AnnoLiteral = AL_Term (TERM DL_FORMULA)
                  | AL_Id Id
-                   deriving (Show, Eq, Ord)
+                   deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyCASL_DLSign :: CASL_DLSign
 emptyCASL_DLSign = CASL_DLSign Map.empty []

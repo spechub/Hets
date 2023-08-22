@@ -1,21 +1,23 @@
 {- |
-Module      :  $Header$
-Description :  static analysis of heterogeneous structured specifications
-Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2006
+Module      :  ./Static/AnalysisStructured.hs
+Description :  static analysis of DOL OMS and heterogeneous structured specifications
+Copyright   :  (c) Till Mossakowski and Uni Magdeburg 2003-2016
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
 Portability :  non-portable (imports Logic.Grothendieck)
 
-Static analysis of CASL (heterogeneous) structured specifications
-   Follows the verfication semantic rules in Chap. IV:4.7
-   of the CASL Reference Manual.
+Static analysis of DOL OMS and networks and
+       CASL (heterogeneous) structured specifications
+  Follows the semantics of DOL OMS and networks,
+   DOL OMG standard, clauses 10.2.2 and 10.2.3
 -}
 
 module Static.AnalysisStructured
     ( anaSpec
     , anaSpecTop
     , anaUnion
+    , anaIntersect
     , anaSublogic
     , getSpecAnnos
     , anaRenaming
@@ -33,7 +35,10 @@ module Static.AnalysisStructured
     , ExpOverrides
     , notFoundError
     , prefixErrorIRI
+    , networkDiagram
     ) where
+
+import Debug.Trace
 
 import Driver.Options
 
@@ -49,7 +54,7 @@ import Static.DgUtils
 import Static.GTheory
 
 import Syntax.AS_Structured
-import Syntax.Print_AS_Structured ()
+import Syntax.Print_AS_Structured
 
 import Common.AS_Annotation hiding (isAxiom, isDef)
 import Common.Consistency
@@ -62,6 +67,7 @@ import Common.LibName
 import Common.Result
 import Common.Utils (number)
 import Common.Lib.MapSet (imageSet, setInsert)
+import qualified Control.Monad.Fail as Fail
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Set as Set
@@ -75,39 +81,51 @@ import Proofs.ComputeColimit (insertColimitInGraph)
 
 import Common.Lib.Graph
 
+import Static.ComputeTheory
+
 -- overrides CUIRIE expansion for Download_items
 type ExpOverrides = Map.Map IRI FilePath
 
-coerceMaybeNode :: LogicGraph -> DGraph -> MaybeNode -> NodeName -> AnyLogic
+coerceMaybeNode :: LogicGraph -> LibEnv -> LibName ->
+                   DGraph -> MaybeNode -> NodeName -> AnyLogic
                 -> Result (MaybeNode, DGraph)
-coerceMaybeNode lg dg mn nn l2 = case mn of
+coerceMaybeNode lg libEnv ln dg mn nn l2 = case mn of
   EmptyNode _ -> return (EmptyNode l2, dg)
   JustNode ns -> do
-    (ms, dg2) <- coerceNode lg dg ns nn l2
+    (ms, dg2) <- coerceNode lg libEnv ln dg ns nn l2
     return (JustNode ms, dg2)
 
-coerceNode :: LogicGraph -> DGraph -> NodeSig -> NodeName -> AnyLogic
+coerceNode :: LogicGraph -> LibEnv -> LibName ->
+              DGraph -> NodeSig -> NodeName -> AnyLogic
            -> Result (NodeSig, DGraph)
-coerceNode lg dg ns@(NodeSig _ (G_sign lid1 _ _)) nn l2@(Logic lid2) =
+coerceNode lg libEnv ln dg ns@(NodeSig _ (G_sign lid1 _ _)) nn l2@(Logic lid2) =
     if language_name lid1 == language_name lid2 then return (ns, dg)
     else do
       c <- logicInclusion lg (Logic lid1) l2
-      coerceNodeByComorph c dg ns nn
+      coerceNodeByComorph libEnv ln c dg ns nn
 
-coerceNodeByComorph :: AnyComorphism -> DGraph -> NodeSig -> NodeName
+coerceNodeByComorph :: LibEnv -> LibName -> AnyComorphism -> DGraph -> NodeSig -> NodeName
            -> Result (NodeSig, DGraph)
-coerceNodeByComorph c dg (NodeSig n s) nn = do
-      gmor <- gEmbedComorphism c s
+coerceNodeByComorph libEnv ln c@(Comorphism cid) dg (NodeSig n s) nn = do
+      (dg', gmor) <- if isGTC cid then do
+                       let dg0 = computeDGraphTheories libEnv ln dg
+                           Just l = lab (dgBody dg0) n 
+                           Just gth = globalTheory l
+                       gm <- gEmbedGTC c gth
+                       return (dg0, gm)
+                     else do 
+                      gm <- gEmbedComorphism c s
+                      return (dg, gm)      
       case find (\ (_, _, l) -> dgl_origin l == SeeTarget
           && dgl_type l == globalDef
-          && dgl_morphism l == gmor) $ outDG dg n of
+          && dgl_morphism l == gmor) $ outDG dg' n of
         Nothing -> do
           let (ms@(NodeSig m _), dg2) =
-                insGSig dg (extName "XCoerced" nn) DGLogicCoercion $ cod gmor
+                insGSig dg' (extName "XCoerced" nn) DGLogicCoercion $ cod gmor
               dg3 = insLink dg2 gmor globalDef SeeTarget n m
           return (ms, dg3)
         Just (_, t, _) ->
-            return (NodeSig t $ signOf $ dgn_theory $ labDG dg t, dg)
+            return (NodeSig t $ signOf $ dgn_theory $ labDG dg' t, dg')
 
 insGTheory :: DGraph -> NodeName -> DGOrigin -> G_theory -> (NodeSig, DGraph)
 insGTheory dg name orig (G_theory lid syn sig ind sens tind) =
@@ -183,15 +201,16 @@ getNamedSpec sp ln dg libenv = case lookupGlobalEnvDG sp dg of
 anaSublogic :: HetcatsOpts -> LogicDescr -> LibName -> DGraph -> LibEnv
   -> LogicGraph
   -> Result (Maybe (ExtGenSig, (LibName, DGraph, LNode DGNodeLab)), LogicGraph)
-anaSublogic _opts itm@(LogicDescr (Logic_name lt ms mt) _ _) ln dg libenv lG
-  = do
+anaSublogic _opts itm ln dg libenv lG
+  = case itm of
+  LogicDescr (Logic_name lt ms mt) _ _ -> do
     logN@(Logic lid) <- lookupLogic "" lt lG
     mgs <- case ms of
       Nothing -> return Nothing
       Just subL -> do
         let s = tokStr subL
         case parseSublogic lid s of
-          Nothing -> fail $ "unknown sublogic of logic " ++ show logN
+          Nothing -> Fail.fail $ "unknown sublogic of logic " ++ show logN
             ++ ": " ++ s
           Just sl ->
             if sublogicName (top_sublogic lid) == s then do
@@ -210,13 +229,13 @@ anaSublogic _opts itm@(LogicDescr (Logic_name lt ms mt) _ _) ln dg libenv lG
         case sublogicOfTh $ globOrLocTh lbl of
           gs2@(G_sublogics lid2 _) -> do
             unless (logN == Logic lid2)
-              $ fail $ "the logic of '" ++ ssp
+              $ Fail.fail $ "the logic of '" ++ ssp
                   ++ "' is '" ++ language_name lid2
                   ++ "' and not '" ++ shows logN "'!"
             case mgs of
               Nothing -> return ()
               Just gs -> unless (isSublogic gs2 gs)
-                $ fail $ "theory '" ++ ssp
+                $ Fail.fail $ "theory '" ++ ssp
                   ++ "' has sublogic '" ++ shows gs2 "' and not '"
                   ++ shows gs "'!"
             let sbMap = sublogicBasedTheories lG1
@@ -226,12 +245,12 @@ anaSublogic _opts itm@(LogicDescr (Logic_name lt ms mt) _ _) ln dg libenv lG
               Nothing -> return $ Map.insert sp (libName, nName) lMap
               Just (prevLib, prevName) -> do
                 unless (libName == prevLib)
-                  $ fail $ "theory '" ++ ssp
+                  $ Fail.fail $ "theory '" ++ ssp
                     ++ "' should come from library '"
                     ++ showDoc prevLib "' and not from '"
                     ++ showDoc libName "'!"
                 unless (nName == prevName)
-                  $ fail $ "the original theory name for '" ++ ssp
+                  $ Fail.fail $ "the original theory name for '" ++ ssp
                     ++ "' should be '"
                     ++ prevName ++ "' and not '"
                     ++ nName ++ "'!"
@@ -239,11 +258,12 @@ anaSublogic _opts itm@(LogicDescr (Logic_name lt ms mt) _ _) ln dg libenv lG
             return (Just (s, t), lG1
               { sublogicBasedTheories = Map.insert logN nMap sbMap
               , currentTargetBase = Just (libName, nName) })
+  _ -> return (Nothing, lG)
 
-anaSpecTop :: Conservativity -> Bool -> LogicGraph -> LibName -> DGraph
+anaSpecTop :: Conservativity -> Bool -> LogicGraph -> LibEnv -> LibName -> DGraph
   -> MaybeNode -> NodeName -> HetcatsOpts -> ExpOverrides -> SPEC -> Range
   -> Result (SPEC, NodeSig, DGraph)
-anaSpecTop conser addSyms lg ln dg nsig name opts eo sp pos =
+anaSpecTop conser addSyms lg libEnv ln dg nsig name opts eo sp pos =
  if conser == None || case sp of
       -- for these cases def-links are re-used
     Basic_spec _ _ -> True
@@ -251,22 +271,26 @@ anaSpecTop conser addSyms lg ln dg nsig name opts eo sp pos =
     Spec_inst {} -> True
     Group _ _ -> True -- in this case we recurse
     _ -> False
-    then anaSpecAux conser addSyms lg ln dg nsig name opts eo sp pos else do
+    then anaSpecAux conser addSyms True lg libEnv ln 
+                    dg nsig name opts eo sp pos 
+    else do
   let provenThmLink =
         ThmLink $ Proven (DGRule "static analysis") emptyProofBasis
-  (rsp, ns, rdg) <- anaSpec addSyms lg ln dg nsig name opts eo sp pos
+  (rsp, ns, rdg) <- anaSpec addSyms True lg libEnv ln 
+                            dg nsig name opts eo sp pos
   ndg <- createConsLink provenThmLink conser lg rdg nsig ns SeeTarget
   return (rsp, ns, ndg)
 
-anaFreeOrCofreeSpec :: Bool -> LogicGraph -> HetcatsOpts -> LibName -> DGraph
+anaFreeOrCofreeSpec :: Bool -> LogicGraph -> LibEnv -> HetcatsOpts -> LibName -> DGraph
   -> MaybeNode -> NodeName -> FreeOrCofree -> ExpOverrides -> Annoted SPEC
   -> Range -> Result (Annoted SPEC, NodeSig, DGraph)
-anaFreeOrCofreeSpec addSyms lg opts ln dg nsig name dglType eo asp pos =
+anaFreeOrCofreeSpec addSyms lg libEnv opts ln dg nsig name dglType eo asp pos =
   adjustPos pos $ do
       let sp = item asp
           iPos = getRange sp
       (sp', NodeSig n' gsigma, dg') <-
-          anaSpec addSyms lg ln dg nsig (extName (show dglType) name) opts eo
+          anaSpec addSyms True lg libEnv ln 
+                  dg nsig (extName (show dglType) name) opts eo
             sp iPos
       let (ns@(NodeSig node _), dg2) =
               insGSig dg' (setSrcRange pos name) (DGFreeOrCofree dglType) gsigma
@@ -278,26 +302,28 @@ anaFreeOrCofreeSpec addSyms lg opts ln dg nsig name dglType eo asp pos =
               insLink dg2 incl (FreeOrCofreeDefLink dglType nsig)
               SeeTarget n' node)
 
-{- | analyze a SPEC. The Bool Parameter determines if incoming symbols shall
-be ignored. The options are needed to check: shall only the structure be
+{- | analyze a SPEC. The first Bool Parameter determines if incoming symbols shall
+be ignored while the second determines if the nodes should be optimized away for specifications without parameters. The options are needed to check: shall only the structure be
 analysed? -}
-anaSpec :: Bool -> LogicGraph -> LibName -> DGraph -> MaybeNode -> NodeName
+anaSpec :: Bool -> Bool-> LogicGraph -> LibEnv -> LibName -> DGraph -> MaybeNode -> NodeName
   -> HetcatsOpts -> ExpOverrides -> SPEC -> Range
   -> Result (SPEC, NodeSig, DGraph)
 anaSpec = anaSpecAux None
 
-anaSpecAux :: Conservativity -> Bool -> LogicGraph -> LibName -> DGraph
+anaSpecAux :: Conservativity -> Bool -> Bool 
+  -> LogicGraph -> LibEnv -> LibName -> DGraph
   -> MaybeNode -> NodeName -> HetcatsOpts -> ExpOverrides -> SPEC -> Range
   -> Result (SPEC, NodeSig, DGraph)
-anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
+anaSpecAux conser addSyms optNodes lg 
+           libEnv ln dg nsig name opts eo sp rg = case sp of
   Basic_spec (G_basic_spec lid bspec) pos -> adjustPos pos $ do
        let curLogic = Logic lid
            curSL = currentSublogic lg
            bsSL = G_sublogics lid $ minSublogic bspec
        when (maybe False (`isProperSublogic` bsSL) curSL)
-         $ fail $ "sublogic expected: " ++ maybe "" show curSL
+         $ Fail.fail $ "sublogic expected: " ++ maybe "" show curSL
                ++ " found: " ++ show bsSL
-       (nsig', dg0) <- coerceMaybeNode lg dg nsig name curLogic
+       (nsig', dg0) <- coerceMaybeNode lg libEnv ln dg nsig name curLogic
        G_sign lid' sigma' _ <- return $ case nsig' of
            EmptyNode cl -> emptyG_sign cl
            JustNode ns -> getSig ns
@@ -311,7 +337,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
                    ln bspec sig $ globalAnnos dg0
              in case mb of
                Nothing | null ds ->
-                 fail "basic analysis failed without giving a reason"
+                 Fail.fail "basic analysis failed without giving a reason"
                _ -> res
        diffSig <- case signatureDiff lid sigma_complete sig of
          Result _ (Just ds) -> return ds
@@ -341,8 +367,9 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
   Translation asp ren ->
    do let sp1 = item asp
           rPos = getRange ren
-      (sp1', ns'@(NodeSig n' gsigma), dg') <- anaSpec addSyms lg ln dg nsig
-        (extName "Translation" name) opts eo sp1 rPos
+      (sp1', ns'@(NodeSig n' gsigma), dg') <- 
+        anaSpec addSyms optNodes lg libEnv ln dg nsig
+         (extName "Translation" name) opts eo sp1 rPos
       mor <- anaRenaming lg nsig gsigma opts ren
       -- ??? check that mor is identity on local env
       when (isIdentity mor) $ warning ()
@@ -354,12 +381,20 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
            -- ??? too simplistic for non-comorphism inter-logic translations
          return (ns, insLink dg'' mor globalDef SeeTarget n' node)
       return (Translation (replaceAnnoted sp1' asp) ren, fs, dgf)
+  Extraction asp extr -> do
+    let sp0 = item asp
+        rname = extName "Extension" name
+    (sp', nsig', dg0) <- anaSpec addSyms optNodes lg libEnv 
+                                 ln dg nsig rname opts eo sp0 rg
+    (ns', dg1) <- anaExtraction lg libEnv ln dg0 nsig' name rg extr
+    return (Extraction (replaceAnnoted sp' asp) extr, ns', dg1)
   Reduction asp restr ->
    do let sp1 = item asp
           rname = extName "Restriction" name
-      (sp1', ns0, dg0) <- anaSpec addSyms lg ln dg nsig rname opts eo sp1 rg
+      (sp1', ns0, dg0) <- anaSpec addSyms optNodes lg libEnv 
+                           ln dg nsig rname opts eo sp1 rg
       rLid <- getRestrLogic restr
-      p1@(NodeSig n' gsigma', dg') <- coerceNode lg dg0 ns0 rname rLid
+      p1@(NodeSig n' gsigma', dg') <- coerceNode lg libEnv ln dg0 ns0 rname rLid
       (hmor, tmor) <- anaRestriction lg (getMaybeSig nsig) gsigma' opts restr
       let noRename = maybe True isIdentity tmor
           noHide = isIdentity hmor
@@ -387,37 +422,48 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
         _ -> hint p2 ("nothing renamed by:\n" ++ showDoc restr "")
             $ getRange restr
       return (Reduction (replaceAnnoted sp1' asp) restr, fs, dgf)
-  Approximation _ _ -> fail "AnalysisStructured.Approximation"
-  Minimization asp (Mini cm cv poss) -> do
-      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts ln dg nsig
+  Filtering asp filtering -> do
+       let sp1 = item asp
+           rname = extName "Filtering" name
+       (sp', nsig', dg') <- anaSpec addSyms optNodes lg libEnv ln dg 
+                                    nsig rname opts eo sp1 rg
+       (nf, dgF) <- anaFiltering lg libEnv ln dg' nsig' name filtering
+       return (Filtering (replaceAnnoted sp' asp) filtering, nf, dgF)
+       -- error "analysis of filterings not yet implemented"
+  Minimization asp (Mini kw cm cv poss) -> do
+      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg libEnv opts ln dg nsig
         name Minimize eo asp poss
-      return (Minimization nasp (Mini cm cv poss), nsig', dg')
+      return (Minimization nasp (Mini kw cm cv poss), nsig', dg')
   Union asps pos -> do
-    (newAsps, _, ns, dg') <- adjustPos pos $ anaUnion addSyms lg ln dg nsig
+    (newAsps, _, ns, dg') <- adjustPos pos $ anaUnion addSyms lg libEnv ln dg nsig
       name opts eo asps rg
     return (Union newAsps pos, ns, dg')
+  Intersection asps pos -> do
+    (newAsps, _, ns, dg') <- adjustPos pos $ anaIntersect addSyms lg libEnv ln dg nsig
+      name opts eo asps rg
+    return (Intersection newAsps pos, ns, dg')
   Extension asps pos -> do
    let namedSps = map (\ (asp, n) ->
          let nn = incBy n (extName "Extension" name) in
          if n < length asps then (nn, asp)
          else (name { xpath = xpath nn }, asp)) $ number asps
-   (sps', nsig1', dg1, _, _) <- foldM (anaExtension lg opts eo ln pos)
+   (sps', nsig1', dg1, _, _) <- foldM (anaExtension lg libEnv opts eo ln pos)
      ([], nsig, dg, conser, addSyms) namedSps
    case nsig1' of
-       EmptyNode _ -> fail "empty extension"
+       EmptyNode _ -> Fail.fail "empty extension"
        JustNode nsig1 -> return (Extension (zipWith replaceAnnoted
                           (reverse sps') asps)
                                  pos, nsig1, dg1)
   Free_spec asp poss -> do
-      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts ln dg nsig
+      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg libEnv opts ln dg nsig
         name Free eo asp poss
       return (Free_spec nasp poss, nsig', dg')
   Cofree_spec asp poss -> do
-      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts ln dg nsig
+      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg libEnv opts ln dg nsig
         name Cofree eo asp poss
       return (Cofree_spec nasp poss, nsig', dg')
   Minimize_spec asp poss -> do
-      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg opts ln dg nsig
+      (nasp, nsig', dg') <- anaFreeOrCofreeSpec addSyms lg libEnv opts ln dg nsig
           name Minimize eo asp poss
       return (Minimize_spec nasp poss, nsig', dg')
   Local_spec asp asp' poss -> adjustPos poss $ do
@@ -427,9 +473,11 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
           pos1' = getRange sp1'
           lname = extName "Local" name
       (sp2, nsig'@(NodeSig _ gsig1), dg') <-
-        anaSpec False lg ln dg nsig (extName "Spec" lname) opts eo sp1 pos1
-      (sp2', NodeSig n'' gsig2@(G_sign lid2 sigma2 _), dg'') <- anaSpec False lg
-        ln dg' (JustNode nsig') (extName "Within" lname) opts eo sp1' pos1'
+        anaSpec False True lg libEnv ln 
+                dg nsig (extName "Spec" lname) opts eo sp1 pos1
+      (sp2', NodeSig n'' gsig2@(G_sign lid2 sigma2 _), dg'') <- 
+          anaSpec False True lg libEnv ln 
+                dg' (JustNode nsig') (extName "Within" lname) opts eo sp1' pos1'
       let gSigN = getMaybeSig nsig
       (G_sign lid sigmaN _, _) <- gSigCoerce lg gSigN (Logic lid2)
       sigma <- coerceSign lid lid2 "Analysis of local spec1" sigmaN
@@ -463,7 +511,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
           pos1 = getRange sp1
           l = getLogic nsig
       -- analyse spec with empty local env
-      (sp', NodeSig n' gsigma', dg') <- anaSpec False lg ln dg
+      (sp', NodeSig n' gsigma', dg') <- anaSpec False True lg libEnv ln dg
         (EmptyNode l) (extName "Closed" name) opts eo sp1 pos1
       gsigma2 <- gsigUnionMaybe lg addSyms nsig gsigma'
       let (ns@(NodeSig node _), dg2) = insGSig dg' name DGClosed gsigma2
@@ -478,15 +526,17 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
             EmptyNode _ -> EmptyNode l
             _ -> nsig
           qname = extName "Qualified" name
-      (sp', ns', dg') <- anaSpec addSyms newLG ln dg newNSig qname opts eo
+      (sp', ns', dg') <- anaSpec addSyms optNodes newLG libEnv ln 
+                                 dg newNSig qname opts eo
         (item asp) pos
-      (ns, dg2) <- coerceNode lg dg' ns' qname l
+      (ns, dg2) <- coerceNode lg libEnv ln dg' ns' qname l
       return (Qualified_spec lognm asp { item = sp' } pos, ns, dg2)
   Group asp pos -> do
       (sp', nsig', dg') <-
-          anaSpecTop conser addSyms lg ln dg nsig name opts eo (item asp) rg
+          anaSpecTop conser addSyms lg libEnv ln 
+                     dg nsig name opts eo (item asp) rg
       return (Group (replaceAnnoted sp' asp) pos, nsig', dg')
-  Spec_inst spname' afitargs pos0 -> do
+  Spec_inst spname' afitargs mImp pos0 -> do
    spname <- expCurieR (globalAnnos dg) eo spname'
    let pos = if null afitargs then iriPos spname else pos0
    adjustPos pos $ case lookupGlobalEnvDG spname dg of
@@ -496,7 +546,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
       -- the case without parameters leads to a simpler dg
       (0, 0) -> case nsig of
           -- if the node shall not be named and the logic does not change,
-        EmptyNode _ | isInternal name -> do
+        EmptyNode _ | isInternal name && optNodes -> do
           dg2 <- createConsLink DefLink conser lg dg nsig body SeeTarget
              -- then just return the body
           return (sp, body, dg2)
@@ -514,7 +564,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
       -- now the case with parameters
       (la, lp) | la == lp -> do
        (ffitargs, dg', (morDelta, gsigmaA, ns@(NodeSig nA gsigmaRes))) <-
-               anaAllFitArgs lg opts eo ln dg nsig name spname gs afitargs
+               anaAllFitArgs lg libEnv opts eo ln dg nsig name spname gs afitargs
        GMorphism cid _ _ _ _ <- return morDelta
        morDelta' <- case nsig of
          EmptyNode _
@@ -528,7 +578,7 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
              JustNode (NodeSig nI _) | nI == nB -> dg'
              _ -> insLink dg' morDelta'' globalDef (DGLinkMorph spname) nB nA
        dg5 <- createConsLink DefLink conser lg dg4 nsig ns SeeTarget
-       return (Spec_inst spname ffitargs pos, ns, dg5)
+       return (Spec_inst spname ffitargs mImp pos, ns, dg5)
        | otherwise -> instMismatchError spname lp la pos
     _ | null afitargs -> do
      warning () ("ignoring missing spec " ++ showDoc spname' "") pos
@@ -549,13 +599,13 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
       c <- logicInclusion lg lD lP
       let dname = extName "Data" name
       -- analyse SPEC1
-      (sp1', ns', dg') <- anaSpec False (setCurLogic (language_name lidD) lg)
-         ln dg (EmptyNode lD) dname opts eo sp1 pos1
+      (sp1', ns', dg') <- anaSpec False True (setCurLogic (language_name lidD) lg)
+         libEnv ln dg (EmptyNode lD) dname opts eo sp1 pos1
       -- force the result to be in the data logic
-      (ns'', dg'') <- coerceNode lg dg' ns' (extName "Qualified" dname) lD
+      (ns'', dg'') <- coerceNode lg libEnv ln dg' ns' (extName "Qualified" dname) lD
       -- translate SPEC1's signature along the comorphism
-      (nsig2@(NodeSig node gsigmaD), dg2) <-
-         coerceNodeByComorph c dg'' ns'' dname
+      (nsig2@(NodeSig node gsigmaD), dg2) <- 
+         coerceNodeByComorph libEnv ln c dg'' ns'' dname
       (usig, udg) <- case nsig of
         EmptyNode _ -> return (nsig2, dg2)
         JustNode ns2 -> do
@@ -568,21 +618,34 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
           return (ns, dg4)
       -- analyse SPEC2
       (sp2', nsig3, udg3) <-
-          anaSpec addSyms lg ln udg (JustNode usig) name opts eo sp2 rg
+          anaSpec addSyms optNodes lg libEnv ln 
+                  udg (JustNode usig) name opts eo sp2 rg
       return (Data lD lP
                    (replaceAnnoted sp1' asp1)
                    (replaceAnnoted sp2' asp2)
                    pos, nsig3, udg3)
-  Combination cItems eItems pos -> adjustPos pos $ do
-    let getNodes (cN, cE) nodeOrLink =
-           let
-            (cItem, isLink, tarNodes) = case nodeOrLink of
-              NodeIri i -> (i, False, [])
-              LinkName s t -> (s, True,
-                case map fst $ lookupNodeByName
-                         (iriToStringShortUnsecure t) dg of
-                  [] -> error $ "No target node found for " ++ show t
-                  l -> l)
+  Combination (Network cItems eItems _) pos -> adjustPos pos $ do
+    let (cNodes', cEdges') = networkDiagram dg cItems eItems
+    (ns, dg') <- insertColimitInGraph libEnv ln dg cNodes' cEdges' name
+    return (sp, ns, dg')
+  _ -> Fail.fail $ "AnalysisStructured: " ++ show (prettyLG lg sp)
+
+
+-- | build the diagram of a network specified as a list of network elements to be added
+-- | and a list of network elements to be removed
+
+networkDiagram :: DGraph
+                        -> [LABELED_ONTO_OR_INTPR_REF]
+                        -> [NodeOrLink]
+                        -> ([Node], [(Node, Node, DGLinkLab)])
+networkDiagram dg cItems eItems = trace ("eItems:" ++ show eItems) $  let 
+        -- add to/remove from a list of nodes and a list of edges
+        -- the graph of a network element
+        -- if remove is true, nElem gets removed 
+        getNodes remove (cN, cE) nodeOrLink = let
+            (cItem, isLink) = case nodeOrLink of
+              NodeIri i -> (i, False)
+              LinkName s _ -> (s, True)
             mkNodes l = if isLink then cN else nub $ l ++ cN
             cEntry = fromMaybe (error $ "No entry for " ++ show cItem)
                      $ lookupGlobalEnvDG cItem dg
@@ -590,33 +653,38 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
             lEdge x y m = case filter (\ (_, z, l) ->
                               case nodeOrLink of
                                 NodeIri _ -> z == y && dgl_morphism l == m
-                                LinkName {} -> isDefEdge (dgl_type l) &&
-                                  elem z tarNodes)
+                                LinkName _ t -> isDefEdge (dgl_type l) &&
+                                  elem z (map fst
+                                  $ lookupNodeByName
+                                  (iriToStringShortUnsecure t) dg))
                             $ out bgraph x of
                              [] -> error "No edge found"
                              lE : _ -> lE
            in case cEntry of
                SpecEntry extGenSig -> let
                    n = getNode $ extGenBody extGenSig
-                  in (mkNodes [n]
-                     , if isLink
-                       then lEdge n (error "unused1") (error "unused2") : cE
-                       else cE)
+                  in if remove then
+                     (n:cN, nub $ cE ++ out bgraph n ++ inn bgraph n) 
+                     -- remove all incoming and outgoing edges of n 
+                     else if elem n cN then (cN, cE) else (n : cN, cE)
                ViewOrStructEntry True (ExtViewSig ns gm eGS) -> let
                    s = getNode ns
                    t = getNode $ extGenBody eGS
-                 in (mkNodes [s, t], lEdge s t gm : cE)
+                 in if remove 
+                     then (cN, lEdge s t gm : cE) 
+                     -- keep the nodes and remove just the edge 
+                     else(nub $ s : t : cN, lEdge s t gm : cE)
                AlignEntry asig ->
                   case asig of
-                   AlignMor src gmor tar -> let
+                   AlignMor src gmor tar ->  let
                      s = getNode src
                      t = getNode tar
-                    in (mkNodes [s, t], lEdge s t gmor : cE)
-                   AlignSpan src phi1 tar1 phi2 tar2 -> let
+                    in (nub $ s : t : cN, lEdge s t gmor : cE)
+                   AlignSpan src phi1 tar1 phi2 tar2 ->  let
                      s = getNode src
                      t1 = getNode tar1
                      t2 = getNode tar2
-                    in (mkNodes [s, t1, t2],
+                    in (nub $ [s, t1, t2] ++ cN,
                               [lEdge s t1 phi1, lEdge s t2 phi2] ++ cE)
                    WAlign src1 i1 sig1 src2 i2 sig2 tar1 tar2 bri -> let
                       s1 = getNode src1
@@ -624,11 +692,22 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
                       t1 = getNode tar1
                       t2 = getNode tar2
                       b = getNode bri
-                     in (mkNodes $ s1 : s2 : t1 : t2 : [b],
-                         [lEdge s1 t1 i1, lEdge s1 b sig1,
-                          lEdge s2 t2 i2, lEdge s2 b sig2] ++ cE)
-               _ -> error $ show cItem
-                    ++ "is not an ontology, a view or an alignment"
+                     in if remove then
+                         (nub $ s1 : s2 : b : cN,
+                         [lEdge s1 b i1, lEdge s1 t1 sig1,
+                          lEdge s2 b i2, lEdge s2 t2 sig2] ++ cE) 
+                        else (nub $ s1 : s2 : t1 : t2 : b : cN,
+                         [lEdge s1 b i1, lEdge s1 t1 sig1,
+                          lEdge s2 b i2, lEdge s2 t2 sig2] ++ cE)
+               NetworkEntry diag -> let
+                    dnodes = nodes diag
+                    ledges = labEdges diag
+                    dgedges = map (\(x,y, (_, m)) -> lEdge x y m) ledges
+                   in (dnodes, dgedges)
+               _ -> error $ show nodeOrLink
+                    ++ " is not an OMS, a view, a network or an alignment"
+        -- also add the implicit elements: paths of global def. links,
+        -- hiding def. links, inclusions of DOL intersections
         addGDefLinks (cN, iN, cE) n = let
            g = dgBody dg
            allGDef = all $ \ (_, _, l) -> isGlobalDef $ dgl_type l
@@ -638,17 +717,24 @@ anaSpecAux conser addSyms lg ln dg nsig name opts eo sp rg = case sp of
            hideLinks = filter (\ (_, _, l) -> dgl_type l == HidingDefLink)
               $ concatMap (inn g) $ cN ++ nNodes
            hNodes = map (\ (x, _, _) -> x) hideLinks
-           in ( cN, nub $ iN ++ nNodes ++ hNodes
-              , nub $ nPaths ++ cE ++ hideLinks)
+           implicitNodes = nub $ iN ++ nNodes ++ hNodes
+           intersectLinks = filter (\ (_, _, l) -> dgl_origin l == DGLinkIntersect)
+                            $ concatMap (inn g) $ cN ++ implicitNodes
+           in (cN, implicitNodes
+              , nub $ nPaths ++ cE ++ hideLinks ++ intersectLinks)
         addLinks (cN, cE) = foldl addGDefLinks (cN, [], cE) cN
-        (cNodes, iNodes, cEdges) = addLinks . foldl getNodes ([], [])
-          $ map (NodeIri . getIntrRef) cItems
-        (eNodes, eEdges) = foldl getNodes ([], []) eItems
+        (cNodes, iNodes, cEdges) =
+           addLinks . foldl (getNodes False) ([], []) $
+           map (NodeIri . getIntrRef) cItems
+        (eNodes, eEdges) = foldl (getNodes True) ([], []) eItems
         (cNodes', cEdges') = (nub (cNodes ++ iNodes) \\ eNodes,
                               cEdges \\ eEdges)
-        le = Map.insert ln dg Map.empty -- cheating!!!
-    (ns, dg') <- insertColimitInGraph le dg cNodes' cEdges' name
-    return (sp, ns, dg')
+ in trace("eNodes:" ++ show eNodes) $ (cNodes', cEdges')
+
+getItems :: [LABELED_ONTO_OR_INTPR_REF] -> [IRI]
+getItems [] = []
+getItems (Labeled _ i : r) = i : getItems r
+
 
 instMismatchError :: IRI -> Int -> Int -> Range -> Result a
 instMismatchError spname lp la = fatal_error $ iriToStringUnsecure spname
@@ -663,18 +749,45 @@ gsigUnionMaybe lg both mn gsig = case mn of
   EmptyNode _ -> return gsig
   JustNode ns -> gsigUnion lg both (getSig ns) gsig
 
-anaUnion :: Bool -> LogicGraph -> LibName -> DGraph -> MaybeNode -> NodeName
+anaExtraction :: LogicGraph -> LibEnv -> LibName -> DGraph -> NodeSig -> NodeName -> Range ->
+              EXTRACTION -> Result (NodeSig, DGraph)
+anaExtraction lg libEnv ln dg nsig name rg (ExtractOrRemove b iris _) = if not b then
+  Fail.fail "analysis of remove not implemented yet"
+ else do
+  let dg0 = markHiding libEnv dg
+      n = getNode nsig
+  if labelHasHiding $ labDG dg0 n then
+    Fail.fail "cannot extract module from a non-flattenable OMS"
+   else do
+    let dgThm = computeDGraphTheories libEnv ln dg0
+        gth = case (globalTheory . labDG dgThm) n  of
+               Nothing -> error "not able to compute theory"
+               Just th -> th
+    mTh <- case gth of
+        G_theory lid syntax (ExtSign sig _) _ gsens _ -> do
+          let nsens = toNamedList gsens
+          (msig, msens) <- extract_module lid iris (sig, nsens)
+          return $ G_theory lid syntax
+                            (ExtSign msig $ foldl Set.union Set.empty $ sym_of lid msig) startSigId
+                            (toThSens msens) startThId
+    let (nsig', dg') = insGTheory dg (setSrcRange rg name) DGExtract mTh
+    incl <- ginclusion lg (getSig nsig') (getSig nsig)
+    let  dg'' = insLink dg' incl globalThm SeeSource (getNode nsig') n
+    return (nsig', dg'')
+
+anaUnion :: Bool -> LogicGraph -> LibEnv -> LibName -> DGraph -> MaybeNode -> NodeName
   -> HetcatsOpts -> ExpOverrides -> [Annoted SPEC] -> Range
   -> Result ([Annoted SPEC], [NodeSig], NodeSig, DGraph)
-anaUnion addSyms lg ln dg nsig name opts eo asps rg = case asps of
-  [] -> fail "empty union"
+anaUnion addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
+  [] -> Fail.fail "empty union"
   _ -> do
       let sps = map item asps
       (sps', nsigs, dg', _) <-
           let ana (sps1, nsigs, dg', n) sp' = do
                 let n1 = inc n
                 (sp1, nsig', dg1) <-
-                  anaSpec addSyms lg ln dg' nsig n1 opts eo sp' $ getRange sp'
+                  anaSpec addSyms True lg libEnv ln 
+                          dg' nsig n1 opts eo sp' $ getRange sp'
                 return (sp1 : sps1, nsig' : nsigs, dg1, n1)
            in foldM ana ([], [], dg, extName "Union" name) sps
       let newAsps = zipWith replaceAnnoted (reverse sps') asps
@@ -690,6 +803,68 @@ anaUnion addSyms lg ln dg nsig name opts eo asps rg = case asps of
                 return $ insLink dgl incl globalDef SeeTarget n node
           dg3 <- foldM insE dg2 nsigs'
           return (newAsps, nsigs', ns, dg3)
+
+anaIntersect :: Bool -> LogicGraph -> LibEnv -> LibName -> DGraph -> MaybeNode -> NodeName
+  -> HetcatsOpts -> ExpOverrides -> [Annoted SPEC] -> Range
+  -> Result ([Annoted SPEC], [NodeSig], NodeSig, DGraph)
+anaIntersect addSyms lg libEnv ln dg nsig name opts eo asps rg = case asps of
+  [] -> Fail.fail "empty intersection"
+  _ -> do
+      let sps = map item asps
+          ana (sps1, nsigs, dg', n) sp' = do
+                let n1 = inc n
+                (sp1, nsig', dg1) <-
+                  anaSpec addSyms True lg libEnv ln dg' nsig n1 opts eo sp' $
+                          getRange sp'
+                return (sp1 : sps1, nsig' : nsigs, dg1, n1)
+      (sps', nsigs, dg', _) <-
+        foldM ana ([], [], dg, extName "Intersect" name) sps
+      let newAsps = zipWith replaceAnnoted (reverse sps') asps
+      case nsigs of
+        [ns] -> return (newAsps, nsigs, ns, dg')
+        _ -> do
+          let nsigs' = reverse nsigs
+              labelHidings = map labelHasHiding $ map (\n -> labDG (markHiding libEnv dg) $ getNode n) nsigs'
+              hasHiding = foldl (\x y -> x || y) False labelHidings
+          case hasHiding of
+            True -> Fail.fail "Intersection is defined only for flattenable theories"
+            False -> do
+             let dgThm = computeDGraphTheories libEnv ln dg
+                 theo:theos = map (\x -> case (globalTheory . labDG dgThm . getNode) x of
+                                            Nothing -> error $ "not able to compute theory of node" ++ (show $ getNode x)
+                                            Just th -> th) nsigs'
+             gbigSigma <- gsigManyIntersect lg (map getSig nsigs')
+             gth <- foldM (intersectG_sentences gbigSigma) theo theos
+             let (ns@(NodeSig node _), dg2) = insGTheory dg' (setSrcRange rg name)
+                    DGIntersect gth
+                 insE dgl (NodeSig n gsigma) = do
+                   incl <- ginclusion lg gbigSigma gsigma
+                   return $ insLink dgl incl globalThm DGLinkIntersect node n
+             dg3 <- foldM insE dg2 nsigs'
+             return (newAsps, nsigs', ns, dg3)
+
+anaFiltering :: LogicGraph -> LibEnv -> LibName -> DGraph -> NodeSig -> NodeName-> FILTERING
+   -> Result (NodeSig, DGraph)
+anaFiltering lg libEnv ln dg nsig nname filtering = case filtering of
+  FilterSymbolList selectOrReject (G_symb_items_list lidS sItems) _ ->
+   if not selectOrReject then do
+     let strs = concatMap (symb_items_name lidS) sItems
+         dgThm = computeDGraphTheories libEnv ln dg
+         th =
+            case (globalTheory . labDG dgThm . getNode) nsig of
+                  Nothing -> error "error computing theory"
+                  Just t -> t
+     case th of
+      G_theory l1 ser1 sig1 ind1 sens1 ind1' -> do
+         let gth' = G_theory l1 ser1 sig1 ind1
+                    (foldl (\m x -> Map.delete x m) sens1 strs) ind1'
+         let (ns@(NodeSig node gsigma), dg') = insGTheory dg nname DGEmpty gth'
+         gmor <- ginclusion lg gsigma $ getSig nsig
+         let dg2 = insLink dg' gmor globalThm SeeSource node $ getNode nsig
+         return (ns, dg2)
+    else error "analysis of select not implemented yet"
+  FilterBasicSpec _ _ _ -> error "filtering a basic spec not implemented yet"
+
 
 -- analysis of renamings
 anaRen :: LogicGraph -> HetcatsOpts -> MaybeNode -> Range -> GMorphism
@@ -738,7 +913,7 @@ anaRen lg opts lenv pos gmor@(GMorphism r sigma ind1 mor _) gMapping =
                Just (Logic_name l _ _) ->
                  lookupLogic "with logic: " l lg
                  >>= logicInclusion lg (Logic srcLid)
-               Nothing -> fail "with logic: cannot determine comorphism"
+               Nothing -> Fail.fail "with logic: cannot determine comorphism"
     checkSrcOrTarLogic pos2 True c src
     checkSrcOrTarLogic pos2 False c tar
     mor1 <- gEmbedComorphism c (G_sign srcLid srcSig ind)
@@ -873,18 +1048,19 @@ anaGmaps lg opts pos psig@(G_sign lidP sigmaP _) asig@(G_sign lidA sigmaA _)
       -- also output symbols that are affected
    -}
 
-anaFitArg :: LogicGraph -> LibName -> DGraph -> IRI -> MaybeNode
+anaFitArg :: LogicGraph -> LibEnv -> LibName -> DGraph -> IRI -> MaybeNode
   -> NodeSig -> HetcatsOpts -> NodeName -> ExpOverrides -> FIT_ARG
   -> Result (FIT_ARG, DGraph, (G_morphism, NodeSig))
-anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo fv =
+anaFitArg lg libEnv ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo fv =
   let ga = globalAnnos dg in
   case fv of
   Fit_spec asp gsis pos -> do
-   (sp', nsigA, dg') <- anaSpec False lg ln dg nsigI name opts eo (item asp) pos
+   (sp', nsigA, dg') <- anaSpec False True lg libEnv ln 
+                                dg nsigI name opts eo (item asp) pos
    (_, Comorphism aid) <-
        logicUnion lg (getNodeLogic nsigP) (getNodeLogic nsigA)
    let tl = Logic $ targetLogic aid
-   (nsigA'@(NodeSig nA' gsigA'), dg'') <- coerceNode lg dg' nsigA name tl
+   (nsigA'@(NodeSig nA' gsigA'), dg'') <- coerceNode lg libEnv ln dg' nsigA name tl
    (gsigmaP', pmor) <- gSigCoerce lg gsigmaP tl
    tmor <- gEmbedComorphism pmor gsigmaP
    gmor <- anaGmaps lg opts pos gsigmaP' gsigA' gsis
@@ -934,7 +1110,7 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo fv =
         -- now the case with parameters
         (la, lp) | la == lp -> do
           (ffitargs, dg', (gmor_f, _, ns@(NodeSig nA _))) <-
-            anaAllFitArgs lg opts eo ln dg5 (EmptyNode $ Logic lid)
+            anaAllFitArgs lg libEnv opts eo ln dg5 (EmptyNode $ Logic lid)
               name vn gs afitargs
           mor1 <- comp mor gmor_f
           GMorphism cid1 _ _ theta _ <- return mor1
@@ -947,25 +1123,25 @@ anaFitArg lg ln dg spname nsigI nsigP@(NodeSig nP gsigmaP) opts name eo fv =
          | otherwise -> instMismatchError spname lp la pos
     _ -> notFoundError "view" vn
 
-anaFitArgs :: LogicGraph -> HetcatsOpts -> ExpOverrides -> LibName -> IRI
+anaFitArgs :: LogicGraph -> LibEnv -> HetcatsOpts -> ExpOverrides -> LibName -> IRI
   -> MaybeNode
   -> ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
   -> (NodeSig, FIT_ARG)
   -> Result ([FIT_ARG], DGraph, [(G_morphism, NodeSig)], NodeName)
-anaFitArgs lg opts eo ln spname imps (fas', dg1, args, name') (nsig', fa) = do
+anaFitArgs lg libEnv opts eo ln spname imps (fas', dg1, args, name') (nsig', fa) = do
     let n1 = inc name'
-    (fa', dg', arg) <- anaFitArg lg ln dg1 spname imps nsig' opts n1 eo fa
+    (fa', dg', arg) <- anaFitArg lg libEnv ln dg1 spname imps nsig' opts n1 eo fa
     return (fa' : fas', dg', arg : args, n1)
 
-anaAllFitArgs :: LogicGraph -> HetcatsOpts -> ExpOverrides -> LibName -> DGraph
+anaAllFitArgs :: LogicGraph -> LibEnv -> HetcatsOpts -> ExpOverrides -> LibName -> DGraph
   -> MaybeNode
   -> NodeName -> IRI -> ExtGenSig -> [Annoted FIT_ARG]
   -> Result ([Annoted FIT_ARG], DGraph, (GMorphism, G_sign, NodeSig))
-anaAllFitArgs lg opts eo ln dg nsig name spname
+anaAllFitArgs lg libEnv opts eo ln dg nsig name spname
   gs@(ExtGenSig (GenSig imps params _) _)
   afitargs = do
   let fitargs = map item afitargs
-  (fitargs', dg', args, _) <- foldM (anaFitArgs lg opts eo ln spname imps)
+  (fitargs', dg', args, _) <- foldM (anaFitArgs lg libEnv opts eo ln spname imps)
            ([], dg, [], extName "Actuals" name) (zip params fitargs)
   let actualargs = reverse args
   (gsigma', morDelta) <- applyGS lg gs actualargs
@@ -1031,12 +1207,12 @@ extendMorphism sharing (G_sign lid sigmaP _) (G_sign lidB sigmaB1 _)
       symsB = ext_sym_of lid sigmaB
       idsB = Set.map (sym_name lid) symsB
       h = symmap_of lid fittingMor
-      symbMapToRawSymbMap = Map.foldWithKey
+      symbMapToRawSymbMap = Map.foldrWithKey
           (on Map.insert $ symbol_to_raw lid) Map.empty
       rh = symbMapToRawSymbMap h
-      idh = Map.foldWithKey (on setInsert $ sym_name lid) Map.empty h
+      idh = Map.foldrWithKey (on setInsert $ sym_name lid) Map.empty h
   idhExt <- extID idsB idh
-  let rIdExt = Map.foldWithKey (on Map.insert $ id_to_raw lid) Map.empty
+  let rIdExt = Map.foldrWithKey (on Map.insert $ id_to_raw lid) Map.empty
                 (foldr Map.delete idhExt $ Map.keys idh)
       r = rh `Map.union` rIdExt
       -- do we need combining function catching the clashes???
@@ -1106,7 +1282,7 @@ homogenizeGM (Logic lid) =
          sis1' <- coerceSymbMapItemsList lid1 lid2 "homogenizeGM" sis1
          return $ G_symb_map_items_list lid2 $ sis ++ sis1'
     G_logic_translation lc ->
-         fail $ "translation not supported by " ++ showDoc lc ""
+         Fail.fail $ "translation not supported by " ++ showDoc lc ""
 
 getSpecAnnos :: Range -> Annoted a -> Result (Conservativity, Bool)
 getSpecAnnos pos a = do
@@ -1123,17 +1299,17 @@ getSpecAnnos pos a = do
   return (sanno1, impliesA)
 
 -- only consider addSyms for the first spec
-anaExtension :: LogicGraph -> HetcatsOpts -> ExpOverrides -> LibName -> Range
+anaExtension :: LogicGraph -> LibEnv -> HetcatsOpts -> ExpOverrides -> LibName -> Range
     -> ([SPEC], MaybeNode, DGraph, Conservativity, Bool)
     -> (NodeName, Annoted SPEC)
     -> Result ([SPEC], MaybeNode, DGraph, Conservativity, Bool)
-anaExtension lg opts eo ln pos (sps', nsig', dg', conser, addSyms) (name', asp')
+anaExtension lg libEnv opts eo ln pos (sps', nsig', dg', conser, addSyms) (name', asp')
   = do
   (sanno1, impliesA) <- getSpecAnnos pos asp'
   -- attach conservativity to definition link
   let sp = item asp'
   (sp1', nsig1@(NodeSig n1 sig1), dg1) <- anaSpecTop (max conser sanno1)
-    addSyms lg ln dg' nsig' name' opts eo sp $ getRange sp
+    addSyms lg libEnv ln dg' nsig' name' opts eo sp $ getRange sp
   dg2 <- if impliesA then case nsig' of
     JustNode (NodeSig n' sig') -> do
       -- is the extension going between real nodes?

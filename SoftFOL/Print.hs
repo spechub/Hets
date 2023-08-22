@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/Print.hs
 Description :  Pretty printing for SoftFOL problems in DFG.
 Copyright   :  (c) Rene Wagner, C. Maeder, Uni Bremen 2005-2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -28,11 +28,11 @@ instance Pretty SFSymbol where
 
 instance Pretty SFSymbType where
   pretty st = case st of
-     SFOpType args res -> sep [text ":" <+> pr args, text "->"
+     SFOpType args res -> sep [colon <+> pr args, funArrow
        <+> text (show res)]
-     SFPredType args -> text ":" <+> pr args
+     SFPredType args -> colon <+> pr args
      SFSortType -> empty
-     where pr = sep . punctuate (text "* ") . map (text . show)
+     where pr = sep . punctuate (space <> cross) . map (text . show)
 
 {- |
   Helper function.

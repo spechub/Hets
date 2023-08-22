@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./utils/itcor/GenItCorrections.hs
 Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -17,6 +17,7 @@ import System.Environment
 import System.Exit
 import System.Cmd
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 usage :: IO ()
 usage = putStrLn
@@ -52,9 +53,9 @@ main = do
 convert_to_txt :: FilePath -> FilePath -> IO ()
 convert_to_txt tex_name pdf_name = do
   system ("pdflatex -interaction=batchmode " ++ tex_name ++ " >/dev/null") >>=
-          \ ec -> when (isFail ec) (fail "pdflatex went wrong")
+          \ ec -> when (isFail ec) (Fail.fail "pdflatex went wrong")
   rawSystem "pdftotext" ["-raw", "-q", pdf_name] >>=
-          \ ec -> when (isFail ec) (fail "pdftotext went wrong")
+          \ ec -> when (isFail ec) (Fail.fail "pdftotext went wrong")
   return ()
   where isFail ec = case ec of
                       ExitFailure _ -> True

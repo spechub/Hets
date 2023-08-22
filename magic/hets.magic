@@ -8,7 +8,7 @@
 !:mime  text/x-shellscript
 
 # XML version tag
-0       string/t        \<?xml\ version         XML Document
+0       string/cWt      \<?xml\ version         XML Document
 !:mime  application/xml
 
 # HTML (copied)
@@ -32,28 +32,38 @@
 # further magic file entries by Christian.Maeder@dfki.de
 # RDF 1.1 XML Syntax http://www.w3.org/TR/rdf-syntax-grammar/
 0       string/t        \<rdf:RDF               RDF document
-!:mime  application/rdf
+!:mime  application/rdf+xml
 
-0       string/t        \<?xml\ version
+0       string/t        \<!--
 >15     string          >\0
 >>19    search/4096/t   \<rdf:RDF               RDF document
-!:mime  application/rdf
+!:mime  application/rdf+xml
 
-0       string/t        \<?xml\ version
+0       string/cWt      \<?xml\ version
+>15     string          >\0
+>>19    search/4096/t   \<rdf:RDF               RDF document
+!:mime  application/rdf+xml
+
+0       string/cWt      \<?xml\ version
 >15     string          >\0
 >>19    search/4096/cWt \<!doctype\ rdf:RDF     RDF document
-!:mime  application/rdf
+!:mime  application/rdf+xml
 
 # OWL XML
 0       string/t        \<Ontology              OWL document
 !:mime  application/owl
 
-0       string/Wt       \<?xml\ version
+0       string/t        \<!--
 >15     string          >\0
 >>19    search/4096/t   \<Ontology              OWL document
 !:mime  application/owl
 
-0       string/t        \<?xml\ version
+0       string/cWt      \<?xml\ version
+>15     string          >\0
+>>19    search/4096/t   \<Ontology              OWL document
+!:mime  application/owl
+
+0       string/cWt      \<?xml\ version
 >15     string          >\0
 >>19    search/4096/cWt \<!doctype\ Ontology    OWL document
 !:mime  application/owl
@@ -62,9 +72,15 @@
 0       string/t        format-version:         OBO document
 !:mime  text/obo
 
-# TTL
-0       search/4096/t   \@prefix\               TTL document
-!:mime  text/ttl
+# Turtle (.ttl extension)
+0       search/4096/t   @prefix\ owl:          Turtle document
+!:mime  text/turtle
+
+0       search/4096/t   @prefix\ rdfs:         Turtle document
+!:mime  text/turtle
+
+0       search/4096/t   @prefix\ xsd:          Turtle document
+!:mime  text/turtle
 
 # OMN
 0       search/4096/t   Prefix:                 OWL Manchester Notation
@@ -73,19 +89,6 @@
 # OMN
 0       search/4096/t   Ontology:               OWL Manchester Notation
 !:mime  text/omn
-
-# CLIF
-0       search/4096/t   \(cl-text\              CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(cl-imports\           CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(cl-module\            CLIF document
-!:mime  text/clif
-
-0       search/4096/t   \(cl-comment\           CLIF document
-!:mime  text/clif
 
 # DOL
 0       search/4096/t   distributed-ontology\   DOL document
@@ -97,18 +100,17 @@
 0       search/4096/t   interpretation\         DOL document
 !:mime  text/dol
 
-# HetCASL
-0       search/4096/t   spec\                   HetCASL document
-!:mime  text/het
+0       search/4096/t   spec\                   DOL document
+!:mime  text/dol
 
-0       search/4096/t   library\                HetCASL document
-!:mime  text/het
+0       search/4096/t   library\                DOL document
+!:mime  text/dol
 
-0       search/4096/t   view\                   HetCASL document
-!:mime  text/het
+0       search/4096/t   view\                   DOL document
+!:mime  text/dol
 
-0       search/4096/t   logic\                  HetCASL document
-!:mime  text/het
+0       search/4096/t   logic\                  DOL document
+!:mime  text/dol
 
 # CASL
 0       search/4096/t   sort\                   CASL document
@@ -119,3 +121,68 @@
 
 0       search/4096/t   module\                 Haskell document
 !:mime  text/haskell
+
+# TPTP
+0       search/4096/t   thf(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tfx(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tff(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tcf(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   fof(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   cnf(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tpi(              TPTP document
+!:mime  text/tptp
+
+# CLIF
+0       search/4096/t   (cl-text\               CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (cl-module\             CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (cl-excludes\           CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (cl-imports\            CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (cl-module\             CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (cl-comment\            CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (cl-roleset\            CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (forall\                CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (exists\                CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (and\                   CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (or\                    CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (if\                    CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (iff\                   CLIF document
+!:mime  text/clif
+
+0       search/4096/t   (not\                   CLIF document
+!:mime  text/clif

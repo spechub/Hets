@@ -1,7 +1,7 @@
 {-# OPTIONS -O0 #-}
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/THFP2THF0.hs
 Description :  Comorphism from THFP to THF0
 Copyright   :  (c) J. von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -28,7 +28,8 @@ import THF.Cons
 import THF.Sign
 import qualified THF.Sublogic as SL
 import THF.As
-import THF.Utils
+import THF.Utils (RewriteFuns (..), rewriteSenFun, rewriteTHF0, recreateSymbols,
+                  toToken, typeToTopLevelType, thfTopLevelTypeToType, mkNames)
 
 import qualified Data.Map as Map
 import Control.Monad (liftM)
@@ -260,7 +261,7 @@ makeExplicitProducts (cs_trans1, sig) =
 
 mkExplicitProductsT :: TransMap -> Map.Map Constant ConstInfo
                        -> (TransMap, Map.Map Constant ConstInfo)
-mkExplicitProductsT cs_trans1 cs1 = Map.fold
+mkExplicitProductsT cs_trans1 cs1 = Map.foldr
  (\ c (trans, cs) -> prodTToTuple trans cs (constId c) (constName c)
                      (constType c)) (cs_trans1, cs1) cs1
 

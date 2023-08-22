@@ -1,6 +1,8 @@
-{-# LANGUAGE TypeSynonymInstances, MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./OMDoc/Logic_OMDoc.hs
 Description :  Rudimentary Logic-instances for OMDoc
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -22,6 +24,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
 
 data OMDoc_PUN = OMDoc_PUN
 
@@ -86,7 +89,7 @@ instance Category OMDoc_Sign OMDoc_Morphism where
     (OMDoc.inclusionFrom m == OMDoc.mkSymbolRef (OMDoc.theoryId s)
      &&
      OMDoc.inclusionTo m == OMDoc.mkSymbolRef (OMDoc.theoryId t)) $
-    fail "illegal OMDoc morphism"
+    Fail.fail "illegal OMDoc morphism"
 
 instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
   sym_of OMDoc_PUN s =
@@ -155,6 +158,7 @@ instance Sentences OMDoc_PUN () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol where
   sym_name OMDoc_PUN s =
     -- real Id's are saved as Presentation-Elements...
     stringToId $ OMDoc.symbolId s
+  symKind OMDoc_PUN = show . OMDoc.symbolRole
 
 instance StaticAnalysis OMDoc_PUN () () () () OMDoc_Sign OMDoc_Morphism OMDoc.Symbol () where
   symbol_to_raw OMDoc_PUN _ = ()

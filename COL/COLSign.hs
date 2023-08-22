@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./COL/COLSign.hs
 Description :  Signatures of COL as extension of CASL signatures
 Copyright   :  (c) Till Mossakowski, C. Maeder, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -13,13 +14,15 @@ Signatures of COL as extension of CASL signatures.
 
 module COL.COLSign where
 
+import Data.Data
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+
 import Common.Id
 
 data COLSign = COLSign { constructors :: Set.Set Id
                        , observers :: Map.Map Id Int
-                       } deriving (Show, Eq, Ord)
+                       } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyCOLSign :: COLSign
 emptyCOLSign = COLSign Set.empty Map.empty

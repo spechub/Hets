@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/RelScheme2CASL.hs
 Description :  Comorphism from RelScheme to CASL
 Copyright   :  (c) Dominik Luecke and Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

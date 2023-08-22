@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/QualifyNames.hs
 Description :  qualify all names in the nodes of development graphs
 Copyright   :  (c) Igor Stassiy, C.Maeder DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -40,13 +40,14 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 qualifyLibEnv :: LibEnv -> Result LibEnv
 qualifyLibEnv libEnv = fmap fst
   $ foldM (\ (le, m) ln -> do
     dg0 <- updateRefNodes (le, m) $ lookupDGraph ln le
     (dg, trm) <- qualifyDGraph ln dg0
-    return ( Map.insert ln (computeDGraphTheories le dg) le
+    return ( Map.insert ln (computeDGraphTheories le ln dg) le
            , Map.insert ln trm m))
     (libEnv, Map.empty) $ getTopsortedLibs libEnv
 
@@ -58,7 +59,7 @@ qualifyDGraph ln dg =
   $ do
   let es = map (\ (_, _, lb) -> dgl_id lb) $ labEdgesDG dg
   unless (Set.size (Set.fromList es) == length es) $
-    fail $ "inkonsistent graph for library " ++ showDoc ln ""
+    Fail.fail $ "inkonsistent graph for library " ++ showDoc ln ""
   (dg1, trm) <- foldM (qualifyLabNode ln) (dg, Map.empty) $ topsortedNodes dg
   return (groupHistory dg (DGRule "Qualified-Names") dg1, trm)
 

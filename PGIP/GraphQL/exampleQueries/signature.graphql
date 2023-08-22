@@ -1,0 +1,36 @@
+query Signature {
+  signature(id: 1) {
+    id
+    oms {
+      locId
+    }
+    signatureMorphismsSource: signatureMorphisms(origin: source, limit: null) {
+      id
+    }
+    signatureMorphismsTarget: signatureMorphisms(origin: target, limit: null) {
+      id
+    }
+    symbols(limit: null) {
+      ...symbolFields
+    }
+  }
+}
+
+fragment symbolFields on Symbol {
+  __typename
+  fileRange {
+    ...fileRangeFields
+  }
+  fullName
+  kind
+  locId
+  name
+}
+
+fragment fileRangeFields on FileRange {
+  path
+  startLine
+  startColumn
+  endLine
+  endColumn
+}

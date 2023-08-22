@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/Logic_THF.hs
 Description :  Instance of class Logic for THF.
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
                (c) Jonathan von Schroeder, DFKI Bremen 2012
@@ -19,10 +19,11 @@ import ATC.ProofTree ()
 
 import Common.DefaultMorphism
 import Common.ProofTree
-import Common.ProverTools
 
-import Data.Monoid
-import Data.Map (isSubmapOf, fold)
+import Data.Monoid ()
+import Data.Map (isSubmapOf)
+import qualified Data.Map (toList, foldr)
+import qualified Data.Set (fromList)
 
 import Logic.Logic
 
@@ -37,6 +38,8 @@ import THF.Sign
 import THF.Print
 import THF.ParseTHF
 import qualified THF.Sublogic as SL
+import THF.Poly (getSymbols)
+import THF.Utils (toId)
 
 -- TODO implement more instance methods
 
@@ -48,10 +51,11 @@ instance Language THF where
         "For further information please refer to" ++
         "http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html"
 
+instance Semigroup BasicSpecTHF where
+    (BasicSpecTHF l1) <> (BasicSpecTHF l2) =
+        BasicSpecTHF $ l1 ++ l2
 instance Monoid BasicSpecTHF where
     mempty = BasicSpecTHF []
-    mappend (BasicSpecTHF l1) (BasicSpecTHF l2) =
-        BasicSpecTHF $ l1 ++ l2
 
 instance Logic.Logic.Syntax THF BasicSpecTHF SymbolTHF () () where
     parse_basic_spec THF = Just (\ _ -> fmap BasicSpecTHF parseTHF)
@@ -60,8 +64,13 @@ instance Logic.Logic.Syntax THF BasicSpecTHF SymbolTHF () () where
 instance Sentences THF THFFormula SignTHF MorphismTHF SymbolTHF where
     map_sen THF _ = return
     print_named THF = printNamedSentenceTHF Nothing
-    {- sym_name THF =
-    negation THF _ =
+    symsOfSen THF = getSymbols
+    sym_name THF = toId . symId
+    symKind THF s = case symType s of
+                     ST_Type _ -> "type"
+                     ST_Const _ -> "constant"
+    sym_of THF s = [Data.Set.fromList . map snd . Data.Map.toList . symbols $ s]
+    {- negation THF _ =
     other default implementations are fine -}
 
 instance StaticAnalysis THF BasicSpecTHF THFFormula () ()
@@ -83,12 +92,9 @@ instance Logic THF SL.THFSl BasicSpecTHF THFFormula () ()
                 SignTHF MorphismTHF SymbolTHF () ProofTree where
     all_sublogics THF = SL.sublogics_all
     stability THF = Testing
-    provers THF = [] ++ unsafeProverCheck "leo" "PATH" leoIIProver
-                     ++ unsafeProverCheck "isabelle" "PATH" isaProver
-                     ++ unsafeProverCheck "isabelle" "PATH" nitpickProver
-                     ++ unsafeProverCheck "isabelle" "PATH" refuteProver
-                     ++ unsafeProverCheck "isabelle" "PATH" sledgehammerProver
-                     ++ unsafeProverCheck "satallax" "PATH" satallaxProver
+    provers THF =
+      [ leoIIProver, isaProver, nitpickProver, refuteProver, sledgehammerProver
+      , satallaxProver ]
 
 -- Sublogics
 
@@ -113,10 +119,10 @@ instance MinSublogic SL.THFSl () where
  minSublogic _ = SL.tHF0
 
 instance MinSublogic SL.THFSl SignTHF where
- minSublogic (Sign tp c _) = lub (Data.Map.fold
+ minSublogic (Sign tp c _) = lub (Data.Map.foldr
    (\ t sl -> lub sl $ minSublogic $ typeKind t)
    SL.tHF0 tp)
-  (Data.Map.fold
+  (Data.Map.foldr
    (\ cs sl -> lub sl $ minSublogic $ constType cs)
    SL.tHF0 c)
 

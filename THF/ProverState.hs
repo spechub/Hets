@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/ProverState.hs
 Description :  Help functions for all automatic theorem provers.
 Copyright   :  (c) Rainer Grabbe
 License     :  GPLv2 or higher, see LICENSE.txt

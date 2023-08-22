@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./LF/Morphism.hs
 Description :  Definition of signature morphisms for the Edinburgh
                Logical Framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
@@ -29,15 +30,18 @@ import LF.Sign
 import Common.Result
 import Common.Doc hiding (space)
 import Common.DocUtils
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Data
 import Data.Maybe (isNothing, fromMaybe)
 
 gen_morph :: String
 gen_morph = "GEN_MORPH"
 
-data MorphType = Definitional | Postulated | Unknown deriving (Ord, Eq, Show)
+data MorphType = Definitional | Postulated | Unknown
+  deriving (Ord, Eq, Show, Typeable)
 
 -- LF morphism cannot map defined symbols, only declared ones
 data Morphism = Morphism
@@ -48,7 +52,7 @@ data Morphism = Morphism
   , target :: Sign
   , morphType :: MorphType
   , symMap :: Map.Map Symbol EXP
-  } deriving (Ord, Show)
+  } deriving (Ord, Show, Typeable)
 
 -- constructs an identity morphism
 idMorph :: Sign -> Morphism
@@ -153,7 +157,7 @@ buildFromToMorph (Def s t _ : ds) m mor = do
         let Just (v, t2) = Map.lookup s m
         if t1 == t2
            then buildFromToMorph ds m $ mor {symMap = Map.insert s v m1 }
-           else fail $ badViewError s t1
+           else Fail.fail $ badViewError s t1
      else do
         let s1 = if Just t1 == getSymType s sig2 then s else do
                     let syms = getSymsOfType t1 sig2
@@ -185,7 +189,7 @@ buildFromMorph (Def s t _ : ds) mor = do
        Just t2 ->
           if t1 == t2
              then buildFromMorph ds mor
-             else fail $ badViewError s1 t1
+             else Fail.fail $ badViewError s1 t1
        Nothing -> buildFromMorph ds $
                     mor { target = addDef (Def s1 t1 Nothing) sig2 }
 

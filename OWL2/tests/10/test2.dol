@@ -1,0 +1,39 @@
+logic OWL serialization Functional
+
+ontology O =
+Prefix(: = <http://example.org/>)
+Prefix( xsd: = <http://www.w3.org/2001/XMLSchema#>)
+Prefix( owl: = <http://www.w3.org/2002/07/owl#>)
+Prefix( xml: = <http://www.w3.org/XML/1998/namespace>)
+Prefix( rdf: = <http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
+Prefix( rdfs: = <http://www.w3.org/2000/01/rdf-schema#>)
+Prefix(swrlb:=<http://www.w3.org/2003/11/swrlb#>)
+
+Ontology(
+
+    DLSafeRule(Body(DataRangeAtom( DatatypeRestriction( xsd:integer xsd:minInclusive "2"^^xsd:integer xsd:maxExclusive "3"^^xsd:integer )
+                                    Variable(:x)))
+        Head(BuiltInAtom(swrlb:equal Variable(:x) "2"^^xsd:integer)))
+)
+end
+
+logic OWL serialization Manchester
+ontology P =
+Prefix: : <http://example.org/>
+Prefix: owl: <http://www.w3.org/2002/07/owl#>
+Prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+Prefix: rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+Prefix: xml: <http://www.w3.org/XML/1998/namespace>
+Prefix: xsd: <http://www.w3.org/2001/XMLSchema#>
+
+
+
+Ontology: 
+
+Datatype: xsd:integer
+
+    
+Rule: 
+    xsd:integer[>= 2 , < 3](?x) -> swrlb:equal(?x, 2)
+end
+

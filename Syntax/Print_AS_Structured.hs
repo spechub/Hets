@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/Print_AS_Structured.hs
 Description :  pretty printing of CASL structured specifications
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -50,6 +50,9 @@ instance PrettyLG SPEC where
 printUnion :: LogicGraph -> [Annoted SPEC] -> [Doc]
 printUnion lg = prepPunctuate (topKey andS <> space) . map (condBracesAnd lg)
 
+printIntersection :: LogicGraph -> [Annoted SPEC] -> [Doc]
+printIntersection lg = prepPunctuate (topKey intersectS <> space) . map (condBracesAnd lg)
+
 moveAnnos :: Annoted SPEC -> [Annoted SPEC] -> [Annoted SPEC]
 moveAnnos x l = appAnno $ case l of
     [] -> error "moveAnnos"
@@ -86,11 +89,16 @@ printSPEC lg spec = case spec of
              ++ showSyntax lid sm
       _ -> error "printSPEC: incomplete logic graph"
     EmptySpec _ -> specBraces empty
+    Extraction aa ab -> sep [condBracesTransReduct lg aa, printEXTRACTION ab]
     Translation aa ab -> sep [condBracesTransReduct lg aa, printRENAMING ab]
     Reduction aa ab -> sep [condBracesTransReduct lg aa, printRESTRICTION ab]
-    Approximation _ _ -> error "Syntax/Print_AS_Structured"
-    Minimization aa _ -> sep [keyword minimizeS, printGroupSpec lg aa]
+    Approximation aa ab ->
+      sep [condBracesTransReduct lg aa, printAPPROXIMATION ab]
+    Minimization aa ab ->
+      sep [condBracesTransReduct lg aa, printMINIMIZATION ab]
+    Filtering aa ab -> sep [condBracesTransReduct lg aa, printFILTERING ab]
     Union aa _ -> sep $ printUnion lg aa
+    Intersection aa _ -> sep $ printIntersection lg aa
     Extension aa _ -> sep $ printExtension lg aa
     Free_spec aa _ -> sep [keyword freeS, printGroupSpec lg aa]
     Cofree_spec aa _ -> sep [keyword cofreeS, printGroupSpec lg aa]
@@ -99,19 +107,61 @@ printSPEC lg spec = case spec of
       [keyword localS, prettyLG lg aa, keyword withinS, condBracesWithin lg ab]
     Closed_spec aa _ -> sep [keyword closedS, printGroupSpec lg aa]
     Group aa _ -> prettyLG lg aa
-    Spec_inst aa ab _ -> cat [structIRI aa, print_fit_arg_list lg ab]
-    Qualified_spec ln asp _ -> printLogicEncoding ln <> colon
+    Spec_inst aa ab mi _ -> let
+      r = cat [structIRI aa, print_fit_arg_list lg ab]
+      in maybe r (\ i -> sep [r, pretty i]) mi
+    Qualified_spec ln asp _ -> pretty ln <> colon
       $+$ prettyLG (setLogicName ln lg) asp
     Data ld _ s1 s2 _ -> keyword dataS
         <+> printGroupSpec (setCurLogic (show ld) lg) s1
         $+$ prettyLG lg s2
-    Combination cs es _ -> fsep $ keyword combineS : ppWithCommas cs
+    Combination n _ -> sep [keyword combineS, pretty n]
+    Apply i bs _ ->
+      sep [keyword "apply" <+> pretty i, prettyLG lg $ Basic_spec bs nullRange]
+    Bridge s1 rs s2 _ -> fsep $ [condBraces lg s1, keyword "bridge"]
+      ++ map pretty rs ++ [condBraces lg s2]
+
+instance Pretty Network where
+    pretty (Network cs es _) = fsep $ ppWithCommas cs
       : if null es then [] else [keyword excludingS, ppWithCommas es]
 
 instance Pretty NodeOrLink where
   pretty e = case e of
     NodeIri i -> pretty i
     LinkName s t -> fsep [pretty s, funArrow, pretty t]
+
+instance Pretty FILTERING where
+    pretty = printFILTERING
+
+printFILTERING :: FILTERING -> Doc
+printFILTERING (FilterBasicSpec b aa _) =
+   keyword (if b then selectS else rejectS) <+> pretty aa
+printFILTERING (FilterSymbolList b aa _) =
+   keyword (if b then selectS else rejectS) <+> pretty aa
+
+instance Pretty MINIMIZATION where
+    pretty = printMINIMIZATION
+
+printMINIMIZATION :: MINIMIZATION -> Doc
+printMINIMIZATION (Mini kw cms cvs _) =
+   fsep $ keyword (tokStr kw) : map pretty cms ++ if null cvs then [] else
+     keyword "vars" : map pretty cvs
+
+instance Pretty APPROXIMATION where
+    pretty = printAPPROXIMATION
+
+printAPPROXIMATION :: APPROXIMATION -> Doc
+printAPPROXIMATION (ForgetOrKeep b syms ml _) =
+   fsep $ keyword (if b then forgetS else keepS)
+   : ppWithCommas syms : maybe [] (\ i -> [keyword withS, pretty i]) ml
+
+instance Pretty EXTRACTION where
+    pretty = printEXTRACTION
+
+printEXTRACTION :: EXTRACTION -> Doc
+printEXTRACTION (ExtractOrRemove b aa _) =
+   keyword (if b then "extract" else "remove") <+> fsep (map pretty aa)
+
 
 instance Pretty RENAMING where
     pretty = printRENAMING
@@ -170,8 +220,11 @@ printLogic_code (Logic_code menc msrc mtar _) =
         ++ pm msrc ++ funArrow : pm mtar
 
 instance Pretty LogicDescr where
-    pretty (LogicDescr n s _) = sep [pretty n,
-      maybe empty (\ r -> sep [keyword serializationS, pretty r]) s]
+    pretty ld = case ld of
+      LogicDescr n s _ -> sep [keyword logicS, pretty n,
+        maybe empty (\ r -> sep [keyword serializationS, pretty r]) s]
+      SyntaxQual i -> sep [keyword serializationS, pretty i]
+      LanguageQual i -> sep [keyword "language", pretty i]
 
 instance Pretty Logic_name where
     pretty = printLogic_name
@@ -188,7 +241,7 @@ instance Pretty LABELED_ONTO_OR_INTPR_REF where
 
 printLIRI :: LABELED_ONTO_OR_INTPR_REF -> Doc
 printLIRI (Labeled n i) = case n of
-    Just x -> pretty x <> colon <> pretty i
+    Just x -> pretty x <+> colon <+> pretty i
     Nothing -> pretty i
 
 {- |
@@ -212,8 +265,10 @@ printGroupSpec lg s = let d = prettyLG lg s in
 condBracesTransReduct :: LogicGraph -> Annoted SPEC -> Doc
 condBracesTransReduct lg s = let d = prettyLG lg s in
     case skip_Group $ item s of
+                 Bridge {} -> specBraces d
                  Extension {} -> specBraces d
                  Union {} -> specBraces d
+                 Intersection {} -> specBraces d
                  Local_spec {} -> specBraces d
                  _ -> d
 
@@ -223,8 +278,10 @@ condBracesTransReduct lg s = let d = prettyLG lg s in
 condBracesWithin :: LogicGraph -> Annoted SPEC -> Doc
 condBracesWithin lg s = let d = prettyLG lg s in
     case skip_Group $ item s of
-                 Extension _ _ -> specBraces d
-                 Union _ _ -> specBraces d
+                 Bridge {} -> specBraces d
+                 Extension {} -> specBraces d
+                 Union {} -> specBraces d
+                 Intersection {} -> specBraces d
                  _ -> d
 {- |
   only Extensions inside of Unions (and) need grouping braces
@@ -232,7 +289,15 @@ condBracesWithin lg s = let d = prettyLG lg s in
 condBracesAnd :: LogicGraph -> Annoted SPEC -> Doc
 condBracesAnd lg s = let d = prettyLG lg s in
     case skip_Group $ item s of
-                 Extension _ _ -> specBraces d
+                 Bridge {} -> specBraces d
+                 Extension {} -> specBraces d
+                 _ -> d
+
+-- bridges inside bridges need grouping
+condBraces :: LogicGraph -> Annoted SPEC -> Doc
+condBraces lg s = let d = prettyLG lg s in
+    case skip_Group $ item s of
+                 Bridge {} -> specBraces d
                  _ -> d
 
 -- | only skip groups without annotations

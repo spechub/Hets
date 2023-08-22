@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/ProveSPASS.hs
 Description :  Interface for the SPASS theorem prover.
 Copyright   :  (c) Rene Wagner, Klaus Luettich, Rainer Grabbe,
                    Uni Bremen 2005-2006
@@ -56,10 +56,10 @@ import Data.Time (TimeOfDay (..), midnight)
 -}
 
 spassName :: String
-spassName = "SPASS"
+spassName = "SPASS_SoftFOL"
 
 spassProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-spassProver = mkAutomaticProver spassName () spassProveGUI
+spassProver = mkAutomaticProver spassName spassName () spassProveGUI
   spassProveCMDLautomaticBatch
 
 -- * Main prover functions

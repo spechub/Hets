@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Taxonomy/MMiSSOntologyGraph.hs
 Copyright   :  (c) Uni Bremen 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -105,7 +105,7 @@ createNode gid ginfo _ nMap (nodeID, (name, _, objectType)) =
 
 createLink :: A.Descr -> A.GraphInfo -> A.NodeMapping -> LEdge String
            -> IO A.NodeMapping
-createLink gid ginfo nMap (node1, node2, edgeLabel) = do
+createLink gid ginfo nMap (node1, node2, edgeLabel_) = do
     dNodeID_1 <- case Map.lookup node1 nMap of
                    Nothing -> return (-1)
                    Just n -> return n
@@ -114,10 +114,10 @@ createLink gid ginfo nMap (node1, node2, edgeLabel) = do
                    Just n -> return n
     if dNodeID_1 == -1 || dNodeID_2 == -1 then return nMap else do
       A.Result _ err <-
-        if elem edgeLabel ["isa", "instanceOf", "livesIn", "proves"]
-        then A.addlink gid edgeLabel edgeLabel Nothing
+        if elem edgeLabel_ ["isa", "instanceOf", "livesIn", "proves"]
+        then A.addlink gid edgeLabel_ edgeLabel_ Nothing
              dNodeID_2 dNodeID_1 ginfo
-        else A.addlink gid edgeLabel edgeLabel Nothing
+        else A.addlink gid edgeLabel_ edgeLabel_ Nothing
              dNodeID_1 dNodeID_2 ginfo
       Data.Foldable.forM_ err putStr
       return nMap
@@ -131,7 +131,7 @@ showRelationsForVisible onto gv (_, _, gid) =
        Just g ->
          do let oldGraph = A.ontoGraph g
                 nodesInOldGraph = map fst $ labNodes oldGraph
-                newGr = nfilter (`elem` nodesInOldGraph) $ getClassGraph onto
+                newGr = restrict (`elem` nodesInOldGraph) $ getClassGraph onto
             purgeGraph gid gv
             updateDaVinciGraph newGr gid gv
             A.redisplay gid gv
@@ -156,7 +156,7 @@ showObjectsForVisible onto gv (_, _, gid) =
                 objectList =
                     map fst $ filter (findObjectsOfClass classesInOldGraph)
                     $ getTypedNodes [OntoObject] $ getClassGraph onto
-                objectGr = nfilter (`elem` objectList) (getClassGraph onto)
+                objectGr = restrict (`elem` objectList) (getClassGraph onto)
             updateDaVinciGraph (makeObjectGraph oldGraph
                                 (getPureClassGraph (getClassGraph onto))
                                 objectGr) gid gv
@@ -169,7 +169,7 @@ showWholeObjectGraph onto gv (_, _, gid) =
   do oldGv <- readIORef gv
      A.Result _ err <- purgeGraph gid gv
      let objectList = map fst $ getTypedNodes [OntoObject] $ getClassGraph onto
-         objectGraph = nfilter (`elem` objectList) $ getClassGraph onto
+         objectGraph = restrict (`elem` objectList) $ getClassGraph onto
      updateDaVinciGraph (makeObjectGraph empty
                          (getClassGraph onto) objectGraph) gid gv
      case err of
@@ -372,27 +372,27 @@ getSubSuperSingle g showSuper newGr name =
         _ -> gr
     insPredecessorAndEdge :: ClassGraph -> ClassGraph -> LEdge String
                           -> ClassGraph
-    insPredecessorAndEdge oldGr newGr' (fromNode, toNode, edgeLabel) =
+    insPredecessorAndEdge oldGr newGr' (fromNode, toNode, edgeLabel_) =
       case fst $ match fromNode oldGr of
         Nothing -> newGr'
         Just (_, _, nodeLabel1, _) ->
            case match fromNode newGr' of
              (Nothing, _) ->
-                 ([], fromNode, nodeLabel1, [(edgeLabel, toNode)]) & newGr'
+                 ([], fromNode, nodeLabel1, [(edgeLabel_, toNode)]) & newGr'
              (Just (p, fromNodeID, nodeLabel2, s), newGr2) ->
-                 (p, fromNodeID, nodeLabel2, (edgeLabel, toNode) : s) & newGr2
+                 (p, fromNodeID, nodeLabel2, (edgeLabel_, toNode) : s) & newGr2
     insSuccessorAndEdge :: ClassGraph -> ClassGraph -> LEdge String
                         -> ClassGraph
-    insSuccessorAndEdge oldGr newGr' (fromNode, toNode, edgeLabel) =
+    insSuccessorAndEdge oldGr newGr' (fromNode, toNode, edgeLabel_) =
       case fst $ match toNode oldGr of
         Nothing -> newGr'
         Just (_, _, (nodeLabel1, _, _), _) ->
            case match toNode newGr' of
              (Nothing, _) ->
-              ([(edgeLabel, fromNode)], toNode, (nodeLabel1, "", OntoClass), [])
+              ([(edgeLabel_, fromNode)], toNode, (nodeLabel1, "", OntoClass), [])
               & newGr'
              (Just (p, toNodeID, nodeLabel2, s), newGr2) ->
-                 ((edgeLabel, fromNode) : p, toNodeID, nodeLabel2, s) & newGr2
+                 ((edgeLabel_, fromNode) : p, toNodeID, nodeLabel2, s) & newGr2
 
 getSubSuperClosure :: ClassGraph -> Bool -> ClassGraph -> String -> ClassGraph
 getSubSuperClosure g showSuper newGr name =
@@ -455,7 +455,7 @@ hideObjectsForVisible gv (_, _, gid) =
                 objectNodeIDs = map ( \ (_, v, _, _) -> v) $
                                 gselType (== OntoObject) oldGraph
             purgeGraph gid gv
-            updateDaVinciGraph (nfilter (`notElem` objectNodeIDs) oldGraph)
+            updateDaVinciGraph (restrict (`notElem` objectNodeIDs) oldGraph)
                                gid gv
             A.redisplay gid gv
             return ()
@@ -562,11 +562,11 @@ getPureClassGraph :: ClassGraph -> ClassGraph
 getPureClassGraph g =
     let classNodeList = map fst
           $ getTypedNodes [OntoClass, OntoPredicate] g
-    in nfilter (`elem` classNodeList) g
+    in restrict (`elem` classNodeList) g
 
 
-nfilter :: DynGraph gr => (Node -> Bool) -> gr a b -> gr a b
-nfilter f = ufold cfilter empty
+restrict :: DynGraph gr => (Node -> Bool) -> gr a b -> gr a b
+restrict f = ufold cfilter empty
             where cfilter (p, v, l, s) g =
                       if f v then (p', v, l, s') & g else g
                    where p' = filter (f . snd) p

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/ParseTHF.hs
 Description :  A Parser for the TPTP-THF Syntax
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
                (c) A. Tsogias, DFKI Bremen 2011
@@ -26,6 +26,7 @@ import Text.ParserCombinators.Parsec
 import Common.Parsec
 import Common.Id (Token (..))
 import Common.Lexer (parseToken)
+import qualified Control.Monad.Fail as Fail
 
 import Data.Char
 import Data.Maybe
@@ -176,7 +177,7 @@ formulaRole = do
         "fi_predicates" -> return Fi_Predicates
         "type" -> return Type
         "unknown" -> return Unknown
-        s -> fail ("No such Role: " ++ s)
+        s -> Fail.fail ("No such Role: " ++ s)
 
 {- THF
 <thf_formula>        ::= <thf_logic_formula> | <thf_sequent>
@@ -578,7 +579,7 @@ definedType = do
         "real" -> return DT_real
         "rat" -> return DT_rat
         "int" -> return DT_int
-        s -> fail ("No such definedType: " ++ s)
+        s -> Fail.fail ("No such definedType: " ++ s)
 
 {- THF & THF0:
 <system_type>        ::= <atomic_system_word> -}
@@ -604,7 +605,7 @@ definedProp = do
     case show adw of
         "true" -> return DP_True
         "false" -> return DP_False
-        s -> fail ("No such definedProp: " ++ s)
+        s -> Fail.fail ("No such definedProp: " ++ s)
 
 {- THF:
 <defined_pred>       :== <atomic_defined_word>
@@ -622,7 +623,7 @@ definedPred = do
         "greatereq" -> return Greatereq
         "is_int" -> return Is_int
         "is_rat" -> return Is_rat
-        s -> fail ("No such definedPred: " ++ s)
+        s -> Fail.fail ("No such definedPred: " ++ s)
 
 {- THF:
 <term> ::= <function_term> | <variable> | <conditional_term>
@@ -707,7 +708,7 @@ definedFunctor = do
         "to_int" -> return To_int
         "to_rat" -> return To_rat
         "to_real" -> return To_real
-        s -> fail ("No such definedFunctor: " ++ s)
+        s -> Fail.fail ("No such definedFunctor: " ++ s)
 
 {- THF:
 <system_term>        ::= <system_constant> | <system_functor>(<arguments>)
@@ -1101,7 +1102,7 @@ distinctObject :: CharParser st Token
 distinctObject = parseToken $ do
     char '\"'
     s <- fmap concat $ many1 (tryString "\\\\" <|> tryString "\\\""
-        <|> single ( satisfy (\ c -> printable c && notElem c "'\\")))
+        <|> single ( satisfy (\ c -> printable c && notElem c "\"\\")))
     keyChar '\"'
     return s
 
@@ -1140,8 +1141,8 @@ unsignedReal = do
         d <- decimalFractional <|> decimal
         e <- oneOf "Ee"
         return (d ++ [e]))
-    ex <- decimal
-    return (de ++ ex)
+    ex <- integer
+    return (de ++ (show ex))
   <|> decimalFractional
   <?> "unsigned real"
 

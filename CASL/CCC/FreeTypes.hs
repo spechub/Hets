@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/CCC/FreeTypes.hs
 Description :  consistency checking of free types
 Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -13,27 +13,33 @@ Consistency checking of free types
 
 module CASL.CCC.FreeTypes (checkFreeType) where
 
+import CASL.AlphaConvert
 import CASL.AS_Basic_CASL
+import CASL.MapSentence
 import CASL.Morphism
 import CASL.Sign
 import CASL.Simplify
 import CASL.SimplifySen
 import CASL.CCC.TermFormula
 import CASL.CCC.TerminationProof (terminationProof)
-import CASL.Overload (leqF, leqP)
+import CASL.Overload (leqP)
+import CASL.Quantification
 import CASL.ToDoc
+import CASL.Utils
 
 import Common.AS_Annotation
 import Common.Consistency (Conservativity (..))
 import Common.DocUtils
 import Common.Id
 import Common.Result
-import Common.Utils (nubOrd, number)
+import Common.Utils (number)
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
+import Data.Either
 import Data.Function
 import Data.List
 import Data.Maybe
@@ -53,28 +59,14 @@ inhabited sorts cons = iterateInhabited sorts where
         then (Set.insert rs l', True) else p) (l, False) argsRes
 
 -- | just filter out the axioms generated for free types
-isUserOrSortGen :: Named (FORMULA f) -> Bool
-isUserOrSortGen ax = case stripPrefix "ga_" $ senAttr ax of
+isGenAx :: Named (FORMULA f) -> Bool
+isGenAx ax = case stripPrefix "ga_" $ senAttr ax of
   Nothing -> True
   Just rname -> all (not . (`isPrefixOf` rname))
     ["disjoint_", "injective_", "selector_"]
 
 getFs :: [Named (FORMULA f)] -> [FORMULA f]
-getFs = map sentence . filter isUserOrSortGen
-
-getExAxioms :: [Named (FORMULA f)] -> [FORMULA f]
-getExAxioms = filter isExQuanti . getFs
-
-getAxioms :: [Named (FORMULA f)] -> [FORMULA f]
-getAxioms =
-  filter (\ f -> not $ isSortGen f || isMembership f || isExQuanti f) . getFs
-
-getInfoSubsort :: Morphism f e m -> [Named (FORMULA f)] -> [FORMULA f]
-getInfoSubsort m = concatMap (infoSubsort esorts) . filter isMembership . getFs
-  where esorts = Set.toList . emptySortSet $ mtarget m
-
-getAxGroup :: GetRange f => Sign f e -> [Named (FORMULA f)] -> [[FORMULA f]]
-getAxGroup sig = groupAxioms sig . filter (not . isDomain) . getAxioms
+getFs = map sentence . filter isGenAx
 
 -- | get the constraints from sort generation axioms
 constraintOfAxiom :: [FORMULA f] -> [[Constraint]]
@@ -82,153 +74,120 @@ constraintOfAxiom = foldr (\ f -> case f of
   Sort_gen_ax constrs _ -> (constrs :)
   _ -> id) []
 
-recoverSortsAndConstructors :: [Named (FORMULA f)] -> [Named (FORMULA f)]
-  -> (Set.Set SORT, [OP_SYMB])
-recoverSortsAndConstructors osens fsn = let
+recoverSortsAndConstructors :: [FORMULA f] -> (Set.Set SORT, Set.Set OP_SYMB)
+recoverSortsAndConstructors fs = let
   (srts, cons, _) = unzip3 . map recover_Sort_gen_ax
-    . constraintOfAxiom . getFs $ osens ++ fsn
-  in (Set.unions $ map Set.fromList srts, nubOrd $ concat cons)
+    $ constraintOfAxiom fs
+  in (Set.unions $ map Set.fromList srts, Set.unions $ map Set.fromList cons)
 
 -- check that patterns do not overlap, if not, return proof obligation.
-getOverlapQuery :: (Ord f, GetRange f) => Sign f e -> [Named (FORMULA f)]
-  -> [FORMULA f]
-getOverlapQuery sig fsn = filter (not . is_True_atom) overlap_query where
-        axPairs = concatMap pairs $ getAxGroup sig fsn
-        olPairs = filter (\ (a, b) -> checkPatterns sig
-                           (patternsOfAxiom a, patternsOfAxiom b)) axPairs
-        subst (f1, f2) = ((f1, reverse sb1), (f2, reverse sb2))
-          where (sb1, sb2) = st ((patternsOfAxiom f1, []),
-                                 (patternsOfAxiom f2, []))
-                st ((pa1, s1), (pa2, s2)) = case (pa1, pa2) of
-                  (hd1 : tl1, hd2 : tl2)
-                    | hd1 == hd2 -> st ((tl1, s1), (tl2, s2))
-                    | isVar hd1 -> st ((tl1, (hd2, hd1) : s1), (tl2, s2))
-                    | isVar hd2 -> st ((tl1, s1), (tl2, (hd1, hd2) : s2))
-                    | otherwise -> st ((arguOfTerm hd1 ++ tl1, s1),
-                                       (arguOfTerm hd2 ++ tl2, s2))
-                  _ -> (s1, s2)
-        quant f = mkForall (varDeclOfF f) f
-        overlap_query = map (quant . simplifyFormula id . overlapQuery . subst)
-          olPairs
+getOverlapQuery :: (FormExtension f, TermExtension f, Ord f) => Sign f e
+  -> [[FORMULA f]] -> [FORMULA f]
+getOverlapQuery sig = filter (not . is_True_atom)
+  . mapMaybe (retrySubstForm sig) . concatMap pairs
+
+convert2Forms :: (TermExtension f, FormExtension f, Ord f) => Sign f e
+  -> FORMULA f -> FORMULA f
+  -> Result ((Subst f, [FORMULA f]), (Subst f, [FORMULA f]))
+  -> (FORMULA f, FORMULA f, ((Subst f, [FORMULA f]), (Subst f, [FORMULA f])))
+convert2Forms sig f1 f2 (Result ds m) =
+  if null ds then let Just r = m in (f1, f2, r) else let
+  (f3, c) = alphaConvert 1 id f1
+  f4 = convertFormula c id f2
+  Result _ (Just p) = getSubstForm sig f3 f4
+  in (f3, f4, p)
+
+retrySubstForm :: (FormExtension f, TermExtension f, Ord f) => Sign f e
+  -> (FORMULA f, FORMULA f) -> Maybe (FORMULA f)
+retrySubstForm sig (f1, f2) =
+  let r@(Result ds m) = getSubstForm sig f1 f2
+  in case m of
+       Nothing -> Nothing
+       Just s -> if null ds then Just $ mkOverlapEq sig s f1 f2
+         else let (f3, f4, s2) = convert2Forms sig f1 f2 r
+              in Just . stripQuant sig . convertFormula 1 id
+                     $ mkOverlapEq sig s2 f3 f4
+
+quant :: TermExtension f => Sign f e -> FORMULA f -> FORMULA f
+quant sig f = quantFreeVars sig f nullRange
+
+mkOverlapEq :: (TermExtension f, GetRange f, Ord f) => Sign f e
+  -> ((Subst f, [FORMULA f]), (Subst f, [FORMULA f]))
+  -> FORMULA f -> FORMULA f -> FORMULA f
+mkOverlapEq sig ((s1, fs1), (s2, fs2)) f1 f2 = quant sig . simplifyFormula id
+     . mkImpl (conjunct $ map (replaceVarsF s1 id) fs2
+               ++ map (replaceVarsF s2 id) fs1)
+     . overlapQuery (replaceVarsF s1 id $ stripAllQuant f1)
+     . replaceVarsF s2 id $ stripAllQuant f2
+
 {-
   check if leading symbols are new (not in the image of morphism),
         if not, return it as proof obligation
 -}
-getDefsForOld :: GetRange f => Morphism f e m -> [Named (FORMULA f)]
+getDefsForOld :: GetRange f => Sign f e -> [FORMULA f]
   -> [FORMULA f]
-getDefsForOld m fsn = let
-        sig = imageOfMorphism m
+getDefsForOld sig axioms = let
         oldOpMap = opMap sig
         oldPredMap = predMap sig
-        axioms = getAxioms fsn
-    in foldr (\ f -> case leadingSym f of
+    in filter (\ f -> case leadingSym f of
          Just (Left (Qual_op_name ident ot _))
-           | MapSet.member ident (toOpType ot) oldOpMap -> (f :)
+           | MapSet.member ident (toOpType ot) oldOpMap -> True
          Just (Right (Qual_pred_name ident pt _))
-           | MapSet.member ident (toPredType pt) oldPredMap -> (f :)
-         _ -> id) [] axioms
+           | MapSet.member ident (toPredType pt) oldPredMap -> True
+         _ -> False) axioms
 
-{- | newly introduced sorts
-(the input signature is the domain of the inclusion morphism) -}
-getNSorts :: Sign f e -> Morphism f e m -> Set.Set SORT
-getNSorts osig m = on Set.difference sortSet (mtarget m) osig
-
--- | all only generated sorts
-getNotFreeSorts :: Set.Set SORT -> [Named (FORMULA f)] -> Set.Set SORT
-getNotFreeSorts nSorts fsn = Set.intersection nSorts
-    $ Set.difference (getGenSorts fsn) freeSorts where
-        freeSorts = foldr (\ f -> case sentence f of
-          Sort_gen_ax csts True -> Set.union . Set.fromList $ map newSort csts
-          _ -> id) Set.empty fsn
-
-getGenSorts :: [Named (FORMULA f)] -> Set.Set SORT
-getGenSorts = fst . recoverSortsAndConstructors []
+isFreeSortGen :: FORMULA f -> Bool
+isFreeSortGen f = case f of
+  Sort_gen_ax _ True -> True
+  _ -> False
 
 -- | non-inhabited non-empty sorts
-getNefsorts :: (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
-    -> Set.Set SORT -> [Named (FORMULA f)] -> Set.Set SORT
-getNefsorts (osig, osens) m nSorts fsn =
+getNefsorts :: Set.Set SORT -> Set.Set SORT -> Set.Set SORT
+  -> (Set.Set SORT, [OP_SYMB]) -> Set.Set SORT
+getNefsorts oldSorts nSorts esorts (srts, cons) =
   Set.difference fsorts $ inhabited oldSorts cons where
-    oldSorts = sortSet osig
-    esorts = emptySortSet $ mtarget m
-    (srts, cons) = recoverSortsAndConstructors osens fsn
     fsorts = Set.difference (Set.intersection nSorts srts) esorts
 
-getDataStatus :: GetRange f
-  => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
-  -> [Named (FORMULA f)] -> Conservativity
-getDataStatus (osig, osens) m fsn = dataStatus where
-        tsig = mtarget m
-        subs = Rel.keysSet . Rel.rmNullSets $ sortRel tsig
-        nSorts = getNSorts osig m
-        gens = Set.intersection nSorts . fst
-          $ recoverSortsAndConstructors osens fsn
-        dataStatus
-          | Set.null nSorts = Def
-          | not $ Set.null $ Set.difference (Set.difference nSorts gens) subs
-              = Cons
-          | otherwise = Mono
+getDataStatus :: Set.Set SORT -> Set.Set SORT -> Set.Set SORT -> Conservativity
+getDataStatus nSorts defSubs genSorts
+  | Set.null nSorts = Def
+  | Set.null $ Set.difference nSorts $ Set.union genSorts defSubs = Mono
+  | otherwise = Cons
 
-getOpsPredsAndExAxioms :: GetRange f
-  => Morphism f e m -> [Named (FORMULA f)] -> [FORMULA f]
-getOpsPredsAndExAxioms m fsn = getDefsForOld m fsn ++ getExAxioms fsn
-
-getConStatus :: (GetRange f, Ord f)
-  => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
-  -> [Named (FORMULA f)] -> Conservativity
-getConStatus oTh m fsn = min dataStatus defStatus where
-  dataStatus = getDataStatus oTh m fsn
-  defStatus = if null $ getOpsPredsAndExAxioms m fsn
-    then Def else Cons
-
-getObligations :: (GetRange f, Ord f)
-  => Morphism f e m -> [Named (FORMULA f)] -> [FORMULA f]
-getObligations m fsn = getOpsPredsAndExAxioms m fsn
-  ++ getInfoSubsort m fsn ++ getOverlapQuery (mtarget m) fsn
+getConStatus :: Conservativity -> [FORMULA f] -> Conservativity
+getConStatus dataStatus fs = min dataStatus $ if null fs then Def else Cons
 
 -- | check whether it is the domain of a partial function
 isDomain :: FORMULA f -> Bool
-isDomain f = case quanti f of
-  Relation (Definedness _ _) Equivalence f' _ -> not (containDef f')
-  Definedness _ _ -> True
-  _ -> False
-
-isDomainDef :: FORMULA f -> Bool
-isDomainDef f = isJust (domainDef f) && isDomain f
-
-domainDef :: FORMULA f -> Maybe (TERM f, FORMULA f)
-domainDef f = case quanti f of
-  Relation (Definedness t _) Equivalence f' _ -> Just (t, f')
-  _ -> Nothing
-
--- | extract the domain-list of partial functions
-domainList :: [FORMULA f] -> [(TERM f, FORMULA f)]
-domainList = mapMaybe domainDef
+isDomain = isJust . domainDef
 
 -- | check whether it contains a definedness formula in correct form
 correctDef :: FORMULA f -> Bool
-correctDef f = case quanti f of
+correctDef f = case stripAllQuant f of
   Relation (Definedness _ _) c _ _ | c /= Equivalence -> True
   Negation (Definedness _ _) _ -> True
   Definedness _ _ -> True
   _ -> False
 
+showForm :: (TermExtension f, FormExtension f) => Sign f e -> FORMULA f
+  -> String
+showForm s = flip showDoc "" . simplifyCASLSen s
+
 -- check the definitional form of the partial axioms
 checkDefinitional :: (FormExtension f, TermExtension f)
-  => Sign f e -> [Named (FORMULA f)]
-  -> Maybe (Result (Conservativity, [FORMULA f]))
-checkDefinitional tsig fsn = let
-       formatAxiom = flip showDoc "" . simplifyCASLSen tsig
+  => Sign f e -> [FORMULA f] -> Maybe (Result (Conservativity, [FORMULA f]))
+checkDefinitional tsig fs = let
+       formatAxiom = showForm tsig
        (noLSyms, withLSyms) = partition (isNothing . fst . snd)
-         $ map (\ a -> (a, leadingSymPos a)) $ getAxioms fsn
+         $ map (\ a -> (a, leadingSymPos a)) fs
        partialLSyms = foldr (\ (a, (ma, _)) -> case ma of
          Just (Left (Application t@(Qual_op_name _ (Op_type k _ _ _) _) _ _))
            | k == Partial -> ((a, t) :)
          _ -> id) [] withLSyms
-       (domainDefs, otherPartials) = partition (isDomainDef . fst) partialLSyms
+       (domainDefs, otherPartials) = partition (isDomain . fst) partialLSyms
        (withDefs, withOutDefs) = partition (containDef . fst) otherPartials
        (correctDefs, wrongDefs) = partition (correctDef . fst) withDefs
-       grDomainDefs = groupBy (on (==) snd) $ sortBy (on compare snd) domainDefs
+       grDomainDefs = Rel.partList (on (sameOpSymbs tsig) snd) domainDefs
        (multDomainDefs, oneDomainDefs) = partition (\ l -> case l of
           [_] -> False
           _ -> True) grDomainDefs
@@ -237,9 +196,9 @@ checkDefinitional tsig fsn = let
          Just (ta, _) | all isVar $ arguOfTerm ta -> False
          _ -> True) singleDomainDefs
        domainObls = concatMap (\ (da, dt) -> map (\ (de, _) -> (da, de))
-           $ filter ((== dt) . snd) correctDefs) singleDomainDefs
+           $ filter (sameOpSymbs tsig dt . snd) correctDefs) singleDomainDefs
        nonEqDoms = filter (\ (da, de) ->
-         case (domainDef da, quanti de) of
+         case (domainDef da, stripAllQuant de) of
            (Just (ta, _), Relation (Definedness te _) c _ _)
              | c /= Equivalence && sameOpsApp tsig ta te ->
              case leadingTermPredication de of
@@ -251,24 +210,27 @@ checkDefinitional tsig fsn = let
        wrongWithoutDefs = filter ((`Set.notMember` defOpSymbs) . snd)
          withOutDefs
        ds = map (\ (a, (_, pos)) -> Diag
-         Warning ("missing leading symbol in:\n" ++ formatAxiom a) pos) noLSyms
+         Warning ("missing leading symbol in:\n  " ++ formatAxiom a) pos)
+           noLSyms
          ++ map (\ (a, t) -> Diag
-         Warning ("definedness is not definitional:\n" ++ formatAxiom a)
+         Warning ("definedness is not definitional:\n  " ++ formatAxiom a)
                 $ getRange t) wrongDefs
          ++ map (\ l@((_, t) : _) -> Diag Warning (unlines $
-             ("multiple definedness definitions for: " ++ showDoc t "")
-             : map (formatAxiom . fst) l) $ getRange t) multDomainDefs
+             ("multiple domain axioms for: " ++ showDoc t "")
+             : map (("  " ++) . formatAxiom . fst) l) $ getRange t)
+           multDomainDefs
          ++ map (\ (a, t) -> Diag
          Warning ("missing definedness condition for partial '"
-                      ++ showDoc t "' in\n" ++ formatAxiom a)
+                      ++ showDoc t "' in:\n  " ++ formatAxiom a)
              $ getRange t) wrongWithoutDefs
          ++ map (\ (da, _) -> Diag
-         Warning ("non-complete domain axiom: " ++ formatAxiom da)
+         Warning ("non-complete domain axiom:\n  " ++ formatAxiom da)
              $ getRange da) nonCompleteDomainDefs
-         ++ map (\ (_, de) -> Diag
-         Warning ("unexpected domain condition for partial definition: "
-                  ++ formatAxiom de)
-             $ getRange de) nonEqDoms
+         ++ map (\ (da, de) -> Diag
+         Warning ("unexpected definedness condition:\n  "
+                  ++ formatAxiom de
+                  ++ "\nin the presence of domain axiom:\n  "
+                  ++ formatAxiom da) $ getRange de) nonEqDoms
        in if null ds then Nothing else Just $ Result ds Nothing
 
 {-
@@ -292,14 +254,12 @@ checkDefinitional tsig fsn = let
                                  Implication   Predication    Equivalence
   if there are axioms not being of this form, output "don't know"
 -}
-checkSort :: (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
-    -> [Named (FORMULA f)]
-    -> Maybe (Result (Conservativity, [FORMULA f]))
-checkSort oTh@(osig, _) m fsn
-    | null fsn && Set.null nSorts =
-        let sSig = imageOfMorphism m
-            tSig = mtarget m
-            cond = MapSet.null (diffOpMapSet (opMap tSig) $ opMap sSig)
+checkSort :: Bool -> Set.Set SORT -> Set.Set SORT -> Set.Set SORT
+  -> Set.Set SORT -> Set.Set SORT -> Sign f e -> Sign f e
+  -> Maybe (Result (Conservativity, [FORMULA f]))
+checkSort noSentence nSorts defSubsorts gSorts fSorts nefsorts sSig tSig
+    | noSentence && Set.null nSorts =
+        let cond = MapSet.null (diffOpMapSet (opMap tSig) $ opMap sSig)
               && MapSet.null (diffMapSet (predMap tSig) $ predMap sSig)
         in Just $ justHint (if cond then Def else Cons, [])
         $ (if cond then "neither symbols"
@@ -307,25 +267,23 @@ checkSort oTh@(osig, _) m fsn
     | not $ Set.null notFreeSorts =
         mkUnknown "some types are not freely generated" notFreeSorts
     | not $ Set.null nefsorts = mkWarn "some sorts are not inhabited"
-        nefsorts (Inconsistent, [])
-    | not $ Set.null genNotNew = mkUnknown "some free types are not new"
+        nefsorts $ Just (Inconsistent, [])
+    | not $ Set.null genNotNew = mkUnknown "some defined sorts are not new"
         genNotNew
     | otherwise = Nothing
     where
-        nSorts = getNSorts osig m
-        notFreeSorts = getNotFreeSorts nSorts fsn
-        nefsorts = getNefsorts oTh m nSorts fsn
-        genNotNew = Set.difference (getGenSorts fsn) nSorts
-        mkWarn s i r = Just $ Result [mkDiag Warning s i] $ Just r
-        mkUnknown s i = mkWarn s i (Unknown s, [])
+        notFreeSorts = Set.intersection nSorts
+          $ Set.difference gSorts fSorts
+        genNotNew = Set.difference
+          (Set.unions [defSubsorts, gSorts, fSorts]) nSorts
+        mkWarn s i r = Just $ Result [mkDiag Warning s i] r
+        mkUnknown s i = mkWarn s i Nothing
 
 checkLeadingTerms :: (FormExtension f, TermExtension f, Ord f)
-  => [Named (FORMULA f)] -> Morphism f e m -> [Named (FORMULA f)]
+  => Sign f e -> [FORMULA f] -> [OP_SYMB]
   -> Maybe (Result (Conservativity, [FORMULA f]))
-checkLeadingTerms osens m fsn = let
-    tsig = mtarget m
-    constructors = snd $ recoverSortsAndConstructors osens fsn
-    ltp = mapMaybe leadingTermPredication $ getAxioms fsn
+checkLeadingTerms tsig fsn constructors = let
+    ltp = mapMaybe leadingTermPredication fsn
     formatTerm = flip showDoc "" . simplifyCASLTerm tsig
     args = foldr (\ ei -> case ei of
       Left (Application os ts qs) ->
@@ -348,51 +306,58 @@ checkLeadingTerms osens m fsn = let
 
 -- check the sufficient completeness
 checkIncomplete :: (FormExtension f, TermExtension f, Ord f)
-  => [Named (FORMULA f)] -> Morphism f e m
-  -> [Named (FORMULA f)]
+  => Sign f e -> [FORMULA f] -> [OP_SYMB] -> [[FORMULA f]] -> [OP_SYMB]
   -> Maybe (Result (Conservativity, [FORMULA f]))
-checkIncomplete osens m fsn = case getNotComplete osens m fsn of
+checkIncomplete sig obligations doms fsn cons =
+  case getNotComplete sig doms fsn cons of
   [] -> Nothing
-  incomplete -> let obligations = getObligations m fsn in Just $ Result
-      (map (\ (ds, fs@(hd : _)) -> let
+  incomplete -> let
+    formatAxiom = showForm sig
+    in Just $ Result
+      (map (\ (Result ds mfs, fs@(hd : _)) -> let
         (lSym, pos) = leadingSymPos hd
         sname = case fmap extractLeadingSymb lSym of
                       Just (Left opS) -> opSymbName opS
                       Just (Right pS) -> predSymbName pS
                       _ -> error "CASL.CCC.FreeTypes.<Symb_Name>"
         in Diag Warning (intercalate "\n" $
-             ("the definition of " ++ show sname ++ " is not complete")
+             ("the definition of " ++ show sname
+              ++ (if null ds then " may not be" else " is not") ++ " complete")
              : "the defining formula group is:"
              : map (\ (f, n) -> "  " ++ shows n ". "
-                    ++ showDoc (simplifyCASLSen (mtarget m) f) "") (number fs)
-             ++ map diagString ds) pos)
+                    ++ formatAxiom f) (number fs)
+             ++ map diagString ds
+             ++ maybe []
+                 (map (\ (p, f) -> "possibly incomplete pattern for: " ++ p
+                   ++ "\n  with completeness condition: "
+                   ++ formatAxiom f)) mfs
+             ) pos)
        incomplete) $ Just (Cons, obligations)
 
-checkTerminal :: (FormExtension f, GetRange f, Ord f)
-  => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m -> [Named (FORMULA f)]
-  -> IO (Maybe (Result (Conservativity, [FORMULA f])))
-checkTerminal oTh m fsn = do
-    let fs = getFs fsn
-        fs_terminalProof = filter (\ f ->
-          not $ isSortGen f || isMembership f || isExQuanti f || isDomain f
-          ) fs
-        domains = domainList fs
-        obligations = getObligations m fsn
-        conStatus = getConStatus oTh m fsn
-        res = if null obligations then Nothing else
-                  Just $ return (conStatus, obligations)
-    (proof, str) <- terminationProof (mtarget m) fs_terminalProof domains
+renameVars :: Int -> [FORMULA f] -> (Int, [FORMULA f])
+renameVars c = foldr (\ f (c1, l) ->
+   let (f2, c2) = alphaConvert c1 id f in
+   (c2, f2 : l)) (c, [])
+
+checkTerminal :: (FormExtension f, TermExtension f, Ord f)
+  => Sign f e -> Conservativity -> [FORMULA f] -> [FORMULA f] -> [FORMULA f]
+  -> IO (Result (Conservativity, [FORMULA f]))
+checkTerminal sig conStatus obligations doms fsn =
+    if null fsn then return $ justHint (conStatus, obligations)
+      "no defining sentences"
+    else do
+    let (c, domains) = renameVars 1 doms
+        fs_terminalProof = snd $ renameVars c fsn
+    (proof, str) <- terminationProof sig fs_terminalProof domains
     return $ case proof of
-        Just True -> res
-        _ -> Just $ warning (Cons, obligations)
+        Just True -> justHint (conStatus, obligations) "termination succeeded"
+        _ -> warning (Cons, obligations)
              (if isJust proof then "not terminating"
               else "cannot prove termination: " ++ str) nullRange
 
-checkPositive :: [Named (FORMULA f)] -> [Named (FORMULA f)] -> Bool
-checkPositive osens fsn = all checkPos $ map sentence $ osens ++ fsn
-
 checkPos :: FORMULA f -> Bool
-checkPos f = case quanti f of
+checkPos f = case f of
+      Quantification _ _ f' _ -> checkPos f'
       Junction _ cs _ -> all checkPos cs
       Relation i1 c i2 _ -> let
         c1 = checkPos i1
@@ -401,10 +366,22 @@ checkPos f = case quanti f of
       Negation n _ -> not $ checkPos n
       Atom b _ -> b
       Predication {} -> True
+      Membership {} -> True
       Definedness {} -> True
       Equation {} -> True
-      Sort_gen_ax {} -> True -- ignore
+      Sort_gen_ax cs _ -> case cs of
+        [c] -> case opSymbs c of
+          [_] -> True
+            {- just a single constructor creates a unique value
+            even for multiple one-point components -}
+          _ -> False
+        _ -> False
       _ -> False
+
+partitionMaybe :: (a -> Maybe b) -> [a] -> ([b], [a])
+partitionMaybe f = foldr (\ a (bs, as) ->
+  maybe (bs, a : as) (\ b -> (b : bs, as)) $ f a) ([], [])
+
 
 {- -----------------------------------------------------------------------
    function checkFreeType:
@@ -438,28 +415,66 @@ free datatypes and recursive equations are consistent -}
 checkFreeType :: (FormExtension f, TermExtension f, Ord f)
   => (Sign f e, [Named (FORMULA f)]) -> Morphism f e m
   -> [Named (FORMULA f)] -> IO (Result (Conservativity, [FORMULA f]))
-checkFreeType oTh@(_, osens) m axs = do
-  ms <- mapM ($ axs)
-    [ return . checkDefinitional (mtarget m)
-    , return . checkSort oTh m
-    , return . checkLeadingTerms osens m
-    , return . checkIncomplete osens m
-    , checkTerminal oTh m ]
-  return $ case catMaybes ms of
-    [] -> return (getConStatus oTh m axs, [])
-    a : _ -> case a of
-      Result _ Nothing -> if checkPositive osens axs then
-        justHint (Cons, []) "theory is positive!"
-        else a
-      _ -> a
+checkFreeType (_, osens) m axs = do
+  let sig = mtarget m
+      sSig = imageOfMorphism m
+      fs = getFs axs -- strip labels and generated sentences
+      (exQuants, fs2) = partition isExQuanti fs
+      (memShips, fs3) = partition isMembership fs2
+      (sortGens1, axioms) = partition isSortGen fs3
+      (freeSortGens, sortGens) = partition isFreeSortGen sortGens1
+      (domains, axLessDoms) = partition isDomain axioms
+      (genSorts1, cons1) =
+        recoverSortsAndConstructors $ getFs osens
+      (freeSorts, cons2) =
+        recoverSortsAndConstructors freeSortGens
+      (genSorts2, cons3) =
+        recoverSortsAndConstructors sortGens
+      sortCons@(genSorts, cons) =
+        (Set.unions
+         [freeSorts, genSorts2, Set.map (mapSort $ sort_map m) genSorts1]
+        , Set.toList $ Set.unions [cons2, cons3, Set.map (mapOpSymb m) cons1])
+      oldSorts = sortSet sSig
+      newSorts = Set.difference (sortSet sig) oldSorts
+      emptySorts = emptySortSet sig
+      nonInhabitedSorts = getNefsorts oldSorts newSorts emptySorts sortCons
+      (subsortDefns, memShips2) = partitionMaybe isSubsortDef memShips
+      defSubsorts = Set.fromList $ map (\ (s, _, _) -> s) subsortDefns
+      dataStatus = getDataStatus newSorts defSubsorts genSorts
+      defsForOld = getDefsForOld sSig axioms
+      opsPredsAndExAxioms = defsForOld ++ exQuants ++ memShips2
+      conStatus = getConStatus dataStatus opsPredsAndExAxioms
+      memObl = infoSubsorts emptySorts subsortDefns
+      axGroup = groupAxioms sig axLessDoms
+      overLaps = getOverlapQuery sig axGroup
+      obligations = opsPredsAndExAxioms ++ memObl ++ overLaps
+      domSyms = lefts $ mapMaybe leadingSym domains
+      ms =
+        [ checkDefinitional sig axioms
+        , checkSort (null axs) newSorts defSubsorts genSorts2 freeSorts
+            nonInhabitedSorts sSig sig
+        , checkLeadingTerms sig axioms cons
+        , checkIncomplete sig obligations domSyms axGroup cons ]
+  r <- case catMaybes ms of
+    [] -> checkTerminal sig conStatus obligations domains axLessDoms
+    a : _ -> return a
+  return $ case r of
+    Result ds Nothing ->
+      case filter (not . checkPos . sentence) $ axs ++ osens of
+        [] -> justHint (Cons, []) "theory is positive!"
+        l -> let
+          ps = map (\ f -> Diag Hint ("formula is not positive:\n  "
+            ++ show (printTheoryFormula $ mapNamed (simplifyCASLSen sig) f))
+            $ getRange f) $ take 2 l
+          in Result (ps ++ ds) Nothing
+    _ -> r
 
 {- | group the axioms according to their leading symbol,
 output Nothing if there is some axiom in incorrect form -}
 groupAxioms :: GetRange f => Sign f e -> [FORMULA f] -> [[FORMULA f]]
 groupAxioms sig phis = map (map snd)
    $ Rel.partList (\ (e1, _) (e2, _) -> case (e1, e2) of
-       (Left (Qual_op_name o1 t1 _), Left (Qual_op_name o2 t2 _)) ->
-           o1 == o2 && on (leqF sig) toOpType t1 t2
+       (Left o1, Left o2) -> sameOpSymbs sig o1 o2
        (Right (Qual_pred_name p1 t1 _), Right (Qual_pred_name p2 t2 _)) ->
            p1 == p2 && on (leqP sig) toPredType t1 t2
        _ -> False)
@@ -479,10 +494,7 @@ checkTerms sig cons = concatMap checkT
 {- | check whether the operation symbol is a constructor
 (or a related overloaded variant). -}
 isCons :: Sign f e -> [OP_SYMB] -> OP_SYMB -> Bool
-isCons s cons os = any (is_Cons os) cons
-    where is_Cons (Qual_op_name on1 ot1 _) (Qual_op_name on2 ot2 _) =
-            on1 == on2 && on (leqF s) toOpType ot1 ot2
-          is_Cons _ _ = False
+isCons sig cons os = any (sameOpSymbs sig os) cons
 
 -- | create all possible pairs from a list
 pairs :: [a] -> [(a, a)]
@@ -490,59 +502,9 @@ pairs ps = case ps of
   hd : tl@(_ : _) -> map (\ x -> (hd, x)) tl ++ pairs tl
   _ -> []
 
--- | get the patterns of a axiom
-patternsOfAxiom :: FORMULA f -> [TERM f]
-patternsOfAxiom = snd . topIdOfAxiom
-
-topIdOfAxiom :: FORMULA f -> ((Id, Int), [TERM f])
-topIdOfAxiom f = case quanti f of
-    Negation f' _ -> topIdOfAxiom f'
-    Relation _ c f' _ | c /= Equivalence -> topIdOfAxiom f'
-    Relation f' Equivalence _ _ -> topIdOfAxiom f'
-    Predication p ts _ -> ((predSymbName p, length ts), ts)
-    Equation t _ _ _ -> topIdOfTerm t
-    Definedness t _ -> topIdOfTerm t
-    _ -> nullId
-
--- | check whether two patterns are overlapped
-checkPatterns :: Eq f => Sign f e -> ([TERM f], [TERM f]) -> Bool
-checkPatterns sig (ps1, ps2) = case (ps1, ps2) of
-  (hd1 : tl1, hd2 : tl2) ->
-      if isVar hd1 || isVar hd2 then checkPatterns sig (tl1, tl2)
-      else sameOpsApp sig hd1 hd2 && checkPatterns sig
-               (arguOfTerm hd1 ++ tl1, arguOfTerm hd2 ++ tl2)
-  _ -> True
-
-{- | get the axiom from left hand side of a implication,
-if there is no implication, then return atomic formula true -}
-conditionAxiom :: FORMULA f -> FORMULA f
-conditionAxiom f = case quanti f of
-                     Relation f' c _ _ | c /= Equivalence -> f'
-                     _ -> trueForm
-
-{- | get the axiom from right hand side of a equivalence,
-if there is no equivalence, then return atomic formula true -}
-resultAxiom :: FORMULA f -> FORMULA f
-resultAxiom f = case quanti f of
-                  Relation _ c f' _ | c /= Equivalence -> resultAxiom f'
-                  Relation _ Equivalence f' _ -> f'
-                  _ -> trueForm
-
-{- | get the term from right hand side of a equation in a formula,
-if there is no equation, then return a simple id -}
-resultTerm :: FORMULA f -> TERM f
-resultTerm f = case quanti f of
-                 Relation _ c f' _ | c /= Equivalence -> resultTerm f'
-                 Negation (Definedness _ _) _ ->
-                   varOrConst (mkSimpleId "undefined")
-                 Equation _ _ t _ -> t
-                 _ -> varOrConst (mkSimpleId "unknown")
-
 -- | create the proof obligation for a pair of overlapped formulas
-overlapQuery :: (GetRange f, Eq f)
-  => ((FORMULA f, [(TERM f, TERM f)]), (FORMULA f, [(TERM f, TERM f)]))
-    -> FORMULA f
-overlapQuery ((a1, s1), (a2, s2)) =
+overlapQuery :: GetRange f => FORMULA f -> FORMULA f -> FORMULA f
+overlapQuery a1 a2 =
         case leadingSym a1 of
           Just (Left _)
             | containNeg a1 && not (containNeg a2) ->
@@ -567,44 +529,30 @@ overlapQuery ((a1, s1), (a2, s2)) =
                 mkImpl (conjunct [con1, con2])
                             (conjunct [resA1, resA2])
           _ -> error "CASL.CCC.FreeTypes.<overlapQuery>"
-      where [c1, c2] = map conditionAxiom [a1, a2]
-            [t1, t2] = map resultTerm [a1, a2]
-            [r1, r2] = map resultAxiom [a1, a2]
-            con1 = substiF s1 c1
-            con2 = substiF s2 c2
-            resT1 = substitute s1 t1
-            resT2 = substitute s2 t2
-            resA1 = substiF s1 r1
-            resA2 = substiF s2 r2
+      where [con1, con2] = map conditionAxiom [a1, a2]
+            [resT1, resT2] = map resultTerm [a1, a2]
+            [resA1, resA2] = map resultAxiom [a1, a2]
 
-
-getNotComplete :: (GetRange f, FormExtension f, TermExtension f)
-  => [Named (FORMULA f)] -> Morphism f e m -> [Named (FORMULA f)]
-  -> [([Diagnosis], [FORMULA f])]
-getNotComplete osens m fsn =
-  let constructors = snd $ recoverSortsAndConstructors osens fsn
-      consMap = foldr (\ (Qual_op_name o ot _) ->
+getNotComplete :: (Ord f, FormExtension f, TermExtension f)
+  => Sign f e -> [OP_SYMB] -> [[FORMULA f]] -> [OP_SYMB]
+  -> [(Result [(String, FORMULA f)], [FORMULA f])]
+getNotComplete sig doms fsn constructors =
+  let consMap = foldr (\ (Qual_op_name o ot _) ->
         MapSet.insert (res_OP_TYPE ot) (o, ot)) MapSet.empty constructors
       consMap2 = foldr (\ (Qual_op_name o ot _) ->
         MapSet.insert o ot) MapSet.empty constructors
-      sig = mtarget m
   in
-  filter (not . null . fst)
+  filter (\ (Result ds mfs, _) -> not (null ds)
+      || maybe False (not . null) mfs)
   $ map (\ g ->
-         (diags $ let l = map topIdOfAxiom g in
+         (let l = map topIdOfAxiom g in
                   case Set.toList . Set.fromList $ map fst l of
-                    [(p, i)] -> completePatterns sig consMap consMap2
-                      ([(showId p "", i)], map snd l)
-                    l2 -> fail $ "wrongly grouped leading terms "
+                    [(p, i)] -> completePatterns sig doms consMap consMap2
+                      ([(showId p "", i)]
+                      , zip g $ map snd l)
+                    l2 -> Fail.fail $ "wrongly grouped leading terms "
                       ++ show l2
-         , g)) $ getAxGroup sig fsn
-
-varToPat :: TERM f -> TERM f
-varToPat t = case t of
-  Sorted_term t' _ _ -> varToPat t'
-  Cast t' _ _ -> varToPat t'
-  Qual_var _ s r -> Qual_var (mkSimpleId "_") s r
-  _ -> t
+         , g)) fsn
 
 type LeadArgs = [(String, Int)]
 
@@ -626,60 +574,102 @@ showLeadingArgs :: String -> LeadArgs -> String
 showLeadingArgs p l = let (_, r, _) = getNextArg True p $ reverse l in r
 
 -- | check whether the patterns of a function or predicate are complete
-completePatterns :: (FormExtension f, TermExtension f) => Sign f e
-  -> MapSet.MapSet SORT (OP_NAME, OP_TYPE)
-  -> MapSet.MapSet OP_NAME OP_TYPE -> (LeadArgs, [[TERM f]])
-  -> Result ()
-completePatterns tsig consMap consMap2 (leadingArgs, pas)
-    | all null pas = return ()
-    | any null pas = fail "wrongly grouped leading terms"
-    | otherwise = let
-          pa_group allCons = let
-              p_g c@(_, l) p = (c : leadingArgs, map (\ (h : t) ->
-                if isVar h
-                then replicate l (varToPat h) ++ t
-                else arguOfTerm h ++ t) p)
-              in map (\ (c, ct) -> p_g (showId c "", length $ args_OP_TYPE ct)
-                     $ filter (\ (h : _) -> case unsortedTerm h of
-                           Application (Qual_op_name o ot _) _ _ ->
-                             c == o && on (leqF tsig) toOpType ct ot
-                           _ -> True) pas)
-                 $ Set.toList allCons
-          (hds, tls) = unzip $ map (\ (hd : tl) -> (hd, tl)) pas
-          consAppls@(_ : _) = mapMaybe (\ t -> case unsortedTerm t of
-            Application (Qual_op_name o ot _) _ _ ->
-                Just (o, Set.filter (on (leqF tsig) toOpType ot)
-                   $ MapSet.lookup o consMap2)
-            _ -> Nothing) hds
-          consSrt = foldr1 Set.intersection $ map (Set.map res_OP_TYPE . snd)
-            consAppls
-         in if all isVar hds
-            then completePatterns tsig consMap consMap2
-                     (("_", 0) : leadingArgs, tls)
-            else case Set.toList consSrt of
-                  [] -> fail $
+completePatterns :: (Ord f, FormExtension f, TermExtension f) => Sign f e
+  -> [OP_SYMB] -> MapSet.MapSet SORT (OP_NAME, OP_TYPE)
+  -> MapSet.MapSet OP_NAME OP_TYPE
+  -> (LeadArgs, [(FORMULA f, [TERM f])])
+  -> Result [(String, FORMULA f)]
+completePatterns tsig doms consMap consMap2 (leadingArgs, pas)
+    | all (null . snd) pas =
+       let fs = checkExhaustive tsig doms $ map fst pas
+       in return $ map (\ f -> (showLeadingArgs "" leadingArgs, f)) fs
+    | any (null . snd) pas = Fail.fail "wrongly grouped leading terms"
+    | otherwise = let hds = map (\ (f, hd : _) -> (f, hd)) pas in
+            if all (isVar . snd) hds
+            then let
+              tls = map (\ (f, _ : tl) -> (f, tl)) pas
+              in completePatterns tsig doms consMap consMap2
+                      (("_", 0) : leadingArgs, tls)
+            else let
+              consAppls@(_ : _) = mapMaybe (\ (f, t) -> case unsortedTerm t of
+                Application (Qual_op_name o ot _) _ _ ->
+                  Just (f, o, Set.filter (sameOpTypes tsig ot)
+                    $ MapSet.lookup o consMap2)
+                _ -> Nothing) hds
+              consSrt = foldr1 Set.intersection
+                $ map (\ (_, _, os) -> Set.map res_OP_TYPE os) consAppls
+              in case filter (not . Set.null . (`MapSet.lookup` consMap))
+                     $ Set.toList consSrt of
+                  [] -> Fail.fail $
                     "no common result type for constructors found: "
-                       ++ showDoc consAppls ""
+                       ++ showDoc (map snd hds) ""
                   cSrt : _ -> do
                     let allCons = MapSet.lookup cSrt consMap
-                        conpats = Set.fromList
-                          $ concatMap (\ (o, cs)
-                                       -> map (\ s -> (o, s)) $ Set.toList cs)
-                          consAppls
-                        missCons = Set.toList $ Set.difference allCons conpats
-                    when (Set.null allCons) . fail
+                    when (Set.null allCons) . Fail.fail
                       $ "no constructors for result type found: " ++ show cSrt
-                    unless (null missCons || any isVar hds) . justWarn ()
-                      $ "missing pattern"
-                      ++ (if null $ tail missCons then "" else "s")
-                      ++ " for: "
-                      ++ intercalate "  \n"
-                         (map (\ (o, ot) -> showLeadingArgs
-                               (case args_OP_TYPE ot of
-                                 [] -> showId o ""
-                                 l -> showId o "("
-                                   ++ intercalate "," (map (const "_") l)
-                                   ++ ")")
-                               leadingArgs) missCons)
-                    mapM_ (completePatterns tsig consMap consMap2)
-                              (pa_group allCons)
+                    let cons_group = map (\ (c, ct) -> (c, ct,
+                          filter (\ (_, h : _) -> case unsortedTerm h of
+                            Application (Qual_op_name o ot _) _ _ ->
+                              c == o && sameOpTypes tsig ct ot
+                            _ -> False) pas)) $ Set.toList allCons
+                        vars = filter (\ (_, h : _) -> isVar h) pas
+                    ffs <- mapM (\ f -> checkConstructor leadingArgs vars f
+                        >>= completePatterns tsig doms consMap consMap2)
+                      cons_group
+                    return $ concat ffs
+
+mkVars :: [SORT] -> [TERM f]
+mkVars = zipWith (\ i -> mkVarTerm (mkSimpleId $ 'c' : show i)) [1 :: Int ..]
+
+checkConstructor :: (Ord f, FormExtension f, TermExtension f)
+  => LeadArgs -> [(FORMULA f, [TERM f])]
+  -> (Id, OP_TYPE, [(FORMULA f, [TERM f])])
+  -> Result (LeadArgs, [(FORMULA f, [TERM f])])
+checkConstructor leadingArgs vars (c, ct, es) = do
+  let args = args_OP_TYPE ct
+      nL = (showId c "", length args) : leadingArgs
+      varEqs = map (\ (f, _ : t) -> (f, mkVars args ++ t)) vars
+      pat = showLeadingArgs
+           (showId c "" ++ case args of
+             [] -> ""
+             l -> "(" ++ intercalate "," (map (const "_") l) ++ ")")
+           leadingArgs
+  case es of
+    [] -> do
+      when (null vars) $ justWarn ()
+         $ "missing pattern for: " ++ pat
+      return (nL, varEqs)
+    _ ->
+      return (nL, varEqs ++ map (\ (f, h : t) -> (f, arguOfTerm h ++ t)) es)
+
+-- | get condition axiom without matching definedness condition
+getCond :: (GetRange f, Eq f) => Sign f e -> [OP_SYMB] -> FORMULA f -> FORMULA f
+getCond sig doms f =
+  let (cs, e) = splitAxiom f
+  in conjunct $ filter (\ c -> case leadingTermPredication e of
+       l@(Just (Left (Application os _ _)))
+         | any (sameOpSymbs sig os) doms
+         -> case c of  -- pattern term must be identical
+              Definedness {} | leadingTermPredication c == l -> False
+              _ -> True
+       _ -> True) cs
+
+checkExhaustive :: (Ord f, FormExtension f, TermExtension f)
+  => Sign f e -> [OP_SYMB] -> [FORMULA f] -> [FORMULA f]
+checkExhaustive sig doms es = case es of
+  f1 : rs ->
+    let sfs = map (\ f -> (getSubstForm sig f1 f, f)) rs
+        overlap = filter (isJust . maybeResult . fst) sfs
+        simpAndQuant = quant sig . simplifyFormula id
+    in case overlap of
+       [] -> filter (not . is_True_atom)
+          (map (simpAndQuant . getCond sig doms) [f1])
+          ++ checkExhaustive sig doms rs
+       (r, f2) : rrs -> let
+          (f3, f4, ((s3, _), (s4, _))) = convert2Forms sig f1 f2 r
+          in checkExhaustive sig doms
+         $ (simpAndQuant
+         . mkImpl (disjunct [ replaceVarsF s3 id $ getCond sig doms f3
+                            , replaceVarsF s4 id $ getCond sig doms f4 ])
+           . replaceVarsF s3 id $ restAxiom f3) : map snd rrs
+  [] -> []

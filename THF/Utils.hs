@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/Utils.hs
 Description :  A couple helper functions
 Copyright   :  (c) J. von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -26,9 +26,13 @@ module THF.Utils (
  typeToUnitaryType,
  typeToBinaryType,
  toToken,
+ toId,
  RewriteFuns (..),
  rewriteSenFun,
- rewriteTHF0
+ rewriteTHF0,
+ AnaFuns (..),
+ anaSenFun,
+ anaTHF0
 ) where
 
 import THF.As
@@ -36,10 +40,11 @@ import THF.Sign
 import THF.Cons
 import THF.Print ()
 
-import Common.Id (Token (..), nullRange)
+import Common.Id (Token (..), Id, mkId, nullRange)
 import Common.AS_Annotation (Named, SenAttr (..))
 import Common.Result
 
+import Control.Applicative ()
 import Control.Monad.State
 import Control.Monad.Identity
 
@@ -48,10 +53,10 @@ import Data.Maybe (fromJust, isJust)
 
 -- taken from http://www.haskell.org/haskellwiki/New_monads/MonadUnique
 newtype UniqueT m a = UniqueT (StateT Integer m a)
-    deriving (Functor, Monad, MonadTrans, MonadIO)
+    deriving (Functor, Applicative, Monad, MonadTrans, MonadIO)
 
 newtype Unique a = Unique (UniqueT Identity a)
-    deriving (Functor, Monad, MonadUnique)
+    deriving (Functor, Applicative, Monad, MonadUnique)
 
 class Monad m => MonadUnique m where
     fresh :: m Integer
@@ -110,6 +115,9 @@ recreateSymbols (Sign tps cs _) =
 toToken :: Constant -> Token
 toToken (A_Lower_Word t) = t
 toToken (A_Single_Quoted t) = t
+
+toId :: Constant -> Id
+toId c = mkId [toToken c]
 
 thfTopLevelTypeToType :: THFTopLevelType -> Maybe Type
 thfTopLevelTypeToType tlt = case tlt of
@@ -346,7 +354,132 @@ rewriteConst' :: (RewriteFuns a, a) -> Constant -> Result THFUnitaryFormula
 rewriteConst' _ = return . TUF_THF_Atom . T0A_Constant
 
 rewriteConnTerm' :: (RewriteFuns a, a) -> THFConnTerm -> Result THFConnTerm
-rewriteConnTerm' _ c = case c of
- TCT_THF_Pair_Connective _ ->
-  mkError "THF.Utils.rewriteConnTerm: Pair Connective not in THF0!" c
- _ -> return c
+rewriteConnTerm' _ c = return c
+
+data AnaFuns a b = AnaFuns {
+ anaLogicFormula :: (AnaFuns a b, a) -> THFLogicFormula -> Result [b],
+ anaBinaryFormula :: (AnaFuns a b, a) -> THFBinaryFormula -> Result [b],
+ anaUnitaryFormula :: (AnaFuns a b, a) -> THFUnitaryFormula -> Result [b],
+ anaBinaryPair :: (AnaFuns a b, a) -> (THFUnitaryFormula,
+                       THFPairConnective, THFUnitaryFormula) -> Result [b],
+ anaBinaryTuple :: (AnaFuns a b, a) -> THFBinaryTuple -> Result [b],
+ anaQuantifiedFormula :: (AnaFuns a b, a) -> THFQuantifiedFormula -> Result [b],
+ anaAtom :: (AnaFuns a b, a) -> THFAtom -> Result [b],
+ anaVariableList :: (AnaFuns a b, a) -> [THFVariable] -> Result [b],
+ anaConst :: (AnaFuns a b, a) -> Constant -> Result [b],
+ anaConnTerm :: (AnaFuns a b, a) -> THFConnTerm -> Result [b] }
+
+anaTHF0 :: AnaFuns a b
+anaTHF0 = AnaFuns {
+ anaLogicFormula = anaLogicFormula',
+ anaBinaryFormula = anaBinaryFormula',
+ anaUnitaryFormula = anaUnitaryFormula',
+ anaBinaryPair = anaBinaryPair',
+ anaBinaryTuple = anaBinaryTuple',
+ anaQuantifiedFormula = anaQuantifiedFormula',
+ anaAtom = anaAtom',
+ anaVariableList = anaVariableList',
+ anaConst = anaConst',
+ anaConnTerm = anaConnTerm' }
+
+anaSenFun :: (AnaFuns a b, a) -> Named THFFormula -> Result [b]
+anaSenFun (fns, d) sen = case sentence sen of
+ TF_THF_Logic_Formula lf -> anaLogicFormula fns (fns, d) lf
+ T0F_THF_Typed_Const tc ->
+  mkError "THF.Utils.anaSen: Typed constants are not in THF0! " tc
+ TF_THF_Sequent s ->
+  mkError "THF.Utils.anaSen: Sequents are not in THF0!" s
+
+anaLogicFormula' :: (AnaFuns a b, a) -> THFLogicFormula -> Result [b]
+anaLogicFormula' (fns, d) lf = case lf of
+ TLF_THF_Binary_Formula bf -> anaBinaryFormula fns (fns, d) bf
+ TLF_THF_Unitary_Formula uf -> anaUnitaryFormula fns (fns, d) uf
+ TLF_THF_Type_Formula _ ->
+  mkError "THF.Utils.anaLogicFormula: Type Formula not in THF0!" lf
+ TLF_THF_Sub_Type _ ->
+  mkError "THF.Utils.anaLogicFormula: Sub Type Formula not in THF0!" lf
+
+anaBinaryFormula' :: (AnaFuns a b, a) -> THFBinaryFormula -> Result [b]
+anaBinaryFormula' (fns, d) bf = case bf of
+ TBF_THF_Binary_Type _ -> mkError
+  "THF.Utils.anaBinaryFormula: Binary Type not in THF0!" bf
+ TBF_THF_Binary_Pair uf1 cn uf2 ->
+  anaBinaryPair fns (fns, d) (uf1, cn, uf2)
+ TBF_THF_Binary_Tuple bt -> anaBinaryTuple fns (fns, d) bt
+
+anaBinaryPair' :: (AnaFuns a b, a) -> (THFUnitaryFormula,
+                       THFPairConnective, THFUnitaryFormula)
+                       -> Result [b]
+anaBinaryPair' (fns, d) (uf1, _, uf2) = do
+ l1 <- anaUnitaryFormula fns (fns, d) uf1
+ l2 <- anaUnitaryFormula fns (fns, d) uf2
+ return $ l1 ++ l2
+
+anaBinaryTuple' :: (AnaFuns a b, a) -> THFBinaryTuple -> Result [b]
+anaBinaryTuple' (fns, d) bt = case bt of
+ TBT_THF_Or_Formula ufs -> do
+  r <- mapR (anaUnitaryFormula fns (fns, d)) ufs
+  return $ concat r
+ TBT_THF_And_Formula ufs -> do
+  r <- mapR (anaUnitaryFormula fns (fns, d)) ufs
+  return $ concat r
+ TBT_THF_Apply_Formula ufs -> do
+  r <- mapR (anaUnitaryFormula fns (fns, d)) ufs
+  return $ concat r
+
+anaUnitaryFormula' :: (AnaFuns a b, a) -> THFUnitaryFormula -> Result [b]
+anaUnitaryFormula' (fns, d) uf = case uf of
+ TUF_THF_Conditional {} ->
+  mkError ("THF.Utils.anaUnitaryFOrmula: " ++
+           "Conditional not in THF0!") uf
+ TUF_THF_Quantified_Formula qf -> anaQuantifiedFormula fns (fns, d) qf
+ TUF_THF_Unary_Formula _ lf -> anaLogicFormula fns (fns, d) lf
+ TUF_THF_Atom a -> anaAtom fns (fns, d) a
+ TUF_THF_Tuple t -> do
+  r <- mapR (anaLogicFormula fns (fns, d)) t
+  return $ concat r
+ TUF_THF_Logic_Formula_Par lf -> anaLogicFormula fns (fns, d) lf
+ T0UF_THF_Abstraction vs uf' -> do
+  l1 <- anaVariableList fns (fns, d) vs
+  l2 <- anaUnitaryFormula fns (fns, d) uf'
+  return $ l1 ++ l2
+
+anaQuantifiedFormula' :: (AnaFuns a b, a) -> THFQuantifiedFormula
+                             -> Result [b]
+anaQuantifiedFormula' (fns, d) qf = case qf of
+ TQF_THF_Quantified_Formula _ vs uf -> do
+  l1 <- anaVariableList fns (fns, d) vs
+  l2 <- anaUnitaryFormula fns (fns, d) uf
+  return $ l1 ++ l2
+ T0QF_THF_Quantified_Var _ vs uf -> do
+  l1 <- anaVariableList fns (fns, d) vs
+  l2 <- anaUnitaryFormula fns (fns, d) uf
+  return $ l1 ++ l2
+ T0QF_THF_Quantified_Novar _ _ ->
+  mkError "THF.Utils.anaQuantifiedFormula: Quantified Novar not in THF0!" qf
+
+anaVariableList' :: (AnaFuns a b, a) -> [THFVariable] -> Result [b]
+anaVariableList' _ _ = return []
+
+anaAtom' :: (AnaFuns a b, a) -> THFAtom -> Result [b]
+anaAtom' (fns, d) a = case a of
+ TA_Term _ -> mkError "THF.Utils.anaAtom: Term not in THF0!" a
+ TA_THF_Conn_Term c -> anaConnTerm fns (fns, d) c
+ TA_Defined_Type _ ->
+  mkError "THF.Utils.anaAtom: Defined Type not in THF0!" a
+ TA_Defined_Plain_Formula _ ->
+  mkError "THF.Utils.anaAtom: Defined Plain Formula not in THF0!" a
+ TA_System_Type _ ->
+  mkError "THF.Utils.anaAtom: System Type not in THF0!" a
+ TA_System_Atomic_Formula _ ->
+  mkError "THF.Utils.anaAtom: System Atomic Formula not in THF0!" a
+ T0A_Constant c -> anaConst fns (fns, d) c
+ T0A_Defined_Constant _ -> return []
+ T0A_System_Constant _ -> return []
+ T0A_Variable v -> anaVariableList fns (fns, d) [TV_Variable v]
+
+anaConst' :: (AnaFuns a b, a) -> Constant -> Result [b]
+anaConst' _ _ = return []
+
+anaConnTerm' :: (AnaFuns a b, a) -> THFConnTerm -> Result [b]
+anaConnTerm' _ _ = return []

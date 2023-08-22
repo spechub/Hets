@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/InferBasic.hs
 Description :  devGraph rule that calls provers for specific logics
 Copyright   :  (c) J. Gerken, T. Mossakowski, K. Luettich, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -58,18 +58,19 @@ import Data.Graph.Inductive.Graph
 import Data.Maybe
 
 import Control.Monad.Trans
+import qualified Control.Monad.Fail as Fail
 
 selectProver :: [(G_prover, AnyComorphism)]
              -> ResultT IO (G_prover, AnyComorphism)
 selectProver ps = case ps of
-  [] -> fail "No prover available"
+  [] -> Fail.fail "No prover available"
   [p] -> return p
   _ -> do
    sel <- lift $ listBox "Choose a translation to a prover-supported logic"
      $ map (\ (aGN, cm) -> shows cm $ " (" ++ getProverName aGN ++ ")") ps
    i <- case sel of
            Just j -> return j
-           _ -> fail "Proofs.Proofs: selection"
+           _ -> Fail.fail "Proofs.Proofs: selection"
    return $ ps !! i
 
 proveTheory :: Logic lid sublogics
@@ -81,7 +82,7 @@ proveTheory :: Logic lid sublogics
            -> IO ( [ProofStatus proof_tree]
                 , [(Named sentence, ProofStatus proof_tree)])
 proveTheory _ =
-    fromMaybe (\ _ _ -> fail "proveGUI not implemented") . proveGUI
+    fromMaybe (\ _ _ -> error "proveGUI not implemented") . proveGUI
 
 
 {- | applies basic inference to a given node. The result is a theory which is
@@ -96,7 +97,7 @@ basicInferenceNode lg ln dGraph (node, lbl) libEnv intSt =
     thForProof <- liftR $ getGlobalTheory lbl
     let thName = libToFileName ln ++ "_" ++ getDGNodeName lbl
         freedefs = getCFreeDefMorphs libEnv ln dGraph node
-    let ps = getAllProvers ProveGUI (sublogicOfTh thForProof) lg
+    ps <- lift $ getUsableProvers ProveGUI (sublogicOfTh thForProof) lg
     kpMap <- liftR knownProversGUI
     {- let kpMap = foldl (\m (G_prover _ p,c) ->
          case Map.lookup (proverName p) m of
@@ -142,7 +143,7 @@ proveFineGrainedSelect :: LogicGraph
 proveFineGrainedSelect lg intSt freedefs st =
     runResultT $ do
        let sl = sublogicOfTheory st
-           cmsToProvers = getAllProvers ProveGUI sl lg
+       cmsToProvers <- lift $ getUsableProvers ProveGUI sl lg
        pr <- selectProver cmsToProvers
        ResultT $ callProver st { comorphismsToProvers = cmsToProvers }
                                intSt True freedefs pr

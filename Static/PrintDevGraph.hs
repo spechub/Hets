@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/PrintDevGraph.hs
 Description :  pretty printing (parts of) a LibEnv
 Copyright   :  (c) C. Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -114,6 +114,8 @@ dgOriginHeader o = case o of
     DGLogicCoercion -> "logic-translation"
     DGTranslation _ -> "translation"
     DGUnion -> "union"
+    DGIntersect -> "intersection"
+    DGExtract -> "extraction"
     DGRestriction _ _ -> "restriction"
     DGRevealTranslation -> "translation part of a revealing"
     DGFreeOrCofree v -> map toLower (show v) ++ "-spec"
@@ -122,6 +124,7 @@ dgOriginHeader o = case o of
     DGLogicQual -> "spec with logic qualifier"
     DGData -> "data-spec"
     DGFormalParams -> "formal parameters"
+    DGVerificationGeneric -> "verification for application of generic units"
     DGImports -> "arch import"
     DGInst _ -> "instantiation"
     DGFitSpec -> "fitting-spec"
@@ -138,6 +141,10 @@ instance Pretty DGOrigin where
                    else text headr $+$ pretty syms
     in text (dgOriginHeader o) <+> pretty (dgOriginSpec o)
       $+$ case o of
+          DGFreeOrCofree forc -> text "FreeOrCofree:" <+> (text $ show forc)
+          DGInst iri -> text "Inst:" <+> pretty iri
+          DGFitView iri -> text "View:" <+> pretty iri
+          DGNormalForm node -> text "Node:" <+> (text $ show node)
           DGBasicSpec mgbs _ syms -> case mgbs of
               Nothing -> Doc.empty
               Just gbs -> specBraces (pretty gbs)
@@ -148,7 +155,7 @@ instance Pretty DGOrigin where
               in case rst of
                 Restricted r -> pretty r $+$ prtS
                 NoRestriction -> prtS
-          _ -> Doc.empty
+          v@_ -> text $ show v
 
 instance Pretty DGNodeInfo where
   pretty c = case c of
@@ -206,6 +213,7 @@ dgLinkOriginHeader o = case o of
     DGLinkTranslation -> "OMDoc translation"
     DGLinkClosedLenv -> "closed spec and local environment"
     DGLinkImports -> "OWL import"
+    DGLinkIntersect -> "inclusion of intersection"
     DGLinkMorph _ -> "instantiation morphism of"
     DGLinkInst _ _ -> "instantiation of"
     DGLinkInstArg _ -> "actual parameter of"
@@ -391,6 +399,7 @@ instance Pretty GlobalEntry where
     AlignEntry ae -> pretty ae
     ArchOrRefEntry b ae -> (if b then topKey archS else keyword refinementS)
       <+> pretty ae
+    _ -> Doc.empty
 
 instance Pretty DGraph where
   pretty dg = vcat

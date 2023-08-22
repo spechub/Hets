@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/StaticAna.hs
 Description :  CASL static analysis for basic specifications
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -202,11 +202,8 @@ anaLocalVarForms anaFrm il afs ps = do
                              (ds ++ dss, f {item = resF} : ress,
                                  f {item = anaF} : ranas))
                      ([], [], []) afs
-               fufs = map (mapAn (\ f -> let
-                         qf = mkForallRange il f ps
-                         vs = map (\ (v, s) -> Var_decl [v] s ps)
-                              $ Set.toList $ freeVars sign qf
-                         in stripQuant sign $ mkForallRange vs qf ps))
+               fufs = map (mapAn (\ f -> quantFreeVars sign
+                            (mkForallRange il f ps) ps))
                       anaFs
            addDiags es
            return (resFs, fufs)
@@ -524,13 +521,13 @@ ana_OP_ATTR mef mix ty ni ois oa = do
       rty = opRes ty
       atys = opArgs ty
       q = posOfId rty
-  case atys of
+      tds = case atys of
          [t1, t2] | t1 == t2 -> case oa of
-              Comm_op_attr -> return ()
-              _ -> unless (t1 == rty) $ addDiags [Diag Error
-                             "result sort must be equal to argument sorts" q]
-         _ -> addDiags [Diag Error
-                        "expecting two arguments of equal sort" q]
+              Comm_op_attr -> []
+              _ -> [ Diag Error "result sort must be equal to argument sorts" q
+                   | t1 /= rty ]
+         _ -> [Diag Error "expecting two arguments of equal sort" q]
+  addDiags tds
   case oa of
     Unit_op_attr t -> do
            sign <- get
@@ -540,8 +537,9 @@ ana_OP_ATTR mef mix ty ni ois oa = do
            case mt of
              Nothing -> return Nothing
              Just (resT, anaT) -> do
-               addSentences $ map (makeUnit True anaT ty ni) ois
-               addSentences $ map (makeUnit False anaT ty ni) ois
+               when (null tds) $ do
+                 addSentences $ map (makeUnit True anaT ty ni) ois
+                 addSentences $ map (makeUnit False anaT ty ni) ois
                return $ Just $ Unit_op_attr resT
     Assoc_op_attr -> do
       let (vs, [v1, v2, v3]) = threeVars rty
@@ -553,7 +551,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
               (Application qi [Application qi [v1, v2] p, v3] p) Strong
               (Application qi [v1, Application qi [v2, v3] p] p) p) p)
             { isAxiom = ni }
-      addSentences $ map makeAssoc ois
+      when (null tds) . addSentences $ map makeAssoc ois
       return $ Just oa
     Comm_op_attr -> do
       let ns = map mkSimpleId ["x", "y"]
@@ -567,7 +565,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
              (Equation (Application qi args p) Strong
               (Application qi (reverse args) p) p) p) {
              isAxiom = ni }
-      addSentences $ map makeComm ois
+      when (null tds) . addSentences $ map makeComm ois
       return $ Just oa
     Idem_op_attr -> do
       let v = mkSimpleId "x"
@@ -579,7 +577,7 @@ ana_OP_ATTR mef mix ty ni ois oa = do
             (Equation
              (Application (Qual_op_name i sty p) [qv, qv] p)
              Strong qv p) p) { isAxiom = ni }
-      addSentences $ map makeIdem ois
+      when (null tds) . addSentences $ map makeIdem ois
       return $ Just oa
 
 -- first bool for left and right, second one for no implied annotation

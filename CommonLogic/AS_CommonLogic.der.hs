@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/AS_CommonLogic.der.hs
 Description :  Abstract syntax for common logic
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010, Eugen Kuksa and Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -25,16 +26,17 @@ import Common.DocUtils
 import Common.Keywords
 import qualified Common.AS_Annotation as AS_Anno
 
+import Data.Data
 import Data.Set (Set)
 
 -- DrIFT command
 {-! global: GetRange !-}
 
 newtype BASIC_SPEC = Basic_spec [AS_Anno.Annoted BASIC_ITEMS]
-                     deriving (Show, Ord, Eq)
+                     deriving (Show, Ord, Eq, Typeable)
 
 data BASIC_ITEMS = Axiom_items [AS_Anno.Annoted TEXT_META]
-                   deriving (Show, Ord, Eq)
+                   deriving (Show, Ord, Eq, Typeable)
 
 type PrefixMapping = (String, IRI)
 
@@ -48,65 +50,65 @@ data TEXT_META = Text_meta { getText :: TEXT
                            , textIri :: Maybe IRI
                            , nondiscourseNames :: Maybe (Set NAME)
                            , prefix_map :: [PrefixMapping]
-                           } deriving (Show, Ord, Eq)
+                           } deriving (Show, Eq, Ord, Typeable, Data)
 {- TODO: check static analysis and other features on discourse names,
 as soon as parsers of segregated dialects are implemented -}
 
 -- Common Logic Syntax
 data TEXT = Text [PHRASE] Id.Range
           | Named_text NAME TEXT Id.Range
-            deriving (Show, Ord, Eq)
+            deriving (Show, Ord, Eq, Typeable, Data)
 
 data PHRASE = Module MODULE
             | Sentence SENTENCE
             | Importation IMPORTATION
             | Comment_text COMMENT TEXT Id.Range
-              deriving (Show, Ord, Eq)
+              deriving (Show, Ord, Eq, Typeable, Data)
 
 data COMMENT = Comment String Id.Range
-               deriving (Show, Ord, Eq)
+               deriving (Show, Ord, Eq, Typeable, Data)
 
 data MODULE = Mod NAME TEXT Id.Range
             | Mod_ex NAME [NAME] TEXT Id.Range
-              deriving (Show, Ord, Eq)
+              deriving (Show, Ord, Eq, Typeable, Data)
 
 data IMPORTATION = Imp_name NAME
-                   deriving (Show, Ord, Eq)
+                   deriving (Show, Ord, Eq, Typeable, Data)
 
 data SENTENCE = Quant_sent QUANT [NAME_OR_SEQMARK] SENTENCE Id.Range
               | Bool_sent BOOL_SENT Id.Range
               | Atom_sent ATOM Id.Range
               | Comment_sent COMMENT SENTENCE Id.Range
               | Irregular_sent SENTENCE Id.Range
-                deriving (Show, Ord, Eq)
+                deriving (Show, Ord, Eq, Typeable, Data)
 
 data QUANT = Universal | Existential
-             deriving (Show, Ord, Eq)
+             deriving (Show, Ord, Eq, Typeable, Data)
 
 data BOOL_SENT = Junction AndOr [SENTENCE]
                | Negation SENTENCE
                | BinOp ImplEq SENTENCE SENTENCE
-                 deriving (Show, Ord, Eq)
+                 deriving (Show, Ord, Eq, Typeable, Data)
 
 data AndOr = Conjunction | Disjunction
-             deriving (Show, Ord, Eq)
+             deriving (Show, Ord, Eq, Typeable, Data)
 
 data ImplEq = Implication | Biconditional
-              deriving (Show, Ord, Eq)
+              deriving (Show, Ord, Eq, Typeable, Data)
 
 data ATOM = Equation TERM TERM
           | Atom TERM [TERM_SEQ]
-            deriving (Show, Ord, Eq)
+            deriving (Show, Ord, Eq, Typeable, Data)
 
 data TERM = Name_term NAME
           | Funct_term TERM [TERM_SEQ] Id.Range
           | Comment_term TERM COMMENT Id.Range
           | That_term SENTENCE Id.Range
-            deriving (Show, Ord, Eq)
+            deriving (Show, Ord, Eq, Typeable, Data)
 
 data TERM_SEQ = Term_seq TERM
               | Seq_marks SEQ_MARK
-                deriving (Show, Ord, Eq)
+                deriving (Show, Ord, Eq, Typeable, Data)
 
 
 type NAME = Id.Token
@@ -115,19 +117,19 @@ type SEQ_MARK = Id.Token
 -- binding seq
 data NAME_OR_SEQMARK = Name NAME
                      | SeqMark SEQ_MARK
-                       deriving (Show, Eq, Ord)
+                       deriving (Show, Eq, Ord, Typeable, Data)
 
 data SYMB_MAP_ITEMS = Symb_map_items [SYMB_OR_MAP] Id.Range
-                      deriving (Show, Ord, Eq)
+                      deriving (Show, Ord, Eq, Typeable, Data)
 
 data SYMB_OR_MAP = Symb NAME_OR_SEQMARK
                  | Symb_mapN NAME NAME Id.Range
                  | Symb_mapS SEQ_MARK SEQ_MARK Id.Range
-                   deriving (Show, Ord, Eq)
+                   deriving (Show, Ord, Eq, Typeable, Data)
 
 data SYMB_ITEMS = Symb_items [NAME_OR_SEQMARK] Id.Range
                   -- pos: SYMB_KIND, commas
-                  deriving (Show, Ord, Eq)
+                  deriving (Show, Ord, Eq, Typeable, Data)
 
 
 -- pretty printing using CLIF

@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./QVTR/Logic_QVTR.hs
 Description :  Instance of class Logic for the QVTR logic
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -22,21 +22,22 @@ import Logic.Logic
 
 import Common.DefaultMorphism
 
-import Data.Monoid
+import Data.Monoid ()
 
 data QVTR = QVTR deriving Show
 
 instance Language QVTR where
-  description _ = "QVT-Relations transformation"
+  description _ = "OMG's QVT-Relations transformation, a language for the specification of model transformations"
 
 type Morphism = DefaultMorphism Sign
 
 
 -- QVTR logic
 
+instance Semigroup Transformation where
+  _ <>_ = error "Not implemented!"
 instance Monoid Transformation where
   mempty = error "Not implemented!"
-  mappend _ _ = error "Not implemented!"
 
 instance Sentences QVTR
   Sen

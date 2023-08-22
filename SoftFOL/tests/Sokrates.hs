@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/tests/Sokrates.hs
 Copyright   :  (c) Rene Wagner, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt
 

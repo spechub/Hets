@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/Logic_HasCASL.hs
 Description :  instance of class Logic
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -37,14 +37,14 @@ import Logic.Logic
 import Common.Doc
 import Common.DocUtils
 
-import Data.Monoid
+import Data.Monoid ()
 
 data HasCASL = HasCASL deriving Show
 
 instance Language HasCASL where
  description _ = unlines
-  [ "HasCASL - Algebraic Specification + Functional Programming = "
-  , "            Environment for Formal Software Development"
+  [ "HasCASL - Algebraic Specification + Functional Programming"
+  , "            = Environment for Formal Software Development"
   , "This logic is based on the partial lambda calculus and"
   , "  features subtyping, overloading and type class polymorphism"
   , "See the HasCASL summary and further papers available at"
@@ -65,16 +65,17 @@ instance Language HasCASL where
   , "  SubCFOL=       -> the CASL logic without sort generation constraints"
   , "  PCoClTyConsHOL -> the Haskell type system fragment" ]
 
+instance Semigroup BasicSpec where
+    (BasicSpec l1) <> (BasicSpec l2) = BasicSpec $ l1 ++ l2
 instance Monoid BasicSpec where
     mempty = BasicSpec []
-    mappend (BasicSpec l1) (BasicSpec l2) = BasicSpec $ l1 ++ l2
 
 instance Syntax HasCASL BasicSpec
                 Symbol SymbItems SymbMapItems
       where
          parse_basic_spec HasCASL = Just $ const basicSpec
-         parse_symb_items HasCASL = Just symbItems
-         parse_symb_map_items HasCASL = Just symbMapItems
+         parse_symb_items HasCASL = Just . const $ symbItems
+         parse_symb_map_items HasCASL = Just . const $ symbMapItems
          toItem HasCASL = bsToItem
 
 instance Category Env Morphism where
@@ -91,6 +92,7 @@ instance Sentences HasCASL Sentence Env Morphism Symbol where
     print_named _ = printSemiAnno (changeGlobalAnnos addBuiltins . pretty) True
         . fromLabelledSen
     sym_name HasCASL = symName
+    symKind HasCASL = show . pretty . symbTypeToKind . symType
     sym_of HasCASL = symOf
     mostSymsOf HasCASL = mostSyms
     symmap_of HasCASL = morphismToSymbMap
@@ -172,6 +174,6 @@ instance Logic HasCASL Sublogic
                Env
                Morphism
                Symbol RawSymbol () where
-         stability _ = Testing
+         stability _ = Stable
          all_sublogics _ = sublogics_all
          empty_proof_tree _ = ()

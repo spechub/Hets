@@ -1,0 +1,101 @@
+logic OWL serialization Functional
+
+spec a = 
+Prefix(:=<http://example.com/#>)
+Prefix(dc:=<http://purl.org/dc/elements/1.1/>)
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Prefix(rdf:=<http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
+Prefix(xml:=<http://www.w3.org/XML/1998/namespace>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+
+
+Ontology(
+Declaration(Class(:Person))
+Declaration(Class(:smallChild))
+Declaration(ObjectProperty(:hasChildren))
+Declaration(ObjectProperty(:hasDaughter))
+Declaration(ObjectProperty(:hasName))
+Declaration(ObjectProperty(:hasSSN))
+Declaration(DataProperty(:hasAge))
+Declaration(DataProperty(:hasHeight))
+Declaration(NamedIndividual(:Ann))
+Declaration(AnnotationProperty(:x))
+Declaration(Datatype(:Surname))
+Declaration(Datatype(:Years))
+Declaration(Datatype(:height))
+Declaration(Datatype(:natural))
+############################
+#   Annotation Properties
+############################
+
+# Annotation Property: :x (:x)
+
+SubAnnotationPropertyOf(:x owl:deprecated)
+
+
+############################
+#   Object Properties
+############################
+
+# Object Property: :hasDaughter (:hasDaughter)
+
+SubObjectPropertyOf(:hasDaughter :hasChildren)
+
+
+############################
+#   Data Properties
+############################
+
+# Data Property: :hasAge (:hasAge)
+
+DataPropertyRange(:hasAge DatatypeRestriction(:natural xsd:minExclusive "10.24"^^xsd:decimal))
+
+# Data Property: :hasHeight (:hasHeight)
+
+DataPropertyRange(:hasHeight DataUnionOf(DatatypeRestriction(:height xsd:minExclusive "3"^^:height) DatatypeRestriction(:height xsd:maxExclusive "2.1f"^^:height)))
+
+
+############################
+#   Datatypes
+############################
+
+# Datatype: :Surname (:Surname)
+
+DatatypeDefinition(:Surname DatatypeRestriction(xsd:string xsd:pattern "[a-z] [0-1]"^^xsd:string))
+
+# Datatype: :Years (:Years)
+
+DatatypeDefinition(:Years :natural)
+
+# Datatype: :height (:height)
+
+DatatypeDefinition(:height DatatypeRestriction(xsd:float xsd:totalDigits "3.0"^^xsd:float xsd:fractionDigits "2.0"^^xsd:float))
+
+# Datatype: :natural (:natural)
+
+DatatypeDefinition(:natural DataComplementOf(xsd:negativeInteger))
+
+
+############################
+#   Classes
+############################
+
+# Class: :smallChild (:smallChild)
+
+SubClassOf(Annotation(owl:deprecated "y") :smallChild DataHasValue(:hasHeight "1.0"^^xsd:float))
+
+
+############################
+#   Named Individuals
+############################
+
+# Individual: :Ann (:Ann)
+
+ClassAssertion(ObjectMinCardinality(2 :hasChildren) :Ann)
+ClassAssertion(DataSomeValuesFrom(:hasAge :natural) :Ann)
+
+
+HasKey(Annotation(rdfs:isDefinedBy "y") :Person (:hasName :hasSSN) (:hasAge))
+)
+end

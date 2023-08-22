@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/Parse_AS_Architecture.hs
 Description :  parser for CASL architectural specifications
 Copyright   :  (c) Maciek Makowski, Warsaw University 2003-2004, C. Maeder
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -23,7 +23,6 @@ import Logic.Grothendieck (LogicGraph)
 import Syntax.AS_Structured
 import Syntax.AS_Architecture
 import Syntax.Parse_AS_Structured
-    (hetIRI, annoParser2, groupSpec, parseMapping, translationList)
 
 import Common.AS_Annotation
 import Common.AnnoState
@@ -120,7 +119,7 @@ unitSpec l =
      NOTE: this can also be a spec name. If this is the case, this unit spec
            will be converted on the static analysis stage.
            See Static.AnalysisArchitecture.ana_UNIT_SPEC. -}
-    do gps@(gs : gss, _) <- annoParser (groupSpec l) `separatedBy` crossT
+    do gps@(gs : gss, _) <- annoParser (caslGroupSpec l) `separatedBy` crossT
        let rest = unitRestType l gps
        if null gss then
             option ( {- case item gs of
@@ -130,9 +129,14 @@ unitSpec l =
 
 unitRestType :: LogicGraph -> ([Annoted SPEC], [Token]) -> AParser st UNIT_SPEC
 unitRestType l (gs, ps) = do
-    a <- asKey funS
-    g <- annoParser $ groupSpec l
+    a <- asKey funS -- see Note
+    g <- annoParser $ caslGroupSpec l
     return (Unit_type gs g $ catRange (ps ++ [a]))
+
+{- Note: the minus from funS (and crossT) would be misinterpreted as
+optional ImportName for spec-insts, aka OMSRef in DOL, if we do not
+exclude "-" as keyword or do not restrict unit-specs to use mere CASL
+group-specs. -}
 
 refSpec :: LogicGraph -> AParser st REF_SPEC
 refSpec l = do
@@ -264,8 +268,9 @@ GROUP-UNIT-TERM
 
 unitTermTransRed :: LogicGraph -> AParser st (Annoted UNIT_TERM)
 unitTermTransRed l = groupUnitTerm l >>=
-    translationList l Unit_translation Unit_reduction (error "approximate not allowed in architectural specifications")
-    (error "minimize not allowed in architectural specifications")
+    translationList
+      [ (`fmap` renaming l) . Unit_translation
+      , (`fmap` restriction l) . Unit_reduction]
 
 {- | Parse unit expression
 @

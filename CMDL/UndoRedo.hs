@@ -1,5 +1,5 @@
 {- |
-Module      : $Header$
+Module      : ./CMDL/UndoRedo.hs
 Description : description of undo and redo functions
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt

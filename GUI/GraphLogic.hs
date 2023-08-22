@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GraphLogic.hs
 Description :  Logic for manipulating the graph in the  Central GUI
 Copyright   :  (c) Jorina Freya Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -449,7 +449,7 @@ getTheoryOfNode gInfo descr dgraph = do
 displayTheoryOfNode :: String -- ^ Name of theory
                     -> String -- ^ Body text
                     -> IO ()
-displayTheoryOfNode n = createTextSaveDisplay ("Theory of " ++ n) (n ++ ".het")
+displayTheoryOfNode n = createTextSaveDisplay ("Theory of " ++ n) (n ++ ".dol")
 
 {- | translate the theory of a node in a window;
      used by the node menu -}

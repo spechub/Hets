@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 
 # GHCRTS -A300m is needed to speed up writing out aterms to detect sharing
-GHCRTS='-H300m -M2g'
+GHCRTS='-H300m -M3g'
 LANG=de_DE.UTF-8
 
 case `uname -s` in
@@ -31,8 +31,8 @@ export HETS_MAGIC
 
 hetsdir=\
 /home/www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/hets
-destdir=$hetsdir/src-distribution/daily
-outtypes=env,thy,th,dfg,dfg.c,tptp,tptp.c,pp.het,pp.tex,pp.html,pp.xml,xml,json
+destdir=$hetsdir/src-distribution/dailyx
+outtypes=env,thy,th,dfg,dfg.c,tptp,tptp.c,pp.dol,pp.tex,pp.html,pp.xml,xml,json
 
 export hetsdir
 export destdir
@@ -83,10 +83,10 @@ pdflatex Basic-Libraries
 checkCASLAsHasCASL ()
 {
 date
-for i in Basic/*.casl; do ./hets -v2 -l HasCASL -o th,pp.het,pp.tex $i; done
+for i in Basic/*.casl; do ./hets -v2 -l HasCASL -o th,pp.dol,pp.tex $i; done
 latexBasicLibraries
 date
-for i in Basic/*.pp.het; do ./hets -v2 -l HasCASL -o pp.het,pp.tex $i; done
+for i in Basic/*.pp.dol; do ./hets -v2 -l HasCASL -o pp.dol,pp.tex $i; done
 \ls -sh1 Basic/*.pp.*
 \rm -f Basic/*.pp.*
 }
@@ -96,7 +96,7 @@ checkBasicCASL ()
 date
 for i in Basic/*.casl; do ./hets -v2 -o $outtypes $i; done
 date
-for i in Basic/*.pp.het; do ./hets -v2 -o pp.het,pp.tex $i; done
+for i in Basic/*.pp.dol; do ./hets -v2 -o pp.dol,pp.tex $i; done
 \ls -sh1 Basic/*.pp.*
 date
 for i in Examples/*.casl CASL/*.casl;  do ./hets -v2 $i; done
@@ -122,7 +122,7 @@ for i in UserManual/*.casl; do ./hets -v2 -o $outtypes $i; done
 checkCalculi ()
 {
 date
-for i in Calculi/*/*.casl Calculi/*/*.het; do ./hets -v2 $i; done
+for i in Calculi/*/*.casl Calculi/*/*.dol; do ./hets -v2 $i; done
 ./hets -v4 -n RelationAlgebraSimple -m ConstraintCASL/RCC8.lisp \
   Calculi/Algebra/RelationAlgebraSimple.casl
 }
@@ -130,14 +130,14 @@ for i in Calculi/*/*.casl Calculi/*/*.het; do ./hets -v2 $i; done
 reCheckBasicCASLThs ()
 {
 date
-for i in Basic/*.th; do ./hets -o th,pp.het $i; done
+for i in Basic/*.th; do ./hets -o th,pp.dol $i; done
 }
 
 checkHasCASL ()
 {
 date
-for i in HasCASL/*.het HasCASL/Metatheory/*.het;
-    do ./hets -v2 -o env,th,pp.het,pp.tex $i; done
+for i in HasCASL/*.dol HasCASL/Metatheory/*.dol;
+    do ./hets -v2 -o env,th,pp.dol,pp.tex $i; done
 if [ -z "$1" ]; then
   pdflatex HasCASL/Metatheory/HasCASL-Metatheory-Libraries.tex
 fi
@@ -146,22 +146,22 @@ fi
 checkCspCASL ()
 {
 date
-for i in CspCASL/*.het CspCASL/Shop/*.het;
-    do ./hets -v2 -o env,th,pp.het,pp.tex $i; done
+for i in CspCASL/*.dol CspCASL/Shop/*.dol;
+    do ./hets -v2 -o env,th,pp.dol,pp.tex $i; done
 pdflatex CspCASL/Shop/Shop.tex
-for i in CspCASL/*.{pp.het,th} CspCASL/Shop/*.{pp.het,th};
-    do ./hets -v2 -o th,pp.het $i; done
-find CspCASL -name \*.th -o -name \*.pp.het | xargs \rm
+for i in CspCASL/*.{pp.dol,th} CspCASL/Shop/*.{pp.dol,th};
+    do ./hets -v2 -o th,pp.dol $i; done
+find CspCASL -name \*.th -o -name \*.pp.dol | xargs \rm
 }
 
 checkOWL ()
 {
 date
-for i in Ontology/Examples/*.het;
-    do ./hets -v2 -o th,pp.het,omn $i; done
-for i in Ontology/Examples/*.{pp.het,th};
-    do ./hets -v2 -o th,pp.het $i; done
-find Ontology -name \*.th -o -name \*.pp.het | xargs \rm
+for i in Ontology/Examples/*.dol;
+    do ./hets -v2 -o th,pp.dol,omn $i; done
+for i in Ontology/Examples/*.{pp.dol,th};
+    do ./hets -v2 -o th,pp.dol $i; done
+find Ontology -name \*.th -o -name \*.pp.dol | xargs \rm
 }
 
 checkXML ()
@@ -198,6 +198,15 @@ checkUserManual
 reCheckBasicCASLThs
 checkHasCASL $1
 checkCspCASL
+date
+}
+
+checkConservativity ()
+{
+date
+for i in {Basic,UserManual}/*.casl
+  do echo globally-check-conservativity | ./hets -I $i
+  done > ../cons.log 2>&1
 date
 }
 
@@ -244,9 +253,9 @@ copyStyForCgi ()
 createLogFiles ()
 {
 cat */*.th > ../th.log
-\rm */*.th.pp.het
-\rm */*.pp.pp.het
-cat */*.pp.het > ../pp.log
+\rm */*.th.pp.dol
+\rm */*.pp.pp.dol
+cat */*.pp.dol > ../pp.log
 }
 
 runIsaBasic ()
@@ -296,7 +305,7 @@ checkCats ()
 {
 cats -input=nobin -output=nobin -spec=gen_aterm Basic/SimpleDatatypes.casl
 ../Hets/ATC/ATCTest Basic/SimpleDatatypes.tree.gen_trm
-./hets -v3 -p -i gen_trm -o pp.het Basic/SimpleDatatypes.tree.gen_trm
+./hets -v3 -p -i gen_trm -o pp.dol Basic/SimpleDatatypes.tree.gen_trm
 }
 
 makeSources ()
@@ -376,7 +385,7 @@ date
 for i in Basic/*.casl;
     do ./hets -v2 -o th -t CASL2SubCFOL $i; done
 date
-for i in Basic/*.th; do ./hets -o th,pp.het $i; done
+for i in Basic/*.th; do ./hets -o th,pp.dol $i; done
 date
 \rm Basic/*.thy
 for i in Basic/*.casl;
@@ -399,7 +408,7 @@ date
 for i in Basic/*.casl;
     do ./hets -v2 -o th,thy -t CASL2PCFOLTopSort $i; done
 date
-for i in Basic/*.th; do ./hets -o th,pp.het $i; done
+for i in Basic/*.th; do ./hets -o th,pp.dol $i; done
 date
 ../Hets/utils/nightly/runisabelle.sh Basic/*.thy > ../isa3.log 2>&1
 fgrep \*\*\* ../isa3.log

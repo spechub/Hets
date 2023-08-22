@@ -1,5 +1,5 @@
 {- |
-Module      : $Header$
+Module      : ./CMDL/Shell.hs
 Description : shell related functions
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt
@@ -215,7 +215,7 @@ cmdlCompletionFn allcmds allState input =
                  then trimRight input
                  else unwords $ init $ words input
            getCCName (G_cons_checker _ p) = ccName p
-           createConsCheckersList = map (getCCName . fst) . getConsCheckers
+           createConsCheckersList = map (getCCName . fst) . getAllConsCheckers
        case i_state $ intState allState of
         Nothing ->
          {- not in proving mode !? you can not choose a consistency
@@ -253,12 +253,9 @@ cmdlCompletionFn allcmds allState input =
              -- use the first element to get a comorphism
              c : _ -> case c of
                 Element z _ -> do
-                  let proverList =
-                        nub $
-                        map (getProverName . fst)
-                        $ getAllProvers ProveCMDLautomatic
+                  ps <- getUsableProvers ProveCMDLautomatic
                           (sublogicOfTheory z) logicGraph
-                  lst <- checkPresenceProvers proverList
+                  let lst = nub $ map (getProverName . fst) ps
                   return $ map (app bC) $ filter (isPrefixOf tC) lst
    ReqComorphism ->
     let input'' = case words input of

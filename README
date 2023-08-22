@@ -1,54 +1,283 @@
-This README belongs to a "The heterogeneous tool set" (Hets) source
-release created by "make release" from the original svn repository.
-(for svn see http://subversion.tigris.org/)
+Documentation
+=============
+Information not contained in this file can usually be found in the
+Hets user guide (doc/UserGuide.pdf), on the Hets web page http://hets.eu/
+or within the source itself.
 
-The original svn sources can be obtained by:
-svn co https://svn-agbkb.informatik.uni-bremen.de/Hets/trunk Hets
 
-Information not contained here can be found in the Hets user guide
-(doc/UserGuide.pdf) or on the Hets web page www.dfki.de/cps/hets.
+Installation
+============
+Unless you know what you are doing you should always install the prepared
+system packages for your OS, instead of compiling it by yourself:
 
-The subject of this source release is to create a binary "hets" that
-is able to analyse heterogeneous and in particular CASL
-specifications.
+Ubuntu:
+  # add the hets PPA site to your system unless already done
+  apt-add-repository ppa:hets/hets
+  apt-add-repository -s \
+    "deb http://ppa.launchpad.net/hets/hets/ubuntu xenial main"
 
-The sources need to be compiled using ghc Glasgow Haskell Compiler
-(www.haskell.org/ghc) version 7!
+  # update the system's package catalog and install hets incl. dependencies
+  apt-get update
+  apt-get install hets-desktop
 
-Haskell as a logic is an optional part of Hets via "Programatica"
-(http://programatica.cs.pdx.edu/).
+  # to update your installation to a recent version do from time to time:
+  apt-get update
+  apt-get upgrade [hets-desktop]
 
-Beside output written to the console (stdout) or to files, hets can
-display graphs using "uDraw(Graph)" www.informatik.uni-bremen.de/uDrawGraph.
+Solaris 11+:
+  # add the package publisher info of the Uni Magedeburg to your system
+  # if not already done (see "pkg publisher" output)
+  pkg set-publisher --add-origin http://pkg.cs.ovgu.de/lnf lnf
+  # install hets incl. dependencies
+  pkg install hets-desktop
+  # to update your installation to a recent version do from time to time:
+  pkg update [hets-desktop]
 
-The binary uDrawGraph should be in your PATH.
+To get optional TeX/PDF support, you also need to install the related pdflatex
+packages (Ubuntu: texlive-latex-base, texlive-latex-extra, texlive-pictures,
+texlive-fonts-recommended; Solaris 11+: tl-latex, tl-fonts, tl-utils).
 
-Some dialogs depend on Gtk and Glade that require a couple of further
-libraries.  Mac users are expected to install gtk2 from macports
+Adding packages to the system usually requires additional privileges.
+So sudo, pfexec or similar tools might be needed to be able to execute the
+commands mentioned above successfully.
 
-A typical call of hets is then: hets -g Basic/Numbers.casl
+In non-desktop environments like servers, where no GUI is needed or hets is
+running as a service, you may prefer to install the package 'hets-server'
+instead. This one gets compiled without GTK+/Glade/TclTk support and thus
+reduces the number of dependencies and required ressources noteworthy.
+
+For your convenience there are also the hets-server-all and hets-desktop-all
+packages: these are meta packages, which bundle hets-server and hets-desktop
+with other hets related tools (e.g. misc. provers) repectively.
+
+All mentioned packages can be installed side-by-side. The GUI version gets
+usually started using the hets(1) command, a server instance can be started
+using the hets-server(1) command.
+
+
+Building from source
+====================
+hets sources can be obtained using the following command:
+
+	git clone https://github.com/spechub/Hets
+
+For compilation we use the Glasgow Haskell Compiler "ghc" version 7.6.x and
+above as well as Java for some helper tools. So you need to install these tools
+as well as all haskell modules required by hets.
+
+Having a look at utils/installHetsPkgs.sh as well as var.mk may help to find
+out, what is missing on your system. On debianized systems the following
+command may automatically install all dependencies:
+
+	DISTRO=`lsb_release -cs`
+	apt-add-repository \
+		-s "deb http://ppa.launchpad.net/hets/hets/ubuntu ${DISTRO} main"
+	apt-get update
+	apt-get build-dep hets-src
+
+For Solaris 11+ have a look at http://pkg.cs.ovgu.de/lnf/en/catalog.shtml or
+the output of e.g. "pkg list -a 'library/haskell/*'".
+
+For anything else have a look at the file 'debian/control' - watch out for
+'Build-Depends:'.
+
+
+To build the un-optimized versions of hets and the hets server, use:
+
+	make all
+
+To build the optimized versions incl. everything else needed for our debian
+packages, use:
+
+	make build
+
+This is basically the same as 'make hets-opt hets_server-opt docs'.
+Omitting the suffix '-opt' from a target creates the un-optimized versions of
+the related binary. For more details study the Makefile (GNU style, so on
+Solaris use 'gmake' instead of 'make').
+
+NOTE that since version 0.99.10 programatica support is disabled by default.
+If you want programatica support you need to extract the sources first into
+programatica/tools (this folder should than contain the Setup.hs file). One
+may try 'make get-programatica' as an alternative - it tries to fetch the
+source[s] defined in var.mk and extract them to the right place. On Ubuntu you
+should also install the package 'libghc-programatica-dev'. To compile
+without programatica support again, just rename or delete ./programatica/
+and do a 'make distclean' before building the new binaries. 'make realclean'
+is almost the same, but it leaves the derived aka generated sources untouched
+and thus may cause problems. For more information wrt. programatica see
+http://programatica.cs.pdx.edu/.
+
+
+On debian based system one may even use the following or similar command, to
+create the all *.deb packages out of the box in the parent directory of Hets:
+
+	export DEB_BUILD_ARCH=1
+	fakeroot make binary
+
+For more details consult the Makefile. The resulting packages can be installed
+as usual using something like 'dpkg -i ../hets-*.deb'. But make sure, you have
+read and understood the 'Package-Versioning:' section below first!
+
+
+On other systems, when the desired targets were made, you may install the
+binary/docs into your own local directory by setting the PREFIX environment
+variable to a corresponding value first and calling the appropriate target
+(default is /usr). E.g.:
+
+  PREFIX=/home/foo/bar/hets make install
+
+Instead of 'install' one may use the targets 'install-common', 'install-hets'
+and 'install-hets_server' as well. Installing to a system directory like /usr
+or /local/usr is strongly discouraged. Only Distro conform packages should be
+installed there (and can thus can be removed in a clean and easy way)!
+
+To install to a virtual root, one may set the environment variable DESTDIR to
+the desired directory. Per default it is unset and thus equivalent to / .
+
+Last but not least one may set the environment variable DEB_BUILD_ARCH to a
+non-null value (as dpkg-buildpackage automatically does). In this case the
+PREFIX gets effectively prefixed packagewise by another one, which makes
+packageing easier and uniform across different OS.
+
+NOTES:
+
+One should NEVER make _any_ target as user 'root' or as a user with
+additional privileges, which allow one to overwrite/delete system files!
+When you want to create debian binary packages, use the fakeroot variant
+shown above instead.
+
+On MacOSX building the GUI supporting binaries may not work because of missing
+GTK2/Glade and Tcl/Tk support.
+
+
+Testing the build
+=================
+To run all available tests against the hets binary, simply type:
+
+	make check
+
+It is recommended to have 'spass' and 'darwin' installed to avoid skipping
+related tests.
+
+
+Running Hets
+============
+Examples for testing can be obtained from
+http://www.informatik.uni-bremen.de/cofi/Libraries/lib.tgz
 
 Example specifications can be found under:
-https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
+https://github.com/spechub/Hets-lib/
+If you have installed hets using the packaging system of your OS distribution,
+it should already be installed (package name hets-libs or something like that).
+Hets assumes that it has a copy in ../lib/hets/hets-lib relative to the bin/
+directory with the hets/het-server script or the HETS_LIB is set to the folder,
+which contains it.
 
-HETS_LIB should point to such library directories.
+Try out e.g. "hets -g Basic/Numbers.casl" to see if the graphical interface
+pops up. If this does not work, maybe "uDrawGraph" (Version 3.1.1) from
+http://www.informatik.uni-bremen.de/uDrawGraph is not properly installed. Make
+sure "uDrawGraph" can be found in your PATH.
 
-For proving users may set HETS_ISABELLE, if "isabelle emacs" is not the right
-call for their system. Isabelle version 2012 is supported.
+hets and het-server usually installed in the bin/ folder are shell script
+wrappers around the corresponding binaries in lib/hets/, which just set certain
+environment variables to more or less meaningful values, if not yet done and
+needed. So have a look at it, if you need to know where hets is looking for
+its libraries and helpers by default.
 
-Further environment variables for provers are:
+Prover related environment variables are:
+	PELLET_PATH
+	HETS_OWL_TOOLS
+	HETS_APROVE
+	HETS_ISABELLE_LIB
 
-  PELLET_PATH
-  HETS_OWL_TOOLS
-  HETS_APROVE
-  HETS_ISABELLE_LIB
+In addition, proving users may set HETS_ISABELLE, if "isabelle emacs" is
+not the right call for their system. Isabelle version 2014 is supported.
 
-If you need to build the hets binary follow the instructions in
-INSTALL, alternatively try to get a binary or a complete installer from:
-www.dfki.de/cps/hets/installation_e.htm
+Another typical call is 'hets -v2 -g -A Calculi/Space/RCCVerification.het'.
+
+You may then try to prove the red nodes using SPASS or Isabelle. Isabelle is
+only needed for the single red node that is not supported by other provers.
+The used Isabelle example proof is stored in the file
+RCCVerification_RCC_FO_in_MetricSpace__T.thy
+
+If you install the emacs casl-mode you can also run hets from within emacs on a
+specification file with C-c C-r or C-c C-g (to get the graphical interface).
+
+Note that hets uses the "patch" program before calling Isabelle. It assumes,
+that this is the GNU version of it. So especially on Solaris 11+ make sure,
+that the 'gnu-patch' package is installed.
+
+
+Misc
+====
+For convenience you may use 'make archive' to export the HEAD of your _local_
+hets repository to an xz compressed tar archive (see git-archive(1) for more
+information). HEAD refers usually to the last commited version of your current
+branch (see "git branch"). Such an archive is e.g. needed for uploading a
+source package to an Ubuntu Personal Package Archive (PPA). For this in
+addition some minor things get pre-compiled/build, minimal git infos exported
+to related files, redundant or unneeded data get deleted and programatica gets
+bundled as is, because Ubuntu PPAs do not allow to download required
+pre-requisites on-the-fly. But remember, the Ubuntu PPA is really picky about
+archive names, so for each release one should choose a different filename,
+otherwise be prepared for getting it rejected. Therefore you may set the
+environment variable ARC_NAME to get out of the box you need, e.g.:
+
+	ARC_NAME=/tmp/foobar-1.2.3.tar.xz make archive
+
+If there is already an archive with the same name, it will be overwritten
+unconditionally!
+
+The make targets 'clean', 'build', 'build-arch', 'build-indep' as well as
+'binary', 'binary-arch' and 'binary-indep' are reserved in the sense of
+https://www.debian.org/doc/debian-policy/ch-source.html#s-debianrules
+and basically do, what the document says they should do.
+
+
+Package-Versioning: A.B.C[.D.E]-n.m.r[.c]*
+==========================================
+Actually for each intended package publication on the PPA, the related commit
+should be either propperly tagged OR `Driver/Version.hs` should be updated using
+a number tripple with no leading zero[s] (see semantic versioning). For now it
+is a twin pack only and thus we always add a '.1' and get "A.B.1" as our first
+part (in debian terms the "upstream_version").
+
+The optional .D.E part is used for unreleased versions/current builds of
+the master branch. For D the numbers 0..5 are reserved for us (hets maintainer),
+and might be used to express e.g. nightly, alpha, beta, RC, or FCS builts.
+All other numbers can be used as needed by people/organizations/etc., which
+build their own hets packages. This way they are always able to let their own
+packages supersede packages built by hets developers/PPA without violating the
+version semantics and still get next releases (A.B.C+1) w/o having to do
+anything. On [new] releases we set .D.E back to .0.0 and thus gets ommitted
+(more than 3 numbers: trailing zero pairs get deleted).
+
+The second part (in debian terms the "debian_revision") is made of the string
+n.m.r[.c] whereby n denotes number of pkg build modification count wrt. the
+upstream_version. With each new upstream_version it starts again with 1 and
+gets increased, if the source didn't change, but the way, how the package gets
+build/structured. m.r is the LSB_RELEASE of the intended OS.
+
+The last optional part [.c]* is used (simply incremented by 1 on demand), if
+neither source nor pkg build procedure has been changed, but a new version is
+needed to be able to overwrite old stuff, e.g. if the PPA goes mad again.
+
+So e.g. to be able to overwrite the current installed hets packages with your
+own version without getting into trouble, and getting this in turn automatically
+replaced on e.g. 'apt-get update; apt-get upgrade' when a new version arrived,
+one should just set FULL_DEBVERS to the same of the latest or installed package,
+append a '.1' and increment it on demand. If it is not set, make deduces it from
+the running system.
+
+We use neither the debian epoch nonsense, nor lsb release names or other
+questionable stuff - just A.B.C-n.m.r[.c]* and none of them zero padded!
+
+
+If you have any problems, please ask via our mailing list
+hets-devel@informatik.uni-bremen.de or file an issue on
+https://github.com/spechub/Hets/issues/.
 
 The heterogeneous tool set (Hets) is mainly maintained by
 Christian Maeder (Christian.Maeder@dfki.de) and
 Till Mossakowski (mossakow@iws.cs.uni-magdeburg.de).
-
-The mailing list is hets-devel@informatik.uni-bremen.de.

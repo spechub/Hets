@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/Cons.hs
 Description :  A collection of data-structures, functions and instances for
                 the THF modules.
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
@@ -16,7 +17,10 @@ Note: Some of the implenentations depend on the THF0 Syntax.
 module THF.Cons where
 
 import THF.As
+
 import Common.Id
+
+import Data.Data
 
 -- Some empty instances
 
@@ -26,7 +30,7 @@ BasicSpecTHF
 
 data BasicSpecTHF =
     BasicSpecTHF [TPTP_THF]
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange BasicSpecTHF
 
@@ -38,14 +42,14 @@ data SymbolTHF = Symbol
     { symId :: Constant
     , symName :: Name
     , symType :: SymbolType
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange SymbolTHF
 
 data SymbolType =
     ST_Const Type
   | ST_Type Kind
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data Type =
     TType
@@ -57,7 +61,7 @@ data Type =
   | SType Token
   | VType Token
   | ParType Type
-    deriving (Show, Ord, Eq)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data Kind = Kind
- deriving (Show, Ord, Eq)
+ deriving (Show, Eq, Ord, Typeable, Data)

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./ExtModal/AS_ExtModal.der.hs
 Copyright   :  DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -14,7 +15,10 @@ module ExtModal.AS_ExtModal where
 
 import Common.Id
 import Common.AS_Annotation
+
 import CASL.AS_Basic_CASL
+
+import Data.Data
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -25,18 +29,19 @@ data FrameForm = FrameForm
   { frameVars :: [VAR_DECL]
   , frameForms :: [Annoted (FORMULA EM_FORMULA)]
   , frameFormRange :: Range
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 data ModDefn = ModDefn Bool Bool [Annoted Id] [Annoted FrameForm] Range
         -- Booleans: time (True) or not and term (True) or simple modality
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data EM_BASIC_ITEM =
         ModItem ModDefn
         | Nominal_decl [Annoted SIMPLE_ID] Range
-        deriving Show
+        deriving (Show, Typeable, Data)
 
-data ModOp = Composition | Intersection | Union | OrElse deriving (Eq, Ord)
+data ModOp = Composition | Intersection | Union | OrElse
+  deriving (Eq, Ord, Typeable, Data)
 
 {- Union corresponds to alternative and intersection to parallel composition.
 The symbols used (like for logical "and" and "or") may be confusing!
@@ -57,7 +62,7 @@ data MODALITY =
   | ModOp ModOp MODALITY MODALITY
   | TransClos MODALITY
   | Guard (FORMULA EM_FORMULA)
-        deriving (Eq, Ord, Show)
+        deriving (Show, Eq, Ord, Typeable, Data)
 
 -- True booleans for rigid items, False for flexible ones
 data EM_SIG_ITEM =
@@ -65,7 +70,7 @@ data EM_SIG_ITEM =
                  -- pos: op, semi colons
         | Rigid_pred_items Bool [Annoted (PRED_ITEM EM_FORMULA)] Range
                  -- pos: pred, semi colons
-             deriving Show
+             deriving (Show, Typeable, Data)
 
 {-
 Note, that a diamond formula "<m> f" stand for "<m>1 f" or "<m> >=1 f"
@@ -101,7 +106,7 @@ Also box formulas using n (> 1) are rarely used!
 -}
 
 
-data BoxOp = Box | Diamond | EBox deriving (Show, Eq, Ord)
+data BoxOp = Box | Diamond | EBox deriving (Show, Eq, Ord, Typeable, Data)
 {- the EBox is a short cut for a box and a diamond asserting
 that a next world exists and that the formula holds in all of them. -}
 
@@ -129,11 +134,11 @@ data FormPrefix
                 pos: "G", "H", "F", "P" -}
   | FixedPoint Bool VAR
                 -- pos: "mu", "nu", True if "mu", False if "nu"
-    deriving (Eq, Ord, Show)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 data EM_FORMULA
   = PrefixForm FormPrefix (FORMULA EM_FORMULA) Range
   | UntilSince Bool (FORMULA EM_FORMULA) (FORMULA EM_FORMULA) Range
                 -- pos: "Until", "Since", True if  Until, False if Since
   | ModForm ModDefn
-    deriving (Eq, Ord, Show)
+    deriving (Show, Eq, Ord, Typeable, Data)

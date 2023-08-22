@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CoCASL/Parse_AS.hs
 Description :  Parser for CoCASL
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

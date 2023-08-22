@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Lattice.hs
 Description :  lattice classes
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt

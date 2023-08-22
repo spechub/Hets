@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASLProver/CspCASLProver.hs
 Description :  Interface to the CspCASLProver (Isabelle based) theorem prover
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach, Swansea University 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -29,6 +29,7 @@ import CASL.Fold
 import CASL.Sign (CASLSign, Sign (..), sortSet)
 
 import Common.AS_Annotation (Named, mapNamedM)
+import Common.ProverTools
 import Common.Result
 
 import qualified Comorphisms.CASL2PCFOL as CASL2PCFOL
@@ -45,7 +46,7 @@ import CspCASLProver.Utils
 import qualified Data.Maybe as Maybe
 import qualified Data.Set as Set
 
-import Isabelle.IsaProve (isaProve)
+import Isabelle.IsaProve
 import qualified Isabelle.IsaSign as Isa
 
 import Logic.Prover
@@ -57,7 +58,8 @@ cspCASLProverS = "CspCASLProver"
 
 -- | The wrapper function that is CspCASL Prover
 cspCASLProver :: Prover CspCASLSign CspCASLSen CspCASLMorphism () ()
-cspCASLProver = mkProverTemplate cspCASLProverS () cspCASLProverProve
+cspCASLProver = (mkProverTemplate cspCASLProverS () cspCASLProverProve)
+  { proverUsable = checkBinary "isabelle" }
 
 -- | The main cspCASLProver function
 cspCASLProverProve :: String -> Theory CspCASLSign CspCASLSen () -> a ->
@@ -98,8 +100,8 @@ cspCASLProverProve thName (Theory ccSign ccSensThSens) _freedefs =
                          (produceIntegrationTheorems thName caslSign)
       {- Generate and Isabelle to prove the process refinements (also produces
       the processes) -}
-      isaProve thName (produceProcesses thName ccSign ccNamedSens pcfolSign
-                                        cfolSign) ()
+      isaProve JEdit thName
+        (produceProcesses thName ccSign ccNamedSens pcfolSign cfolSign) ()
 
 {- |Produce the Isabelle theory of the data part of a CspCASL
 specification. The data transalation can fail. If it does fail there will

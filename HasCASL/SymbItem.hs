@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/SymbItem.hs
 Description :  parsing symbol items
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -18,6 +18,7 @@ import Common.Token (colonST)
 import Common.Keywords
 import Common.Lexer
 import Common.AnnoState
+import qualified Control.Monad.Fail as Fail
 import Text.ParserCombinators.Parsec
 
 import HasCASL.ParseTerm
@@ -33,7 +34,7 @@ symb = do
        sc <- typeScheme p
        return $ Symb i (Just $ SymbType sc) $ tokPos c
       <|> if null tys then return $ Symb i Nothing $ posOfId i else
-          fail ("bound type variables for '" ++ showId i "' without type")
+          Fail.fail ("bound type variables for '" ++ showId i "' without type")
 
 -- | parse a mapped symbol
 symbMap :: AParser st SymbOrMap

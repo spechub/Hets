@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/PrintTHF.hs
 Description :  A printer for the TPTP-THF Syntax
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -13,7 +13,7 @@ clean:
 	rm -rf *.dmtcp imageTools/dmtcp/ imageTools/hol_light/ imageTools/tmp/*
 
 imageTools/hol_light/pa_j.ml: imageTools/hol_light/
-	make -C imageTools/hol_light/ && touch imageTools/hol_light/pa_j.ml
+	$(MAKE) -C imageTools/hol_light/ && touch imageTools/hol_light/pa_j.ml
 
 imageTools/hol_light/: imageTools/tmp/hol_light.tar.gz
 	cd imageTools/tmp/ && tar zfx hol_light.tar.gz && mv hol_light ../
@@ -25,7 +25,7 @@ imageTools/dmtcp/bin/dmtcp_%: imageTools/dmtcp/bin/
 	:
 
 imageTools/dmtcp/bin/: imageTools/dmtcp/
-	cd imageTools/dmtcp && ./configure && make
+	cd imageTools/dmtcp && ./configure && $(MAKE)
 
 imageTools/dmtcp/: imageTools/tmp/dmtcp.tar.gz
 	cd imageTools/tmp/ && tar xzf dmtcp.tar.gz && mv dmtcp-$(DMTCP_VERSION) ../dmtcp

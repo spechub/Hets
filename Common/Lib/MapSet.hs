@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Lib/MapSet.hs
 Description :  Maps of sets
 Copyright   :  (c) DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -59,9 +60,13 @@ module Common.Lib.MapSet
   ) where
 
 import Prelude hiding (all, filter, map, null, lookup)
+
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.List as List
+
+import GHC.Generics (Generic)
 
 -- * functions directly working over unwrapped maps of sets
 
@@ -121,7 +126,7 @@ imageSet m = Set.fromList . imageList m
 
 -- | a map to non-empty sets
 newtype MapSet a b = MapSet { toMap :: Map.Map a (Set.Set b) }
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Typeable, Data, Generic)
 
 instance (Show a, Show b) => Show (MapSet a b) where
     show = show . toMap
@@ -216,7 +221,7 @@ mapSet f = fromMap . Map.map f . toMap
 
 -- | fold over all elements
 foldWithKey :: (a -> b -> c -> c) -> c -> MapSet a b -> c
-foldWithKey f e = Map.foldWithKey (\ a bs c -> Set.fold (f a) c bs) e . toMap
+foldWithKey f e = Map.foldrWithKey (\ a bs c -> Set.fold (f a) c bs) e . toMap
 
 -- | filter elements
 filter :: (Ord a, Ord b) => (b -> Bool) -> MapSet a b -> MapSet a b
@@ -241,7 +246,7 @@ isSubmapOf (MapSet m) = Map.isSubmapOfBy Set.isSubsetOf m . toMap
 
 -- | pre-image of a map
 preImage :: (Ord a, Ord b) => Map.Map a b -> MapSet b a
-preImage = Map.foldWithKey (flip insert) empty
+preImage = Map.foldrWithKey (flip insert) empty
 
 -- | transpose a map set
 transpose :: (Ord a, Ord b) => MapSet a b -> MapSet b a

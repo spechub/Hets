@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Sublogic.hs
 Description :  Sublogics for CommonLogic
 Copyright   :  (c) Eugen Kuksa, Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -42,8 +43,10 @@ module CommonLogic.Sublogic
 
 import CommonLogic.Tools
 
+import Data.Data
 import Data.Function
 import qualified Data.Set as Set
+
 import CommonLogic.AS_CommonLogic
 import Common.AS_Annotation (Annoted (..))
 import CommonLogic.Sign
@@ -59,7 +62,7 @@ data CLTextType =
     Propositional      -- ^ Text without quantifiers
   | FirstOrder         -- ^ Text in First Order Logic
   | Impredicative
-  deriving (Show, Eq, Ord, Enum, Bounded)
+  deriving (Show, Eq, Ord, Enum, Bounded, Typeable)
 
 -- for comparison of sublogics use the Ord instance
 
@@ -67,7 +70,7 @@ data CLTextType =
 data CommonLogicSL = CommonLogicSL
     { format :: CLTextType     -- Structural restrictions
     , compact :: Bool
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable)
 
 -- | all sublogics
 sublogics_all :: [CommonLogicSL]

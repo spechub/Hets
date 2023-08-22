@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/Modal2CASL.hs
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2004, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -107,10 +107,10 @@ transSig sign =
        rigOps' = diffOpMapSet (opMap sign) flexibleOps
        rigPreds' = diffMapSet (predMap sign) flexiblePreds
        relations = Map.union relsMod relsTermMod
-       genRels f = Map.foldWithKey (\ me _ nm -> f me nm) Map.empty
+       genRels f = Map.foldrWithKey (\ me _ nm -> f me nm) Map.empty
        relSymbS = relName False . simpleIdToId
        relSymbT = relName True
-       genModFrms f = Map.foldWithKey f []
+       genModFrms f = Map.foldrWithKey f []
        modiesInf = modies extInf
        trmMods = termModies extInf
        relsMod = genRels (\ me nm -> Map.insert (SimpleM me) (relSymbS me) nm)
@@ -130,7 +130,7 @@ transSig sign =
               let argSorts rs = if isTermMod
                              then [getModTermSort rs, fws, fws]
                              else [fws, fws] in
-               Map.fold (\ rs nm -> Map.insert rs
+               Map.foldr (\ rs nm -> Map.insert rs
                                               (Set.singleton $
                                                     PredType $ argSorts rs)
                                               nm)

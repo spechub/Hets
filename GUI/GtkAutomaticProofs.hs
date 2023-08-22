@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GtkAutomaticProofs.hs
 Description :  Gtk GUI for automatic proving procedure of multiple nodes
 Copyright   :  (c) Simon Ulbricht, Uni Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -16,7 +16,6 @@ module GUI.GtkAutomaticProofs
   where
 
 import Graphics.UI.Gtk
-import Graphics.UI.Gtk.Glade
 
 import qualified GUI.Glade.NodeChecker as ConsistencyChecker
 import GUI.GraphTypes
@@ -46,6 +45,7 @@ import Control.Concurrent (forkIO, killThread)
 import Control.Concurrent.MVar
 import Control.Monad (foldM_, join, when)
 import Control.Monad.Trans
+import qualified Control.Monad.Fail as Fail
 
 import Proofs.AbstractState
 
@@ -75,28 +75,28 @@ showAutomaticProofs ginf@(GInfo { libName = ln }) le = do
 -- | Displays the consistency checker window
 showProverWindow :: GInfo -> MVar LibEnv -> LibName -> LibEnv -> IO ()
 showProverWindow ginf res ln le = postGUIAsync $ do
-  xml <- getGladeXML ConsistencyChecker.get
+  builder <- getGTKBuilder ConsistencyChecker.get
   -- get objects
-  window <- xmlGetWidget xml castToWindow "NodeChecker"
-  btnClose <- xmlGetWidget xml castToButton "btnClose"
-  btnResults <- xmlGetWidget xml castToButton "btnResults"
+  window <- builderGetObject builder castToWindow "NodeChecker"
+  btnClose <- builderGetObject builder castToButton "btnClose"
+  btnResults <- builderGetObject builder castToButton "btnResults"
   -- get nodes view and buttons
-  trvNodes <- xmlGetWidget xml castToTreeView "trvNodes"
-  btnNodesAll <- xmlGetWidget xml castToButton "btnNodesAll"
-  btnNodesNone <- xmlGetWidget xml castToButton "btnNodesNone"
-  btnNodesInvert <- xmlGetWidget xml castToButton "btnNodesInvert"
-  btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
-  btnNodesTimeout <- xmlGetWidget xml castToButton "btnNodesTimeout"
-  cbInclThms <- xmlGetWidget xml castToCheckButton "cbInclThms"
+  trvNodes <- builderGetObject builder castToTreeView "trvNodes"
+  btnNodesAll <- builderGetObject builder castToButton "btnNodesAll"
+  btnNodesNone <- builderGetObject builder castToButton "btnNodesNone"
+  btnNodesInvert <- builderGetObject builder castToButton "btnNodesInvert"
+  btnNodesUnchecked <- builderGetObject builder castToButton "btnNodesUnchecked"
+  btnNodesTimeout <- builderGetObject builder castToButton "btnNodesTimeout"
+  cbInclThms <- builderGetObject builder castToCheckButton "cbInclThms"
   -- get checker view and buttons
-  cbComorphism <- xmlGetWidget xml castToComboBox "cbComorphism"
-  lblSublogic <- xmlGetWidget xml castToLabel "lblSublogic"
-  sbTimeout <- xmlGetWidget xml castToSpinButton "sbTimeout"
-  btnCheck <- xmlGetWidget xml castToButton "btnCheck"
-  btnStop <- xmlGetWidget xml castToButton "btnStop"
-  -- btnFineGrained    <- xmlGetWidget xml castToButton "btnFineGrained"
-  trvFinder <- xmlGetWidget xml castToTreeView "trvFinder"
-  toolLabel <- xmlGetWidget xml castToLabel "label1"
+  cbComorphism <- builderGetObject builder castToComboBox "cbComorphism"
+  lblSublogic <- builderGetObject builder castToLabel "lblSublogic"
+  sbTimeout <- builderGetObject builder castToSpinButton "sbTimeout"
+  btnCheck <- builderGetObject builder castToButton "btnCheck"
+  btnStop <- builderGetObject builder castToButton "btnStop"
+  -- btnFineGrained    <- builderGetObject builder castToButton "btnFineGrained"
+  trvFinder <- builderGetObject builder castToTreeView "trvFinder"
+  toolLabel <- builderGetObject builder castToLabel "label1"
   labelSetLabel toolLabel "Pick prover"
   windowSetTitle window "AutomaticProofs"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit
@@ -217,7 +217,7 @@ showProverWindow ginf res ln le = postGUIAsync $ do
                       {- where the proving did not return anything, the node is
                       not updated -}
                       if unchecked fn then cs
-                          else updateLabelTheory le cs (node fn) (results fn)
+                          else updateLabelTheory le ln cs (node fn) (results fn)
                     ) dg nodes'
 
     putMVar res $ Map.insert ln (groupHistory dg (DGRule "autoproof") dg') le
@@ -253,10 +253,13 @@ performAutoProof gi inclThms timeout update (Finder _ pr cs i) listNodes nodes =
            res <- maybe (return Nothing) (\ g_th -> do
                     Result ds ms <- runResultT
                         (do
-                          (a, b) <- autoProofAtNode inclThms timeout [] g_th (pr, c)
-                          liftIO $ addCommandHistoryToState (intState gi) (fst b) (Just (pr, c)) (snd b) (name fn) (True, timeout)
+                          (a, b) <- autoProofAtNode inclThms timeout [] [] g_th
+                            (pr, c)
+                          liftIO $ addCommandHistoryToState (intState gi)
+                            (fst b) (Just (pr, c)) (snd b) (name fn)
+                            (True, timeout)
                           return a)
-                    maybe (fail $ showRelDiags 1 ds) (return . Just . fst) ms)
+                    maybe (Fail.fail $ showRelDiags 1 ds) (return . Just . fst) ms)
                   $ globalTheory $ snd $ node fn
            case res of
              Just gt -> postGUISync $ listStoreSetValue listNodes row
@@ -291,11 +294,12 @@ updateNodes view listNodes update lock unlock = do
 updateFinder :: TreeView -> ListStore Finder -> G_sublogics -> IO ()
 updateFinder view list sl = do
   old <- listStoreToList list
+  ps <- getUsableProvers ProveCMDLautomatic sl logicGraph
   let new = Map.elems $ foldr (\ (pr, c) m ->
               let n = getProverName pr
                   f = Map.findWithDefault (Finder n pr [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
-              $ getAllProvers ProveCMDLautomatic sl logicGraph
+              ps
   when (old /= new) $ do
     -- update list and try to select previous finder
     selected' <- getSelectedSingle view list
@@ -331,8 +335,8 @@ updateComorphism view list cbComorphism sh = do
     Nothing -> return ()
   signalUnblock sh
 
-expand :: Finder -> [String]
-expand = map show . comorphism
+expand :: Finder -> [ComboBoxText]
+expand = toComboBoxText . comorphism
 
 setSelectedComorphism :: TreeView -> ListStore Finder -> ComboBox -> IO ()
 setSelectedComorphism view list cbComorphism = do
@@ -347,13 +351,13 @@ setSelectedComorphism view list cbComorphism = do
 showModelViewAux :: MVar (IO ()) -> String -> ListStore FNode -> [FNode]
                  -> IO ()
 showModelViewAux lock title list other = do
-  xml <- getGladeXML ConsistencyChecker.get
+  builder <- getGTKBuilder ConsistencyChecker.get
   -- get objects
-  window <- xmlGetWidget xml castToWindow "ModelView"
-  btnClose <- xmlGetWidget xml castToButton "btnResClose"
-  frNodes <- xmlGetWidget xml castToFrame "frResNodes"
-  trvNodes <- xmlGetWidget xml castToTreeView "trvResNodes"
-  tvModel <- xmlGetWidget xml castToTextView "tvResModel"
+  window <- builderGetObject builder castToWindow "ModelView"
+  btnClose <- builderGetObject builder castToButton "btnResClose"
+  frNodes <- builderGetObject builder castToFrame "frResNodes"
+  trvNodes <- builderGetObject builder castToTreeView "trvResNodes"
+  tvModel <- builderGetObject builder castToTextView "tvResModel"
 
   windowSetTitle window title
 

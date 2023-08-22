@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/VarDecl.hs
 Description :  analyse var decls
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -39,6 +39,7 @@ import Common.Result
 import Text.ParserCombinators.Parsec (runParser, eof)
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Data.List as List
 import Data.Maybe
@@ -65,7 +66,7 @@ getTypeVars :: LocalTypeVars -> [Type] -> Range -> [TypeArg]
 getTypeVars e tys ps =
   let is = Set.unions $ map (idsOf (>= 0)) tys
       tyVs = Map.intersection e $ setToMap is
-      dTys = Map.fold (\ (TypeVarDefn _ vk _ _) l -> case vk of
+      dTys = Map.foldr (\ (TypeVarDefn _ vk _ _) l -> case vk of
              Downset ty -> ty : l
              _ -> l) [] tyVs
       dis = Set.unions $ map (idsOf (>= 0)) dTys
@@ -335,7 +336,7 @@ convertTypeToKind :: Env -> Type -> Result (Variance, Kind)
 convertTypeToKind e ty = case convTypeToKind ty of
     Just (v, k) -> let Result ds _ = anaKindM k $ classMap e in
                if null ds then return (v, k) else Result ds Nothing
-    _ -> fail $ "not a kind '" ++ showDoc ty "'"
+    _ -> Fail.fail $ "not a kind '" ++ showDoc ty "'"
 
 -- | local variable or type variable declaration
 optAnaddVarDecl :: Bool -> VarDecl -> State Env (Maybe GenVarDecl)

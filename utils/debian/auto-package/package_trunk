@@ -4,6 +4,7 @@
 #
 # c.prodescu@jacobs-university.de
 # jonathan.von_schroeder@gmail.com
+# Christian.Maeder@dfki.de
 #
 
 MAIN_DISTRO="oneiric"
@@ -12,7 +13,7 @@ AUTO_INSTALL=1
 OPTERR=0
 
 HETS_REPO=https://github.com/spechub/Hets.git
-HETS_LIB_REPO=https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk
+HETS_LIB_REPO=https://github.com/spechub/Hets-lib.git
 
 PROGRAMATICA=programatica-1.0.0.5
 
@@ -166,12 +167,6 @@ export_git_repo()
   fi
  if [ "$TARGET_REV" != "" ]; then
    GIT_TARGET_REV=$TARGET_REV
-   if [ ! $? -eq 0 ]; then
-     echo "Couldn't find revision $TARGET_REV ..."
-     echo "Giving up."
-     exit 1
-   fi
-   echo ":: Git revision for $TARGET_REV is: $GIT_TARGET_REV"
    (cd $REPO_FOLDER && git checkout $GIT_TARGET_REV)
    if [ "`cat \"${DATA_DIR}/revision_${SUFF}\" 2>/dev/null`" == "$TARGET_REV" ]; then
      EXPORT_UPTODATE=0
@@ -186,7 +181,7 @@ export_git_repo()
    rm -rf $FOLDER
    mkdir -p $FOLDER
    cd $REPO_FOLDER
-   git archive --format=tar master | (cd $FOLDER && tar -xf -)
+   git archive --format=tar HEAD | (cd $FOLDER && tar -xf -)
    cd $OLD_PWD
    if [ $? -eq 1 ]; then
      echo "Check out failed ..."
@@ -325,7 +320,6 @@ fi
 if [ $OPT_CREATE -eq 0 ]; then
   echo "=== Creating source packages"
   ensure_package_installed git
-  ensure_package_installed "git-svn"
   ensure_package_installed ant
   ensure_package_installed "openjdk-7-jdk"
 
@@ -350,7 +344,7 @@ if [ $OPT_CREATE -eq 0 ]; then
   HETS_FULL_VERSION="$HETS_VERSION"r"$HETS_REVISION"
   echo ":: Full version is: $HETS_FULL_VERSION"
 
-  svn export -q --ignore-externals $HETS_LIB_REPO $HETS_FOLDER/hets-lib
+  export_git_repo "lib" "$HETS_LIB_REPO" "$HETS_LIB_REPO_FOLDER" "$HETS_FOLDER/hets-lib"
 
   echo ":: Compiling Hets OWL Tools"
   if [ ! -f "$DATA_DIR/owl.done" ]; then

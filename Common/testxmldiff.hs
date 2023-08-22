@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/testxmldiff.hs
 Description :  test xmldiff
 Copyright   :  (c) C. Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt

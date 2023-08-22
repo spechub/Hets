@@ -1,6 +1,6 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/Morphism.hs
 Description :  Symbols and signature morphisms for the CspCASL logic
 Copyright   :  (c) Liam O'Reilly, Markus Roggenbach, Swansea University 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -46,6 +46,7 @@ import qualified Common.Lib.Rel as Rel
 
 import Control.Monad
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -75,7 +76,7 @@ data CspAddMorphism = CspAddMorphism
     the empty morphism and the identity morphism. -}
     { channelMap :: ChanMap
     , processMap :: ProcessMap
-    } deriving (Eq, Ord, Show)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | The empty CspAddMorphism.
 emptyCspAddMorphism :: CspAddMorphism

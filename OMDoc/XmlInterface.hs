@@ -4,7 +4,7 @@
  #-}
 
 {- |
-Module      :  $Header$
+Module      :  ./OMDoc/XmlInterface.hs
 Description :  OMDoc-XML conversion
 Copyright   :  (c) Ewaryst Schulz, DFKI 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -25,11 +25,12 @@ import OMDoc.DataTypes
 
 import Common.Utils (splitBy)
 import Common.Result
-import Common.IRI (isUnescapedInIRI, escapeIRIString, unEscapeString)
+import Common.Percent
 
 import Data.Maybe
 import Data.List
 import Control.Monad (liftM, when)
+import qualified Control.Monad.Fail as Fail
 
 import Common.XmlParser (XmlParseable, parseXml)
 import Text.XML.Light
@@ -140,8 +141,8 @@ xmlIn :: XmlParseable a => a -> IO (Result OMDoc)
 xmlIn s = do
   res <- parseXml s
   return $ case res of
-            Right e -> fromXml e >>= maybe (fail "xmlIn") return
-            Left msg -> fail msg
+            Right e -> fromXml e >>= maybe (Fail.fail "xmlIn") return
+            Left msg -> Fail.fail msg
 
 
 listToXml :: XmlRepresentable a => [a] -> [Content]
@@ -170,10 +171,10 @@ toOmobj c = inAContent el_omobj [attr_om] $ Just c
 {- url escaping and unescaping.
 We use ? and / as special characters, so we need them to be encoded in names -}
 urlEscape :: String -> String
-urlEscape = escapeIRIString isUnescapedInIRI
+urlEscape = encodeBut (`notElem` "%/?")
 
 urlUnescape :: String -> String
-urlUnescape = unEscapeString
+urlUnescape = decode
 
 
 -- to- and from-string functions
@@ -302,7 +303,7 @@ instance XmlRepresentable OMDoc where
               warnIf "Wrong OMDoc version." $ vs /= omdoc_current_version
               tls <- listFromXml $ elContent e
               justReturn $ OMDoc nm tls
-        | otherwise = fail "OMDoc fromXml: toplevel element is no omdoc."
+        | otherwise = Fail.fail "OMDoc fromXml: toplevel element is no omdoc."
 
 
 -- | toplevel OMDoc elements to XML and back
@@ -401,7 +402,7 @@ instance XmlRepresentable TCElement where
               sds <- listFromXml $ elContent e
               justReturn $ TCADT sds
         | otherwise =
-            fail $ oneOfMsg e [el_constant, el_structure, el_adt, el_notation]
+            Fail.fail $ oneOfMsg e [el_constant, el_structure, el_adt, el_notation]
 
 
 -- | OMDoc - Algebraic Data Types
@@ -450,7 +451,7 @@ instance XmlRepresentable OmdADT where
               let nm = missingMaybe "Insort" "for" $ findAttr at_for e
               justReturn $ ADTInsort $ readCDName nm
         | otherwise =
-            fail $ oneOfMsg e [ el_sortdef, el_constructor, el_argument
+            Fail.fail $ oneOfMsg e [ el_sortdef, el_constructor, el_argument
                               , el_selector, el_insort]
 
 
@@ -497,7 +498,7 @@ instance XmlRepresentable OMElement where
               justReturn $ OMBIND (musthave "binder" bd') bvar'
                              (musthave "body" body')
         | otherwise =
-            fail $ oneOfMsg e [el_oms, el_omv, el_omattr, el_oma, el_ombind]
+            Fail.fail $ oneOfMsg e [el_oms, el_omv, el_omattr, el_oma, el_ombind]
 
 
 -- | Helper instance for OpenMath attributes
@@ -509,7 +510,7 @@ instance XmlRepresentable OMAttribute where
               [key, val] <- listFromXml $ elContent e
               justReturn $ OMAttr key val
         | otherwise =
-            fail $ oneOfMsg e [el_omatp]
+            Fail.fail $ oneOfMsg e [el_omatp]
 
 
 -- * fromXml methods
@@ -529,11 +530,11 @@ omobjToOMElement e = case elChildren e of
                            do
                              omelem <- fromXml om
                              case omelem of
-                               Nothing -> fail
+                               Nothing -> Fail.fail
                                    $ "omobjToOMElement: " ++
                                      "No OpenMath element found."
                                Just x -> return x
-                       _ -> fail "OMOBJ element must have a unique child."
+                       _ -> Fail.fail "OMOBJ element must have a unique child."
 
 
 -- | The input is assumed to be a conass element
@@ -550,7 +551,7 @@ xmlToAssignment e
         in do
           omel <- omelementFromOmobj e
           return (readOMName nm, Right $ musthave "OMOBJ element" omel)
-    | otherwise = fail $ oneOfMsg e [el_conass, el_open]
+    | otherwise = Fail.fail $ oneOfMsg e [el_conass, el_open]
 
 
 -- * toXml methods

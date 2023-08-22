@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/SZSProver.hs
 Description :  General Interface to a prover using SZS status messages
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -59,9 +59,9 @@ data ProverFuncs = ProverFuncs {
 
 type ProverType = Prover SignTHF THFFormula MorphismTHF THFSl ProofTree
 
-createSZSProver :: String -> String -> ProverFuncs ->
+createSZSProver :: String -> String -> String -> ProverFuncs ->
                    ProverType
-createSZSProver name hlp d = mkAutomaticProver name tHF0
+createSZSProver bin name hlp d = mkAutomaticProver bin name tHF0
  (proverGUI hlp name d)
  (proverCMDLautomaticBatch hlp name d)
 

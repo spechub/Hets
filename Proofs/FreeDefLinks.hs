@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/FreeDefLinks.hs
 Description :  compute ingoing free definition links for provers
 Copyright   :  C. Maeder DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

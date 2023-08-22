@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/ProveMathServ.hs
 Description :  Interface for the MathServe broker.
 Copyright   :  (c) Rene Wagner, Klaus Luettich, Rainer Grabbe,
                    Uni Bremen 2005-2006
@@ -52,8 +52,8 @@ import Proofs.BatchProcessing
   feedback), then starts the GUI prover.
 -}
 mathServBroker :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-mathServBroker = mkAutomaticProver brokerName () mathServBrokerGUI
-  mathServBrokerCMDLautomaticBatch
+mathServBroker = (mkProverTemplate brokerName () mathServBrokerGUI)
+  { proveCMDLautomaticBatch = Just mathServBrokerCMDLautomaticBatch }
 
 mathServHelpText :: String
 mathServHelpText =

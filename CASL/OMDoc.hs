@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/OMDoc.hs
 Description :  CASL specific OMDoc constants
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

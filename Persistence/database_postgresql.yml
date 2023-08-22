@@ -1,0 +1,19 @@
+default: &default
+  adapter: postgresql
+  username: postgres
+  # password:
+  # host: localhost # Optional
+  port: 5432 # Optional
+  pool: 10
+
+development:
+  <<: *default
+  database: hets_development
+
+test:
+  <<: *default
+  database: hets_test
+
+production:
+  <<: *default
+  database: hets

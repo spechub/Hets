@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/RunMixfixParser.hs
 Description :  test driver for mixfix resolution
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2007
 License     :  GPLv2 or higher, see LICENSE.txt

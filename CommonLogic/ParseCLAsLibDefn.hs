@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/ParseCLAsLibDefn.hs
 Copyright   :  Eugen Kuksa 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -17,6 +17,9 @@ import Common.IRI
 import Common.LibName
 import Common.AS_Annotation as Anno
 import Common.AnnoState
+import Common.Parsec
+import Common.Result
+import Common.ResultT
 
 import Driver.Options
 import Driver.ReadFn
@@ -33,6 +36,8 @@ import Syntax.AS_Library
 import Syntax.AS_Structured
 
 import Control.Monad (foldM)
+import Control.Monad.Trans
+
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.List
@@ -44,7 +49,7 @@ type SpecInfo = (BASIC_SPEC, FilePath, Set.Set String, Set.Set FilePath)
                 -- (spec, topTexts, importedBy)
 
 -- | call for CommonLogic CLIF-parser with recursive inclusion of importations
-parseCL_CLIF :: FilePath -> HetcatsOpts -> IO [LIB_DEFN]
+parseCL_CLIF :: FilePath -> HetcatsOpts -> ResultT IO [LIB_DEFN]
 parseCL_CLIF filename opts = do
   let dirFile@(dir, _) = splitFileName filename
   specMap <- downloadSpec opts Map.empty Set.empty Set.empty False dirFile dir
@@ -54,7 +59,7 @@ parseCL_CLIF filename opts = do
 
 -- call for CommonLogic CLIF-parser for a single file
 parseCL_CLIF_contents :: FilePath -> String -> Either ParseError [BASIC_SPEC]
-parseCL_CLIF_contents = runParser (many $ CLIF.basicSpec Map.empty)
+parseCL_CLIF_contents = runParser (many (CLIF.basicSpec Map.empty) << eof)
                         (emptyAnnos ())
 
 {- maps imports in basic spec to global definition links (extensions) in
@@ -97,7 +102,7 @@ httpCombine :: FilePath -> FilePath -> FilePath
 httpCombine d f = if checkUri f then f else fileCombine d f
 
 collectDownloads :: HetcatsOpts -> String -> SpecMap -> (String, SpecInfo)
-                    -> IO SpecMap
+ -> ResultT IO SpecMap
 collectDownloads opts baseDir specMap (n, (b, _, topTexts, importedBy)) = do
   let directImps = Set.elems $ Set.map tokStr $ directImports b
       newTopTexts = Set.insert n topTexts
@@ -110,16 +115,18 @@ collectDownloads opts baseDir specMap (n, (b, _, topTexts, importedBy)) = do
           return (Map.unionWith unify newDls sm)
         ) specMap directImps -- imports get @n@ as new "importedBy"
 
+justErr :: a -> String -> ResultT IO a
+justErr a s = liftR $ plain_error a s nullRange
+
 downloadSpec :: HetcatsOpts -> SpecMap -> Set.Set String -> Set.Set String
-                -> Bool -> (String, String) -> String -> IO SpecMap
+  -> Bool -> (String, String) -> String -> ResultT IO SpecMap
 downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
   let fn = rmSuffix $ uncurry httpCombine dirFile
   case Map.lookup fn specMap of
       Just info@(b, f, t, _)
-        | isImport && Set.member fn importedBy -> do
-           putIfVerbose opts 0 . intercalate "\n "
-             $ "**** unsupported cyclic imports:" : Set.toList importedBy
-           return specMap
+        | isImport && Set.member fn importedBy ->
+           justErr specMap . intercalate "\n "
+             $ "unsupported cyclic imports:" : Set.toList importedBy
         | t == topTexts
           -> return specMap
         | otherwise ->
@@ -127,33 +134,27 @@ downloadSpec opts specMap topTexts importedBy isImport dirFile baseDir = do
               newSpecMap = Map.insert fn newInfo specMap
           in collectDownloads opts baseDir newSpecMap (fn, newInfo)
       Nothing -> do
-        mCont <- getCLIFContents opts dirFile baseDir
+        mCont <- lift $ getCLIFContents opts dirFile baseDir
         case mCont of
-          Left err -> do
-            putIfVerbose opts 0 $ "**** " ++ show err
-            return specMap
+          Left err -> justErr specMap $ show err
           Right (file, contents) -> do
-            putIfVerbose opts 2 $ "Downloaded " ++ file
+            lift $ putIfVerbose opts 2 $ "Downloaded " ++ file
             case parseCL_CLIF_contents fn contents of
-              Left err -> do
-                putIfVerbose opts 0 $ "**** " ++ show err
-                return specMap
+              Left err -> justErr specMap $ show err
               Right bs -> do
                 let nbs = zip (specNameL bs fn) bs
                 nbs2 <- mapM (\ (n, b) -> case
                     map (rmSuffix . tokStr) $ clTexts b of
-                  [txt] -> if txt == fn then return (n, b) else do
-                    putIfVerbose opts 2 $ "#### filename " ++ show fn
-                      ++ " does not match cl-text " ++ show txt
-                    return (if isImport then n else txt, b)
-                  [] -> do
-                    putIfVerbose opts 2 $ "#### missing cl-text in "
-                      ++ show fn
-                    return (n, b)
-                  ts -> do
-                    putIfVerbose opts 2 $ "#### multiple cl-text entries in "
+                  [txt] -> if txt == fn then return (n, b) else
+                    liftR $ justWarn (if isImport then n else txt, b)
+                      $ "filename " ++ show fn
+                        ++ " does not match cl-text " ++ show txt
+                  [] -> liftR $ justWarn (n, b)
+                    $ "missing cl-text in " ++ show fn
+                  ts -> liftR $ justWarn (n, b)
+                    $ "multiple cl-text entries in "
                       ++ show fn ++ "\n" ++ unlines (map show ts)
-                    return (n, b)) nbs
+                  ) nbs
                 let nbtis = map (\ (n, b) ->
                                  (n, (b, file, topTexts, importedBy))) nbs2
                     newSpecMap = foldr (\ (n, bti) sm ->

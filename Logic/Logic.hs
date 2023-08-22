@@ -1,7 +1,13 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
-  , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Logic.hs
 Description :  central interface (type class) for logics in Hets
 Copyright   :  (c) Till Mossakowski, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -140,18 +146,23 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.IRI
 import Common.Item
+import Common.Json
 import Common.Lib.Graph
 import Common.LibName
 import Common.Prec (PrecMap)
 import Common.Result
 import Common.Taxonomy
+import Common.ToXml
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
+
+import Data.Aeson (FromJSON, ToJSON)
 
 -- | Stability of logic implementations
 data Stability = Stable | Testing | Unstable | Experimental
@@ -162,8 +173,8 @@ class ShATermConvertible a => Convertible a
 instance ShATermConvertible a => Convertible a
 
 -- | shortcut for class constraints
-class (Pretty a, Convertible a) => PrintTypeConv a
-instance (Pretty a, Convertible a) => PrintTypeConv a
+class (Pretty a, Convertible a, ToJSON a, FromJSON a) => PrintTypeConv a
+instance (Pretty a, Convertible a, ToJSON a, FromJSON a) => PrintTypeConv a
 
 -- | shortcut for class constraints with equality
 class (Eq a, PrintTypeConv a) => EqPrintTypeConv a
@@ -173,7 +184,7 @@ instance (Eq a, PrintTypeConv a) => EqPrintTypeConv a
 type EndoMap a = Map.Map a a
 
 {- | the name of a logic.
-     Define instances like "data CASL = CASL deriving Show"
+     Define instances like "data CASL = CASL deriving (Show, Typeable, Data)"
 -}
 class Show lid => Language lid where
     language_name :: lid -> String
@@ -182,6 +193,10 @@ class Show lid => Language lid where
     -- default implementation
     description _ = ""
 
+-- short description = first line of description
+short_description :: Language lid => lid -> String
+short_description l = head ((lines $ description l) ++ [""])
+      
 {- | Categories are given as usual: objects, morphisms, identities,
      domain, codomain and composition. The type id is the name, or
      the identity of the category. It is an argument to all functions
@@ -205,7 +220,7 @@ class (Ord object, Ord morphism)
          dom, cod :: morphism -> object
          -- | the inverse of a morphism
          inverse :: morphism -> Result morphism
-         inverse _ = fail "Logic.Logic.Category.inverse not implemented"
+         inverse _ = Fail.fail "Logic.Logic.Category.inverse not implemented"
          -- | test if the signature morphism an inclusion
          isInclusion :: morphism -> Bool
          isInclusion _ = False -- in general no inclusion
@@ -220,7 +235,7 @@ isIdentity m = isInclusion m && dom m == cod m
 
 comp :: Category object morphism => morphism -> morphism -> Result morphism
 comp m1 m2 = if cod m1 == dom m2 then composeMorphisms m1 m2 else
-  fail "target of first and source of second morphism are different"
+  Fail.fail "target of first and source of second morphism are different"
 
 instance Ord sign => Category sign (DefaultMorphism sign) where
     dom = domOfDefaultMorphism
@@ -252,17 +267,19 @@ class (Language lid, PrintTypeConv basic_spec, GetRange basic_spec,
          -- | parser for basic specifications
          parse_basic_spec :: lid -> Maybe (PrefixMap -> AParser st basic_spec)
          -- | parser for a single symbol returned as list
-         parseSingleSymbItem :: lid -> Maybe (AParser st symb_items)
+         parseSingleSymbItem :: lid -> Maybe (PrefixMap -> AParser st symb_items)
          -- | parser for symbol lists
-         parse_symb_items :: lid -> Maybe (AParser st symb_items)
+         parse_symb_items :: lid -> Maybe (PrefixMap -> AParser st symb_items)
          -- | parser for symbol maps
-         parse_symb_map_items :: lid -> Maybe (AParser st symb_map_items)
+         parse_symb_map_items :: lid -> Maybe (PrefixMap -> AParser st symb_map_items)
          toItem :: lid -> basic_spec -> Item
+         symb_items_name :: lid -> symb_items -> [String]
          -- default implementations
          parse_basic_spec _ = Nothing
          parseSingleSymbItem _ = Nothing
          parse_symb_items _ = Nothing
          parse_symb_map_items _ = Nothing
+         symb_items_name _ _ = [""]
          toItem _ bs = mkFlatItem ("Basicspec", pretty bs) $ getRangeSpan bs
 
 basicSpecParser :: Syntax lid basic_spec symbol symb_items symb_map_items
@@ -315,7 +332,8 @@ class (Language lid, Category sign morphism, Ord sentence,
        Ord symbol, -- for efficient lookup
        PrintTypeConv sign, PrintTypeConv morphism,
        GetRange sentence, GetRange symbol,
-       PrintTypeConv sentence, PrintTypeConv symbol)
+       PrintTypeConv sentence, ToJson sentence,
+       ToXml sentence, PrintTypeConv symbol)
     => Sentences lid sentence sign morphism symbol
         | lid -> sentence sign morphism symbol
       where
@@ -363,15 +381,18 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | symbols have a name, see CASL RefMan p. 192
       sym_name :: lid -> symbol -> Id
       sym_name l _ = statError l "sym_name"
+      -- | some symbols have a label for better readability
+      sym_label :: lid -> symbol -> Maybe String
+      sym_label _ _ = Nothing
       -- | the fully qualified name for XML output (i.e. of OWL2)
       fullSymName :: lid -> symbol -> String
       fullSymName l = show . sym_name l
       -- | a logic dependent kind of a symbol
       symKind :: lid -> symbol -> String
-      symKind _ _ = ""
+      symKind _ _ = "defaultKind"
       -- | the symbols occuring in a sentence (any order)
-      symsOfSen :: lid -> sentence -> [symbol]
-      symsOfSen _ _ = []
+      symsOfSen :: lid -> sign -> sentence -> [symbol]
+      symsOfSen _ _ _ = []
       -- | combine two symbols into another one
       pair_symbols :: lid -> symbol -> symbol -> Result symbol
       pair_symbols lid _ _ = error $ "pair_symbols nyi for logic " ++ show lid
@@ -399,8 +420,8 @@ inlineAxioms :: StaticAnalysis lid
 inlineAxioms _ _ = error "inlineAxioms"
 
 -- | fail function for static analysis
-statFail :: (Language lid, Monad m) => lid -> String -> m a
-statFail lid = fail . statErrMsg lid
+statFail :: (Language lid, Fail.MonadFail m) => lid -> String -> m a
+statFail lid = Fail.fail . statErrMsg lid
 
 statError :: Language lid => lid -> String -> a
 statError lid = error . statErrMsg lid
@@ -593,6 +614,8 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
          theory_to_taxonomy l _ _ _ _ = statFail l "theory_to_taxonomy"
          -- | create a theory from a correspondence
          corresp2th :: lid
+                    -> String -- the name of the alignment
+                    -> Bool   -- flag: should we disambiguate in the bridge
                     -> sign
                     -> sign
                     -> [symb_items]
@@ -602,12 +625,15 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
                     -> REL_REF
                     -> Result (sign, [Named sentence], sign, sign,
                                EndoMap symbol, EndoMap symbol)
-         corresp2th _ _ _ _ _ _ _ _ = error "c2th nyi"
+         corresp2th _ _ _ _ _ _ _ _ _ = error "c2th nyi"
          -- | create a co-span fragment from an equivalence
          equiv2cospan :: lid -> sign -> sign -> [symb_items] -> [symb_items]
            -> Result (sign, sign, sign, EndoMap symbol, EndoMap symbol)
          equiv2cospan _ _ _ _ _ = error "equiv2cospan nyi"
-
+         -- | extract the module
+         extract_module :: lid -> [IRI] -> (sign, [Named sentence])
+                        -> Result (sign, [Named sentence])
+         extract_module _ _ = return
 
 -- | print a whole theory
 printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
@@ -623,10 +649,14 @@ inclusion :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
              sign morphism symbol raw_symbol
           => lid -> sign -> sign -> Result morphism
 inclusion l s1 s2 = if is_subsig l s1 s2 then subsig_inclusion l s1 s2
-  else fail $ show $ fsep
+  else Fail.fail $ show $ fsep
        [ text (language_name l)
-       , text "symbol(s) missing in target:"
-       , pretty $ Set.difference (symset_of l s1) $ symset_of l s2 ]
+       , text "cannot construct inclusion. Symbol(s) missing in target:"
+       , pretty $ Set.difference (symset_of l s1) $ symset_of l s2
+       , text "\nSource is: "
+       , pretty $ symset_of l s1
+       , text "\nTarget is: "
+       , pretty $ symset_of l s2 ]
 
 {- | semi lattices with top (needed for sublogics). Note that `Ord` is
 only used for efficiency and is not related to the /partial/ order given
@@ -756,6 +786,11 @@ class (StaticAnalysis lid
          -- | several provers can be provided. See module "Logic.Prover"
          provers :: lid -> [Prover sign sentence morphism sublogics proof_tree]
          provers _ = []
+
+         -- | name of default prover, empty if none available
+         default_prover :: lid -> String
+         default_prover _ = ""
+         
          -- | consistency checkers
          cons_checkers :: lid
                        -> [ConsChecker sign sentence
@@ -782,7 +817,7 @@ class (StaticAnalysis lid
 
          export_symToOmdoc :: lid -> OMDoc.NameMap symbol
                            -> symbol -> String -> Result OMDoc.TCElement
-         export_symToOmdoc l _ _ = statFail l "export_symToOmdoc"
+         export_symToOmdoc l _ _ _ = statFail l "export_symToOmdoc"
 
          export_senToOmdoc :: lid -> OMDoc.NameMap symbol
                           -> sentence -> Result OMDoc.TCorOMElement
@@ -826,6 +861,14 @@ class (StaticAnalysis lid
                           -> Result (sign, [Named sentence])
          -- no logic should throw an error here
          addOmdocToTheory _ _ t _ = return t
+
+         -- | sublogic of a theory
+         sublogicOfTheo :: lid -> (sign, [sentence]) -> sublogics
+         sublogicOfTheo _ (sig, axs) = 
+            foldl lub (minSublogic sig) $ map minSublogic axs
+
+
+
 
 {- The class of logics which can be used as logical frameworks, in which object
    logics can be specified by the user. Currently the only logics implementing

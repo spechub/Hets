@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSMOF/Sign.hs
 Description :  CSMOF signature and sentences
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -18,17 +19,19 @@ import Common.Doc
 import Common.DocUtils
 import Common.Id
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-data TypeKind = DataTypeKind | ClassKind deriving (Show, Eq, Ord)
+data TypeKind = DataTypeKind | ClassKind
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty TypeKind where
   pretty DataTypeKind = text "datatype"
   pretty ClassKind = text "class"
 
 data TypeClass = TypeClass { name :: String, kind :: TypeKind }
- deriving (Show, Eq, Ord)
+ deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty TypeClass where
   pretty (TypeClass nam _) = text nam
@@ -41,7 +44,7 @@ data PropertyT = PropertyT { sourceRole :: Role
                            , sourceType :: TypeClass
                            , targetRole :: Role
                            , targetType :: TypeClass
-                           } deriving (Show, Eq, Ord)
+                           } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty PropertyT where
   pretty (PropertyT souR souT tarR tarT) = text "property" <> lparen <>
@@ -51,7 +54,7 @@ instance Pretty PropertyT where
 data LinkT = LinkT { sourceVar :: Role
                    , targetVar :: Role
                    , property :: PropertyT
-                   } deriving (Show, Eq, Ord)
+                   } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty LinkT where
   pretty (LinkT souV tarV pro) = text "link" <> lparen <> text souV <+>
@@ -68,7 +71,7 @@ data Sign = Sign { types :: Set.Set TypeClass
                  , properties :: Set.Set PropertyT
                  , instances :: Map.Map String TypeClass
                  , links :: Set.Set LinkT
-                 } deriving (Show, Eq, Ord)
+                 } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Sign where
   getRange _ = nullRange
@@ -118,13 +121,13 @@ signUnion s1 s2 = return s1
 
 data MultConstr = MultConstr { getType :: TypeClass
                              , getRole :: Role
-                             } deriving (Show, Eq, Ord)
+                             } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty MultConstr where
   pretty (MultConstr tc ro) = pretty tc <> text "." <> text ro
 
 
-data ConstraintType = EQUAL | LEQ | GEQ deriving (Show, Eq, Ord)
+data ConstraintType = EQUAL | LEQ | GEQ deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty ConstraintType where
   pretty EQUAL = equals
@@ -135,7 +138,7 @@ instance Pretty ConstraintType where
 data Sen = Sen { constraint :: MultConstr
                , cardinality :: Integer
                , constraintType :: ConstraintType
-               } deriving (Show, Eq, Ord)
+               } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Sen where
   getRange _ = nullRange

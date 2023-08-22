@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL_DL/Sublogics.hs
 Description :  sublogic analysis for CASL_DL
 Copyright   :  (c) Dominik Luecke 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -18,7 +19,9 @@ This module provides the sublogic functions (as required by Logic.hs)
 
 module CASL_DL.Sublogics where
 
-data CASL_DL_SL = SROIQ deriving (Ord, Eq)
+import Data.Data
+
+data CASL_DL_SL = SROIQ deriving (Eq, Ord, Typeable, Data)
 
 instance Show CASL_DL_SL where
     show SROIQ = "SROIQ"

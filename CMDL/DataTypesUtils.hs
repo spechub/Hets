@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      :./CMDL/DataTypesUtils.hs
 Description : utilitary functions used throughout the CMDL interface
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt
@@ -176,7 +176,7 @@ getTh useTrans x st
               case fn x of
                Nothing -> Nothing
                Just sth ->
-                case mapG_theory cm sth of
+                case mapG_theory False cm sth of
                   Result _ Nothing -> Just sth
                   Result _ (Just sth') -> Just sth'
 

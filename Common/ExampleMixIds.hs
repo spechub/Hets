@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/ExampleMixIds.hs
 Description :  standard mixfix identifier
 Copyright   :  (c) Christian Maeder and DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt

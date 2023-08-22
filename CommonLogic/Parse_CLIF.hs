@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Parse_CLIF.hs
 Description :  Parser of common logic interchange format
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010, Eugen Kuksa and Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -20,9 +20,11 @@ import qualified Common.AS_Annotation as Annotation
 import CommonLogic.AS_CommonLogic as AS
 import Common.Id as Id
 import Common.IRI
-import Common.Lexer as Lexer hiding (oParenT, cParenT, pToken)
+import Common.Lexer as Lexer hiding (oParenT, cParenT, pToken, parens)
 import Common.Keywords (colonS, mapsTo)
 import Common.GlobalAnnotations (PrefixMap)
+import Common.Parsec
+import Common.Token
 
 import Data.Either (lefts, rights)
 import qualified Data.Set as Set
@@ -103,6 +105,7 @@ prefix = do
       return $ x ++ colonS
   many white
   i <- iriCurie
+  many white
   return [(p, i)]
 
 comment_txt :: CharParser st (TEXT, [PrefixMapping])
@@ -321,12 +324,22 @@ rolesetMixTerm :: NAME -> (NAME, TERM) -> SENTENCE
 rolesetMixTerm x (n, t) =
   Atom_sent (Atom (Name_term n) [Term_seq $ Name_term x, Term_seq t]) nullRange
 
+symbIdentifier :: CharParser st Token
+symbIdentifier =
+  pToken (reserved (reservedelement ++ casl_reserved_words) scanClSymbol)
+  <?> "symbol"
+
+scanClSymbol :: CharParser st String
+scanClSymbol = quotedstring <|> enclosedname <|>
+ (satisfy (\ c -> clLetters c && notElem c "%{}[],;=")
+  <:> many clLetter <?> "words")
+
 intNameOrSeqMark :: CharParser st NAME_OR_SEQMARK
 intNameOrSeqMark = do
     s <- seqmark -- fix seqmark parser for one
     return $ SeqMark s
   <|> do
-    n <- identifier
+    n <- symbIdentifier
     return $ Name n
 
 -- | Parse a list of comma separated symbols.
@@ -374,9 +387,9 @@ symbMapS = do
 
 symbMapN :: GenParser Char st SYMB_OR_MAP
 symbMapN = do
-  s <- identifier
+  s <- symbIdentifier
   do f <- pToken $ toKey mapsTo
-     t <- identifier
+     t <- symbIdentifier
      return (Symb_mapN s t $ tokPos f)
    <|> return (Symb $ Name s)
 

@@ -1,6 +1,7 @@
-{-# LANGUAGE UndecidableInstances, FlexibleInstances, OverlappingInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./ATC/Grothendieck.der.hs
 Description :  manually created ShATermConvertible instances
 Copyright   :  (c) Felix Reckers, C. Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -23,7 +24,6 @@ import ATerm.Conversion
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.Lib.Graph
-import Common.LibName
 import Common.OrderedMap
 import qualified Common.Lib.SizedList as SizedList
 import Common.Result
@@ -52,7 +52,6 @@ import Control.Concurrent.MVar
 {-! for Common.Lib.Graph.Gr derive : ShATermLG !-}
 {-! for Common.Lib.Graph.GrContext derive : ShATermLG !-}
 {-! for Common.OrderedMap.ElemWOrd derive : ShATermLG !-}
-{-! for Common.LibName.LinkPath derive : ShATermLG !-}
 
 atcLogicLookup :: LogicGraph -> String -> String -> AnyLogic
 atcLogicLookup lg s l =
@@ -82,7 +81,7 @@ fromShATermLG' lg i att = case getATerm' i att of
                (attN, t) -> (setATerm' i t attN, t)
 
 -- generic undecidable instance
-instance ShATermConvertible a => ShATermLG a where
+instance {-# OVERLAPS #-} (ShATermConvertible a, Typeable a) => ShATermLG a where
   toShATermLG = toShATermAux
   fromShATermLG _ = fromShATermAux
 
@@ -289,7 +288,7 @@ instance (ShATermLG a) => ShATermLG (Maybe a) where
                     (att1, Just a') }
             u -> fromShATermError "Prelude.Maybe" u
 
-instance ShATermLG a => ShATermLG [a] where
+instance {-# OVERLAPS #-} ShATermLG a => ShATermLG [a] where
    toShATermLG att ts = do
            (att2, inds) <- foldM (\ (att0, l) t -> do
                     (att1, i) <- toShATermLG' att0 t

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./RDF/Sign.hs
 Copyright   :  Francisc-Nicolae Bungiu, Jacobs University Bremen
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -10,13 +11,14 @@ module RDF.Sign where
 
 import RDF.AS
 import Common.Result
+import Data.Data
 import qualified Data.Set as Set
 
 data Sign = Sign
     { subjects :: Set.Set Term
     , predicates :: Set.Set Term
     , objects :: Set.Set Term
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptySign :: Sign
 emptySign = Sign

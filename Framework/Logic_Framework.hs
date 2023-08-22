@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Framework/Logic_Framework.hs
 Description :  Instances of Logic and other classes for the logic Framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -26,7 +26,7 @@ import Framework.ATC_Framework ()
 
 import Logic.Logic
 
-import Data.Monoid
+import Data.Monoid ()
 
 import Common.DefaultMorphism
 
@@ -38,9 +38,10 @@ data Framework = Framework deriving Show
 instance Language Framework where
    description _ = "A framework allowing to add logics dynamically."
 
+instance Semigroup LogicDef where
+   _ <> _ = mempty
 instance Monoid LogicDef where
    mempty = error "Framework.Logic_Framework: Monoid LogicDef"
-   mappend _ _ = mempty
 
 -- syntax for Framework
 instance Syntax Framework LogicDef () () ()
@@ -68,9 +69,10 @@ instance Language FrameworkCom where
    description _ = "A framework allowing to add comorphisms between " ++
                    "logics dynamically."
 
+instance Semigroup ComorphismDef where
+   _ <> _ = mempty
 instance Monoid ComorphismDef where
    mempty = error "Framework.Logic_Framework Monoid ComorphismDef"
-   mappend _ _ = mempty
 
 -- syntax for Framework
 instance Syntax FrameworkCom ComorphismDef () () ()

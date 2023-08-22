@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Interfaces/Command.hs
 Description :  development graph commands for all interfaces
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -168,7 +168,7 @@ selectCmdNameStr cmd = case cmd of
 
 describeSelectCmd :: SelectCmd -> String
 describeSelectCmd cmd = case cmd of
-  LibFile -> "Read HetCASL file"
+  LibFile -> "Read DOL file"
   Lib -> "Select library"
   Node -> "Select node"
   ComorphismTranslation -> "Choose translation"

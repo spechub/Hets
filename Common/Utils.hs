@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Utils.hs
 Description :  utility functions that can't be found in the libraries
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -22,6 +22,7 @@ module Common.Utils
   , trim
   , trimLeft
   , trimRight
+  , toSnakeCase
   , nubOrd
   , nubOrdOn
   , atMaybe
@@ -47,16 +48,19 @@ module Common.Utils
   , filterMapWithList
   , timeoutSecs
   , executeProcess
+  , executeProcessWithEnvironment
   , timeoutCommand
   , withinDirectory
   , writeTempFile
   , getTempFile
   , getTempFifo
   , readFifo
+  , tryToStripPrefix  
   , verbMsg
   , verbMsgLn
   , verbMsgIO
   , verbMsgIOLn
+  , FileInfo(..)
   ) where
 
 import Data.Char
@@ -87,6 +91,11 @@ import System.IO.Unsafe (unsafeInterleaveIO)
 #endif
 
 import Control.Monad
+
+data FileInfo = FileInfo {
+    wasDownloaded :: Bool,
+    filePath :: FilePath
+  }
 
 {- | Writes the message to the given handle unless the verbosity is less than
 the message level. -}
@@ -151,6 +160,30 @@ trimLeft = dropWhile isSpace
 trimRight :: String -> String
 trimRight = foldr (\ c cs -> if isSpace c && null cs then [] else c : cs) ""
 
+{-
+   Convert CamelCased or mixedCases 'String' to a 'String' with underscores,
+   the \"snake\" 'String'.
+
+   It also considers SCREAMINGCamelCase:
+   `toSnakeCase "SomeSCREAMINGCamelCase" == "some_screaming_camel_case"`
+-}
+toSnakeCase :: String -> String
+toSnakeCase c = if hasBump c then unScream c else mkSnake c where
+  hasBump s = case s of
+    a : b : _ -> isUpper a && isLower b
+    _ -> False
+  unScream s = case s of
+    a : r -> toLower a : mkSnake r
+    _ -> s
+  mkSnake s = let newSnake t = '_' : unScream t in case s of
+    a : r@(b : _) | hasBump [b, a] -> a : newSnake r
+    _ | hasBump s -> newSnake s
+    _ -> unScream s
+
+-- | strip a prefix from a string, if possible
+tryToStripPrefix :: String -> String -> String
+tryToStripPrefix prefix s = fromMaybe s $ stripPrefix prefix s
+  
 {- | The 'nubWith' function accepts as an argument a \"stop list\" update
 function and an initial stop list. The stop list is a set of list elements
 that 'nubWith' uses as a filter to remove duplicate elements.  The stop list
@@ -158,12 +191,12 @@ is normally initially empty.  The stop list update function is given a list
 element a and the current stop list b, and returns 'Nothing' if the element is
 already in the stop list, else 'Just' b', where b' is a new stop list updated
 to contain a. -}
-nubWith :: (a -> b -> Maybe b) -> b -> [a] -> [a]
-nubWith f s es = case es of
-  [] -> []
+nubWith :: [a] -> (a -> b -> Maybe b) -> b -> [a] -> [a]
+nubWith acc f s es = case es of
+  [] -> reverse acc
   e : rs -> case f e s of
-       Just s' -> e : nubWith f s' rs
-       Nothing -> nubWith f s rs
+       Just s' -> nubWith (e:acc) f s' rs
+       Nothing -> nubWith acc f s rs
 
 nubOrd :: Ord a => [a] -> [a]
 nubOrd = nubOrdOn id
@@ -171,7 +204,7 @@ nubOrd = nubOrdOn id
 nubOrdOn :: Ord b => (a -> b) -> [a] -> [a]
 nubOrdOn g = let f a s = let e = g a in
                    if Set.member e s then Nothing else Just (Set.insert e s)
-  in nubWith f Set.empty
+  in nubWith [] f Set.empty
 
 -- | safe variant of !!
 atMaybe :: [a] -> Int -> Maybe a
@@ -211,13 +244,13 @@ mapAccumLCM g f s l = case l of
 
 {- | Monadic version of concatMap
      taken from http://darcs.haskell.org/ghc/compiler/utils/MonadUtils.hs -}
-concatMapM :: Monad m => (a -> m [b]) -> [a] -> m [b]
+concatMapM :: (Traversable t, Monad m) => (a -> m [b]) -> t a -> m [b]
 concatMapM f = liftM concat . mapM f
 
 -- | composition of arbitrary maps
 composeMap :: Ord a => Map.Map a b -> Map.Map a a -> Map.Map a a -> Map.Map a a
 composeMap s m1 m2 = if Map.null m2 then m1 else Map.intersection
-  (Map.foldWithKey ( \ i j ->
+  (Map.foldrWithKey ( \ i j ->
     let k = Map.findWithDefault j j m2 in
     if i == k then Map.delete i else Map.insert i k) m2 m1) s
 
@@ -391,6 +424,31 @@ executeProcess cmd args input = do
     Nothing -> return (ExitFailure 127, "", "command not found: " ++ cmd)
     Just exe -> readProcessWithExitCode exe args input
 
+executeProcessWithEnvironment :: FilePath
+                              -> [String]
+                              -> String
+                              -> [(String, String)]
+                              -> IO (ExitCode, String, String)
+executeProcessWithEnvironment cmd args input environment = do
+  mp <- findExecutable cmd
+  case mp of
+    Nothing -> return (ExitFailure 127, "", "command not found: " ++ cmd)
+    Just exe -> do
+      (Just hin, mHout, mHerr, processHandle) <-
+        createProcess $ (proc exe args) { env = Just environment
+                                        , std_in = CreatePipe
+                                        , std_out = CreatePipe
+                                        }
+      hPutStr hin input
+      out <- case mHout of
+        Just hout -> hGetContents hout
+        _ -> return ""
+      err <- case mHerr of
+        Just herr -> hGetContents herr
+        _ -> return ""
+      exitCode <- waitForProcess processHandle
+      return (exitCode, out, err)
+
 -- | runs a command with timeout
 timeoutCommand :: Int -> FilePath -> [String]
   -> IO (Maybe (ExitCode, String, String))
@@ -408,13 +466,16 @@ withinDirectory p a = do
   setCurrentDirectory d
   return r
 
--- | calls openTempFile but directly writes content and closes the file
+-- | opens a temp file but directly writes content and closes the file
 writeTempFile :: String -- ^ Content
   -> FilePath -- ^ Directory in which to create the file
   -> String   -- ^ File name template
   -> IO FilePath -- ^ create file
 writeTempFile str tmpDir file = do
-  (tmpFile, hdl) <- openTempFile tmpDir file
+  let (fileDirname, fileBasename) = stripDir file
+  let tmpDirJoined = tmpDir ++ "/" ++ fileDirname
+  createDirectoryIfMissing True tmpDirJoined
+  (tmpFile, hdl) <- openTempFileWithDefaultPermissions tmpDirJoined fileBasename
   hPutStr hdl str
   hFlush hdl
   hClose hdl

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/ProveMetis.hs
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
@@ -44,7 +44,7 @@ import System.Exit
 
 -- | The Prover implementation.
 metisProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-metisProver = mkAutomaticProver "metis" () metisGUI
+metisProver = mkAutomaticProver "metis" "metis" () metisGUI
   metisProveCMDLautomaticBatch
 
 {- |
@@ -149,9 +149,7 @@ runMetis sps cfg saveTPTP thName nGoal = do
                , resultOutput = ["TimeOut"] })
            else (ATPError err, finCfg)
 
-{-
-  mapping from SZS Status to Goalstatus
--}
+-- | mapping from SZS Status to Goalstatus
 getGoalStatus :: String -> GoalStatus
 getGoalStatus l = let ll = lines l in
   case mapMaybe (stripPrefix "SZS status") ll of

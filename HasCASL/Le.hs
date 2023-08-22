@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/Le.hs
 Description :  the abstract syntax for analysis and final signature instance
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -24,8 +25,9 @@ import Common.AS_Annotation (Named)
 import Common.GlobalAnnotations
 import Common.Prec
 
-import qualified Data.Map as Map
+import Data.Data
 import Data.Ord
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 -- * class info
@@ -34,7 +36,7 @@ import qualified Data.Set as Set
 data ClassInfo = ClassInfo
     { rawKind :: RawKind
     , classKinds :: Set.Set Kind
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | mapping class identifiers to their definition
 type ClassMap = Map.Map Id ClassInfo
@@ -42,17 +44,17 @@ type ClassMap = Map.Map Id ClassInfo
 -- * type info
 
 -- | data type generatedness indicator
-data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord)
+data GenKind = Free | Generated | Loose deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | an analysed alternative with a list of (product) types
 data AltDefn =
     Construct (Maybe Id) [Type] Partiality [[Selector]]
     -- only argument types
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | an analysed component
 data Selector =
-    Select (Maybe Id) Type Partiality deriving (Show, Eq, Ord)
+    Select (Maybe Id) Type Partiality deriving (Show, Eq, Ord, Typeable, Data)
     -- only result type
 
 -- | a mapping of type (and disjoint class) identifiers
@@ -65,7 +67,7 @@ without renamings) because (the domain of) this map is used to store the
 other (recursively dependent) top-level identifiers. -}
 data DataEntry =
     DataEntry IdMap Id GenKind [TypeArg] RawKind (Set.Set AltDefn)
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | possible definitions for type identifiers
 data TypeDefn =
@@ -73,7 +75,7 @@ data TypeDefn =
   | PreDatatype     -- auxiliary entry for DatatypeDefn
   | DatatypeDefn DataEntry
   | AliasTypeDefn Type
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | for type identifiers also store the raw kind, instances and supertypes
 data TypeInfo = TypeInfo
@@ -81,7 +83,7 @@ data TypeInfo = TypeInfo
     , otherTypeKinds :: Set.Set Kind
     , superTypes :: Set.Set Id -- only declared or direct supertypes?
     , typeDefn :: TypeDefn
-    } deriving Show
+    } deriving (Show, Typeable, Data)
 
 instance Eq TypeInfo where
     a == b = compare a b == EQ
@@ -114,7 +116,7 @@ data Sentence =
     Formula Term
   | DatatypeSen [DataEntry]
   | ProgEqSen Id TypeScheme ProgEq
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Sentence where
   getRange s = case s of
@@ -124,13 +126,14 @@ instance GetRange Sentence where
 -- * variables
 
 -- | type variable are kept separately
-data TypeVarDefn = TypeVarDefn Variance VarKind RawKind Int deriving Show
+data TypeVarDefn = TypeVarDefn Variance VarKind RawKind Int
+  deriving (Show, Typeable, Data)
 
 -- | mapping type variables to their definition
 type LocalTypeVars = Map.Map Id TypeVarDefn
 
 -- | the type of a local variable
-data VarDefn = VarDefn Type deriving Show
+data VarDefn = VarDefn Type deriving (Show, Typeable, Data)
 
 -- * assumptions
 
@@ -138,7 +141,7 @@ data VarDefn = VarDefn Type deriving Show
 data ConstrInfo = ConstrInfo
     { constrId :: Id
     , constrType :: TypeScheme
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | possible definitions of functions
 data OpDefn =
@@ -146,14 +149,14 @@ data OpDefn =
   | ConstructData Id     -- ^ target type
   | SelectData (Set.Set ConstrInfo) Id   -- ^ constructors of source type
   | Definition OpBrand Term
-    deriving (Show, Eq)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | scheme, attributes and definition for function identifiers
 data OpInfo = OpInfo
     { opType :: TypeScheme
     , opAttrs :: Set.Set OpAttr
     , opDefn :: OpDefn
-    } deriving Show
+    } deriving (Show, Typeable, Data)
 
 instance Eq OpInfo where
     o1 == o2 = compare o1 o2 == EQ
@@ -186,7 +189,7 @@ data Env = Env
     , preIds :: (PrecMap, Set.Set Id)
     , globAnnos :: GlobalAnnos
     , counter :: Int
-    } deriving Show
+    } deriving (Show, Typeable, Data)
 
 instance Eq Env where
     a == b = compare a b == EQ
@@ -219,7 +222,7 @@ function that is only linear. -}
 
 data Constrain = Kinding Type Kind
                | Subtyping Type Type
-                 deriving (Eq, Ord, Show)
+                 deriving (Show, Eq, Ord, Typeable, Data)
 
 -- * accessing the environment
 
@@ -305,7 +308,7 @@ data Morphism = Morphism
     , typeIdMap :: IdMap
     , classIdMap :: IdMap
     , funMap :: FunMap
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | construct morphism for subsignatures
 mkMorphism :: Env -> Env -> Morphism
@@ -332,12 +335,12 @@ data SymbolType =
   | SuperTypeSymbol Id
   | TypeAliasSymbol Type
   | PredAsItemType TypeScheme
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | symbols with their type
 data Symbol =
     Symbol { symName :: Id, symType :: SymbolType }
-    deriving Show
+    deriving (Show, Typeable, Data)
 
 instance Eq Symbol where
     s1 == s2 = compare s1 s2 == EQ
@@ -369,7 +372,7 @@ data RawSymbol =
     AnID Id
   | AKindedId SymbKind Id
   | ASymbol Symbol
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | mapping raw symbols to raw symbols
 type RawSymbolMap = Map.Map RawSymbol RawSymbol

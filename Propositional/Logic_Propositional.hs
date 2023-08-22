@@ -1,6 +1,6 @@
-{-# LANGUAGE CPP, MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./Propositional/Logic_Propositional.hs
 Description :  Instance of class Logic for propositional logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -39,7 +39,6 @@ import Propositional.Symbol as Symbol
 import Propositional.Parse_AS_Basic
 import Propositional.Analysis
 import Propositional.Sublogic as Sublogic
-#ifdef UNI_PACKAGE
 import Propositional.ProveWithTruthTable
 import Propositional.Prove
 import Propositional.Conservativity
@@ -47,12 +46,11 @@ import Propositional.ProveMinisat
 
 import Common.ProverTools
 import Common.Consistency
-#endif
 import Common.ProofTree
 import Common.Id
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 -- | Lid for propositional logic
 data Propositional = Propositional deriving Show
@@ -87,14 +85,16 @@ instance Sentences Propositional FORMULA
     symmap_of Propositional = getSymbolMap
     -- returns the name of a symbol
     sym_name Propositional = getSymbolName
+    symKind Propositional _ = "prop"
     -- translation of sentences along signature morphism
     map_sen Propositional = mapSentence
     -- there is nothing to leave out
     simplify_sen Propositional _ = simplify
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- - | Syntax of Propositional logic
 instance Syntax Propositional BASIC_SPEC
@@ -102,8 +102,8 @@ instance Syntax Propositional BASIC_SPEC
          parsersAndPrinters Propositional =
            addSyntax "Hets" (basicSpec, pretty)
            $ makeDefault (basicSpec, pretty)
-         parse_symb_items Propositional = Just symbItems
-         parse_symb_map_items Propositional = Just symbMapItems
+         parse_symb_items Propositional = Just . const $ symbItems
+         parse_symb_map_items Propositional = Just . const $ symbMapItems
 
 -- | Instance of Logic for propositional logc
 instance Logic Propositional
@@ -120,28 +120,20 @@ instance Logic Propositional
     where
         -- hybridization
       parse_basic_sen Propositional = Just $ const impFormula
-      stability Propositional = Experimental
+      stability Propositional = Stable
       top_sublogic Propositional = Sublogic.top
       all_sublogics Propositional = sublogics_all
       empty_proof_tree Propositional = emptyProofTree
     -- supplied provers
-      provers Propositional = []
-#ifdef UNI_PACKAGE
-        ++ unsafeProverCheck "zchaff" "PATH" zchaffProver
-        ++ unsafeProverCheck "minisat" "PATH" (minisatProver Minisat)
-        ++ unsafeProverCheck "minisat2" "PATH" (minisatProver Minisat2)
-        ++ [ttProver]
-      cons_checkers Propositional = []
-         ++ unsafeProverCheck "zchaff" "PATH" propConsChecker
-         ++ unsafeProverCheck "minisat" "PATH" (minisatConsChecker Minisat)
-         ++ unsafeProverCheck "minisat2" "PATH" (minisatConsChecker Minisat2)
-         ++ [ttConsistencyChecker]
-      conservativityCheck Propositional = []
-          ++ unsafeProverCheck "sKizzo" "PATH"
-             (ConservativityChecker "sKizzo" conserCheck)
-          ++ [ConservativityChecker "Truth Tables" ttConservativityChecker]
-#endif
-
+      provers Propositional =
+        [zchaffProver, minisatProver Minisat, minisatProver Minisat2, ttProver]
+      cons_checkers Propositional =
+        [ propConsChecker, minisatConsChecker Minisat
+        , minisatConsChecker Minisat2, ttConsistencyChecker]
+      conservativityCheck Propositional =
+          [ ConservativityChecker "sKizzo" (checkBinary "sKizzo") conserCheck
+          , ConservativityChecker "Truth Tables" (return Nothing)
+              ttConservativityChecker]
 
 -- | Static Analysis for propositional logic
 instance StaticAnalysis Propositional

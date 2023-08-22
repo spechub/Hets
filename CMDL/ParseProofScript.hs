@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CMDL/ParseProofScript.hs
 Description :  parse a heterogeneous proof script
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -20,6 +20,8 @@ import Text.ParserCombinators.Parsec
 import Text.ParserCombinators.Parsec.Pos (initialPos)
 
 import Data.Char
+
+import qualified Control.Monad.Fail as Fail
 
 data WhiteWord = WhiteWord
   { leading :: String -- ^ leading white space
@@ -72,7 +74,7 @@ parseArgument = do
 
 parseCommand :: [String] -> Parser String
 parseCommand cmd = case cmd of
-   [] -> fail ""
+   [] -> Fail.fail ""
    [c] -> string c
    c : r -> do
      string c

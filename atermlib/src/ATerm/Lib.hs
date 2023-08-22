@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./atermlib/src/ATerm/Lib.hs
 Description :  reexports modules needed for ATC generation
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -21,6 +21,7 @@ import Control.Monad
 import Data.List
 import Data.Char
 import qualified Data.Set as Set
+import qualified Control.Monad.Fail as Fail
 
 data Flag = Rule String | Exclude String | Import String | Output String
             deriving Show
@@ -47,8 +48,8 @@ main = do
   args <- getArgs
   case getOpt RequireOrder options args of
     (flags, files, []) ->
-      if null files then fail "missing input file(s)" else genRules flags files
-    (_, _, errs) -> fail $ concat errs ++ usageInfo usage options
+      if null files then Fail.fail "missing input file(s)" else genRules flags files
+    (_, _, errs) -> Fail.fail $ concat errs ++ usageInfo usage options
        where usage = "Usage: genRules [OPTION...] file [file ...]"
 
 -- | only place imports and data directives into the output module
@@ -60,11 +61,12 @@ genRules flags files =
            ds = datas \\ excs
            rule = intercalate ", " rules
        checkFlags q
-       if null ds then fail "no data types left" else
+       if null ds then Fail.fail "no data types left" else
            writeFile outf . unlines $
-             [ "{-# OPTIONS -w -O0 #-}"
-             , "{-# LANGUAGE CPP, StandaloneDeriving, DeriveDataTypeable #-}"
-             , "{- |"
+             "{-# OPTIONS -w -O0 #-}"
+             : [ "{-# LANGUAGE CPP, StandaloneDeriving, DeriveDataTypeable, DeriveGeneric #-}"
+               |  not . null $ rules \\ ["Typeable", "Json"] ]
+             ++ ["{- |"
              , "Module      :  " ++ outf
              , "Description :  generated " ++ rule ++ " instances"
              , "Copyright   :  (c) DFKI GmbH 2012"
@@ -91,7 +93,10 @@ genRules flags files =
              , "module " ++ toModule outf ++ " () where"
              , "" ]
              ++ map ("import " ++)
-                     (Set.toList . Set.fromList $ imports ++ is)
+                     (Set.toList . Set.fromList $
+                        [i |  i <- imports, not (toModule outf `isPrefixOf` i)]
+                        ++ is
+                        ++ [ "Common.Json.Instances" | "Json" `elem` rules])
              ++ concatMap (\ r -> "" :
                 map (\ d -> "{-! for " ++ d ++ " derive : " ++ r ++ " !-}") ds
                           ) rules
@@ -100,7 +105,7 @@ readParseFile :: FilePath -> IO ([String], [Import])
 readParseFile fp =
     do inp <- readFile fp
        case parseInputFile fp inp of
-         Left err -> fail $ "parse error at " ++ err
+         Left err -> Fail.fail $ "parse error at " ++ err
          Right x -> return x
 
 anaFlags :: [Flag] -> ([String], [String], [Import], FilePath)
@@ -118,10 +123,10 @@ checkFlags (rs, ds, is, o) = do
       frs = filter wrong rs
       fds = filter wrong ds
       fis = filter wrong is
-  unless (null frs) . fail $ "wrong rule to apply: " ++ head frs
-  when (wrong o) . fail $ "no module output file given. " ++ o
-  unless (null fds) . fail $ "wrong data type to exclude: " ++ head fds
-  unless (null fis) . fail $ "wrong module to import: " ++ head fis
+  unless (null frs) . Fail.fail $ "wrong rule to apply: " ++ head frs
+  when (wrong o) . Fail.fail $ "no module output file given. " ++ o
+  unless (null fds) . Fail.fail $ "wrong data type to exclude: " ++ head fds
+  unless (null fis) . Fail.fail $ "wrong module to import: " ++ head fis
 
 toModule :: FilePath -> String
 toModule = map (\ c -> if c == '/' then '.' else c) . takeWhile (/= '.')

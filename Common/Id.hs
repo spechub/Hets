@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Id.hs
 Description :  positions, simple and mixfix identifiers
 Copyright   :  (c) Klaus Luettich and Christian Maeder and Uni Bremen 2002-2003
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -22,7 +23,9 @@ A simple identifier is a lexical token given by a string and a start position.
 module Common.Id where
 
 import Data.Char
+import Data.Data
 import Data.List (isPrefixOf)
+import Data.Ratio
 import qualified Data.Set as Set
 
 -- do use in data types that derive d directly
@@ -30,13 +33,14 @@ data Pos = SourcePos
   { sourceName :: String
   , sourceLine :: !Int
   , sourceColumn :: !Int
-  } deriving (Eq, Ord)
+  } deriving (Eq, Ord, Typeable, Data)
 
 instance Show Pos where
     showsPrec _ = showPos
 
 -- | position lists with trivial equality
 newtype Range = Range { rangeToList :: [Pos] }
+  deriving (Typeable, Data)
 
 -- let InlineAxioms recognize positions
 instance Show Range where
@@ -84,7 +88,7 @@ showPos p = let name = sourceName p
 -- | tokens as supplied by the scanner
 data Token = Token { tokStr :: String
                    , tokPos :: Range
-                   } deriving (Eq, Ord)
+                   } deriving (Eq, Ord, Typeable, Data)
 
 instance Show Token where
   show = tokStr
@@ -99,6 +103,10 @@ type SIMPLE_ID = Token
 mkSimpleId :: String -> Token
 mkSimpleId s = Token s nullRange
 
+-- | add a string to a token
+addStringToTok :: Token -> String -> Token 
+addStringToTok (Token s r) s' = Token (s ++ s') r
+ 
 -- | null token
 nullTok :: Token
 nullTok = mkSimpleId ""
@@ -163,11 +171,14 @@ data Id = Id
     { getTokens :: [Token]
     , getComps :: [Id]
     , rangeOfId :: Range }
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Typeable, Data)
     -- pos of square brackets and commas of a compound list
 
 instance Show Id where
   showsPrec _ = showId
+
+isNullId :: Id -> Bool
+isNullId (Id ts cs r) = null ts && null cs && isNullRange r
 
 -- | construct an 'Id' from a token list
 mkId :: [Token] -> Id
@@ -208,25 +219,39 @@ isGeneratedToken = isPrefixOf genNamePrefix . tokStr
 
 {- | append a number to the first token of a (possible compound) Id,
    or generate a new identifier for /invisible/ ones -}
-appendNumber :: Id -> Int -> Id
-appendNumber (Id tokList idList range) nr = let
+appendString :: Id -> String -> Id
+appendString (Id tokList idList range) s = let
   isAlphaToken tok = case tokStr tok of
     c : _ -> isAlpha c
     "" -> False
-  genTok tList tList1 n = case tList of
-    [] -> [mkSimpleId $ genNamePrefix ++ "n" ++ show n]
+  genTok tList tList1 str = case tList of
+    [] -> [mkSimpleId $ genNamePrefix ++ "n" ++ str]
           -- for invisible identifiers
     tok : tokens ->
        if isPlace tok || not (isAlphaToken tok)
-       then genTok tokens (tok : tList1) n
+       then genTok tokens (tok : tList1) str
        else reverse tList1 ++
            [tok {tokStr = -- avoid gn_gn_
                 (if isGeneratedToken tok then "" else genNamePrefix)
-                 ++ tokStr tok ++ show n}]
+                 ++ tokStr tok ++ str}]
                  {- only underline words may be
                     prefixed with genNamePrefix or extended with a number -}
            ++ tokens
- in Id (genTok tokList [] nr) idList range
+ in Id (genTok tokList [] s) idList range
+
+-- | prepend a string to the first token of an Id
+prependString :: String -> Id -> Id
+prependString s (Id [] comps range) =
+  Id [Token s nullRange] comps range
+prependString s (Id (Token t range1:toks) comps range2) =
+  Id (Token (s++t) range1:toks) comps range2
+
+-- | append two Ids
+appendId :: Id -> Id -> Id
+appendId i1 i2 =
+  Id (getTokens i1 ++ getTokens i2)
+     (getComps i1 ++ getComps i2)
+     (appRange (rangeOfId i1) (rangeOfId i2))
 
 -- | the name of injections
 injToken :: Token
@@ -463,6 +488,11 @@ idRange (Id ts _ r) =
     let (fs, rs) = splitMixToken ts
     in joinRanges $ map tokenRange fs ++ [outerRange r] ++ map tokenRange rs
 
+-- | add components to an Id
+addComponents :: Id -> ([Id], Range) -> Id
+addComponents i (comps,rs) = i { getComps = getComps i ++ comps
+                               , rangeOfId = appRange (rangeOfId i) rs}
+
 -- -- helper class -------------------------------------------------------
 
 {- | This class is derivable with DrIFT.
@@ -500,6 +530,8 @@ instance GetRange ()
 instance GetRange Char
 instance GetRange Bool
 instance GetRange Int
+instance GetRange Integer
+instance GetRange (Ratio a) -- for Rational
 
 instance GetRange a => GetRange (Maybe a) where
     getRange = maybe nullRange getRange

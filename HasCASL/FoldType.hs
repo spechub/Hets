@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/FoldType.hs
 Description :  fold functions for types
 Copyright   :  (c) Christian Maeder and Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

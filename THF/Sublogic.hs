@@ -1,6 +1,6 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/Sublogic.hs
 Description :  Sublogics for THF
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -15,13 +15,16 @@ Sublogics for THF
 module THF.Sublogic where
 
 import THF.As
+
 import Logic.Logic
 
-data THFCoreSl = THF | THFP | THF0 deriving (Ord, Show, Eq)
+import Data.Data
+
+data THFCoreSl = THF | THFP | THF0 deriving (Show, Eq, Ord, Typeable, Data)
 
 data THFSl = THFSl {
  core :: THFCoreSl,
- ext_Poly :: Bool } deriving (Ord, Eq)
+ ext_Poly :: Bool } deriving (Eq, Ord, Typeable, Data)
 
 instance Show THFSl where
  show sl = show (core sl) ++

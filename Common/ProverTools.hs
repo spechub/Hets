@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/ProverTools.hs
 Description :  Check for availability of provers
 Copyright   :  (c) Dminik Luecke, and Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -16,15 +16,7 @@ module Common.ProverTools where
 import Common.Utils
 
 import System.Directory
-import System.IO.Unsafe
 import System.FilePath
-
--- | Checks if a Prover Binary exists and is executable in an unsafe manner
-unsafeProverCheck :: String -- ^ prover Name
-                  -> String -- ^ Environment Variable
-                  -> a
-                  -> [a]
-unsafeProverCheck name env = unsafePerformIO . check4File name env
 
 missingExecutableInPath :: String -> IO Bool
 missingExecutableInPath name = do
@@ -44,6 +36,17 @@ check4FileAux name env = do
       let path = "" : splitPaths pPath
       exIT <- mapM (doesFileExist . (</> name)) path
       return $ map fst $ filter snd $ zip path exIT
+
+-- | Checks if a file exists in PATH
+checkBinary :: String -> IO (Maybe String)
+checkBinary name =
+  fmap
+    ( \l ->
+        if null l
+          then Just $ "missing binary in $PATH: " ++ name
+          else Nothing
+    )
+    $ check4FileAux name "PATH"
 
 -- | Checks if a file exists
 check4File :: String -- ^ file name
@@ -79,6 +82,8 @@ check4HetsOWLjar :: String -- ^ jar file name
   -> IO (Bool, FilePath)
 check4HetsOWLjar = check4jarFileWithDefault "OWL2" hetsOWLenv
 
-unsafeOWL2JarCheck :: String -> a -> [a]
-unsafeOWL2JarCheck jar p =
-  [p | unsafePerformIO $ fmap fst $ check4HetsOWLjar jar]
+checkOWLjar :: String -> IO (Maybe String)
+checkOWLjar name =
+  fmap (\ (b, p) -> if b then Nothing else
+       Just $ "missing jar ($" ++ hetsOWLenv ++ "): " ++ (p </> name))
+  $ check4HetsOWLjar name

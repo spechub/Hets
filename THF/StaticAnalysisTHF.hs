@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/StaticAnalysisTHF.hs
 Description :  Static analysis for THF
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -31,7 +31,6 @@ import Common.DocUtils
 
 import Control.Monad
 
-import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -102,11 +101,11 @@ insertType :: Constant -> As.Name -> Kind -> Annotations
 insertType c n k a = do
     (diag, sig, syms) <- get
     if sigHasConstSymbol c sig then appandDiag $ mkDiag Error
-        "Duplicate definition a symbol as Type an Constant. Symbol: " c
+        "Duplicate definition of a symbol as a type constant. Symbol: " c
      else
         if sigHasTypeSymbol c sig then
             unless (sigHasSameKind c k sig) $ appandDiag $
-                mkDiag Error ("A Type with the same identifier"
+                mkDiag Error ("A type with the same identifier"
                     ++ "but another Kind is already inside the signature") c
          else do -- everythign is fine
             let ti = TypeInfo { typeId = c, typeName = n, typeKind = k
@@ -120,24 +119,25 @@ insertType c n k a = do
 insertConst :: Constant -> As.Name -> Type -> Annotations
                     -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
 insertConst c n t a = do
-    (diag, sig, syms) <- get
-    if sigHasTypeSymbol c sig then appandDiag $ mkDiag Error
-        "Duplicate definition a symbol as Type an Constant. Symbol: " c
-     else case isTypeConsistent t sig of
-        Just d -> appandDiag d
-        _ ->
-            if sigHasConstSymbol c sig then
-                unless (sigHasSameType c t sig) $ appandDiag $ mkDiag Error
-                ("A Constant with the same identifier but another " ++
-                 "Type is already inside the signature") c
-            else do -- everything is fine
-                let ci = ConstInfo { constId = c, constName = n, constType = t
-                                   , constAnno = a }
-                    sym = Symbol { symId = c, symName = n
-                                 , symType = ST_Const t }
-                put (diag, sig { consts = Map.insert c ci (consts sig)
-                               , symbols = Map.insert c sym (symbols sig) }
-                    , Set.insert sym syms)
+    (_, sig, _) <- get
+    if sigHasTypeSymbol c sig then (appandDiag $ mkDiag Error
+        "Duplicate definition of a symbol as a type constant. Symbol: " c)
+    else do
+          isTypeConsistent t
+          if sigHasConstSymbol c sig then
+               unless (sigHasSameType c t sig) $ appandDiag $ mkDiag Error
+                 ("A constant with the same identifier but another " ++
+                  "type is already inside the signature") c
+           else -- everything is fine
+                 let ci = ConstInfo { constId = c, constName = n, constType = t
+                                    , constAnno = a }
+                     sym = Symbol { symId = c, symName = n
+                                  , symType = ST_Const t }
+                 in do
+                     (diag', sig', syms') <- get
+                     put (diag', sig' { consts = Map.insert c ci (consts sig')
+                                      , symbols = Map.insert c sym (symbols sig') }
+                                      , Set.insert sym syms')
 
 -- Check if a type symbol is already inside the sig
 sigHasTypeSymbol :: Constant -> SignTHF -> Bool
@@ -161,21 +161,21 @@ sigHasSameType c t sig = constType (consts sig Map.! c) == t
 
 {- check if all cTypes inside the given Type are elements of the signaure.
 Nothing means that everything is fine, otherwise Just diag will be returned. -}
-isTypeConsistent :: Type -> SignTHF -> Maybe Diagnosis
-isTypeConsistent t sig = case t of
-    MapType t1 t2 ->
-        let tc1 = isTypeConsistent t1 sig
-            tc2 = isTypeConsistent t2 sig
-        in if isNothing tc1 then tc2 else tc1
-    ParType t1 -> isTypeConsistent t1 sig
-    CType c -> if sigHasTypeSymbol c sig then Nothing
-                       else Just $ mkDiag Error "Unknown type: " c
-    ProdType ts -> let ds = map (`isTypeConsistent` sig) ts
-                       in case catMaybes ds of
-                           [] -> Nothing
-                           m : _ -> Just m
-    SType _ -> Nothing -- how to handle these?
-    _ -> Nothing
+isTypeConsistent :: Type -> State ([Diagnosis], SignTHF, Set.Set SymbolTHF) ()
+isTypeConsistent t = do
+ (_, sig, _) <- get
+ case t of
+    MapType t1 t2 -> do
+     isTypeConsistent t1
+     isTypeConsistent t2
+    ParType t1 -> isTypeConsistent t1
+    CType c -> when (not (sigHasTypeSymbol c sig))
+               (do
+                 insertType c (N_Atomic_Word c) Kind Null
+                 appandDiag $ mkDiag Warning "Unknown type: " c)
+    ProdType ts -> mapM_ isTypeConsistent ts
+    _ -> return ()
+    -- SType _ -> ... -- how to handle these?
 
 {- -----------------------------------------------------------------------------
 Extract the sentences from the basic spec
@@ -241,7 +241,7 @@ Get the Kind of a type
 ----------------------------------------------------------------------------- -}
 
 makeKind :: THFFormula -> Either (Kind, Constant) Diagnosis
-makeKind t = maybe (Right $ mkDiag Error "Error while parsing the Kind of:" t)
+makeKind t = maybe (Right $ mkDiag Error "Error while parsing the kind of:" t)
                 Left (thfFormulaToKind t)
 
 thfFormulaToKind :: THFFormula -> Maybe (Kind, Constant)
@@ -270,7 +270,7 @@ Get the Type of a constant
 ----------------------------------------------------------------------------- -}
 
 makeType :: THFFormula -> Either (Type, Constant) Diagnosis
-makeType t = maybe (Right $ mkDiag Error "Error while parsing the Type of:" t)
+makeType t = maybe (Right $ mkDiag Error "Error while parsing the type of:" t)
                 Left (thfFormulaToType t)
 
 thfFormulaToType :: THFFormula -> Maybe (Type, Constant)

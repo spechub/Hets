@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/GlobalAnnotations.hs
 Description :  data structures for global annotations
 Copyright   :  (c) Klaus Luettich, Christian Maeder and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -13,7 +14,9 @@ Data structures for global annotations
 
 module Common.GlobalAnnotations where
 
+import Data.Data
 import qualified Data.Map as Map
+
 import qualified Common.Lib.Rel as Rel
 import Common.AS_Annotation
 import Common.Id
@@ -27,7 +30,7 @@ data GlobalAnnos = GA
   , literal_annos :: LiteralAnnos -- ^ literal annotations
   , literal_map :: LiteralMap -- ^ redundant literal map
   , prefix_map :: PrefixMap -- ^ abbreviated IRI prefixes
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Typeable, Data)
 
 -- | empty (or initial) global annotations
 emptyGlobalAnnos :: GlobalAnnos
@@ -45,7 +48,7 @@ data LiteralAnnos = LA
   , list_lit :: Map.Map Id (Id, Id)
   , number_lit :: Maybe Id
   , float_lit :: Maybe (Id, Id)
-  } deriving (Show, Eq)
+  } deriving (Show, Eq, Typeable, Data)
 
 -- | empty literal annotations
 emptyLiteralAnnos :: LiteralAnnos
@@ -74,7 +77,7 @@ data LiteralType =
   | Fraction
   | Floating
   | NoLiteral -- ^ and error value for a 'getLiteralType'
-    deriving (Show, Eq)
+    deriving (Show, Eq, Typeable, Data)
 
 -- | the 'LiteralType' of an 'Id' (possibly 'NoLiteral')
 getLiteralType :: GlobalAnnos -> Id -> LiteralType

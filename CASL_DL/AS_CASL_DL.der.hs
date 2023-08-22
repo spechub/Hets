@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL_DL/AS_CASL_DL.der.hs
 Description :  abstract syntax for CASL_DL logic extension of CASL
 Copyright   :  (c) Klaus Luettich, Dominik Luecke, Uni Bremen 2004-2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -14,8 +15,11 @@ Abstract syntax for CASL_DL logic extension of CASL
 
 module CASL_DL.AS_CASL_DL where
 
+import Data.Data
+
 import Common.Id
 import Common.AS_Annotation
+
 import CASL.AS_Basic_CASL
 
 -- DrIFT command
@@ -25,7 +29,7 @@ type DL_BASIC_SPEC = BASIC_SPEC () () DL_FORMULA
 
 type AnDLFORM = Annoted (FORMULA DL_FORMULA)
 
-data CardType = CMin | CMax | CExact deriving (Eq, Ord)
+data CardType = CMin | CMax | CExact deriving (Eq, Ord, Typeable, Data)
 
 minCardinalityS, maxCardinalityS, cardinalityS :: String
 cardinalityS = "cardinality"
@@ -52,7 +56,7 @@ data DL_FORMULA =
                -- an optional qualification for the number restriction
                 Range
                -- position of keyword, brackets, parens and comma
-             deriving (Eq, Ord, Show)
+             deriving (Show, Eq, Ord, Typeable, Data)
                -- TODO: Erweiterung ueber maybe
 
 caslDLCardTypes :: [CardType]

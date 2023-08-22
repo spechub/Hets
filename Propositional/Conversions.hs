@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Propositional/Conversions.hs
 Description :  Helper functions for proofs in propositional logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

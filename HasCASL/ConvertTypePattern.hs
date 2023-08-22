@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/ConvertTypePattern.hs
 Description :  convert type patterns to type identifier applications
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt

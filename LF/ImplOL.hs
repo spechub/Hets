@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./LF/ImplOL.hs
 Description :  Implementation of functions necessary to instantiate
                Logic.hs for object logics defined in LF
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2011

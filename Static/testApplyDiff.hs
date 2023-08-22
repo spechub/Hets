@@ -5,6 +5,7 @@ import Static.XSimplePath
 import System.Environment
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Text.XML.Light
 
@@ -24,7 +25,7 @@ printDiff p1 ps = do
             diff <- readFile xup
             ef <- liftM snd $ changeXml xml1 diff
             print ef) ps
-        _ -> fail "failed to parse xml-file"
+        _ -> Fail.fail "failed to parse xml-file"
 
 testDiff :: FilePath -> [FilePath] -> IO ()
 testDiff p1 ps = do
@@ -35,4 +36,4 @@ testDiff p1 ps = do
             diff <- readFile xup
             liftM fst $ changeXml xml' diff ) xml1 ps
           writeFile (p1 ++ "-output") $ ppTopElement xml2
-        _ -> fail "failed to parse xml-file"
+        _ -> Fail.fail "failed to parse xml-file"

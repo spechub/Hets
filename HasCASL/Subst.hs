@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, OverlappingInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/Subst.hs
 Description :  substitution of terms
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

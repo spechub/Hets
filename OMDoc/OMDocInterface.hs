@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./OMDoc/OMDocInterface.hs
 Description :  Handpicked model of OMDoc subset
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -15,6 +16,7 @@ module OMDoc.OMDocInterface where
 import qualified Common.IRI as IRI
 
 import Data.Char
+import Data.Data
 
 import qualified Data.Word as Word
 
@@ -65,7 +67,7 @@ data OMDoc =
       , omdocTheories :: [Theory]
       , omdocInclusions :: [Inclusion]
     }
-    deriving (Show)
+    deriving (Show, Typeable, Data)
 
 addTheories :: OMDoc -> [Theory] -> OMDoc
 addTheories omdoc theories =
@@ -90,7 +92,7 @@ data Theory =
       , theoryPresentations :: [Presentation]
       , theoryComment :: Maybe String
     }
-    deriving Show
+    deriving (Show, Typeable, Data)
 
 instance Pretty Theory where
   pretty t = text $
@@ -112,7 +114,7 @@ showTheory t = show (t { theoryPresentations = [] })
 
 -- | Type (scope) of import
 data ImportsType = ITLocal | ITGlobal
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 -- | Imports (for Theory)
 data Imports =
@@ -124,7 +126,7 @@ data Imports =
       , importsType :: ImportsType
       , importsConservativity :: Conservativity
     }
-    deriving Show
+    deriving (Show, Typeable, Data)
 
 -- | Presentation
 data Presentation =
@@ -134,7 +136,7 @@ data Presentation =
       , presentationSystem :: Maybe XmlString
       , presentationUses :: [Use]
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Typeable, Data)
 
 mkPresentationS :: XmlId -> XmlString -> [Use] -> Presentation
 mkPresentationS forid presSystem = Presentation forid (Just presSystem)
@@ -152,7 +154,7 @@ data Use =
         useFormat :: XmlString
       , useValue :: String
     }
-    deriving (Show, Eq)
+    deriving (Show, Eq, Typeable, Data)
 
 mkUse :: XmlString -> String -> Use
 mkUse = Use
@@ -166,7 +168,7 @@ data SymbolRole =
   | SRAttribution
   | SRSemanticAttribution
   | SRError
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Typeable, Data)
 
 instance Show SymbolRole where
   show SRType = "type"
@@ -198,7 +200,7 @@ data Symbol =
       , symbolRole :: SymbolRole
       , symbolType :: Maybe Type
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Symbol
 
@@ -219,7 +221,7 @@ data Type =
         typeSystem :: Maybe IRI.IRI
       , typeOMDocMathObject :: OMDocMathObject
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkType :: Maybe OMDocRef -> OMDocMathObject -> Type
 mkType = Type
@@ -234,7 +236,7 @@ data Constitutive =
   | CIm Imports
   | CAd ADT
   | CCo { conComCmt :: String, conComCon :: Constitutive }
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 mkCAx :: Axiom -> Constitutive
 mkCAx = CAx
@@ -289,7 +291,7 @@ data Axiom =
       , axiomCMPs :: [CMP]
       , axiomFMPs :: [FMP]
     }
-    deriving Show
+    deriving (Show, Typeable, Data)
 
 mkAxiom :: XmlId -> [CMP] -> [FMP] -> Axiom
 mkAxiom = Axiom
@@ -300,7 +302,7 @@ data CMP =
     {
       cmpContent :: MText
     }
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 mkCMP :: MText -> CMP
 mkCMP = CMP
@@ -312,14 +314,14 @@ data FMP =
         fmpLogic :: Maybe XmlString
       , fmpContent :: Either OMObject ([Assumption], [Conclusion])
     }
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 -- | Assumption (incomplete)
 data Assumption = Assumption
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 data Conclusion = Conclusion
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 -- | Definition (incomplete)
 data Definition =
@@ -329,7 +331,7 @@ data Definition =
       , definitionCMPs :: [CMP]
       , definitionFMPs :: [FMP]
     }
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 mkDefinition :: XmlId -> [CMP] -> [FMP] -> Definition
 mkDefinition = Definition
@@ -341,9 +343,9 @@ data ADT =
         adtId :: Maybe XmlId
       , adtSortDefs :: [SortDef]
     }
-  deriving Show
+  deriving (Show, Typeable, Data)
 
-data SortType = STFree | STGenerated | STLoose
+data SortType = STFree | STGenerated | STLoose deriving (Typeable, Data)
 
 mkADT :: [SortDef] -> ADT
 mkADT = ADT Nothing
@@ -374,7 +376,7 @@ data SortDef =
       , sortDefInsorts :: [Insort]
       , sortDefRecognizers :: [Recognizer]
     }
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 mkSortDefE :: XmlId -> SymbolRole -> SortType -> [Constructor] -> [Insort] -> [Recognizer] -> SortDef
 mkSortDefE = SortDef
@@ -390,7 +392,7 @@ data Constructor =
       , constructorRole :: SymbolRole
       , constructorArguments :: [Type]
     }
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 mkConstructorE :: XmlId -> SymbolRole -> [Type] -> Constructor
 mkConstructorE = Constructor
@@ -404,7 +406,7 @@ data Insort =
     {
       insortFor :: OMDocRef
     }
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 mkInsort :: OMDocRef -> Insort
 mkInsort = Insort
@@ -415,14 +417,14 @@ data Recognizer =
     {
       recognizerName :: XmlId
     }
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 mkRecognizer :: XmlId -> Recognizer
 mkRecognizer = Recognizer
 
 -- | Inclusion-Conservativity
 data Conservativity = CNone | CMonomorphism | CDefinitional | CConservative
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Typeable, Data)
 
 instance Show Conservativity where
   show CNone = "none"
@@ -457,7 +459,7 @@ data Inclusion =
         , inclusionId :: Maybe XmlId
         , inclusionConservativity :: Conservativity
       }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty Inclusion where
   pretty = text . show
@@ -471,22 +473,22 @@ data Morphism =
       , morphismBase :: [XmlId]
       , morphismRequations :: [ ( MText, MText ) ]
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty Morphism where
   pretty m = text $ show m
 
 -- Mathematical Text (incomplete)
 data MText = MTextText String | MTextTerm String | MTextPhrase String | MTextOM OMObject
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- OMDoc Mathematical Object
 data OMDocMathObject = OMOMOBJ OMObject | OMLegacy String | OMMath String
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | OMOBJ
 data OMObject = OMObject OMElement
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOMOBJ :: OMElementClass e => e -> OMObject
 mkOMOBJ e = OMObject (toElement e)
@@ -499,7 +501,7 @@ data OMSymbol =
       , omsCD :: XmlId
       , omsName :: XmlId
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOMS :: Maybe OMDocRef -> XmlId -> XmlId -> OMSymbol
 mkOMS = OMS
@@ -513,7 +515,7 @@ data OMInteger =
     {
       omiInt :: Int
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOMI :: Int -> OMInteger
 mkOMI = OMI
@@ -523,7 +525,7 @@ mkOMIE i = toElement $ mkOMI i
 
 -- | A Variable can be a OMV or an OMATTR
 data OMVariable = OMVS OMSimpleVariable | OMVA OMAttribution
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | Class to use something as a Variable
 class OMVariableClass a where
@@ -552,7 +554,7 @@ data OMSimpleVariable =
     {
       omvName :: XmlString
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 
 mkOMSimpleVar :: XmlString -> OMSimpleVariable
@@ -574,7 +576,7 @@ data OMAttribution =
         omattrATP :: OMAttributionPart
       , omattrElem :: OMElement
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 instance OMVariableClass OMAttribution where
   toVariable = OMVA
@@ -593,7 +595,7 @@ data OMAttributionPart =
     {
       omatpAttribs :: [(OMSymbol, OMElement)]
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOMATP :: OMElementClass e => [(OMSymbol, e)] -> OMAttributionPart
 mkOMATP = OMATP . map (\ (s, e) -> (s, toElement e))
@@ -604,7 +606,7 @@ data OMBindingVariables =
     {
       ombvarVars :: [OMVariable]
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOMBVAR :: OMVariableClass e => [e] -> OMBindingVariables
 mkOMBVAR = OMBVAR . map toVariable
@@ -619,7 +621,7 @@ data OMBase64 =
       -- decoded Content
       ombContent :: [Word.Word8]
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOMB :: [Word.Word8] -> OMBase64
 mkOMB = OMB
@@ -642,7 +644,7 @@ data OMString =
     {
       omstrText :: String
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOMSTR :: String -> OMString
 mkOMSTR = OMSTR
@@ -656,7 +658,7 @@ data OMFloat =
     {
       omfFloat :: Float
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOMF :: Float -> OMFloat
 mkOMF = OMF
@@ -670,7 +672,7 @@ data OMApply =
     {
       omaElements :: [OMElement]
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOMA :: OMElementClass e => [e] -> OMApply
 mkOMA [] = error "Empty list of elements for OMA!"
@@ -686,7 +688,7 @@ data OMError =
         omeSymbol :: OMSymbol
       , omeExtra :: [OMElement]
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOME :: OMElementClass e => OMSymbol -> [e] -> OMError
 mkOME _ [] = error "Empty list of elements for OME!"
@@ -701,7 +703,7 @@ data OMReference =
     {
       omrHRef :: IRI.IRI
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOMR :: IRI.IRI -> OMReference
 mkOMR = OMR
@@ -717,7 +719,7 @@ data OMBind =
       , ombindVariables :: OMBindingVariables
       , ombindExpression :: OMElement
     }
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 mkOMBIND :: (OMElementClass e1, OMElementClass e2)
   => e1 -> OMBindingVariables -> e2 -> OMBind
@@ -747,7 +749,7 @@ data OMElement =
   | OMEATTR OMAttribution
   | OMER OMReference
   | OMEC (Maybe OMElement) String
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | insert a comment into an open-math structure (use with caution...)
 mkOMComment :: String -> OMElement

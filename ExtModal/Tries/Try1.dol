@@ -1,0 +1,7 @@
+logic ExtModal
+
+spec Try1 =
+	time modality t
+	modalities a,b
+	sort N
+end

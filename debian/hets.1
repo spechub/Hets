@@ -1,0 +1,376 @@
+.\" Use  sed -e '/@S$X@/,/@E$X@/ d' with X=SERVER to remove the server specific
+.\" parts and with X=$DEKTOP to remove the desktop specific parts.
+
+.\" define the binary name => less dups required
+.\" @SDESKTOP@
+.ds BN hets
+.\" @EDESKTOP@
+.\" @SSERVER@
+.ds BN hets\-server
+.\" @ESERVER@
+
+.TH \*(BN 1 "Sep 9, 2010"
+.SH NAME
+\*(BN \- start the Heterogenous Tool Set
+
+.SH SYNOPSIS
+.\" for synopsis we want neither hyphenation nor alignment, but hanging para
+.nh
+.na
+.HP
+\fB\*(BN\fR
+[\-v[\fIlevel\fR]] [\-q] [\-V] [\-h] [\-F] [-G]
+.\" @SDESKTOP@
+[\-g] [\-u]
+.\" @EDESKTOP@
+[\-I] [\-p] [\-s] [\-l\ \fIlogic\fR] [\-y\ \fIser\fR] [\-L\ \fIdirs\fR]
+[\-m\ \fIfile\fR] [\-x] [\-P file] [\-X] [\-c\ \fIhost\fB:\fIport\fR] [\-S\ \fIport\fR]
+[\-C\ \fIurls\fR] [\-i\ itype] [\-d\ \fIstring\fR] [\-e\ \fIenc\fR]
+[\-O\ \fIdir\fR] [\-o\ \fIotypes\fR] [\-U\ \fIfile\fR] [\-R] [\-A] [\-N]
+[\-n\ \fIspecs\fR] [\-w\ \fIviews\fR] [\-t\ \fItrans\fR] [\-a\ \fIanalysis\fR]
+[\-M] \fIfile\fR...
+.ad
+.hy
+
+.SH DESCRIPTION
+.P
+Hets is a parsing, static analysis and proof management tool combining
+various tools for different specification languages, thus providing a
+tool combining various tools for different specification languages,
+thus providing a tool for the distributed ontology, modeling and
+specification language DOL, and the heterogeneous specification
+language HetCASL. The structuring constructs of this language extend
+those of CASL, with (among others) new heterogeneous constructs for
+indicating the language and for language translations. Hence, Hets is
+based on a graph of logics and languages.
+.P
+Hets is available as a desktop as well as a server variant. The server variant
+named \fBhets-server\fR is the same as the desktop variant named \fBhets\fR,
+but without GUI support and thus has no dependencies to GUI toolkits like
+Tcl/Tk or Gnome.
+
+.SH OPTIONS
+.TP
+\fB\-v\fR[\fIlevel\fR], \fB\--verbose\fR[\fB=\fIlevel\fR]
+Set the verbosity to \fIlevel\fR. Allowed is \fB0\fR..\fB5\fR,
+default is \fB1\fR.
+A good warning level is 2 that also shows read and written files.
+.TP
+.BR \-q , \ \--quiet
+Same as -v0, no output is sent to stdout.
+.TP
+.BR \-V , \ \--version
+Print version details and exits.
+.TP
+.BR \-h , \ \--help , \ \--usage
+Print help information and exit.
+.TP
+.BR \-F , \ \--file-type
+Display file type, only.
+.TP
+.BR \-G , \ \--logic-graph
+Show the logic graph as xml.
+.\" @SDESKTOP@
+.TP
+.BR \-g , \ \--gui
+Show the development graph in a GUI window. Without this (and the -I)
+option hets will run in batch mode and process (aka analyse) all input files.
+.TP
+.BR \-u , \ \--uncolored
+Use no colors in shown graphs.
+.\" @EDESKTOP@
+.TP
+.BR \-I , \ \--interactive
+Run hets in interactive mode expecting input from the console after
+all input files given as arguments have been processed.
+.\" @SDESKTOP@
+If also the option -g is given a graph may pop up only after input has been
+terminated using Ctrl-D.
+.\" @EDESKTOP@
+.TP
+.BR \-p , \ \--just-parse
+Skip static analysis, just parse input files.
+.TP
+.BR \-s , \ \--just-structured
+Skip basic i.e. logic specific analysis, just parse input files
+and do structured analysis.
+.TP
+\fB\-l \fIlogic\fR, \fB\--logic=\fR\fIlogic\fR
+Select the given \fIlogic\fR as the initial logic for processing the
+specifications if it is not given in source files. The default is \fBCASL\fR.
+.TP
+\fB-y \fIser\fR, \fB\--serialization=\fIser\fR
+Use the given logic syntax \fIser\fR.
+.TP
+\fB\-L \fIdirlist\fR, \fB\--hets-libdirs=\fR\fIdirlist\fR
+Set the specification library directories to \fIdirlist\fR.
+\fIdirlist\fR is a single or more directories separated by a colon (equivalent to \fBHETS LIB\fR).
+.TP
+\fB\-m \fIfile\fR, \fB--modelSparQ=\fIfile\fR
+Sets the lisp file for SparQ definitions to \fIfile\fR (works for CASL only).
+.TP
+.BR \-x , \ \--xml
+Uses xml packages (rather than plain text) to communicate.
+.TP
+\fB-P\fR \fIfile\fR , \fB--pidfile=\fIfile\fR
+Write the PID of the hets-server process to the given \fIfile\fR.
+.TP
+.BR \-X , \ \--server
+Start hets as web-server.
+.TP
+\fB\-c \fIhost\fB:\fIport\fR, \fB--connect=\fR\fIhost\fB:\fIport\fR
+Runs the interface with the -I option by communicating via a connection
+to the given \fIhost\fR and \fIport\fR.
+.TP
+\fB\-S \fIport\fR, \fB--listen=\fIport\fR
+Runs the interface with the -I option by listening to the given \fIport\fR.
+.TP
+\fB-C \fIurls\fR, \fB--url-catalog=\fIurls\fR
+A comma-separated list of URL pairs, whereby each pair denotes
+\fIsrcURL\fB=\fItarURL\fR.
+.TP
+\fB\-i \fIitype\fR, \fB--input-type=\fIitype\fR
+Set the input type to expect explicitly to \fIitype\fR. The following input types are allowed:
+.BR casl ,
+.BR het ,
+.BR dol ,
+.BR omn ,
+.BR owl ,
+.BR rdf ,
+.BR obo ,
+.BR ttl ,
+.BR hs ,
+.BR exp ,
+.BR maude ,
+.BR elf ,
+.BR hol ,
+.BR isa ,
+.BR thy ,
+.BR prf ,
+.BR omdoc ,
+.BR hpf ,
+.BR clf ,
+.BR clif ,
+.BR xml ,
+.BR fcstd ,
+.BR xmi ,
+.BR qvt ,
+.BR tptp ,
+[\fBtree.\fR]\fBgen_trm\fR[\fB.baf\fR].
+By default \fBenv\fR, \fBcasl\fR, or \fBhet\fR are tried in this order.
+
+.TP
+\fB\-d \fIstring\fR, \fB--dump=\fIstring\fR
+Dump internal data depending on the given \fIstring\fR.
+.TP
+\fB\-e \fIencoding\fR, \fB--encoding=\fIencoding\fR
+Use the given \fIencoding\fR for input and output file handling.
+Allowed are \fBlatin1\fR (default) or \fButf8\fb.
+.TP
+\fB\-O \fIdir\fR, \fB--output-dir=\fIDIR\fR
+Set the destination directory for output files to \fIdir\fR.
+.TP
+\fB\-o \fIotypes\fR, \fB--output-types=\fR\fIotypes\fR
+Set the list of output types to \fIotypes\fR (default is an empty list).
+The list may contain one or more output file types separated by a comma.
+Known output types are:
+.BR prf ,
+.BR env ,
+.BR omn ,
+.BR owl ,
+.BR rdf ,
+.BR obo ,
+.BR ttl ,
+.BR nt ,
+.BR clif ,
+.BR kif ,
+.BR omdoc ,
+.BR xml ,
+.BR json ,
+.BR exp ,
+.BR hs ,
+.BR thy ,
+.BR comptable.xml ,
+.BR fcxml ,
+.BR sym.xml ,
+.BR syms.xml ,
+(\fBsig\fR|\fBth\fR)[\fB.delta\fR],
+\fBpp.\fR(\fBhet\fR|\fBtex\fR|\fBxml\fR|\fBhtml\fR),
+\fBpp.\fR(\fBstripped.dol\fR|\fBlabelled.tex\fR),
+\fBgraph.\fR(\fBexp.dot\fR|\fBdot\fR),
+.BR dfg [ .c ] ,
+.BR tptp [ .c ] .
+.TP
+\fB\-U \fIfile\fR, \fB--xupdate=\fIfile\fR
+Apply additional updates from the given \fIfile\fR to a graph.
+.TP
+.BR \-R , \ \--recursive
+Produce output files (given via -o) also for imported libraries.
+.TP
+.BR \-A , \ \--apply-automatic-rule
+Apply automatic strategy tzo the development graph right after static analysis.
+.TP
+.BR \-N , \ \--normal-form
+Compute all normal forms for nodes with incoming hiding links.
+This takes a long time.
+.TP
+\fB\-n \fIspecs\fR, \fB--named-specs=\fIspecs\fR
+Create certain output files only for the given \fIspecs\fR,
+which is comma-separated list of named specs.
+.TP
+\fB-w \fIviews\fR, \fB--view=\fIviews\fR
+Process the given \fIviews\fR, which is a list of comma-separated SIMPLE-IDs.
+.TP
+\fB\-t \fItrans\fR, \fB--translation=\fItrans\fR
+Translate all specifications (or those listed using the above -n option)
+using \fItrans\fR, which is a comma-separated list of one or more comorphism
+names.
+.TP
+\fB\-a \fIanalysis\fR, \fB--casl-amalg=\fIanalysis\fR
+Set the CASL amalgamability options to \fIanalysis\fR, which is a
+comma-separated list of one or more of the following options:
+\fBnone\fR, \fBsharing\fR, \fBcell\fR (default), or \fBcolimit-thinness\fR.
+If the list is empty the amalgamability analysis for CASL gets skipped.
+.TP
+.BR \-M , \ \--MMT
+Use MMT.
+
+.SH "EXAMPLES"
+.\" @SDESKTOP@
+.ds CL hets \-g
+.\" @EDESKTOP@
+.\" @SSERVER@
+.ds CL hets\-server\ \-O\ .\ \-o\ xml
+.\" @ESERVER@
+.P
+In the following examples \fB${HETS_LIB}\fR denotes the directory containing
+the hets specification and it is assumed, that the current working directory
+is writable, e.g. /tmp/.
+.HP
+.B \*(CL\ \-A\ ${HETS_LIB}/Calculi/Space/RCCVerification.dol
+.br
+Check if all nodes can be proven. Only one node is heterogeneous and needs
+the Isabelle prover. To allow hets the reuse of the given proofs, copy the
+file ${HETS_LIB}/RCCVerification_RCC_FO_in_MetricSpace__T.thy
+to your working directory.
+.HP
+.B \*(CL\ ${HETS_LIB}/Basic/LinearAlgebra_II.casl
+.br
+Check Edit/Prove/Automatic, followed by Edit/Undo.
+.HP
+.B \*(CL\ \-i\ owl\ ${HETS_OWL_TOOLS}/tests/wine.rdf
+.br
+Check out the OWL parser.
+.HP
+.B \*(CL\ ${HETS_LIB}/TestSuite/Conservative/Nat.casl
+.br
+Check conservativity of the link. This will result in "The link is mono".
+.HP
+.B \*(CL\ ${HETS_LIB}/Ontology/Examples/Family.dol
+.br
+Check OWL conservativity checker on the Family <-> FamilyBase links. One
+can be proven, while the other cannot.
+.HP
+.B \*(CL\ \-A ${HETS_LIB}/HidingOWL.dol
+.br
+Choose Edit/Consistency Checker and prove the goals.
+.HP
+.B \*(CL\ ${HETS_LIB}/HolLight/example_binom.hol
+.br
+Import the full HolLight theory and a small lemma on binomials. You can
+use the translation to Isabelle.
+
+.SH "ENVIRONMENT VARIABLES"
+.P
+Hets uses the following environment variables to determine the path to the
+tools it needs. Relative pathes mentioned below should be absolute pathes,
+so depending on the install directory, you need to add the corresponding
+prefix like /usr/ or /local/usr/ .
+.\" looks not so good, when aligned.
+.na
+.TP
+.B HETS_MAGIC
+The magic file used by hets via the GNU file utility to determine the content
+type of files to process. Default:\ \fBlib/hets/hets.magic\fR
+.TP
+.B HETS_LIB
+The path to het's own libraries. Default:\ \fBlib/hets/hets-lib\fR
+.TP
+.B HETS_ISABELLE_LIB
+The path to the Isabelle library. Default:\ \fB${HETS_LIB}/Isabelle\fR
+.TP
+.B HETS_HOLLIGHT_TOOLS
+The path to the HolLight image.a Default:\ \fBlib/hets/hets-hollight-tools\fR
+.TP
+.B HETS_MAUDE_LIB
+The path to the Maude Hets library. Default:\ \fBlib/hets/hets-maude-lib\fR
+.TP
+.B HETS_OWL_TOOLS
+The path to the hets owl tools library. Default:\ \fBlib/hets/hets-owl-tools\fR
+.TP
+.B HETS_APROVE
+The path to AProVE.jar . Default:\ \fB${HETS_OWL_TOOLS}/AProVE.jar\fR
+.TP
+.B HETS_ONTODMU
+The path to OntoDMU.jar . Default:\ \fB${HETS_OWL_TOOLS}/OntoDMU.jar\fR
+.TP
+.B HETS_JNI_LIBS
+The directory path which contains the FaCT++ JNI library
+\fBlibFaCTPlusPlusJNI.so\fR.
+Default:\ \fB${HETS_OWL_TOOLS}/lib/native/`uname -m`\fR
+.TP
+.B HETS_GMOC
+The path to the Gmoc directory containing bin/gmoc and Configuration.xml
+.TP
+.B HETS_REDUCE
+The path to the executable redcsl.
+.TP
+.B PELLET_PATH
+The path to the Pellet root directory. Default:\ \fBshare/pellet\fR
+.TP
+.B TWELF_LIB
+The path to the TWELF root directory. Default:\ \fBshare/twelf/bin\fR
+.TP
+.B MAUDE_LIB
+The path to the MAUDE library directory. Default:\ \fBshare/maude\fR
+.da
+
+.SH NOTES
+.P
+Some tools used by hets under the hood require \fBjava\fR(1), the GNU file
+utility (on Solaris named \fBgfile\fR(1)) and \fBopenssl\fR(1openssl).
+Make sure that your \fBPATH\fR environment variable is set properly,
+so that they can be find/called just by their basename.
+.\" @SSOLARIS@
+.\" @SSERVER@
+.P
+The hets server service is managed by the service management facility,
+\fBsmf\fR(5), under the service identifier:
+
+.RS
+svc:/network/hets
+.RE
+
+.P
+It gets not automatically enabled on install. Administrative actions on this
+service, such as enabling, disabling, or requesting restart, can be performed
+using \fBsvcadm\fR(1M). The service's status can be queried using the
+\fBsvcs\fR(1) command.
+.P
+Per default the server listens on port 800. If you wanna change it or wanna
+change related environments variables, use \fBsvccfg\fR(1M) to adjust them as
+usual.
+.\" @ESERVER@
+.\" @ESOLARIS@
+
+.SH AUTHOR
+.P
+\fBhets\fR, the Heterogenous Tool Set is the work of University of Bremen
+and the Otto-von-Guericke University Magdeburg. This manual page was initially
+written by Corneliu-Claudiu Prodescu <cprodescu@googlemail.com> and uses the
+same license as \fBhets\fR itself.  The complete user guide can be found
+beneath the install directory at \fBshare/doc/hets/UserGuide.pdf\fR.
+
+.SH BUGS
+.P
+Please report any bugs to hets-devel@informatik.uni-bremen.de or via https://github.com/spechub/Hets/issues/.

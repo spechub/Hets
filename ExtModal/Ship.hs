@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./ExtModal/Ship.hs
 Copyright   :  (c) C. Maeder DFKI GmbH
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -13,7 +13,6 @@ monitor syntax
 module ExtModal.Ship where
 
 import OWL2.ShipSyntax
-import OWL2.AS
 
 import Common.Doc
 import Common.DocUtils

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Symbol.hs
 Description :  Symbols of common logic
 Copyright   :  (c) Karl Luc, DFKI Bremen 2010, Eugen Kuksa, Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -29,6 +30,8 @@ import qualified Common.Id as Id
 import Common.Doc
 import Common.DocUtils
 import Common.Result
+
+import Data.Data
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -36,7 +39,7 @@ import qualified CommonLogic.Sign as Sign
 import CommonLogic.Morphism as Morphism
 
 newtype Symbol = Symbol {symName :: Id.Id}
-                 deriving (Show, Eq, Ord)
+                 deriving (Show, Eq, Ord, Typeable)
 
 instance Id.GetRange Symbol where
     getRange = Id.getRange . symName

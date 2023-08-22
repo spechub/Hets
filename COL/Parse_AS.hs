@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./COL/Parse_AS.hs
 Description :  Parser for COL
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

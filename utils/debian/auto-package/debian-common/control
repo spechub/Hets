@@ -33,7 +33,7 @@ Homepage: http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoF
 
 Package: hets-core
 Architecture: i386 amd64
-Depends: tk, darwin, eprover, openjdk-7-jre | openjdk-6-jre, spass, udrawgraph [i386] | udrawgraph:i386 [amd64], graphviz, gtk2-engines, gtk2-engines-pixbuf, python, subversion, curl, bzip2, ${shlibs:Depends}, ${misc:Depends}
+Depends: tk, darwin, eprover, openjdk-7-jre | openjdk-6-jre, spass, udrawgraph [i386] | udrawgraph:i386 [amd64], graphviz, gtk2-engines, gtk2-engines-pixbuf, python, git, curl, bzip2, ${shlibs:Depends}, ${misc:Depends}
 Recommends: man
 Description: Package containing the core of Hets - the Heterogeneous Tool Set.
  Hets is a parsing, static analysis and proof management tool combining
@@ -59,6 +59,6 @@ Description: Package containing the documentation for Heterogeneous Tool Set.
 
 Package: hets
 Architecture: all
-Depends: hets-core, hets-ontology, hets-doc, isabelle, ${misc:Depends}
+Depends: hets-core, hets-ontology, hets-doc, isabelle-installer, ${misc:Depends}
 Description: Package containing the full Hets - the Heterogeneous Tool Set.
  This is a meta-package containing the full Hets system.

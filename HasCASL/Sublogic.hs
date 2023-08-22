@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/Sublogic.hs
 Description :  HasCASL's sublogics
 Copyright   :  (c) Sonja Groening, C. Maeder, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -56,14 +57,16 @@ module HasCASL.Sublogic
     , sl_symbol
     ) where
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import Common.AS_Annotation
 import Common.Id
 
 import HasCASL.As
 import HasCASL.AsUtils
-import HasCASL.Le
+import HasCASL.Le as Le
 import HasCASL.Builtin
 import HasCASL.FoldTerm
 
@@ -74,10 +77,10 @@ data Formulas
     | GHorn   -- ^ generalized positive conditional logic
     | FOL     -- ^ first-order logic
     | HOL     -- ^ higher-order logic
-      deriving (Show, Eq, Ord)
+      deriving (Show, Eq, Ord, Typeable, Data)
 
 data Classes = NoClasses | SimpleTypeClasses | ConstructorClasses
-               deriving (Show, Eq, Ord)
+               deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | HasCASL sublogics
 data Sublogic = Sublogic
@@ -90,7 +93,7 @@ data Sublogic = Sublogic
     , has_type_constructors :: Bool
     , has_products :: Bool
     , which_logic :: Formulas
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 -- * special sublogic elements
 
@@ -754,7 +757,7 @@ sl_opDefn o = case o of
     _ -> bottom
 
 sl_constrInfo :: ConstrInfo -> Sublogic
-sl_constrInfo = sl_typeScheme . constrType
+sl_constrInfo = sl_typeScheme . Le.constrType
 
 sl_sentence :: Sentence -> Sublogic
 sl_sentence s = sublogicUp $ case s of

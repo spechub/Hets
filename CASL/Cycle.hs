@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Cycle.hs
 Description :  removing sort cycles
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2013
 License     :  GPLv2 or higher, see LICENSE.txt

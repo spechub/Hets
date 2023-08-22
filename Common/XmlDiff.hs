@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/XmlDiff.hs
 Description :  compute xml diffs
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt

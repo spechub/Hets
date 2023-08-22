@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/ProveFact.hs
 Copyright   :  (c) Domink Luecke, Uni Bremen 2009-2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -14,7 +14,7 @@ module OWL2.ProveFact (factProver, factConsChecker) where
 
 import Logic.Prover
 
-import OWL2.MS
+import OWL2.AS
 import OWL2.Morphism
 import OWL2.Sign
 import OWL2.ProfilesAndSublogics
@@ -49,8 +49,15 @@ import Data.Maybe
   feedback), then starts the GUI prover.
 -}
 factProver :: Prover Sign Axiom OWLMorphism ProfSub ProofTree
-factProver = mkAutomaticProver "Fact" topS factGUI
-  factCMDLautomaticBatch
+factProver = (mkAutomaticProver "java" "Fact" topS factGUI
+  factCMDLautomaticBatch)
+  { proverUsable = checkOWLjar factProverJarS }
+
+factProverJarS :: String
+factProverJarS = "OWLFactProver.jar"
+
+factJarS :: String
+factJarS = "OWLFact.jar"
 
 {- |
   Invokes the generic prover GUI.
@@ -90,7 +97,8 @@ factCMDLautomaticBatch inclProvedThs saveProblem_batch resultMVar
   The Cons-Checker implementation.
 -}
 factConsChecker :: ConsChecker Sign Axiom ProfSub OWLMorphism ProofTree
-factConsChecker = mkConsChecker "Fact" topS consCheck
+factConsChecker = (mkConsChecker "Fact" topS consCheck)
+  { ccUsable = checkOWLjar factJarS }
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -149,7 +157,7 @@ runTimedFact :: FilePath -- ^ basename of problem file
   -> IO (Maybe (Bool, ExitCode, String, TimeOfDay))
 runTimedFact tmpFileName prob mEnt tLimit = do
   let hasEnt = isJust mEnt
-      jar = if hasEnt then "OWLFactProver.jar" else "OWLFact.jar"
+      jar = if hasEnt then factProverJarS else factJarS
       jlibName = "libFaCTPlusPlusJNI.so"
   (progTh, toolPath) <- check4HetsOWLjar jar
   hasJniLib <- doesFileExist $ "/lib/" ++ jlibName
@@ -199,14 +207,12 @@ runFact sps cfg saveFact thName nGoal = do
         writeFile tmpFileName prob
         writeFile (tmpFileName ++ ".entail.owl") entail
       mExit <- runTimedFact tmpFileName prob (Just entail) tLimit
-      ((err, retval), output, tUsed) <- case mExit of
-            Just (b, ex, output, t_u) -> if b then do
-              let outp = lines output
-              return (proofStat ex outp t_u, outp, t_u)
-              else return ((ATPError output, defaultProofStatus), [], t_u)
-            Nothing -> return
-              ( (ATPTLimitExceeded, defaultProofStatus)
-              , [], midnight)
+      let ((err, retval), output, tUsed) = case mExit of
+            Just (b, ex, out, t_u) -> if b then let outlines = lines out in
+                (proofStat ex outlines t_u, outlines, t_u)
+              else
+                ((ATPError out, defaultProofStatus), [], t_u)
+            Nothing -> ( (ATPTLimitExceeded, defaultProofStatus), [], midnight)
       return (err, cfg
             { proofStatus = retval
             , resultOutput = output
@@ -220,6 +226,7 @@ runFact sps cfg saveFact thName nGoal = do
       ExitFailure 10 -> (ATPSuccess, (provedStatus tUsed)
                        { usedAxioms = map senAttr $ initialState sps })
       ExitFailure 20 -> (ATPSuccess, disProvedStatus)
+      ExitFailure 30 -> (ATPSuccess, (provedStatus tUsed))
       ExitFailure _ -> ( ATPError (unlines ("Internal error." : out))
                        , defaultProofStatus)
       ExitSuccess -> ( ATPError (unlines ("Internal error." : out))
@@ -232,10 +239,6 @@ runFact sps cfg saveFact thName nGoal = do
         { tacticScript = tScript }
     disProvedStatus = defaultProofStatus {goalStatus = Disproved}
     provedStatus ut =
-      ProofStatus { goalName = senAttr nGoal
-                  , goalStatus = Proved True
-                  , usedAxioms = []
-                  , usedProver = proverName factProver
-                  , proofTree = emptyProofTree
-                  , usedTime = ut
-                  , tacticScript = tScript }
+      defaultProofStatus { goalStatus = Proved True
+                         , usedTime = ut
+                         , tacticScript = tScript }

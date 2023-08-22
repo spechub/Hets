@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/ExtSign.hs
 Description :  signatures with symbol sets
 Copyright   :  (c) DFKI GmbH, Uni Bremen 2002-2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -13,7 +14,9 @@ signatures with symbol sets for every logic
 
 module Common.ExtSign where
 
+import Data.Data
 import qualified Data.Set as Set
+
 import Common.Doc
 import Common.DocUtils
 
@@ -22,7 +25,7 @@ import Common.DocUtils
 data ExtSign sign symbol = ExtSign
   { plainSign :: sign
   , nonImportedSymbols :: Set.Set symbol
-  } deriving (Show, Read)
+  } deriving (Show, Read, Typeable, Data)
 
 instance (Ord sign) => Eq (ExtSign sign symbol) where
     a == b = compare a b == EQ

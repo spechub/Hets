@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/ProveHyperHyper.hs
 Description :  Interface to the theorem prover e-krhyper in CASC-mode.
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -52,7 +52,8 @@ hyperS = "ekrh"
 
 -- | The Prover implementation.
 hyperProver :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-hyperProver = mkAutomaticProver hyperS () hyperGUI hyperCMDLautomaticBatch
+hyperProver =
+  mkAutomaticProver hyperS hyperS () hyperGUI hyperCMDLautomaticBatch
 
 {- |
   Record for prover specific functions. This is used by both GUI and command
@@ -174,14 +175,10 @@ runHyper sps cfg saveTPTP thName nGoal =
           { tsTimeLimit = tl
           , tsExtraOpts = filter (isPrefixOf "#")
               $ lines $ prelTxt (show tl) ++ runTxt }
-        defProofStat = ProofStatus
-          { goalName = senAttr nGoal
-          , goalStatus = openGoalStatus
-          , usedAxioms = []
-          , usedProver = hyperS
-          , proofTree = emptyProofTree
-          , usedTime = midnight
-          , tacticScript = tScript }
+        defProofStat = (openProofStatus
+          (senAttr nGoal)
+          hyperS
+          emptyProofTree) { tacticScript = tScript }
     in
         if all checkOption simpleOptions
          then
@@ -261,7 +258,7 @@ examineProof sps stdoutC stderrC defStatus =
 -- Consistency Checker
 
 hyperConsChecker :: ConsChecker Sign Sentence () SoftFOLMorphism ProofTree
-hyperConsChecker = (mkConsChecker hyperS () consCheck)
+hyperConsChecker = (mkUsableConsChecker hyperS hyperS () consCheck)
   { ccNeedsTimer = False }
 
 {- |

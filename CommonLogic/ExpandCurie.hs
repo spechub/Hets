@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/ExpandCurie.hs
 Description :  Expansion of abbreviated IRI to full IRI
 Copyright   :  (c) Eugen Kuksa, Uni Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

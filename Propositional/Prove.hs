@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Propositional/Prove.hs
 Description :  Provers for propositional logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -66,7 +66,7 @@ zchaffS = "zchaff"
 -}
 zchaffProver
   :: LP.Prover Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism PropSL ProofTree
-zchaffProver = LP.mkAutomaticProver zchaffS top zchaffProveGUI
+zchaffProver = LP.mkAutomaticProver zchaffS zchaffS top zchaffProveGUI
   zchaffProveCMDLautomaticBatch
 
 {- |
@@ -74,7 +74,7 @@ zchaffProver = LP.mkAutomaticProver zchaffS top zchaffProveGUI
 -}
 propConsChecker :: LP.ConsChecker Sig.Sign AS_BASIC.FORMULA PropSL
                                   PMorphism.Morphism ProofTree
-propConsChecker = LP.mkConsChecker zchaffS top consCheck
+propConsChecker = LP.mkUsableConsChecker zchaffS zchaffS top consCheck
 
 consCheck :: String -> LP.TacticScript
    -> LP.TheoryMorphism Sig.Sign AS_BASIC.FORMULA PMorphism.Morphism ProofTree

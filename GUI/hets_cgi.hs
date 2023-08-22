@@ -1,9 +1,9 @@
 {- |
-Module       : $Header$
-Copyright    : (c) Heng Jiang, Klaus Luettich Uni Bremen 2004-2006
+Module       : ./GUI/hets_cgi.hs
+Copyright    : (c) Uni Magdeburg 2004-2017
 License      : GPLv2 or higher, see LICENSE.txt
 
-Maintainer   : Christian.Maeder@dfki.de
+Maintainer   : till@iks.cs.ovgu.de
 Stability    : provisional
 Portability  : non-portable(imports Logic.Logic)
 
@@ -42,7 +42,7 @@ import Text.XML.Light
 import System.Random
 import System.IO
 import System.Time
-import System.Cmd
+import System.Process
 import System.Posix.IO
 import System.Posix.Types
 import System.Posix.Files
@@ -89,14 +89,14 @@ pdflatexCmd = "/opt/csw/bin/pdflatex"
 
 cofiUrl :: String
 cofiUrl =
-  "http://www.informatik.uni-bremen.de/agbkb/forschung/formal_methods/CoFI/"
+  "http://www.cofi.info/"
 
 -- link to the homepage of hetcasl
 hetcaslUrl :: String
-hetcaslUrl = cofiUrl ++ "HetCASL/index_e.htm"
+hetcaslUrl = "http://dol-omg.org/"
 
 hetsUrl :: String
-hetsUrl = "http://www.dfki.de/sks/hets/"
+hetsUrl = "http://hets.eu/"
 
 -- link to the manual of Hets
 hetsManualUrl :: String
@@ -142,18 +142,18 @@ main = run mainCGI
 mainCGI :: CGI ()
 mainCGI = ask $ html $ do
       CGI.head $ title $ text "Hets Web Interface"
-      CGI.body $ makeForm $ page1 $ "Hets " ++ hetcats_version
+      CGI.body $ makeForm $ page1 hetsVersion
 
 page1 :: String -> WithHTML x CGI ()
 page1 title1 = do
       h1 $ text title1
       p $ do
         text "You may also want to try out our experimental "
-        hlink (URL "http://pollux.informatik.uni-bremen.de:8000/")
+        hlink (URL "http://rest.hets.eu/")
           $ text "Hets Server"
       p $ do
         text "Enter a "
-        hlink (URL hetcaslUrl) $ text "HetCASL"
+        hlink (URL hetcaslUrl) $ text "CASL or DOL"
         text
           " specification or library in the input zone, then press SUBMIT:"
       -- Input field
@@ -200,7 +200,8 @@ handle (F5 input box1 box2 box3 box4) = do
 anaInput :: String -> SelectedBoxes -> FilePath
          -> IO (CRes.Result Output)
 anaInput contents selectedBoxes outputfiles = do
-  ast : _ <- readLibDefn logicGraph webOpts Nothing "<stdin>" "<stdin>" contents
+  CRes.Result _ (Just (ast : _)) <- runResultT
+    $ readLibDefn logicGraph webOpts Nothing "<stdin>" "<stdin>" contents
   CRes.Result ds mres <- runResultT
       $ anaLibDefn logicGraph webOpts Set.empty emptyLibEnv emptyDG ast ""
   let ds1 = filter diagFilter ds
@@ -287,7 +288,7 @@ printR :: String -> CRes.Result Output -> SelectedBoxes
        -> FilePath
        -> WithHTML x CGI ()
 printR str (CRes.Result ds mres) conf outputFile =
-  do h3 $ text "You have submitted the HetCASL library:"
+  do h3 $ text "You have submitted the CASL or DOL library:"
      mapM_ (\ l -> text l >> br CGI.empty) $ lines str
      h3 $ text "Diagnostic messages of parsing and static analysis:"
      mapM_ (\ l -> text (show l) >> br CGI.empty) ds

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./HolLight/Sentence.hs
 Description :  Sentence for HolLight logic
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -19,15 +20,16 @@ module HolLight.Sentence where
 
 import Common.DocUtils
 import Common.Doc
-import HolLight.Helper
+import HolLight.Helper as Helper
 import HolLight.Term
+import Data.Data
 import Data.Maybe (fromJust, catMaybes, isNothing)
 import qualified Data.Char as Char
 
 data Sentence = Sentence {
   term :: Term,
   proof :: Maybe HolProof
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show, Typeable, Data)
 
 instance Pretty Sentence where
   pretty = ppPrintTerm . term
@@ -50,7 +52,7 @@ printTerm prec tm =
          Just i -> Just (text (show i))
          _ -> Nothing in
   let _2 = case destList tm of
-         Just tms -> case typeOf tm of
+         Just tms -> case Helper.typeOf tm of
            Just t -> case destType t of
              Just (_, x : _) -> case destType x of
                Just ("char", _) -> let cs = map codeOfTerm tms
@@ -68,7 +70,7 @@ printTerm prec tm =
  let _4 = if isGabs tm then Just (printBinder prec tm)
        else Nothing in
  let (s, _, args, hop) = case stripComb tm of
-               (hop', args') -> case fromJust (typeOf hop') of
+               (hop', args') -> case fromJust (Helper.typeOf hop') of
                {- not really sure in which cases (typeOf hop) == Nothing,
                but shouldn't happen if i understand the original
                ocaml code correctly -}
@@ -79,7 +81,7 @@ printTerm prec tm =
                       _ -> (s0, ty0', args', hop') in
  let _5 = case (s, isConst tm, null args) of
          ("EMPTY", True, True) -> Just (braces empty)
-         ("UNIV", True, True) -> case typeOf tm of
+         ("UNIV", True, True) -> case Helper.typeOf tm of
             Just t -> case destFunTy t of
               Just (ty, _) -> Just (parens (hcat [text ":", ppPrintType ty]))
               _ -> Nothing
@@ -171,7 +173,7 @@ printTerm prec tm =
                 (hcat $ if all Char.isAlphaNum s || s == "--"
                     || (
                         case destComb (head args) of
-                          Just (l, _) -> let (s0, _) = (nameOf l, typeOf l)
+                          Just (l, _) -> let (s0, _) = (nameOf l, Helper.typeOf l)
                             in fst (reverseInterface (s0, hop)) == "--"
                                || (case destConst l of
                                     Just (f, _) -> f `elem` ["real_of_num",

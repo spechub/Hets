@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Sign.hs
 Description :  CASL signatures and local environments for basic analysis
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -30,13 +31,14 @@ import Common.Prec (mkPrecIntMap, PrecMap)
 import Common.Doc
 import Common.DocUtils
 
+import Data.Data
 import Data.Maybe (fromMaybe)
 import Data.List (isPrefixOf)
 import Control.Monad (when, unless)
 
 -- constants have empty argument lists
 data OpType = OpType {opKind :: OpKind, opArgs :: [SORT], opRes :: SORT}
-              deriving (Show, Eq, Ord)
+              deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | result sort added to argument sorts
 opSorts :: OpType -> [SORT]
@@ -51,7 +53,7 @@ sortToOpType = mkTotOpType []
 isSingleArgOp :: OpType -> Bool
 isSingleArgOp = isSingle . opArgs
 
-data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord)
+data PredType = PredType {predArgs :: [SORT]} deriving (Show, Eq, Ord, Typeable, Data)
 
 sortToPredType :: SORT -> PredType
 sortToPredType s = PredType [s]
@@ -71,7 +73,7 @@ data SymbType = SortAsItemType
                 {- since symbols do not speak about totality, the totality
                 information in OpType has to be ignored -}
               | PredAsItemType PredType
-                deriving (Show, Eq, Ord)
+                deriving (Show, Eq, Ord, Typeable, Data)
 
 symbolKind :: SymbType -> SYMB_KIND
 symbolKind t = case t of
@@ -80,7 +82,7 @@ symbolKind t = case t of
   _ -> Sorts_kind
 
 data Symbol = Symbol {symName :: Id, symbType :: SymbType}
-              deriving (Show, Eq, Ord)
+              deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Symbol where
     getRange = getRange . symName
@@ -118,7 +120,7 @@ data Sign f e = Sign
     , annoMap :: AnnoMap -- ^ annotated symbols
     , globAnnos :: GlobalAnnos -- ^ global annotations to use
     , extendedInfo :: e
-    } deriving Show
+    } deriving (Show, Typeable, Data)
 
 sortSet :: Sign f e -> Set.Set SORT
 sortSet = Rel.keysSet . sortRel
@@ -343,8 +345,9 @@ addSig ad a b = let s = sortSet a `Set.union` sortSet b in
 uniteCASLSign :: CASLSign -> CASLSign -> CASLSign
 uniteCASLSign = addSig (\ _ _ -> ())
 
-interRel :: Ord a => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
-interRel a = Rel.fromSet
+interRel :: (Show a, Ord a) => Rel.Rel a -> Rel.Rel a -> Rel.Rel a
+interRel a =
+  Rel.fromSet
   . Set.intersection (Rel.toSet a) . Rel.toSet
 
 interOpMapSet :: OpMap -> OpMap -> OpMap
@@ -587,3 +590,15 @@ addSymbToSign sig sy =
         SubsortAsItemType _ -> return sig
         PredAsItemType pt -> return $ addPred' sig' n pt
         OpAsItemType ot -> return $ addOp' sig' n ot
+
+
+-- The function below belong in a different file. But I put them here for now.
+-- dual of a quantifier
+
+dualQuant :: QUANTIFIER -> QUANTIFIER
+dualQuant q = case q of
+ Universal -> Existential
+ Existential -> Universal 
+ Unique_existential -> error "unique existential quantifier has no dual" -- should not get here
+
+

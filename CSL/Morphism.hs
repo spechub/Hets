@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Morphism.hs
 Description :  Abstract syntax for reduce
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -25,22 +26,25 @@ module CSL.Morphism
   , morphismUnion
   ) where
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import CSL.Sign as Sign
-import qualified Common.Result as Result
 import CSL.AS_BASIC_CSL
+
 import Common.Id as Id
 import Common.Result
 import Common.Doc
 import Common.DocUtils
+import qualified Common.Result as Result
 
 -- | The datatype for morphisms in reduce logic as maps of sets
 data Morphism = Morphism
   { source :: Sign
   , target :: Sign
   , operatorMap :: Map.Map Id Id
-  } deriving (Eq, Ord, Show)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty Morphism where
     pretty = printMorphism

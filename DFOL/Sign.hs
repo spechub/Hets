@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./DFOL/Sign.hs
 Description :  Definition of signatures for first-order logic
                with dependent types (DFOL)
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
@@ -48,6 +49,7 @@ import Common.Doc
 import Common.DocUtils
 import qualified Common.Result as Result
 
+import Data.Data
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
@@ -55,13 +57,13 @@ import qualified Data.Map as Map
 data KIND = SortKind
           | FuncKind
           | PredKind
-            deriving (Show, Ord, Eq)
+            deriving (Show, Ord, Eq, Typeable, Data)
 
 type ARITY = Int
 
 -- contexts for DFOL
 data CONTEXT = Context [DECL]
-               deriving (Show, Eq)
+               deriving (Show, Eq, Typeable, Data)
 
 -- the empty context
 emptyContext :: CONTEXT
@@ -81,7 +83,7 @@ getVarType n (Context ds) = getVarTypeFromDecls n ds
 
 -- signatures for DFOL
 data Sign = Sign [DECL]
-            deriving (Show, Ord, Eq)
+            deriving (Show, Ord, Eq, Typeable, Data)
 
 -- the empty signature
 emptySig :: Sign

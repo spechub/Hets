@@ -1,35 +1,37 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
-Description :  library names for HetCASL and development graphs
+Module      :  ./Common/LibName.hs
+Description :  library names for DOL and development graphs
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2008
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  portable
 
-Abstract syntax of HetCASL specification libraries
-   Follows Sect. II:2.2.5 of the CASL Reference Manual.
+Abstract syntax of HetCASL/DOL specification library names.
+   Follows Sect. II:2.2.5 of the CASL Reference Manual
+   and 9.7 of the OMG standard DOL.
 -}
 
 module Common.LibName
-  ( LibName (LibName)
+  ( LibName (LibName, getLibId, locIRI, mimeType, libVersion)
   , VersionNumber (VersionNumber)
-  , LinkPath (LinkPath)
-  , SLinkPath
   , isQualNameFrom
   , isQualName
   , mkQualName
   , unQualName
   , setFilePath
   , libToFileName
+  , libToString
   , getFilePath
   , iriLibName
   , filePathToLibId
   , emptyLibName
   , convertFileToLibStr
   , mkLibStr
-  , getLibId
-  , locIRI
+  , setMimeType
+  , mkLibName
+  , libNameToId
   ) where
 
 import Common.Doc
@@ -37,9 +39,11 @@ import Common.DocUtils
 import Common.Id
 import Common.IRI
 import Common.Keywords
+import Common.Percent
 import Common.Utils
 
 import Data.Char
+import Data.Data
 import Data.List
 import Data.Maybe
 import Data.Ord
@@ -77,40 +81,59 @@ libNameToId ln = let
 
 data LibName = LibName
     { getLibId :: IRI
-    , libIdRange :: Range  -- start of getLibId
     , locIRI :: Maybe IRI
+    , mimeType :: Maybe String
     , libVersion :: Maybe VersionNumber }
+  deriving (Typeable, Data)
 
 iriLibName :: IRI -> LibName
-iriLibName i = LibName i nullRange Nothing Nothing
+iriLibName i = LibName i Nothing Nothing Nothing
+
+mkLibName :: IRI -> Maybe VersionNumber -> LibName
+mkLibName i v = (iriLibName i) { libVersion = v }
 
 emptyLibName :: String -> LibName
 emptyLibName s = iriLibName .
   fromMaybe (if null s then nullIRI else error $ "emptyLibName: " ++ s)
-  $ parseIRIManchester s
+  $ parseIRICurie s
 
+-- | convert file name to IRI reference
 filePathToIri :: FilePath -> IRI
 filePathToIri fp = fromMaybe (error $ "filePathToIri: " ++ fp)
-  . parseIRIReference $ escapeIRIString isUnescapedInIRI fp
+  . parseIRIReference $ encodeBut (\ c -> isUnreserved c || elem c reserved) fp
 
+-- | use file name as library IRI
 filePathToLibId :: FilePath -> IRI
 filePathToLibId = setAngles True . filePathToIri
 
+-- | insert file name as location IRI
 setFilePath :: FilePath -> LibName -> LibName
-setFilePath fp ln =
-  ln { locIRI = Just $ filePathToIri fp }
+setFilePath fp ln = ln { locIRI = Just $ filePathToIri fp }
 
+-- | insert optional mime type
+setMimeType :: Maybe String -> LibName -> LibName
+setMimeType m ln = ln { mimeType = m }
+
+-- | interpret library IRI as file path
 libToFileName :: LibName -> FilePath
-libToFileName = iriToStringUnsecure . setAngles False . getLibId
+libToFileName ln = let iri = getLibId ln in
+  if hasFullIRI iri then showIRIFull . setAngles False $ iri else showIRI iri
 
+-- | interpret library IRI as path. Uses CURIE if available.
+libToString :: LibName -> String
+libToString = iriToStringUnsecure . setAngles False . getLibId
+
+
+-- | extract location IRI as file name
 getFilePath :: LibName -> FilePath
 getFilePath = maybe "" iriToStringUnsecure . locIRI
 
 data VersionNumber = VersionNumber [String] Range
-                      -- pos: "version", start of first string
+  deriving (Typeable, Data)
+                    -- pos: "version", start of first string
 
 instance GetRange LibName where
-  getRange = libIdRange
+  getRange = getRange . getLibId
 
 instance Show LibName where
   show = show . hsep . prettyLibName
@@ -131,10 +154,6 @@ instance Ord LibName where
 
 instance Pretty LibName where
     pretty = fsep . prettyLibName
-
-data LinkPath a = LinkPath a [(LibName, Int)] deriving (Ord, Eq)
-
-type SLinkPath = LinkPath String
 
 convertFileToLibStr :: FilePath -> String
 convertFileToLibStr = mkLibStr . takeBaseName

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/ProverState.hs
 Description :  Interface to the OWL Ontology provers.
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -15,7 +15,7 @@ module OWL2.ProverState where
 
 import Logic.Prover
 
-import OWL2.MS
+import OWL2.AS
 import OWL2.Morphism
 import OWL2.Sign
 import OWL2.ManchesterPrint

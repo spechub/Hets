@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Taxonomy/AbstractGraphView.hs
 Description :  Interface for graph viewing and abstraction
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2007
 License     :  GPLv2 or higher, see LICENSE.txt

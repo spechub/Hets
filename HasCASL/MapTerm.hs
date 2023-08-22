@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/MapTerm.hs
 Description :  renaming according to signature morphisms
 Copyright   :  (c) Christian Maeder and Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

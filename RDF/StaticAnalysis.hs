@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./RDF/StaticAnalysis.hs
 Copyright   :  Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -12,8 +12,9 @@ Static analysis for RDF
 
 module RDF.StaticAnalysis where
 
-import OWL2.AS
-import OWL2.Parse
+import qualified OWL2.AS as AS
+import Common.IRI
+import OWL2.Parse ()
 import RDF.AS
 import RDF.Sign
 import RDF.Parse (predefinedPrefixes)
@@ -22,11 +23,10 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-import Text.ParserCombinators.Parsec hiding (State)
+import Text.ParserCombinators.Parsec ()
 
 import Common.AS_Annotation hiding (Annotation)
 import Common.Id
-import qualified Common.IRI as IRI
 import Common.Result
 import Common.GlobalAnnotations
 import Common.ExtSign
@@ -35,16 +35,19 @@ import Common.Lib.State
 -- * URI Resolution
 
 resolveFullIRI :: IRI -> IRI -> IRI
-resolveFullIRI absol rel = if isAbsoluteIRI rel then rel else
-    let r = fromJust $ IRI.parseIRIReference $ expandedIRI rel
-        a = fromJust $ IRI.parseIRI $ expandedIRI absol
+resolveFullIRI _absol rel = rel
+ {-if isAbsoluteIRI rel then rel else
+    let r = fromJust $ parseIRIReference $ fromJust $ expandCurie Map.empty rel
+        a = fromJust $ parseIRI $ fromJust $ expandCurie Map.empty absol
         Just ra = IRI.relativeTo r a
         resolved = IRI.iriToStringUnsecure ra
         Right new = parse uriQ "" $ "<" ++ resolved ++ ">"
     in rel {expandedIRI = expandedIRI new}
+ -}
 
 resolveAbbreviatedIRI :: RDFPrefixMap -> IRI -> IRI
-resolveAbbreviatedIRI pm new = case Map.lookup (namePrefix new) pm of
+resolveAbbreviatedIRI pm new = fromJust $ expandCurie pm new
+  {-case Map.lookup (namePrefix new) pm of
     Nothing -> error $ namePrefix new ++ ": prefix not declared"
     Just iri -> let new2 = if null (namePrefix new)
                                         {- FIXME: If null (localPart new)
@@ -54,25 +57,27 @@ resolveAbbreviatedIRI pm new = case Map.lookup (namePrefix new) pm of
                             then new {localPart = tail $ localPart new}
                             else new
                 in new2 {expandedIRI = expandedIRI iri ++ localPart new2}
+ -}
 
 resolveIRI :: Base -> RDFPrefixMap -> IRI -> IRI
-resolveIRI (Base current) pm new = case iriType new of
-    Full -> resolveFullIRI current new
-    Abbreviated -> resolveAbbreviatedIRI pm new
-    NodeID -> new
+resolveIRI (Base current) pm new 
+    | hasFullIRI new = resolveFullIRI current new
+    | isBlankNode new = new
+    | otherwise = resolveAbbreviatedIRI pm new
 
 resolveBase :: Base -> RDFPrefixMap -> Base -> Base
 resolveBase b pm (Base new) = Base $ resolveIRI b pm new
 
 resolvePrefix :: Base -> RDFPrefixMap -> Prefix -> (Prefix, RDFPrefixMap)
-resolvePrefix b pm (Prefix s new) = let res = resolveIRI b pm new
-    in (Prefix s res, Map.insert s res pm)
+resolvePrefix b pm (PrefixR s new) = let res = resolveIRI b pm new
+    in (PrefixR s res, Map.insert s res pm)
 
 resolvePredicate :: Base -> RDFPrefixMap -> Predicate -> Predicate
 resolvePredicate b pm (Predicate p) = Predicate $
-    if null (namePrefix p) && localPart p == "a" then
-        p { expandedIRI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
-          , iriType = Full }
+    if null (prefixName p) && show (iriPath p) == "a" then
+        p { iriScheme = "http:",
+            iriPath = stringToId "//www.w3.org/1999/02/22-rdf-syntax-ns#type"
+          }
     else resolveIRI b pm p
 
 resolveSubject :: Base -> RDFPrefixMap -> Subject -> Subject
@@ -90,8 +95,8 @@ resolveObject :: Base -> RDFPrefixMap -> Object -> Object
 resolveObject b pm o = case o of
     Object s -> Object $ resolveSubject b pm s
     ObjectLiteral lit -> case lit of
-        RDFLiteral bool lf (Typed dt) ->
-                ObjectLiteral $ RDFLiteral bool lf $ Typed $ resolveIRI b pm dt
+        RDFLiteral bool lf (AS.Typed dt) ->
+                ObjectLiteral $ RDFLiteral bool lf $ AS.Typed $ resolveIRI b pm dt
         _ -> o
 
 resolveTriples :: Base -> RDFPrefixMap -> Triples -> Triples
@@ -112,7 +117,7 @@ extractPrefixMap :: RDFPrefixMap -> [Statement] -> RDFPrefixMap
 extractPrefixMap pm ls = case ls of
     [] -> pm
     h : t -> case h of
-        PrefixStatement (Prefix p iri) -> extractPrefixMap (Map.insert p iri pm) t
+        PrefixStatement (PrefixR p iri) -> extractPrefixMap (Map.insert p iri pm) t
         _ -> extractPrefixMap pm t
 
 resolveDocument :: TurtleDocument -> TurtleDocument
@@ -125,7 +130,9 @@ resolveDocument doc = let newStatements = resolveStatements
 -- * Axiom extraction
 
 generateBNode :: Int -> IRI
-generateBNode i = QN "_" ("bnode" ++ show i) NodeID ("_:bnode" ++ show i) nullRange
+generateBNode i = nullIRI { iriPath = stringToId ("bnode" ++ show i)
+                          , isAbbrev = True 
+                          , isBlankNode = True}
 
 collectionToPOList :: [Object] -> [PredicateObjectList]
 collectionToPOList objs = case objs of

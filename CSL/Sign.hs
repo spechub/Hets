@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Sign.hs
 Description :  Signatures for the EnCL logic
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -30,9 +31,10 @@ module CSL.Sign
     , addEPDomVarDeclToSig
     ) where
 
+import Data.Data
+import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-import Data.Maybe
 
 import Common.Id
 import Common.Result
@@ -44,7 +46,7 @@ import CSL.AS_BASIC_CSL
 import CSL.Print_AS ()
 
 data OpType = OpType { opArity :: Int
-                     } deriving (Eq, Ord, Show)
+                     } deriving (Show, Eq, Ord, Typeable, Data)
 
 defaultType :: OpType
 defaultType = OpType { opArity = 0 }
@@ -57,7 +59,7 @@ Signatures are just sets of Tokens for the operators -}
 data Sign = Sign { items :: Map.Map Token OpType
                  , epvars :: Map.Map Token (Maybe APInt)
                  , epdecls :: Map.Map Token EPDecl
-                 } deriving (Eq, Ord, Show)
+                 } deriving (Show, Eq, Ord, Typeable, Data)
 
 opIds :: Sign -> Set.Set Id
 opIds = Set.map simpleIdToId . Map.keysSet . items

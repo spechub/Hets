@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Induction.hs
 Description :  Derive induction schemes from sort generation constraints
 Copyright   :  (c) Till Mossakowski, Rainer Grabbe and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -12,7 +12,7 @@ We provide both second-order induction schemes as well as their
 instantiation to specific first-order formulas.
 -}
 
-module CASL.Induction (inductionScheme, generateInductionLemmas) where
+module CASL.Induction (inductionScheme, inductionSentence, generateInductionLemmas, substitute) where
 
 import CASL.AS_Basic_CASL
 import CASL.Sign
@@ -32,12 +32,20 @@ import Data.Maybe
 the second-order predicate variables are represented as predicate
 symbols P[s], where s is a sort -}
 inductionScheme :: FormExtension f => [Constraint] -> FORMULA f
-inductionScheme constrs =
-  induction $ map predSubst constrs
-  where sorts = map newSort constrs
+inductionScheme constrs = unpackSentence $ inductionSentence constrs
+  where unpackSentence (QuantPred _ _ f) = unpackSentence f
+        unpackSentence f = f
+
+inductionSentence :: FormExtension f => [Constraint] -> FORMULA f
+inductionSentence constrs =
+  foldl quantifyPred (induction constrSubstr) predSymbs
+    where
+        quantifyPred f (pName, pType) = QuantPred pName pType f
+        (constrSubstr, predSymbs) = unzip $ map predSubst constrs
+        sorts = map newSort constrs
         injective = isInjectiveList sorts
         predSubst constr =
-          (constr, \ t -> Predication predSymb [t] nullRange)
+          ((constr, \ t -> Predication predSymb [t] nullRange), (ident, typ))
           where
           predSymb = Qual_pred_name ident typ nullRange
           Id ts cs ps =

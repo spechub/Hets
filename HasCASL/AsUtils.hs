@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/AsUtils.hs
 Description :  some utilities for the abstract syntax
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -22,6 +22,7 @@ import Common.DocUtils
 import Common.Id
 import Common.Keywords
 import Common.Parsec
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Set as Set
 import qualified Text.ParserCombinators.Parsec as P
@@ -68,7 +69,7 @@ redStep ty = case ty of
     KindedType t k ps -> do
       r <- redStep t
       return $ KindedType r k ps
-    _ -> fail "unreducible"
+    _ -> Fail.fail "unreducible"
 
 strippedType :: Type -> Type
 strippedType = foldType mapTypeRec

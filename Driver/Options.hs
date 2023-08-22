@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Driver/Options.hs
 Description :  Datatypes and functions for options that hets understands.
 Copyright   :  (c) Martin Kuehl, Christian Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -23,6 +23,9 @@ module Driver.Options
   , AnaType (..)
   , GuiType (..)
   , InType (..)
+  , plainInTypes
+  , OWLFormat (..)
+  , plainOwlFormats
   , OutType (..)
   , PrettyType (..)
   , prettyList
@@ -31,6 +34,7 @@ module Driver.Options
   , ATType
   , Delta
   , hetcatsOpts
+  , printOptionsWarnings
   , isStructured
   , guess
   , rmSuffix
@@ -45,7 +49,6 @@ module Driver.Options
   , checkRecentEnv
   , downloadExtensions
   , defaultHetcatsOpts
-  , hetsVersion
   , showDiags
   , showDiags1
   , putIfVerbose
@@ -57,6 +60,9 @@ module Driver.Options
   ) where
 
 import Driver.Version
+
+import qualified Persistence.DBConfig as DBConfig
+import Persistence.Diagnosis
 
 import Common.Utils
 import Common.IO
@@ -77,10 +83,6 @@ import Data.Char
 import Data.List
 import Data.Maybe
 
--- | short version without date for ATC files
-hetsVersion :: String
-hetsVersion = takeWhile (/= ',') hetcats_version
-
 -- | translate a given http reference using the URL catalog
 useCatalogURL :: HetcatsOpts -> FilePath -> FilePath
 useCatalogURL opts fname = case mapMaybe
@@ -93,10 +95,10 @@ bracket :: String -> String
 bracket s = "[" ++ s ++ "]"
 
 -- use the same strings for parsing and printing!
-verboseS, intypeS, outtypesS, skipS, justStructuredS, transS,
+verboseS, intypeS, outtypesS, skipS, justStructuredS, transS, lossyTransS,
      guiS, libdirsS, outdirS, amalgS, recursiveS, namedSpecsS,
-     interactiveS, modelSparQS, counterSparQS, connectS, xmlS, listenS,
-     applyAutomaticRuleS, normalFormS, unlitS :: String
+     interactiveS, modelSparQS, counterSparQS, connectS, xmlS, dbS, listenS,
+     applyAutomaticRuleS, normalFormS, unlitS, pidFileS :: String
 
 modelSparQS = "modelSparQ"
 counterSparQS = "counterSparQ"
@@ -111,11 +113,14 @@ outdirS = "output-dir"
 amalgS = "casl-amalg"
 namedSpecsS = "named-specs"
 transS = "translation"
+lossyTransS = "lossy"
 recursiveS = "recursive"
 interactiveS = "interactive"
 connectS = "connect"
 xmlS = "xml"
+dbS = "db"
 listenS = "listen"
+pidFileS = "pidfile"
 applyAutomaticRuleS = "apply-automatic-rule"
 normalFormS = "normal-form"
 unlitS = "unlit"
@@ -129,11 +134,17 @@ relposS = "relative-positions"
 fullSignS :: String
 fullSignS = "full-signatures"
 
+printASTS :: String
+printASTS = "print-AST"
+
 fullTheoriesS :: String
 fullTheoriesS = "full-theories"
 
 logicGraphS :: String
 logicGraphS = "logic-graph"
+
+logicListS :: String
+logicListS = "logic-list"
 
 fileTypeS :: String
 fileTypeS = "file-type"
@@ -147,13 +158,16 @@ whitelistS = "whitelist"
 accessTokenS :: String
 accessTokenS = "access-token"
 
+httpRequestHeaderS :: String
+httpRequestHeaderS = "http-request-header"
+
 genTermS, treeS, bafS :: String
 genTermS = "gen_trm"
 treeS = "tree."
 bafS = ".baf"
 
-graphS, ppS, envS, deltaS, prfS, omdocS, hsS, experimentalS :: String
-graphS = "graph."
+graphE, ppS, envS, deltaS, prfS, omdocS, hsS, experimentalS :: String
+graphE = "graph."
 ppS = "pp."
 envS = "env"
 deltaS = ".delta"
@@ -183,6 +197,7 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , infiles :: [FilePath] -- ^ files to be read
   , specNames :: [SIMPLE_ID] -- ^ specs to be processed
   , transNames :: [SIMPLE_ID] -- ^ comorphism to be processed
+  , lossyTrans :: Bool                
   , viewNames :: [SIMPLE_ID] -- ^ views to be processed
   , intype :: InType
   , libdirs :: [FilePath]
@@ -190,6 +205,14 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , counterSparQ :: Int
   , outdir :: FilePath
   , outtypes :: [OutType]
+  , databaseDoMigrate :: Bool
+  , databaseOutputFile :: FilePath
+  , databaseConfigFile :: FilePath
+  , databaseSubConfigKey :: String
+  , databaseFileVersionId :: String
+  , databaseReanalyze :: Bool
+  , databaseConfig :: DBConfig.DBConfig
+  , databaseContext :: DBConfig.DBContext
   , xupdate :: FilePath
   , recurse :: Bool
   , verbose :: Int
@@ -205,20 +228,25 @@ data HetcatsOpts = HcOpt     -- for comments see usage info
   , applyAutomatic :: Bool
   , computeNormalForm :: Bool
   , dumpOpts :: [String]
+  , disableCertificateVerification :: Bool
   , ioEncoding :: Enc
     -- | use the library name in positions to avoid differences after uploads
   , useLibPos :: Bool
   , unlit :: Bool
   , serve :: Bool
   , listen :: Int
+  , pidFile :: FilePath
   , whitelist :: [[String]]
   , blacklist :: [[String]]
   , runMMT :: Bool
   , fullTheories :: Bool
+  , outputLogicList :: Bool
   , outputLogicGraph :: Bool
   , fileType :: Bool
   , accessToken :: String
-  , fullSign :: Bool }
+  , httpRequestHeaders :: [String]
+  , fullSign :: Bool
+  , printAST :: Bool }
 
 {- | 'defaultHetcatsOpts' defines the default HetcatsOpts, which are used as
 basic values when the user specifies nothing else -}
@@ -230,6 +258,7 @@ defaultHetcatsOpts = HcOpt
   , infiles = []
   , specNames = []
   , transNames = []
+  , lossyTrans = False  
   , viewNames = []
   , intype = GuessIn
   , libdirs = []
@@ -237,6 +266,14 @@ defaultHetcatsOpts = HcOpt
   , counterSparQ = 3
   , outdir = ""
   , outtypes = [] -- no default
+  , databaseDoMigrate = True
+  , databaseOutputFile = ""
+  , databaseConfigFile = ""
+  , databaseSubConfigKey = ""
+  , databaseFileVersionId = ""
+  , databaseReanalyze = False
+  , databaseConfig = DBConfig.emptyDBConfig
+  , databaseContext = DBConfig.emptyDBContext
   , xupdate = ""
   , recurse = False
   , defLogic = "CASL"
@@ -252,19 +289,24 @@ defaultHetcatsOpts = HcOpt
   , applyAutomatic = False
   , computeNormalForm = False
   , dumpOpts = []
+  , disableCertificateVerification = False
   , ioEncoding = Utf8
   , useLibPos = False
   , unlit = False
   , serve = False
   , listen = -1
+  , pidFile = ""
   , whitelist = []
   , blacklist = []
   , runMMT = False
   , fullTheories = False
+  , outputLogicList = False
   , outputLogicGraph = False
   , fileType = False
   , accessToken = ""
-  , fullSign = False }
+  , httpRequestHeaders = []
+  , fullSign = False
+  , printAST = False }
 
 instance Show HetcatsOpts where
   show opts =
@@ -274,6 +316,7 @@ instance Show HetcatsOpts where
     in
     showEqOpt verboseS (show $ verbose opts)
     ++ show (guiType opts)
+    ++ showFlag outputLogicList logicListS
     ++ showFlag outputLogicGraph logicGraphS
     ++ showFlag fileType fileTypeS
     ++ showFlag interactive interactiveS
@@ -284,6 +327,9 @@ instance Show HetcatsOpts where
     ++ case defSyntax opts of
           s | s /= defSyntax defaultHetcatsOpts -> showEqOpt serializationS s
           _ -> ""
+    ++ case httpRequestHeaders opts of
+          [] -> ""
+          headers -> concatMap (showEqOpt httpRequestHeaderS . show) headers
     ++ case accessToken opts of
           "" -> ""
           t -> showEqOpt accessTokenS t
@@ -298,6 +344,7 @@ instance Show HetcatsOpts where
     ++ showFlag xmlFlag xmlS
     ++ showFlag ((/= -1) . connectP) connectS
     ++ showFlag ((/= -1) . listen) listenS
+    ++ showEqOpt pidFileS (pidFile opts)
     ++ showIPLists whitelist whitelistS
     ++ showIPLists blacklist blacklistS
     ++ concatMap (showEqOpt "dump") (dumpOpts opts)
@@ -305,6 +352,7 @@ instance Show HetcatsOpts where
     ++ showFlag unlit unlitS
     ++ showFlag useLibPos relposS
     ++ showFlag fullSign fullSignS
+    ++ showFlag printAST printASTS
     ++ showFlag fullTheories fullTheoriesS
     ++ case urlCatalog opts of
          [] -> ""
@@ -318,6 +366,7 @@ instance Show HetcatsOpts where
     ++ showFlag computeNormalForm normalFormS
     ++ showEqOpt namedSpecsS (intercalate "," $ map show $ specNames opts)
     ++ showEqOpt transS (intercalate ":" $ map show $ transNames opts)
+    ++ showFlag lossyTrans lossyTransS
     ++ showEqOpt viewS (intercalate "," $ map show $ viewNames opts)
     ++ showEqOpt amalgS (tail $ init $ show $
                                       case caslAmalg opts of
@@ -331,6 +380,7 @@ data Flag =
   | Quiet
   | Uncolored
   | Version
+  | VersionNumeric
   | Recurse
   | ApplyAutomatic
   | NormalForm
@@ -346,28 +396,40 @@ data Flag =
   | ModelSparQ FilePath
   | CounterSparQ Int
   | OutTypes [OutType]
+  | DatabaseDoNotMigrate
+  | DatabaseOutputFile FilePath
+  | DatabaseConfigFile FilePath
+  | DatabaseSubConfigKey String
+  | DatabaseFileVersionId String
+  | DatabaseReanalyze
   | Specs [SIMPLE_ID]
   | Trans [SIMPLE_ID]
+  | LossyTrans   
   | Views [SIMPLE_ID]
   | CASLAmalg [CASLAmalgOpt]
   | Interactive
   | Connect Int String
   | XML
   | Dump String
+  | DisableCertificateVerification
   | IOEncoding Enc
   | Unlit
   | RelPos
   | Serve
   | Listen Int
+  | PidFile FilePath
   | Whitelist String
   | Blacklist String
   | UseMMT
   | FullTheories
   | FullSign
+  | PrintAST
+  | OutputLogicList
   | OutputLogicGraph
   | FileType
   | AccessToken String
-  | UrlCatalog [(String, String)]
+  | HttpRequestHeader String
+  | UrlCatalog [(String, String)] deriving Show
 
 -- | 'makeOpts' includes a parsed Flag in a set of HetcatsOpts
 makeOpts :: HetcatsOpts -> Flag -> HetcatsOpts
@@ -377,6 +439,7 @@ makeOpts opts flg =
     Interactive -> opts { interactive = True }
     XML -> opts { xmlFlag = True }
     Listen x -> opts { listen = x }
+    PidFile x -> opts { pidFile = x }
     Blacklist x -> opts { blacklist = splitIPs x }
     Whitelist x -> opts { whitelist = splitIPs x }
     Connect x y -> opts { connectP = x, connectH = y }
@@ -388,12 +451,19 @@ makeOpts opts flg =
     CounterSparQ x -> opts { counterSparQ = x }
     OutDir x -> opts { outdir = x }
     OutTypes x -> opts { outtypes = x }
+    DatabaseDoNotMigrate -> opts { databaseDoMigrate = False }
+    DatabaseOutputFile x -> opts { databaseOutputFile = x }
+    DatabaseConfigFile x -> opts { databaseConfigFile = x }
+    DatabaseSubConfigKey x -> opts { databaseSubConfigKey = x }
+    DatabaseFileVersionId x -> opts { databaseFileVersionId = x }
+    DatabaseReanalyze -> opts { databaseReanalyze = True }
     XUpdate x -> opts { xupdate = x }
     Recurse -> opts { recurse = True }
     ApplyAutomatic -> opts { applyAutomatic = True }
     NormalForm -> opts { computeNormalForm = True }
     Specs x -> opts { specNames = x }
     Trans x -> opts { transNames = x }
+    LossyTrans -> opts { lossyTrans = True }
     Views x -> opts { viewNames = x }
     Verbose x -> opts { verbose = x }
     DefaultLogic x -> opts { defLogic = x }
@@ -402,19 +472,25 @@ makeOpts opts flg =
     Quiet -> opts { verbose = 0 }
     Uncolored -> opts { uncolored = True }
     Dump s -> opts { dumpOpts = s : dumpOpts opts }
+    DisableCertificateVerification ->
+      opts { disableCertificateVerification = True }
     IOEncoding e -> opts { ioEncoding = e }
     Serve -> opts { serve = True }
     Unlit -> opts { unlit = True }
     RelPos -> opts { useLibPos = True }
     UseMMT -> opts { runMMT = True }
     FullTheories -> opts { fullTheories = True }
+    OutputLogicList -> opts { outputLogicList = True }
     OutputLogicGraph -> opts { outputLogicGraph = True }
     FileType -> opts { fileType = True }
     FullSign -> opts { fullSign = True }
+    PrintAST -> opts { printAST = True }
     UrlCatalog m -> opts { urlCatalog = m ++ urlCatalog opts }
     AccessToken s -> opts { accessToken = s }
+    HttpRequestHeader header -> opts { httpRequestHeaders = header : httpRequestHeaders opts }
     Help -> opts -- skipped
     Version -> opts -- skipped
+    VersionNumeric -> opts -- skipped
 
 -- | 'AnaType' describes the type of analysis to be performed
 data AnaType = Basic | Structured | Skip
@@ -446,9 +522,7 @@ data InType =
   | CASLIn
   | HetCASLIn
   | DOLIn
-  | OWLIn
-  | OwlXmlIn
-  | OBOIn
+  | OWLIn OWLFormat
   | HaskellIn
   | MaudeIn
   | TwelfIn
@@ -460,10 +534,10 @@ data InType =
   | ExperimentalIn -- ^ for testing new functionality
   | ProofCommand
   | GuessIn
+  | RDFIn
   | FreeCADIn
   | CommonLogicIn Bool  -- ^ "clf" or "clif" ('True' is long version)
   | DgXml
-  | RDFIn
   | Xmi
   | Qvt
   | TPTPIn
@@ -476,9 +550,7 @@ instance Show InType where
     CASLIn -> "casl"
     HetCASLIn -> "het"
     DOLIn -> "dol"
-    OwlXmlIn -> "owl.xml"
-    OWLIn -> "owl"
-    OBOIn -> "obo"
+    OWLIn oty -> show oty
     HaskellIn -> hsS
     ExperimentalIn -> "exp"
     MaudeIn -> "maude"
@@ -491,20 +563,19 @@ instance Show InType where
     OmdocIn -> omdocS
     ProofCommand -> "hpf"
     GuessIn -> ""
+    RDFIn -> "rdf"
     FreeCADIn -> "fcstd"
     CommonLogicIn isLong -> if isLong then "clif" else "clf"
     DgXml -> xmlS
-    RDFIn -> "rdf"
     Xmi -> "xmi"
     Qvt -> "qvt"
     HtmlIn -> "html"
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where
-    readsPrec _ = readShowAux $ map ( \ i -> (show i, i))
-                  (plainInTypes ++ aInTypes)
-                  ++ [(treeS ++ genTermS ++ show at, ATermIn at)
-                           | at <- [BAF, NonBAF]]
+    readsPrec _ = readShowAux $ concatMap showAll (plainInTypes ++ aInTypes)
+      where showAll i@(ATermIn _) = [(show i, i), (treeS ++ show i, i)]
+            showAll i = [(show i, i)]
 
 -- | 'ATType' describes distinct types of ATerms
 data ATType = BAF | NonBAF deriving Eq
@@ -514,19 +585,44 @@ instance Show ATType where
     BAF -> bafS
     NonBAF -> ""
 
--- OwlXmlIn needs to be before OWLIn to avoid a read error in parseInType1
+-- RDFIn is on purpose not listed; must be added manually if neccessary
 plainInTypes :: [InType]
 plainInTypes =
-  [ CASLIn, HetCASLIn, DOLIn, OwlXmlIn, OWLIn, OBOIn, HaskellIn, ExperimentalIn
+  [ CASLIn, HetCASLIn, DOLIn ]
+  ++ map OWLIn plainOwlFormats ++
+  [ HaskellIn, ExperimentalIn
   , MaudeIn, TwelfIn
   , HolLightIn, IsaIn, ThyIn, PrfIn, OmdocIn, ProofCommand
   , CommonLogicIn False, CommonLogicIn True
-  , DgXml, FreeCADIn, RDFIn, Xmi, Qvt, TPTPIn ]
+  , DgXml, FreeCADIn, Xmi, Qvt, TPTPIn ]
 
 aInTypes :: [InType]
 aInTypes = [ ATermIn x | x <- [BAF, NonBAF] ]
 
-data SPFType = ConsistencyCheck | ProveTheory
+-- | 'OWLFormat' lists possibilities for OWL syntax (in + out)
+data OWLFormat =
+    Manchester
+  | Functional
+  | OwlXml
+  | RdfXml
+  | OBO
+  | Turtle
+  deriving Eq
+
+plainOwlFormats :: [OWLFormat]
+plainOwlFormats = [ Manchester, Functional, OwlXml, RdfXml, OBO, Turtle ]
+
+instance Show OWLFormat where
+  show ty = case ty of
+    Manchester -> "omn"
+    Functional -> "ofn"
+    OwlXml -> "owl"
+    -- "owl.xml" ?? might occur but conflicts with dgxml
+    RdfXml -> "rdf"
+    OBO -> "obo"
+    Turtle -> "ttl"
+
+data SPFType = ConsistencyCheck | ProveTheory deriving Eq
 
 instance Show SPFType where
   show x = case x of
@@ -542,55 +638,61 @@ data OutType =
   | GraphOut GraphType
   | Prf
   | EnvOut
-  | OWLOut
+  | OWLOut OWLFormat
   | CLIFOut
   | KIFOut
   | OmdocOut
   | XmlOut -- ^ development graph xml output
+  | DbOut -- ^ development graph database output
   | JsonOut -- ^ development graph json output
   | ExperimentalOut -- ^ for testing new functionality
   | HaskellOut
   | FreeCADOut
   | ThyFile -- ^ isabelle theory file
   | DfgFile SPFType -- ^ SPASS input file
-  | TPTPFile SPFType
+  | TPTPFile
   | ComptableXml
+  | MedusaJson
+  | RDFOut
   | SigFile Delta -- ^ signature as text
   | TheoryFile Delta -- ^ signature with sentences as text
-  | RDFOut
   | SymXml
   | SymsXml
+  deriving Eq
 
 instance Show OutType where
   show o = case o of
     PrettyOut p -> ppS ++ show p
-    GraphOut f -> graphS ++ show f
+    GraphOut f -> graphE ++ show f
     Prf -> prfS
     EnvOut -> envS
-    OWLOut -> "omn"
+    OWLOut oty -> show oty
     CLIFOut -> "clif"
     KIFOut -> "kif"
     OmdocOut -> omdocS
     XmlOut -> xmlS
+    DbOut -> dbS
     JsonOut -> "json"
     ExperimentalOut -> experimentalS
     HaskellOut -> hsS
     FreeCADOut -> "fcxml"
     ThyFile -> "thy"
     DfgFile t -> dfgS ++ show t
-    TPTPFile t -> tptpS ++ show t
+    TPTPFile -> tptpS
     ComptableXml -> "comptable.xml"
+    MedusaJson -> "medusa.json"
+    RDFOut -> "nt"
     SigFile d -> "sig" ++ show d
     TheoryFile d -> "th" ++ show d
-    RDFOut -> "nt"
     SymXml -> "sym.xml"
     SymsXml -> "syms.xml"
 
 plainOutTypeList :: [OutType]
 plainOutTypeList =
-  [Prf, EnvOut, OWLOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut
-  , ExperimentalOut, HaskellOut, ThyFile, ComptableXml, FreeCADOut
-  , RDFOut, SymXml, SymsXml]
+  [ Prf, EnvOut ] ++ map OWLOut plainOwlFormats ++
+  [ RDFOut, CLIFOut, KIFOut, OmdocOut, XmlOut, JsonOut, DbOut, ExperimentalOut
+  , HaskellOut, ThyFile, ComptableXml, MedusaJson, FreeCADOut, SymXml, SymsXml
+  , TPTPFile]
 
 outTypeList :: [OutType]
 outTypeList = let dl = [Delta, Fully] in
@@ -599,13 +701,12 @@ outTypeList = let dl = [Delta, Fully] in
     ++ [ SigFile d | d <- dl ]
     ++ [ TheoryFile d | d <- dl ]
     ++ [ DfgFile x | x <- spfTypes]
-    ++ [ TPTPFile x | x <- spfTypes]
     ++ [ GraphOut f | f <- graphList ]
 
 instance Read OutType where
-    readsPrec _ = readShowAux $ map ( \ o -> (show o, o)) outTypeList
+    readsPrec _ = readShow outTypeList
 
-data Delta = Delta | Fully
+data Delta = Delta | Fully deriving Eq
 
 instance Show Delta where
   show d = case d of
@@ -615,10 +716,11 @@ instance Show Delta where
 {- | 'PrettyType' describes the type of output we want the pretty-printer
 to generate -}
 data PrettyType = PrettyAscii Bool | PrettyLatex Bool | PrettyXml | PrettyHtml
+  deriving Eq
 
 instance Show PrettyType where
   show p = case p of
-    PrettyAscii b -> (if b then "stripped." else "") ++ "het"
+    PrettyAscii b -> (if b then "stripped." else "") ++ "dol"
     PrettyLatex b -> (if b then "labelled." else "") ++ "tex"
     PrettyXml -> xmlS
     PrettyHtml -> "html"
@@ -632,6 +734,7 @@ prettyList2 = [PrettyAscii True, PrettyLatex True]
 -- | 'GraphType' describes the type of Graph that we want generated
 data GraphType =
     Dot Bool -- ^ True means show internal node labels
+  deriving Eq
 
 instance Show GraphType where
   show g = case g of
@@ -654,6 +757,8 @@ options = let
     , Option "q" ["quiet"] (NoArg Quiet)
       "same as -v0, no output to stdout"
     , Option "V" ["version"] (NoArg Version)
+      "print version information and exit"
+    , Option "" ["numeric-version"] (NoArg VersionNumeric)
       "print version number and exit"
     , Option "h" ["help", "usage"] (NoArg Help)
       "print usage information and exit"
@@ -666,9 +771,13 @@ options = let
     , Option "x" [xmlS] (NoArg XML)
        "use xml packets to communicate"
 #ifdef SERVER
+    , Option "P" [pidFileS] (ReqArg PidFile "FILEPATH")
+       "path to put the PID file of the hets server (omit if no pidfile is desired)"
     , Option "X" ["server"] (NoArg Serve)
        "start hets as web-server"
 #endif
+    , Option "z" [logicListS] (NoArg OutputLogicList)
+      "output logic list as plain text"
     , Option "G" [logicGraphS] (NoArg OutputLogicGraph)
       "output logic graph (as xml) or as graph (-g)"
     , Option "I" [interactiveS] (NoArg Interactive)
@@ -685,7 +794,8 @@ options = let
       "choose different logic syntax"
     , Option "L" [libdirsS] (ReqArg LibDirs "DIR")
       ("colon-separated list of directories"
-       ++ crS ++ "containing HetCASL libraries")
+       ++ crS ++ "containing DOL libraries."
+       ++ crS ++ "If an http[s] URL is specified here, it is treated as the last libdir because colons can occur in such URLs")
     , Option "m" [modelSparQS] (ReqArg ModelSparQ "FILE")
       "lisp file for SparQ definitions"
     , Option "" [counterSparQS] (ReqArg parseCounter "0-99")
@@ -710,14 +820,21 @@ options = let
         map (++ bracket bafS) [bracket treeS ++ genTermS]))
     , Option "d" ["dump"] (ReqArg Dump "STRING")
       "dump various strings"
+    , Option "" ["disable-certificate-verification"]
+      (NoArg DisableCertificateVerification)
+      "Disable TLS certificate verification"
     , Option "e" ["encoding"] (ReqArg parseEncoding "ENCODING")
       "latin1 or utf8 (default) encoding"
     , Option "" [unlitS] (NoArg Unlit) "unlit input source"
     , Option "" [relposS] (NoArg RelPos) "use relative file positions"
     , Option "" [fullSignS] (NoArg FullSign) "xml output full signatures"
+    , Option "" [printASTS] (NoArg PrintAST) ("print AST in xml/json output")
     , Option "" [fullTheoriesS] (NoArg FullTheories) "xml output full theories"
     , Option "" [accessTokenS] (ReqArg AccessToken "TOKEN")
       "add access token to URLs (for ontohub)"
+    , Option "H" [httpRequestHeaderS] (ReqArg HttpRequestHeader "HTTP_HEADER")
+      ("additional headers to use for HTTP requests"
+      ++ crS ++ "this option can be used multiple times")
     , Option "O" [outdirS] (ReqArg OutDir "DIR")
       "destination directory for output files"
     , Option "o" [outtypesS] (ReqArg parseOutTypes "OTYPES")
@@ -729,9 +846,24 @@ options = let
               ++ bracket deltaS ++ crS
        ++ bS ++ ppS ++ joinBar (map show prettyList) ++ crS
        ++ bS ++ ppS ++ joinBar (map show prettyList2) ++ crS
-       ++ bS ++ graphS ++ joinBar (map show graphList) ++ crS
+       ++ bS ++ graphE ++ joinBar (map show graphList) ++ crS
        ++ bS ++ dfgS ++ bracket cS ++ crS
        ++ bS ++ tptpS ++ bracket cS)
+    , Option "" ["database-do-not-migrate"] (NoArg DatabaseDoNotMigrate)
+       ("Disallow Hets to create or alter the database tables" ++ crS
+       ++ "This option is ignored if the option --database-config is given.")
+    , Option "" ["database-file"] (ReqArg DatabaseOutputFile "FILEPATH")
+       ("path to the sqlite database file" ++ crS
+       ++ "This option is ignored if the option --database-config is given.")
+    , Option "" ["database-config"] (ReqArg DatabaseConfigFile "FILEPATH")
+       "path to the database configuration (yaml) file"
+    , Option "" ["database-subconfig"] (ReqArg DatabaseSubConfigKey "KEY")
+       ("subconfig of the database-config" ++ crS
+       ++ "one of: production, development, test")
+    , Option "" ["database-fileversion-id"] (ReqArg DatabaseFileVersionId "ID")
+       "ID (sha1-hash) of the file version to associate the data with"
+    , Option "" ["database-reanalyze"] (NoArg DatabaseReanalyze)
+       "Overwrite data of this document and its imports in the database"
     , Option "U" ["xupdate"] (ReqArg XUpdate "FILE")
       "apply additional xupdates from file"
     , Option "R" [recursiveS] (NoArg Recurse)
@@ -748,6 +880,8 @@ options = let
       ("translation option " ++ crS ++
           "is a colon-separated list" ++
           crS ++ "of one or more from: SIMPLE-ID")
+    , Option "Y" [lossyTransS] (NoArg LossyTrans)
+      "apply translations in a lossy way"
     , Option "a" [amalgS] (ReqArg parseCASLAmalg "ANALYSIS")
       ("CASL amalgamability analysis options" ++ crS ++ cslst ++
        crS ++ joinBar (map show caslAmalgOpts)),
@@ -762,7 +896,7 @@ optionArgs = foldr (\ o l -> case o of
 
 -- | command line switches for the wep-api excluding non-dev-graph related ones
 optionFlags :: [(String, Flag)]
-optionFlags = drop 11 $ foldr (\ o l -> case o of
+optionFlags = dropWhile ((/= justStructuredS). fst) $ foldr (\ o l -> case o of
   Option _ (s : _) (NoArg f) _ -> (s, f) : l
   _ -> l) [] options
 
@@ -837,7 +971,7 @@ getExtensions opts = case intype opts of
         GuessIn
           | defLogicIsDMU opts -> [".xml"]
           | isDefLogic "Framework" opts
-            -> [".elf", ".thy", ".maude", ".het"]
+            -> [".elf", ".thy", ".maude", ".het", ".dol"]
         GuessIn -> downloadExtensions
         e@(ATermIn _) -> ['.' : show e, '.' : treeS ++ show e]
         e -> ['.' : show e]
@@ -952,9 +1086,41 @@ hetcatsOpts argv =
    in case getOpt Permute options argv' of
         (opts, nonOpts, []) ->
             do flags <- checkFlags opts
-               return (foldr (flip makeOpts) defaultHetcatsOpts flags)
+               let opts' = (foldr (flip makeOpts) defaultHetcatsOpts flags)
                             { infiles = nonOpts }
+               setupDatabaseOptions opts'
         (_, _, errs) -> hetsIOError (concat errs)
+  where
+    setupDatabaseOptions :: HetcatsOpts -> IO HetcatsOpts
+    setupDatabaseOptions opts = do
+      let filepath = if null $ infiles opts then "" else head $ infiles opts
+      let dbContext = DBConfig.emptyDBContext
+            { DBConfig.contextFileVersion = databaseFileVersionId opts
+            , DBConfig.contextFilePath = filepath
+            }
+      -- If the fileVersionId is not given, Hets has not been called by Ontohub.
+      -- Hence, there is no git handling and we always need to reanalyze the
+      -- file.
+      let databaseReanalyze' =
+            null (databaseFileVersionId opts) || databaseReanalyze opts
+      dbConfig <- if DbOut `elem` outtypes opts
+                  then DBConfig.parseDatabaseConfig
+                         (databaseOutputFile opts)
+                         (databaseConfigFile opts)
+                         (databaseSubConfigKey opts)
+                         (databaseDoMigrate opts)
+                  else return DBConfig.emptyDBConfig
+      return opts { databaseConfig = dbConfig
+                  , databaseContext = dbContext
+                  , databaseReanalyze = databaseReanalyze'
+                  }
+
+
+printOptionsWarnings :: HetcatsOpts -> IO ()
+printOptionsWarnings opts =
+  let v = verbose opts in
+  unless (null (pidFile opts) || serve opts)
+    (verbMsgIOLn v 1 "option -P has no effect because it is used without -X")
 
 -- | 'checkFlags' checks all parsed Flags for sanity
 checkFlags :: [Flag] -> IO [Flag]
@@ -966,9 +1132,11 @@ checkFlags fs = do
                         -- collect some more here?
         h = null [ () | Help <- fs]
         v = null [ () | Version <- fs]
+        vn = null [ () | VersionNumeric <- fs]
     unless h $ putStr hetsUsage
-    unless v $ putStrLn ("version of hets: " ++ hetcats_version)
-    unless (v && h) exitSuccess
+    unless v $ putStrLn hetsVersion
+    unless vn $ putStrLn hetsVersionNumeric
+    unless (h && v && vn) exitSuccess
     collectFlags fs
 
 -- auxiliary functions: FileSystem interaction --
@@ -1005,7 +1173,10 @@ checkLibDirs fs =
 
 joinHttpLibPath :: [String] -> [String]
 joinHttpLibPath l = case l of
-  p : f : r | elem p ["http", "https"] -> (p ++ ':' : f) : joinHttpLibPath r
+  p : f : r | p  == "file" && take 2 f == "//" ->
+    (p ++ ':' : f) : joinHttpLibPath r
+  p : f : _ | elem p ["http", "https"] && take 2 f == "//" ->
+    [intercalate ":" l]
   f : r -> f : joinHttpLibPath r
   [] -> []
 
@@ -1066,8 +1237,8 @@ hetsError = error . ("command line usage error (see 'hets -h')\n" ++)
 -- | print error and usage and exit with code 2
 hetsIOError :: String -> IO a
 hetsIOError s = do
-  hPutStrLn stderr s
-  putStr hetsUsage
+  unless (null s) $ hPutStrLn stderr s
+  putStr "for Hets usage, use: hets -h\n"
   exitWith $ ExitFailure 2
 
 -- | 'hetsUsage' generates usage information for the commandline
@@ -1092,9 +1263,12 @@ showDiags opts ds =
 -- | show diagnostic messages (see Result.hs), according to verbosity level
 showDiags1 :: HetcatsOpts -> ResultT IO a -> ResultT IO a
 showDiags1 opts res =
-  if outputToStdout opts then do
+  let dbout = DbOut `elem` outtypes opts in
+  if outputToStdout opts || dbout then do
     Result ds res' <- lift $ runResultT res
-    lift $ printDiags (verbose opts) ds
+    when (outputToStdout opts) $ lift $ printDiags (verbose opts) ds
+    when dbout $ lift $
+      saveDiagnoses (databaseConfig opts) (databaseContext opts) (verbose opts) ds
     case res' of
       Just res'' -> return res''
       Nothing -> liftR $ Result [] Nothing

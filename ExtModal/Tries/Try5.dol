@@ -1,0 +1,11 @@
+logic ExtModal
+
+spec Try5 =
+	time modality t
+	modalities a,b
+	nominals n,m
+	sort N
+	rigid op 0 : N
+	rigid op s : N -> N
+	flexible op 1 : N
+end

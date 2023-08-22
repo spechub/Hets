@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./COL/Logic_COL.hs
 Description :  COL instance of class Logic
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -32,6 +32,8 @@ import CASL.SymbolParser
 import CASL.Logic_CASL ()
 import Logic.Logic
 
+import Common.DocUtils
+
 data COL = COL deriving Show
 
 instance Language COL where
@@ -50,12 +52,13 @@ instance Syntax COL C_BASIC_SPEC
                 Symbol SYMB_ITEMS SYMB_MAP_ITEMS
       where
          parse_basic_spec COL = Just $ basicSpec col_reserved_words
-         parse_symb_items COL = Just $ symbItems col_reserved_words
-         parse_symb_map_items COL = Just $ symbMapItems col_reserved_words
+         parse_symb_items COL = Just . const $ symbItems col_reserved_words
+         parse_symb_map_items COL = Just . const $ symbMapItems col_reserved_words
 
 instance Sentences COL COLFORMULA CSign COLMor Symbol where
       map_sen COL m = return . mapSen (const id) m
       sym_of COL = symOf
+      symKind COL = show . pretty . symbolKind . symbType
       symmap_of COL = morphismToSymbMap
       sym_name COL = symName
 

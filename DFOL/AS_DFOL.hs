@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./DFOL/AS_DFOL.hs
 Description :  Abstract syntax for first-order logic with dependent types (DFOL)
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -43,9 +44,12 @@ import Common.AS_Annotation
 import Common.Id
 import Common.Doc
 import Common.DocUtils
+
 import DFOL.Utils
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Data
 import Data.List
 
 type NAME = Token
@@ -54,24 +58,24 @@ type SDECL = (NAME, TYPE)
 
 -- grammar for basic specification
 data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEM]
-                  deriving Show
+                  deriving (Show, Typeable)
 
 instance GetRange BASIC_SPEC
 
 data BASIC_ITEM = Decl_item DECL
                 | Axiom_item FORMULA
-                  deriving Show
+                  deriving (Show, Typeable)
 
 data TYPE = Sort
           | Form
           | Univ TERM
           | Func [TYPE] TYPE
           | Pi [DECL] TYPE
-            deriving (Show, Ord)
+            deriving (Show, Ord, Typeable, Data)
 
 data TERM = Identifier NAME
           | Appl TERM [TERM]
-            deriving (Show, Ord)
+            deriving (Show, Ord, Typeable, Data)
 
 data FORMULA = T
              | F
@@ -84,7 +88,7 @@ data FORMULA = T
              | Equivalence FORMULA FORMULA
              | Forall [DECL] FORMULA
              | Exists [DECL] FORMULA
-               deriving (Show, Ord, Eq)
+               deriving (Show, Ord, Eq, Typeable, Data)
 
 instance GetRange FORMULA
 
@@ -92,14 +96,14 @@ instance GetRange FORMULA
 type SYMB = NAME
 
 data SYMB_ITEMS = Symb_items [SYMB]
-                  deriving (Show, Eq)
+                  deriving (Show, Eq, Typeable, Data)
 
 data SYMB_MAP_ITEMS = Symb_map_items [SYMB_OR_MAP]
-                      deriving (Show, Eq)
+                      deriving (Show, Eq, Typeable, Data)
 
 data SYMB_OR_MAP = Symb SYMB
                  | Symb_map SYMB SYMB
-                   deriving (Show, Eq)
+                   deriving (Show, Eq, Typeable, Data)
 
 -- canonical forms
 
@@ -270,7 +274,7 @@ getNewNameH var names root i =
      else let newVar = Token (root ++ show i) nullRange
               in getNewNameH newVar names root $ i + 1
 
--- equality
+-- equality (should be defined via Ord!)
 instance Eq TERM where
     u == v = eqTerm (termRecForm u) (termRecForm v)
 instance Eq TYPE where

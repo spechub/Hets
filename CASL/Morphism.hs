@@ -1,7 +1,9 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies
-  , FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Morphism.hs
 Description :  Symbols and signature morphisms for the CASL logic
 Copyright   :  (c) Christian Maeder, Till Mossakowski and Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -69,8 +71,10 @@ module CASL.Morphism
 import CASL.Sign
 import CASL.AS_Basic_CASL
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 import Common.Doc
@@ -80,12 +84,13 @@ import Common.Result
 import Common.Utils (composeMap)
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 type SymbolSet = Set.Set Symbol
 type SymbolMap = Map.Map Symbol Symbol
 
 data RawSymbol = ASymbol Symbol | AKindedSymb SYMB_KIND Id
-                 deriving (Show, Eq, Ord)
+                 deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange RawSymbol where
     getRange rs = case rs of
@@ -106,9 +111,9 @@ data Morphism f e m = Morphism
   , op_map :: Op_map
   , pred_map :: Pred_map
   , extended_map :: m
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
-data DefMorExt e = DefMorExt e
+data DefMorExt e = DefMorExt e deriving (Typeable, Data)
 
 instance Show (DefMorExt e) where
   show = const ""
@@ -327,7 +332,7 @@ symbOrMapToRaw sig msig k sm = case sm of
             return [(w, x), (mkS s1, mkS res2)]
           (A_type s1, A_type s2) ->
             return [(w, x), (mkS s1, mkS s2)]
-          _ -> fail $ "profiles '" ++ showDoc t1 "' and '"
+          _ -> Fail.fail $ "profiles '" ++ showDoc t1 "' and '"
                ++ showDoc t2 "' do not match"
         _ -> return [(w, x)]
 
@@ -570,7 +575,7 @@ legalMor mor =
   && isSubOpMap (inducedOpMap sm (op_map mor) $ opMap s1) (opMap s2)
   && isSubMap (inducedPredMap sm (pred_map mor) $ predMap s1) (predMap s2)
   && legalSign s2
-  then legalMorphismExtension mor else fail "illegal CASL morphism"
+  then legalMorphismExtension mor else Fail.fail "illegal CASL morphism"
 
 isInclOpMap :: Op_map -> Bool
 isInclOpMap = all (\ ((i, _), (j, _)) -> i == j) . Map.toList

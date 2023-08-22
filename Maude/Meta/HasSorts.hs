@@ -1,6 +1,6 @@
-{-# LANGUAGE OverlappingInstances, TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Meta/HasSorts.hs
 Description :  Accessing the Sorts of Maude data types
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -79,8 +79,8 @@ instance (Ord a, HasSorts a) => HasSorts (Set a) where
     getSorts = Set.fold (Set.union . getSorts) Set.empty
     mapSorts = Set.map . mapSorts
 
-instance (Ord a, HasSorts a) => HasSorts (Map k a) where
-    getSorts = Map.fold (Set.union . getSorts) Set.empty
+instance {-# OVERLAPS #-} (Ord a, HasSorts a) => HasSorts (Map k a) where
+    getSorts = Map.foldr (Set.union . getSorts) Set.empty
     mapSorts = Map.map . mapSorts
 
 instance (Ord a, HasSorts a) => HasSorts (Rel a) where

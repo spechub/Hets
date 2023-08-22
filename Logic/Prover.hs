@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Prover.hs
 Description :  General datastructures for theorem prover interfaces
 Copyright   :  (c) Till Mossakowski, Klaus Luettich, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -18,9 +18,11 @@ import Common.Doc
 import Common.DocUtils
 import Common.Result
 import Common.ProofUtils
+import Common.ProverTools
 import qualified Common.OrderedMap as OMap
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.List
 import Data.Maybe (isJust)
 import Data.Time (TimeOfDay, midnight)
@@ -41,7 +43,8 @@ thmStatus :: SenStatus a tStatus -> [tStatus]
 thmStatus = getThmStatus . senAttr
 
 -- | the wrapped list of proof scripts or (AnyComorphism, BasicProof) pairs
-data ThmStatus a = ThmStatus { getThmStatus :: [a] } deriving (Show, Eq, Ord)
+data ThmStatus a = ThmStatus { getThmStatus :: [a] }
+  deriving (Show, Eq, Ord, Typeable)
 
 emptySenStatus :: SenStatus a b
 emptySenStatus = makeNamed (ThmStatus []) $ error "emptySenStatus"
@@ -85,6 +88,13 @@ joinSensAux s1 s2 = let
 
 joinSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b -> ThSens a b
 joinSens s1 = fst . joinSensAux s1
+
+intersectSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b -> ThSens a b
+intersectSens s1 s2 = let
+  sens1 = map sentence $ OMap.elems s1
+  sens2 = map sentence $ OMap.elems s2
+  sensI = Set.intersection (Set.fromList sens1) (Set.fromList sens2)
+ in toThSens $ map (AS_Anno.makeNamed "") $ Set.toList sensI
 
 reduceSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b
 reduceSens =
@@ -134,12 +144,13 @@ toThSens = OMap.fromList . map
 -- | theories with a signature and sentences with proof states
 data Theory sign sen proof_tree =
      Theory sign (ThSens sen (ProofStatus proof_tree))
+  deriving Typeable
 
 -- e.g. the file name, or the script itself, or a configuration string
-data TacticScript = TacticScript String deriving (Eq, Ord, Show)
+data TacticScript = TacticScript String deriving (Eq, Ord, Show, Typeable)
 
 -- | failure reason
-data Reason = Reason [String]
+data Reason = Reason [String] deriving Typeable
 
 instance Ord Reason where
   compare _ _ = EQ
@@ -152,7 +163,7 @@ data GoalStatus =
     Open Reason -- ^ failure reason
   | Disproved
   | Proved Bool -- ^ True means consistent; False inconsistent
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Typeable)
 
 instance Show GoalStatus where
     show gs = case gs of
@@ -176,8 +187,9 @@ data ProofStatus proof_tree = ProofStatus
     , usedProver :: String -- ^ name of prover
     , proofTree :: proof_tree
     , usedTime :: TimeOfDay
-    , tacticScript :: TacticScript }
-    deriving (Show, Eq, Ord)
+    , tacticScript :: TacticScript
+    , proofLines :: [String] }
+    deriving (Show, Eq, Ord, Typeable)
 
 {- | constructs an open proof status with basic information filled in;
      make sure to set proofTree to a useful value before you access it. -}
@@ -191,7 +203,8 @@ openProofStatus goalname provername proof_tree = ProofStatus
    , usedProver = provername
    , proofTree = proof_tree
    , usedTime = midnight
-   , tacticScript = TacticScript "" }
+   , tacticScript = TacticScript ""
+   , proofLines = [] }
 
 isProvedStat :: ProofStatus proof_tree -> Bool
 isProvedStat = isProvedGStat . goalStatus
@@ -202,7 +215,7 @@ isProvedGStat gs = case gs of
     _ -> False
 
 -- | different kinds of prover interfaces
-data ProverKind = ProveGUI | ProveCMDLautomatic
+data ProverKind = ProveGUI | ProveCMDLautomatic deriving Typeable
 
 -- | determine if a prover kind is implemented
 hasProverKind :: ProverKind -> ProverTemplate x s m y z -> Bool
@@ -215,11 +228,13 @@ data FreeDefMorphism sentence morphism = FreeDefMorphism
   , pathFromFreeDef :: morphism
   , freeTheory :: [AS_Anno.Named sentence]
   , isCofree :: Bool }
-  deriving (Eq, Show)
+  deriving (Show, Eq, Ord, Typeable)
 
 -- | prover or consistency checker
 data ProverTemplate theory sentence morphism sublogics proof_tree = Prover
     { proverName :: String,
+      proverUsable :: IO (Maybe String),
+      -- are required binaries or jars installed, Nothing if yes
       proverSublogic :: sublogics,
       proveGUI :: Maybe (String -> theory -> [FreeDefMorphism sentence morphism]
                          -> IO ( [ProofStatus proof_tree]
@@ -263,21 +278,29 @@ mkProverTemplate :: String -> sublogics
   -> ProverTemplate theory sentence morphism sublogics proof_tree
 mkProverTemplate str sl fct = Prover
     { proverName = str
+    , proverUsable = return Nothing
     , proverSublogic = sl
     , proveGUI = Just $ \ s t fs -> do
                 ps <- fct s t fs
                 return (ps, [])
     , proveCMDLautomaticBatch = Nothing }
 
-mkAutomaticProver :: String -> sublogics
+mkUsableProver :: String -> String -> sublogics
+  -> (String -> theory -> [FreeDefMorphism sentence morphism]
+      -> IO [ProofStatus proof_tree])
+  -> ProverTemplate theory sentence morphism sublogics proof_tree
+mkUsableProver bin str sl fct =
+  (mkProverTemplate str sl fct) { proverUsable = checkBinary bin }
+
+mkAutomaticProver :: String -> String -> sublogics
   -> (String -> theory -> [FreeDefMorphism sentence morphism]
       -> IO [ProofStatus proof_tree])
   -> (Bool -> Bool -> Concurrent.MVar (Result [ProofStatus proof_tree])
       -> String -> TacticScript -> theory -> [FreeDefMorphism sentence morphism]
       -> IO (Concurrent.ThreadId, Concurrent.MVar ()))
   -> ProverTemplate theory sentence morphism sublogics proof_tree
-mkAutomaticProver str sl fct bFct =
-  (mkProverTemplate str sl fct)
+mkAutomaticProver bin str sl fct bFct =
+  (mkUsableProver bin str sl fct)
   { proveCMDLautomaticBatch = Just bFct }
 
 -- | theory morphisms between two theories
@@ -285,14 +308,17 @@ data TheoryMorphism sign sen mor proof_tree = TheoryMorphism
     { tSource :: Theory sign sen proof_tree
     , tTarget :: Theory sign sen proof_tree
     , tMorphism :: mor }
+    deriving Typeable
 
 data CCStatus proof_tree = CCStatus
   { ccProofTree :: proof_tree
   , ccUsedTime :: TimeOfDay
   , ccResult :: Maybe Bool }
+  deriving Typeable
 
 data ConsChecker sign sentence sublogics morphism proof_tree = ConsChecker
   { ccName :: String
+  , ccUsable :: IO (Maybe String)
   , ccSublogic :: sublogics
   , ccBatch :: Bool -- True for batch checkers
   , ccNeedsTimer :: Bool -- True for checkers that ignore time limits
@@ -314,7 +340,15 @@ mkConsChecker :: String -> sublogics
   -> ConsChecker sign sentence sublogics morphism proof_tree
 mkConsChecker n sl f = ConsChecker
   { ccName = n
+  , ccUsable = return Nothing
   , ccSublogic = sl
   , ccBatch = True
   , ccNeedsTimer = True
   , ccAutomatic = f }
+
+mkUsableConsChecker :: String -> String -> sublogics
+  -> (String -> TacticScript -> TheoryMorphism sign sentence morphism proof_tree
+      -> [FreeDefMorphism sentence morphism] -> IO (CCStatus proof_tree))
+  -> ConsChecker sign sentence sublogics morphism proof_tree
+mkUsableConsChecker bin n sl f =
+  (mkConsChecker n sl f) { ccUsable = checkBinary bin }

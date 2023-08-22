@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2SubCFOL.hs
 Description :  coding out partiality
 Copyright   :  (c) Zicheng Wang, C.Maeder Uni Bremen 2002-2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -38,6 +38,7 @@ import Common.AS_Annotation
 import Common.ProofUtils
 import Common.ProofTree
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 -- | determine the need for bottom constants
 data FormulaTreatment =
@@ -71,7 +72,8 @@ defaultCASL2SubCFOL :: CASL2SubCFOL
 defaultCASL2SubCFOL = CASL2SubCFOL True FormulaDependent
 
 instance Language CASL2SubCFOL where
-    language_name (CASL2SubCFOL _ m) = "CASL2SubCFOL"
+    language_name (CASL2SubCFOL b m) = "CASL2SubCFOL"
+        ++ (if b then "" else "PersistentlyLiberal")
         ++ treatFormula m (show m) "" (show m) (show m)
 
 instance Comorphism CASL2SubCFOL
@@ -87,10 +89,16 @@ instance Comorphism CASL2SubCFOL
                Symbol RawSymbol ProofTree where
     sourceLogic (CASL2SubCFOL _ _) = CASL
     sourceSublogic (CASL2SubCFOL b _) =
-        if b then SL.caslTop else SL.caslTop { cons_features = NoSortGen }
+        if b then SL.caslTop else SL.caslTop
+          { cons_features = SL.SortGen False False SL.OnlyTotal }
     targetLogic (CASL2SubCFOL _ _) = CASL
-    mapSublogic (CASL2SubCFOL _ _) sl = Just $ if has_part sl then sl
+    mapSublogic (CASL2SubCFOL b _) sl = Just $ if has_part sl then sl
         { has_part = False -- partiality is coded out
+        , cons_features = let cf = cons_features sl in case cf of
+          (SL.SortGen _ _ tcf) -> cf
+            { totality = if b then SL.OnlyTotal else max tcf SL.OnlyTotal }
+            -- …in constructors, too
+          _ -> cf
         , has_pred = True
         , which_logic = max Horn $ which_logic sl
         , has_eq = True} else sl
@@ -103,7 +111,7 @@ instance Comorphism CASL2SubCFOL
         in case m of
              NoMembershipOrCast
                | not $ Set.null $ Set.difference fbsrts bsrts ->
-                 fail "CASL2SubCFOL: unexpected membership test or cast"
+                 Fail.fail "CASL2SubCFOL: unexpected membership test or cast"
              _ -> return
                  ( encodeSig bsrts sig
                  , nameAndDisambiguate $ sens1 ++ sens2)
@@ -118,7 +126,7 @@ instance Comorphism CASL2SubCFOL
         in case m of
              NoMembershipOrCast
                | not $ Set.null $ Set.difference fbsrts bsrts ->
-                 fail $ "CASL2SubCFOL: unexpected membership test or cast:\n"
+                 Fail.fail $ "CASL2SubCFOL: unexpected membership test or cast:\n"
                       ++ showDoc sen ""
              _ -> return $ simplifyFormula id $ codeFormula b bsrts sen
     map_symbol (CASL2SubCFOL _ _) _ s =
@@ -307,11 +315,10 @@ codeRecord uniBot bsrts mf = (mapRecord mf)
                   defined bsrts t1 ps] ps else Equation t1 e t2 ps
     , foldMembership = \ _ t s ps ->
           defined bsrts (projectUnique Total ps t s) ps
-    , foldSort_gen_ax = \ _ cs b -> if uniBot then
+    , foldSort_gen_ax = \ _ cs b ->
           mkSort_gen_ax (map (totalizeConstraint bsrts) cs)
-              $ Set.null (Set.intersection bsrts
-                $ Set.fromList $ map newSort cs) && b
-          else error "SubPFOL2SubFOL: unexpected Sort_gen_ax"
+              $ b && (not uniBot || Set.null (Set.intersection bsrts
+                $ Set.fromList $ map newSort cs))
     , foldApplication = const $ Application . totalizeOpSymb
     , foldCast = \ _ t s ps -> projectUnique Total ps t s }
 

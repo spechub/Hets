@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/NormalForm.hs
 Description :  compute the normal forms of all nodes in development graphs
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -39,6 +39,7 @@ import Common.Utils (nubOrd)
 import Data.Graph.Inductive.Graph as Graph
 import qualified Data.Map as Map
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 normalFormRule :: DGRule
 normalFormRule = DGRule "NormalForm"
@@ -54,13 +55,13 @@ normalFormLibEnv le = normalFormLNS (getTopsortedLibs le) le
 normalFormLNS :: [LibName] -> LibEnv -> Result LibEnv
 normalFormLNS lns libEnv = foldM (\ le ln -> do
   let dg = lookupDGraph ln le
-  newDg <- normalFormDG le dg
+  newDg <- normalFormDG le ln dg
   return $ Map.insert ln
     (groupHistory dg normalFormRule newDg) le)
   libEnv lns
 
-normalFormDG :: LibEnv -> DGraph -> Result DGraph
-normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
+normalFormDG :: LibEnv -> LibName -> DGraph -> Result DGraph
+normalFormDG libEnv ln dgraph = foldM (\ dg (node, nodelab) ->
   if labelHasHiding nodelab then case dgn_nf nodelab of
     Just _ -> return dg -- already computed
     Nothing -> if isDGRef nodelab then do
@@ -120,11 +121,11 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                           paths = map (\ x ->
                                        (x, propagateErrors "normalFormDG"
                                              $ dijkstra diagram node x))
-                                      $ filter (\ x -> node `elem` subgraph
+                                      $ filter (\ x -> node `elem` predecs
                                                       diagram x) leaves
                                           in
                             case paths of
-                             [] -> fail "node should reach a tip"
+                             [] -> Fail.fail "node should reach a tip"
                              (xn, xf) : _ -> comp xf $ mmap Map.! xn
             let nfNode = getNewNodeDG dg -- new node for normal form
                 info = nodeInfo nodelab
@@ -152,7 +153,7 @@ normalFormDG libEnv dgraph = foldM (\ dg (node, nodelab) ->
                 allChanges = insNNF : chLab : insStrMor
                 newDG = changesDGH dg allChanges
             return $ changeDGH newDG $ SetNodeLab nfLabel (nfNode, nfLabel
-              { globalTheory = computeLabelTheory libEnv newDG
+              { globalTheory = computeLabelTheory libEnv ln newDG
                 (nfNode, nfLabel) })
   else return dg) dgraph $ topsortedNodes dgraph -- only change relevant nodes
 
@@ -196,8 +197,8 @@ finalSubcateg graph = let
     leaves = filter (\ (n, _) -> outdeg graph n == 0) $ labNodes graph
  in buildGraph graph (map fst leaves) leaves [] $ nodes graph
 
-subgraph :: Gr a b -> Node -> [Node]
-subgraph graph node = let
+predecs :: Gr a b -> Node -> [Node]
+predecs graph node = let
    descs nList descList =
     case nList of
       [] -> descList
@@ -225,7 +226,7 @@ buildGraph oGraph leaves nList eList nodeList =
       _ -> let
             Just l = lab oGraph n
             nList' = (n, l) : nList
-            accesLeaves = filter (\ x -> n `elem` subgraph oGraph x) leaves
+            accesLeaves = filter (\ x -> n `elem` predecs oGraph x) leaves
             eList' = map (\ x -> (n, x, (1 :: Int,
                        propagateErrors "buildGraph" $ dijkstra oGraph n x)))
                        accesLeaves

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Morphism.hs
 Description :  OWL Morphisms
 Copyright   :  (c) Dominik Luecke, 2008, Felix Gabriel Mance, 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -13,8 +14,8 @@ Morphisms for OWL
 
 module OWL2.Morphism where
 
+import Common.IRI
 import OWL2.AS
-import OWL2.MS
 import OWL2.Sign
 import OWL2.ManchesterPrint ()
 import OWL2.Symbols
@@ -26,19 +27,23 @@ import Common.Result
 import Common.Utils (composeMap)
 import Common.Lib.State (execState)
 import Common.Lib.MapSet (setToMap)
+import Common.Id(nullRange)
 
 import Control.Monad
+
+import Data.Data
 import Data.List (stripPrefix)
 import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import qualified Control.Monad.Fail as Fail
 
 data OWLMorphism = OWLMorphism
   { osource :: Sign
   , otarget :: Sign
   , mmaps :: MorphMap
   , pmap :: StringMap
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 inclOWLMorphism :: Sign -> Sign -> OWLMorphism
 inclOWLMorphism s t = OWLMorphism
@@ -52,7 +57,7 @@ isOWLInclusion m = Map.null (pmap m)
   && Map.null (mmaps m) && isSubSign (osource m) (otarget m)
 
 symMap :: MorphMap -> Map.Map Entity Entity
-symMap = Map.mapWithKey (\ (Entity ty _) -> Entity ty)
+symMap = Map.mapWithKey (\ (Entity lb ty _) -> Entity lb ty)
 
 inducedElems :: MorphMap -> [Entity]
 inducedElems = Map.elems . symMap
@@ -65,32 +70,34 @@ inducedSign m t s =
     in function Rename (StringMap t) new
 
 inducedPref :: String -> String -> Sign -> (MorphMap, StringMap)
-    -> (MorphMap, StringMap)
+    -> Result (MorphMap, StringMap)
 inducedPref v u sig (m, t) =
     let pm = prefixMap sig
     in if Set.member v $ Map.keysSet pm
-         then if u == v then (m, t) else (m, Map.insert v u t)
-        else error $ "unknown symbol: " ++ showDoc v "\n" ++ shows sig ""
+         then if u == v then return (m, t) else return (m, Map.insert v u t)
+        else
+          plain_error (Map.empty, Map.empty) ("unknown symbol: " ++ showDoc v "\nin signature:\n" ++ showDoc sig "") nullRange
 
+ 
 inducedFromMor :: Map.Map RawSymb RawSymb -> Sign -> Result OWLMorphism
 inducedFromMor rm sig = do
   let syms = symOf sig
   (mm, tm) <- foldM (\ (m, t) p -> case p of
-        (ASymbol s@(Entity _ v), ASymbol (Entity _ u)) ->
+        (ASymbol s@(Entity _ _ v), ASymbol (Entity _ _ u)) ->
             if Set.member s syms
             then return $ if u == v then (m, t) else (Map.insert s u m, t)
-            else fail $ "unknown symbol: " ++ showDoc s "\n" ++ shows sig ""
+            else Fail.fail $ "unknown symbol: " ++ showDoc s "\n" ++ shows sig ""
         (AnUri v, AnUri u) -> case filter (`Set.member` syms)
-          $ map (`Entity` v) entityTypes of
-          [] -> let v2 = showQU v
-                    u2 = showQU u
-                in return $ inducedPref v2 u2 sig (m, t)
+          $ map (`mkEntity` v) entityTypes of
+          [] -> let v2 = showIRICompact v
+                    u2 = showIRICompact u
+                in inducedPref v2 u2 sig (m, t)
           l -> return $ if u == v then (m, t) else
                             (foldr (`Map.insert` u) m l, t)
-        (APrefix v, APrefix u) -> return $ inducedPref v u sig (m, t)
+        (APrefix v, APrefix u) -> inducedPref v u sig (m, t)
         _ -> error "OWL2.Morphism.inducedFromMor") (Map.empty, Map.empty)
                         $ Map.toList rm
-  return OWLMorphism
+  return OWLMorphism 
     { osource = sig
     , otarget = inducedSign mm tm sig
     , pmap = tm
@@ -121,11 +128,11 @@ legalMor :: OWLMorphism -> Result ()
 legalMor m = let mm = mmaps m in unless
   (Set.isSubsetOf (Map.keysSet mm) (symOf $ osource m)
   && Set.isSubsetOf (Set.fromList $ inducedElems mm) (symOf $ otarget m))
-        $ fail "illegal OWL2 morphism"
+        $ Fail.fail "illegal OWL2 morphism"
 
 composeMor :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
 composeMor m1 m2 =
-  let nm = Set.fold (\ s@(Entity ty u) -> let
+  let nm = Set.fold (\ s@(Entity _ ty u) -> let
             t = getIri ty u $ mmaps m1
             r = getIri ty t $ mmaps m2
             in if r == u then id else Map.insert s r) Map.empty
@@ -139,27 +146,28 @@ cogeneratedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
 cogeneratedSign s sign =
   let sig2 = execState (mapM_ (modEntity Set.delete) $ Set.toList s) sign
   in if isSubSign sig2 sign then return $ inclOWLMorphism sig2 sign else
-         fail "non OWL2 subsignatures for (co)generatedSign"
+         Fail.fail "non OWL2 subsignatures for (co)generatedSign"
 
 generatedSign :: Set.Set Entity -> Sign -> Result OWLMorphism
 generatedSign s sign = cogeneratedSign (Set.difference (symOf sign) s) sign
 
 matchesSym :: Entity -> RawSymb -> Bool
-matchesSym e@(Entity _ u) r = case r of
+matchesSym e@(Entity _ _ u) r = case r of
        ASymbol s -> s == e
-       AnUri s -> s == u || expandedIRI s == expandedIRI u || case
-         stripPrefix (reverse $ localPart s) (reverse $ localPart u) of
-           Just (c : _) | null (namePrefix s) -> elem c "/#"
+       AnUri s -> s == u  -- expandedIRI s == expandedIRI u 
+                || case
+         stripPrefix (reverse $ show $ iriPath s) (reverse $ show $ iriPath u) of
+           Just (c : _) | null (prefixName s) -> elem c "/#"
            _ -> False
-       APrefix p -> p == namePrefix u
+       APrefix p -> p == prefixName u
 
 statSymbItems :: Sign -> [SymbItems] -> [RawSymb]
 statSymbItems sig = map (function Expand . StringMap $ prefixMap sig)
   . concatMap
   (\ (SymbItems m us) -> case m of
                AnyEntity -> map AnUri us
-               EntityType ty -> map (ASymbol . Entity ty) us
-               Prefix -> map (APrefix . showQN) us)
+               EntityType ty -> map (ASymbol . mkEntity ty) us
+               PrefixO -> map (APrefix . showIRI) us)
 
 statSymbMapItems :: Sign -> Maybe Sign -> [SymbMapItems]
   -> Result (Map.Map RawSymb RawSymb)
@@ -172,14 +180,14 @@ statSymbMapItems sig mtsig =
   . foldM (\ m (s, t) -> case Map.lookup s m of
     Nothing -> return $ Map.insert s t m
     Just u -> case (u, t) of
-      (AnUri su, ASymbol (Entity _ tu)) | su == tu ->
+      (AnUri su, ASymbol (Entity _ _ tu)) | su == tu ->
         return $ Map.insert s t m
-      (ASymbol (Entity _ su), AnUri tu) | su == tu -> return m
-      (AnUri su, APrefix tu) | showQU su == tu ->
+      (ASymbol (Entity _ _ su), AnUri tu) | su == tu -> return m
+      (AnUri su, APrefix tu) | showIRICompact su == tu ->
         return $ Map.insert s t m
-      (APrefix su, AnUri tu) | su == showQU tu -> return m
+      (APrefix su, AnUri tu) | su == showIRICompact tu -> return m
       _ -> if u == t then return m else
-        fail $ "differently mapped symbol: " ++ showDoc s "\nmapped to "
+        Fail.fail $ "differently mapped symbol: " ++ showDoc s "\nmapped to "
              ++ showDoc u " and " ++ showDoc t "")
   Map.empty
   . concatMap (\ (SymbMapItems m us) ->
@@ -187,12 +195,36 @@ statSymbMapItems sig mtsig =
       case m of
         AnyEntity -> map (\ (s, t) -> (AnUri s, AnUri t)) ps
         EntityType ty ->
-            let mS = ASymbol . Entity ty
+            let mS = ASymbol . mkEntity ty
             in map (\ (s, t) -> (mS s, mS t)) ps
-        Prefix ->
-            map (\ (s, t) -> (APrefix (showQU s), APrefix $ showQU t)) ps)
+        PrefixO ->
+            map (\ (s, t) -> (APrefix (showIRICompact s), APrefix $ showIRICompact t)) ps)
 
 mapSen :: OWLMorphism -> Axiom -> Result Axiom
 mapSen m a = do
     let new = function Rename (MorphMap $ mmaps m) a
     return $ function Rename (StringMap $ pmap m) new
+
+morphismUnion :: OWLMorphism -> OWLMorphism -> Result OWLMorphism
+morphismUnion mor1 mor2 = do
+ let ssig1 = osource mor1
+     tsig1 = otarget mor1
+     ssig2 = osource mor2
+     tsig2 = otarget mor2
+     ssig = addSign ssig1 ssig2
+     tsig = addSign tsig1 tsig2
+     m1 = mmaps mor1
+     m2 = mmaps mor2
+     intM = Map.intersection m1 m2
+     pairs = filter (\(a,b) -> a /= b)
+             $ map (\x -> (Map.findWithDefault (error "1") x m1, 
+                           Map.findWithDefault (error "2") x m2)) 
+             $ Map.keys intM
+ case pairs of 
+  [] -> 
+    return $  OWLMorphism {
+                 osource = ssig,
+                 otarget = tsig,
+                 mmaps = Map.union m1 m2,
+                 pmap = Map.union (pmap mor1) $ pmap mor2}
+  _ -> Fail.fail $ "can't unite morphisms:" ++ show pairs

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GtkConsistencyChecker.hs
 Description :  Gtk GUI for the consistency checker
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -14,7 +14,6 @@ This module provides a GUI for the consistency checker.
 module GUI.GtkConsistencyChecker where
 
 import Graphics.UI.Gtk
-import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
 import qualified GUI.Glade.NodeChecker as ConsistencyChecker
@@ -107,26 +106,26 @@ showConsistencyCheckerMain mn (GInfo { libName = ln }) le = do
 showConsistencyCheckerAux
   :: MVar LibEnv -> Maybe Int -> LibName -> LibEnv -> IO ()
 showConsistencyCheckerAux res mn ln le = postGUIAsync $ do
-  xml <- getGladeXML ConsistencyChecker.get
+  builder <- getGTKBuilder ConsistencyChecker.get
   -- get objects
-  window <- xmlGetWidget xml castToWindow "NodeChecker"
-  btnClose <- xmlGetWidget xml castToButton "btnClose"
-  btnResults <- xmlGetWidget xml castToButton "btnResults"
+  window <- builderGetObject builder castToWindow "NodeChecker"
+  btnClose <- builderGetObject builder castToButton "btnClose"
+  btnResults <- builderGetObject builder castToButton "btnResults"
   -- get nodes view and buttons
-  trvNodes <- xmlGetWidget xml castToTreeView "trvNodes"
-  btnNodesAll <- xmlGetWidget xml castToButton "btnNodesAll"
-  btnNodesNone <- xmlGetWidget xml castToButton "btnNodesNone"
-  btnNodesInvert <- xmlGetWidget xml castToButton "btnNodesInvert"
-  btnNodesUnchecked <- xmlGetWidget xml castToButton "btnNodesUnchecked"
-  btnNodesTimeout <- xmlGetWidget xml castToButton "btnNodesTimeout"
-  cbInclThms <- xmlGetWidget xml castToCheckButton "cbInclThms"
+  trvNodes <- builderGetObject builder castToTreeView "trvNodes"
+  btnNodesAll <- builderGetObject builder castToButton "btnNodesAll"
+  btnNodesNone <- builderGetObject builder castToButton "btnNodesNone"
+  btnNodesInvert <- builderGetObject builder castToButton "btnNodesInvert"
+  btnNodesUnchecked <- builderGetObject builder castToButton "btnNodesUnchecked"
+  btnNodesTimeout <- builderGetObject builder castToButton "btnNodesTimeout"
+  cbInclThms <- builderGetObject builder castToCheckButton "cbInclThms"
   -- get checker view and buttons
-  cbComorphism <- xmlGetWidget xml castToComboBox "cbComorphism"
-  lblSublogic <- xmlGetWidget xml castToLabel "lblSublogic"
-  sbTimeout <- xmlGetWidget xml castToSpinButton "sbTimeout"
-  btnCheck <- xmlGetWidget xml castToButton "btnCheck"
-  btnStop <- xmlGetWidget xml castToButton "btnStop"
-  trvFinder <- xmlGetWidget xml castToTreeView "trvFinder"
+  cbComorphism <- builderGetObject builder castToComboBox "cbComorphism"
+  lblSublogic <- builderGetObject builder castToLabel "lblSublogic"
+  sbTimeout <- builderGetObject builder castToSpinButton "sbTimeout"
+  btnCheck <- builderGetObject builder castToButton "btnCheck"
+  btnStop <- builderGetObject builder castToButton "btnStop"
+  trvFinder <- builderGetObject builder castToTreeView "trvFinder"
 
   windowSetTitle window "Consistency Checker"
   spinButtonSetValue sbTimeout $ fromIntegral guiDefaultTimeLimit
@@ -288,12 +287,13 @@ updateNodes view listNodes update lock unlock = do
 updateFinder :: TreeView -> ListStore Finder -> Bool -> G_sublogics -> IO ()
 updateFinder view list useNonBatch sl = do
   old <- listStoreToList list
+  cs <- getConsCheckers $ findComorphismPaths logicGraph sl
   let new = Map.elems $ foldr (\ (cc, c) m ->
               let n = getCcName cc
                   f = Map.findWithDefault (Finder n cc [] 0) n m
               in Map.insert n (f { comorphism = c : comorphism f}) m) Map.empty
               $ (if useNonBatch then id else filter (getCcBatch . fst))
-              $ getConsCheckers $ findComorphismPaths logicGraph sl
+              cs
   when (old /= new) $ do
     -- update list and try to select previous finder
     selected' <- getSelectedSingle view list
@@ -343,8 +343,8 @@ updateComorphism view list cbComorphism sh = do
     Nothing -> return ()
   signalUnblock sh
 
-expand :: Finder -> [String]
-expand = map show . comorphism
+expand :: Finder -> [ComboBoxText]
+expand = toComboBoxText . comorphism
 
 setSelectedComorphism :: TreeView -> ListStore Finder -> ComboBox -> IO ()
 setSelectedComorphism view list cbComorphism = do
@@ -359,13 +359,13 @@ setSelectedComorphism view list cbComorphism = do
 showModelViewAux :: MVar (IO ()) -> String -> ListStore FNode -> [FNode]
                  -> IO ()
 showModelViewAux lock title list other = do
-  xml <- getGladeXML ConsistencyChecker.get
+  builder <- getGTKBuilder ConsistencyChecker.get
   -- get objects
-  window <- xmlGetWidget xml castToWindow "ModelView"
-  btnClose <- xmlGetWidget xml castToButton "btnResClose"
-  frNodes <- xmlGetWidget xml castToFrame "frResNodes"
-  trvNodes <- xmlGetWidget xml castToTreeView "trvResNodes"
-  tvModel <- xmlGetWidget xml castToTextView "tvResModel"
+  window <- builderGetObject builder castToWindow "ModelView"
+  btnClose <- builderGetObject builder castToButton "btnResClose"
+  frNodes <- builderGetObject builder castToFrame "frResNodes"
+  trvNodes <- builderGetObject builder castToTreeView "trvResNodes"
+  tvModel <- builderGetObject builder castToTextView "tvResModel"
 
   windowSetTitle window title
 

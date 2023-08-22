@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Framework/AS.hs
 Description :  Abstract syntax for logic definitions
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -17,12 +18,14 @@ import Common.Doc
 import Common.DocUtils
 import Common.Keywords
 
+import Data.Data
+
 type NAME = IRI
 type SIG_NAME = IRI
 type MORPH_NAME = IRI
 type PATTERN_NAME = Token
 
-data FRAM = LF | Isabelle | Maude deriving (Ord, Eq, Show)
+data FRAM = LF | Isabelle | Maude deriving (Show, Eq, Ord, Typeable, Data)
 
 data LogicDef = LogicDef
   { -- the name of the object logic
@@ -40,7 +43,7 @@ data LogicDef = LogicDef
     proofs :: MORPH_NAME,
     -- name of the pattern specifying the signature category of the object logic
     patterns :: PATTERN_NAME
-  } deriving (Ord, Eq, Show)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 data ComorphismDef = ComorphismDef
   { -- the name of the comorphism
@@ -60,7 +63,7 @@ data ComorphismDef = ComorphismDef
     {- name of the morphism between the proof category of the source logic and
        the proof category of the target logic -}
     proofC :: MORPH_NAME
-  } deriving (Ord, Eq, Show)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange LogicDef
 instance GetRange ComorphismDef

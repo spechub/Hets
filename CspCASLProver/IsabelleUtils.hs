@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASLProver/IsabelleUtils.hs
 Description :  Utilities for CspCASLProver related to Isabelle
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach,
                Swansea University 2009

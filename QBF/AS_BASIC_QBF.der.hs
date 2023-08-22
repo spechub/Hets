@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./QBF/AS_BASIC_QBF.der.hs
 Description :  Abstract syntax for propositional logic extended with QBFs
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -34,24 +35,25 @@ import Common.DocUtils
 import Common.Keywords
 import Common.AS_Annotation as AS_Anno
 
-import qualified Data.List as List
+import Data.Data
 import Data.Maybe (isJust)
+import qualified Data.List as List
 
 -- DrIFT command
 {-! global: GetRange !-}
 
 -- | predicates = propositions
 data PREDITEM = PredItem [Id.Token] Id.Range
-               deriving Show
+               deriving (Show, Typeable, Data)
 
 newtype BASICSPEC = BasicSpec [AS_Anno.Annoted BASICITEMS]
-                  deriving Show
+                  deriving (Show, Typeable, Data)
 
 data BASICITEMS =
     PredDecl PREDITEM
     | AxiomItems [AS_Anno.Annoted FORMULA]
     -- pos: dots
-    deriving Show
+    deriving (Show, Typeable, Data)
 
 -- | Datatype for QBF formulas
 data FORMULA =
@@ -73,9 +75,9 @@ data FORMULA =
     -- pos: "<=>"
   | ForAll [Id.Token] FORMULA Id.Range
   | Exists [Id.Token] FORMULA Id.Range
-    deriving (Show, Ord)
+    deriving (Show, Ord, Typeable, Data)
 
-data ID = ID Id.Token (Maybe Id.Token)
+data ID = ID Id.Token (Maybe Id.Token) deriving (Typeable, Data)
 
 instance Eq ID where
     ID t1 (Just t2) == ID t3 (Just t4) =
@@ -155,20 +157,20 @@ instance Eq FORMULA where
 
 data SYMBITEMS = SymbItems [SYMB] Id.Range
                   -- pos: SYMB_KIND, commas
-                  deriving (Show, Eq)
+                  deriving (Show, Eq, Ord, Typeable, Data)
 
 newtype SYMB = SymbId Id.Token
             -- pos: colon
-            deriving (Show, Eq)
+            deriving (Show, Eq, Ord, Typeable, Data)
 
 data SYMBMAPITEMS = SymbMapItems [SYMBORMAP] Id.Range
                       -- pos: SYMB_KIND, commas
-                      deriving (Show, Eq)
+                      deriving (Show, Eq, Ord, Typeable, Data)
 
 data SYMBORMAP = Symb SYMB
                  | SymbMap SYMB SYMB Id.Range
                    -- pos: "|->"
-                   deriving (Show, Eq)
+                   deriving (Show, Eq, Ord, Typeable, Data)
 
 -- All about pretty printing we chose the easy way here :)
 instance Pretty FORMULA where

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/ShowLogicGraph.hs
 Copyright   :  (c) Heng Jiang and Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -116,6 +116,7 @@ showLogicGraph plain = do
                                makeLogicNodeMenu experimentalColor
        proverNodeType <-
            newNodeType logicG $ makeLogicNodeMenu proverColor
+       hsGr <- hetSublogicGraph
        let newNode' logic =
              case toAnyLogic logic of
                Logic lid -> if null $ provers lid then let
@@ -130,7 +131,7 @@ showLogicGraph plain = do
                                           G_sublogics l $ top_sublogic l)
                      $ Map.fromList $ map addLogicName
                      $ Map.elems $ logics logicGraph
-                   else sublogicNodes hetSublogicGraph
+                   else sublogicNodes hsGr
 
        -- production of the nodes (in a list)
        nodeList <- mapM newNode' $ Map.elems myMap
@@ -169,11 +170,12 @@ showLogicGraph plain = do
          mapM_ insertIncl inclusionList
          mapM_ insertComo $ filter (`notElem` inclusionList) comorphismList
         else do
+         hsg <- hetSublogicGraph
          let (inclCom, notInclCom) =
                partition ((`elem` inclusionList) . snd) $
                concatMap (\ (x, ys) -> zip (repeat x) ys) $
                    Map.toList -- [((String,String),[AnyComorphism])]
-                          (comorphismEdges hetSublogicGraph)
+                          (comorphismEdges hsg)
              (adhocCom, normalCom) =
                partition (isInclComorphism . snd) notInclCom
              adhocInclArcTypeParms =

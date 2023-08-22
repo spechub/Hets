@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Fpl/Sign.hs
 Description :  signatures for FPL
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -26,6 +27,7 @@ import CASL.Sign
 import CASL.AS_Basic_CASL
 import CASL.ToDoc
 
+import Data.Data
 import Data.List
 import Data.Ord
 
@@ -43,7 +45,7 @@ boolType = sortToOpType boolSort
 
 data SignExt = SignExt
   { constr :: OpMap }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Pretty SignExt where
   pretty es = let nr = nullRange in case

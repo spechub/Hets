@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      :./CMDL/DgCommands.hs
 Description : CMDL interface development graph commands
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt
@@ -58,7 +58,6 @@ import Common.Result
 import Common.ResultT
 import Common.Id
 import Common.IRI (simpleIdToIRI)
-import Common.AS_Annotation
 
 import Data.Graph.Inductive.Graph (LEdge)
 import qualified Data.Map as Map
@@ -264,13 +263,13 @@ cAddView input state = let iState = intState state in case i_state iState of
         opts = hetsOpts state
         dg = lookupDGraph ln libenv
         [vn, spec1, spec2] = words input
-        mkSpecInst s = Spec_inst (simpleIdToIRI $ mkSimpleId s) [] nullRange
+        mkSpecInst = makeSpecInst . simpleIdToIRI . mkSimpleId
     Result ds tmp <- runResultT $ liftR $ anaViewDefn lg ln libenv dg opts
       Map.empty -- not sure if no CURIE-to-IRI mapping shall be done
       (simpleIdToIRI $ mkSimpleId vn) (Genericity (Params []) (Imported [])
                                         nullRange)
-      (View_type (emptyAnno $ mkSpecInst spec1)
-       (emptyAnno $ mkSpecInst spec2) nullRange) [] nullRange
+      (View_type (mkSpecInst spec1)
+       (mkSpecInst spec2) nullRange) [] nullRange
     return $ case tmp of
       Nothing -> genMsgAndCode
           ("View analysis failed:\n" ++ showRelDiags (verbose opts) ds) 1 state

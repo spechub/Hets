@@ -1,5 +1,9 @@
 {- |
-  Proofs in development graphs.
+Description :  Proofs in development graphs
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+
+Proofs in development graphs.
    Follows Sect. IV:4.4 of the CASL Reference Manual.
 See also  /Heterogeneous
 specification and the heterogeneous tool set/

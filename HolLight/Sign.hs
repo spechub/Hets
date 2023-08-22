@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./HolLight/Sign.hs
 Description :  HolLight signature
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -12,6 +13,7 @@ Portability :  portable
 
 module HolLight.Sign where
 
+import Data.Typeable
 import qualified Data.Map as Map
 import Common.DocUtils
 import Common.Doc
@@ -21,7 +23,7 @@ import HolLight.Helper
 
 data Sign = Sign { types :: Map.Map String Int
                  , ops :: Map.Map String HolType }
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Typeable)
 
 prettyTypes :: Map.Map String Int -> Doc
 prettyTypes = ppMap text (\ i -> if i < 1 then empty else parens (pretty i))
@@ -30,7 +32,7 @@ prettyTypes = ppMap text (\ i -> if i < 1 then empty else parens (pretty i))
 instance Pretty Sign where
   pretty s = keyword "types" <+> prettyTypes (types s)
     $++$ ppMap text ppPrintType
-         (const id) vcat (\ a -> (a <+> colon <+>)) (ops s)
+         (const id) vcat (\ a -> ((a <+> colon) <+>)) (ops s)
 
 emptySig :: Sign
 emptySig = Sign {types = Map.empty, ops = Map.empty }

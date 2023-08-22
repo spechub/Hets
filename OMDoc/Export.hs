@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./OMDoc/Export.hs
 Description :  Exports a development graph to an omdoc structure
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Reduce_Interface.hs
 Description :  interface to Reduce CAS
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen, 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -124,7 +124,8 @@ closedReduceProofStatus goalname proof_tree =
     , usedProver = reduceS
     , proofTree = proof_tree
     , usedTime = midnight
-    , tacticScript = TacticScript "" }
+    , tacticScript = TacticScript ""
+    , proofLines = [] }
 
 {-
 For Quantifier Elimination:

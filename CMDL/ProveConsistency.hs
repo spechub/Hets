@@ -1,5 +1,5 @@
 {- |
-Module      : $Header$
+Module      : ./CMDL/ProveConsistency.hs
 Description : CMDL interface commands
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt
@@ -26,7 +26,6 @@ import Interfaces.Utils
 
 import CMDL.DataTypes (CmdlState (intState), ProveCmdType (..))
 import CMDL.DataTypesUtils
-import CMDL.Utils (checkPresenceProvers)
 
 import Comorphisms.LogicGraph (logicGraph)
 
@@ -35,6 +34,8 @@ import Proofs.AbstractState
 import Static.DevGraph
 import Static.DgUtils
 import Static.History
+
+import Common.DocUtils
 
 import Logic.Comorphism
 import Logic.Grothendieck
@@ -79,29 +80,26 @@ negate_th_with_cons_checker g_th goal = case g_th of
                                  in Just $ G_theory_with_cons_checker lid1 th
                                             {P.tTarget = target'} cons_check
 
-getProversAutomatic :: G_sublogics -> [(G_prover, AnyComorphism)]
-getProversAutomatic sl = getAllProvers P.ProveCMDLautomatic sl logicGraph
+getProversAutomatic :: G_sublogics -> IO [(G_prover, AnyComorphism)]
+getProversAutomatic sl = getUsableProvers P.ProveCMDLautomatic sl logicGraph
 
 -- | Select a prover
 cProver :: String -> CmdlState -> IO CmdlState
 cProver input state =
   do
    -- trimed input
-   inpls <- checkPresenceProvers [trim input]
-   let inp = case inpls of
-                [] -> "Unknown"
-                pnme : _ -> pnme
+   let inp = trim input
    case i_state $ intState state of
     Nothing -> return $ genMsgAndCode "Nothing selected" 1 state
     Just pS ->
      -- check that some theories are selected
      case elements pS of
       [] -> return $ genMsgAndCode "Nothing selected" 1 state
-      Element z _ : _ -> let
-        prov = getProversAutomatic (sublogicOfTheory z)
-        pl = filter ((== inp) . getProverName . fst) prov
-        prover_names = map (getProverName . fst) prov
-        in case case cComorphism pS of
+      Element z _ : _ -> do
+        prov <- getProversAutomatic (sublogicOfTheory z)
+        let pl = filter ((== inp) . getProverName . fst) prov
+            prover_names = map (getProverName . fst) prov
+        case case cComorphism pS of
                    Nothing -> pl
                    Just x -> filter ((== x) . snd) pl ++ pl of
              [] -> if inp == "" then do
@@ -135,7 +133,7 @@ cConsChecker input state =
       [] -> return $ genMsgAndCode "Nothing selected" 1 state
       Element z _ : _ ->
        do
-        let consCheckList = getConsCheckers $ findComorphismPaths
+        consCheckList <- getConsCheckers $ findComorphismPaths
                                 logicGraph $ sublogicOfTheory z
         -- see if any comorphism was used
         case cComorphism pS of
@@ -160,9 +158,9 @@ cConsChecker input state =
                                              consChecker = Just p }
                                           }
                                       }
-         Just x ->
-          case find (\ (y, _) -> getCcName y == inp)
-                     $ getConsCheckers [x] of
+         Just x -> do
+          cs <- getConsCheckers [x]
+          case find (\ (y, _) -> getCcName y == inp) cs of
            Nothing ->
             case find (\ (y, _) -> getCcName y == inp) consCheckList of
              Nothing -> if inp == "" then do
@@ -349,7 +347,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname =
      case prep of
      -- theory could not be computed
       Nothing -> return "No suitable prover and comorphism found"
-      Just (G_theory_with_prover lid1 th p, cmp) ->
+      Just (G_theory_with_prover lid1 th p, cmp) -> 
         case P.proveCMDLautomaticBatch p of
          Nothing -> return "Error obtaining the prover"
          Just fn ->
@@ -376,7 +374,7 @@ proveNode useTh save2File sTxt ndpf ndnm mp mcm mThr mSt miSt libname =
                       (P.TacticScript $ show sTxt)
                       th []
              swapMVar mThr $ Just $ fst tmp
-             getResults lid1 cmp (snd tmp) answ mSt
+             getResults lid1 cmp (snd tmp) answ mSt th
              swapMVar mThr Nothing
              ist <- readMVar miSt
              state <- readMVar mSt
@@ -499,22 +497,31 @@ disproveNode sTxt ndpf ndnm mp mcm mSt miSt ln =
 
 getResults :: (Logic lid sublogics basic_spec sentence
                      symb_items symb_map_items
-                     sign morphism symbol raw_symbol proof_tree) =>
+                     sign morphism symbol raw_symbol proof_tree, Pretty sentence) =>
               lid ->
               AnyComorphism ->
               MVar () ->
               MVar (Result [P.ProofStatus proof_tree]) ->
-              MVar (Maybe Int_NodeInfo) ->
+              MVar (Maybe Int_NodeInfo) -> 
+              P.Theory sign sentence proof_tree ->
               IO ()
-getResults lid acm mStop mData mState =
+getResults lid acm mStop mData mState (P.Theory _ sensMap) =
   do
     takeMVar mStop
     d <- takeMVar mData
     case d of
       Result _ Nothing -> return ()
       Result _ (Just d') -> do
-        mapM_ (\ gs -> putStrLn $ "Goal " ++ P.goalName gs
-               ++ " used " ++ unwords (P.usedAxioms gs))
+        mapM_ (\ gs -> let
+                  uAx = map 
+                          (\x -> let ax =  case OMap.lookup x sensMap of
+                                            Nothing -> error "Proof using a missing axiom"
+                                            Just s -> show $ pretty $ sentence s
+                                  in x ++" : " ++ ax ++ "\n") $
+                        P.usedAxioms gs
+                in  
+               putStrLn $ "Goal " ++ P.goalName gs
+               ++ " used \n" ++ unwords uAx)
           $ filter P.isProvedStat d'
         modifyMVar_ mState (\ s -> case s of
                   Nothing -> return s

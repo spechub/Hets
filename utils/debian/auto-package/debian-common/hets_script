@@ -36,8 +36,8 @@ try:
     sys.stdout.flush()
     subprocess.call("rm -r -f /tmp/hets*",shell=True,stderr=subprocess.DEVNULL)
     try:
-        subprocess.check_call(["svn","export", "--force", "-q",
-         "https://svn-agbkb.informatik.uni-bremen.de/Hets-lib/trunk","/tmp/hets-lib"],
+        subprocess.check_call(["git","clone", "-q", "--depth=50",
+         "https://github.com/spechub/Hets-lib.git","/tmp/hets-lib"],
          stdout=subprocess.STDOUT,stderr=subprocess.STDERR)
     except subprocess.CalledProcessError:
         raise UpdateFailure("Failed to retrieve latest Hets library!")

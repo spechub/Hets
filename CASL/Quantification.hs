@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Quantification.hs
 Description :  Free variables; getting rid of superfluous quantifications
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -59,6 +59,13 @@ freeTermVars = foldTerm . freeVarsRecord . freeVarsOfExt
 freeVars :: TermExtension f => Sign f e -> FORMULA f -> VarSet
 freeVars = foldFormula . freeVarsRecord . freeVarsOfExt
 
+varSetToDecls :: VarSet -> [VAR_DECL]
+varSetToDecls = map (\ (v, s) -> Var_decl [v] s $ tokPos v) . Set.toList
+
+quantFreeVars :: TermExtension f => Sign f e -> FORMULA f -> Range -> FORMULA f
+quantFreeVars sig f =
+  stripQuant sig . mkForallRange (varSetToDecls $ freeVars sig f) f
+
 -- | quantify only over free variables (and only once)
 effQuantify :: TermExtension f => Sign f e -> QUANTIFIER -> [VAR_DECL]
             -> FORMULA f -> Range -> FORMULA f
@@ -108,7 +115,8 @@ stripAllQuant f = case f of
 -- | get top-level variables
 getQuantVars :: FORMULA f -> VarSet
 getQuantVars f = case f of
-  Quantification Universal vds _ _ -> Set.fromList $ flatVAR_DECLs vds
+  Quantification Universal vds phi _ -> Set.union
+     (Set.fromList $ flatVAR_DECLs vds) $ getQuantVars phi
   _ -> Set.empty
 
 -- | get top-level variables for all sentences

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Disambiguate.hs
 Description :  disambiguate all names
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -40,7 +40,7 @@ disambigSigExt extInd extEm sig =
       ss = sortSet sig
       sMap = Set.fold (`Map.insert` 1) Map.empty ss
       om = createOpMorMap $ disambOverloaded sMap mkPartial os
-      oMap = Map.foldWithKey (\ i ->
+      oMap = Map.foldrWithKey (\ i ->
              Map.insertWith (+) i . length) sMap os
       pm = Map.map fst $ disambOverloaded oMap id ps
   in (embedMorphism extEm sig $ inducedSignAux extInd Map.empty om pm extEm sig)
@@ -52,7 +52,7 @@ disambOverloaded :: Ord a => Map.Map Id Int
                -> Map.Map Id [Set.Set a]
                -> Map.Map (Id, a) (Id, a)
 disambOverloaded oMap g =
-  Map.foldWithKey (\ i l m ->
+  Map.foldrWithKey (\ i l m ->
     foldr (\ (s, n) m2 -> let j = mkOverloadedId n i in
       Set.fold (\ t -> Map.insert (i, g t) (j, t)) m2 s) m
     $ zip l [1 + Map.findWithDefault 0 i oMap ..])

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/ProveVampire.hs
 Description :  Interface to the Vampire theorem prover via MathServe.
 Copyright   :  (c) Rene Wagner, Klaus Luettich, Rainer Grabbe,
                    Uni Bremen 2005-2006
@@ -43,14 +43,14 @@ import Proofs.BatchProcessing
   feedback), then starts the GUI prover.
 -}
 vampire :: Prover Sign Sentence SoftFOLMorphism () ProofTree
-vampire = mkAutomaticProver "Vampire" () vampireGUI vampireCMDLautomaticBatch
+vampire = (mkProverTemplate "Vampire" () vampireGUI)
+  { proveCMDLautomaticBatch = Just vampireCMDLautomaticBatch }
 
 vampireHelpText :: String
 vampireHelpText =
   "No help yet available.\n" ++
   "email hets-devel@informatik.uni-bremen.de " ++
   "for more information.\n"
-
 
 -- * Main prover functions
 

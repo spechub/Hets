@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/VSE.hs
 Description :  Interface to send structured theories to the VSE prover
 Copyright   :  (c) C. Maeder, DFKI 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -73,8 +73,8 @@ getSubGraph n dg =
     in delNodesDG (Set.toList $ Set.difference (Set.fromList ns) sns) dg
 
 -- | applies basic inference to a given node and whole import tree above
-prove :: (LibName, Node) -> LibEnv -> IO (Result LibEnv)
-prove (ln, node) libEnv =
+proveVSE :: (LibName, Node) -> LibEnv -> IO (Result LibEnv)
+proveVSE (ln, node) libEnv =
   runResultT $ do
     qLibEnv <- liftR $ qualifyLibEnv libEnv
     let dg1 = lookupDGraph ln qLibEnv
@@ -85,7 +85,7 @@ prove (ln, node) libEnv =
     G_theory olid _ _ _ _ _ <- return $ dgn_theory oLbl
     let mcm = if Logic CASL == Logic olid then Just (Comorphism CASL2VSE) else
              Nothing
-    dGraph <- liftR $ maybe return (flip $ dg_translation qLibEnv) mcm dg3
+    dGraph <- liftR $ maybe return (flip $ dg_translation qLibEnv ln) mcm dg3
     let nls = topsortedNodes dGraph
         ns = map snd nls
     ts <- liftR $ mapM
@@ -148,7 +148,7 @@ prove (ln, node) libEnv =
                          nlbl = olbl { dgn_theory
                            = G_theory lid syn sig sigId nsens startThId }
                          flbl = nlbl { globalTheory
-                           = computeLabelTheory le dg (n, nlbl) }
+                           = computeLabelTheory le ln dg (n, nlbl) }
                          ndg = changeDGH dg $ SetNodeLab olbl (n, flbl)
                         in Map.insert ln ndg le) libEnv nls
 

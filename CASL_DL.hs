@@ -1,4 +1,7 @@
 {- |
+Description :  Description logic in CASL notation
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
 
 The CASL_DL folder contains the CASL_DL (see
 <http://www.informatik.uni-bremen.de/~luettich/papers/owl-casl-dl.pdf>)
@@ -51,7 +54,7 @@ with subsorting.
 /Predefined Datatypes/
 
 "CASL_DL.PredefinedDatatypes" is generated from some CASL datatypes
-defined in CASL_DL\/Datatypes.het.
+defined in CASL_DL\/Datatypes.dol.
 
 -}
 

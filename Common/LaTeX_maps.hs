@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/LaTeX_maps.hs
 Description :  several tables needed for LaTeX formatting
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,0 +1,44 @@
+logic OWL serialization Manchester
+
+spec emptyontology =  
+
+Prefix: pizza: <http://www.co-ode.org/ontologies/pizza/pizza.owl#>
+Prefix: rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+Prefix: rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+Prefix: food: <http://www.w3.org/2002/03owlt/miscellaneous/consistent002#>
+Prefix: vin: <http://www.w3.org/2002/03owlt/miscellaneous/consistent001#>
+Prefix: owl11: <http://www.w3.org/2006/12/owl11#>
+
+Ontology: Family
+
+ObjectProperty: fatherOf
+
+    
+Class: Woman
+
+    
+Individual: Stewie
+
+    DifferentFrom: 
+        Meg
+    
+    
+Individual: Meg
+
+    Types: 
+        Woman
+    
+    DifferentFrom: 
+        Stewie
+    
+    
+Individual: Peter
+
+    Types: 
+        fatherOf max 1 Woman
+    
+    Facts:  
+     fatherOf  Stewie,
+     fatherOf  Meg
+    
+with Class Woman |-> Female, NamedIndividual Peter |-> John

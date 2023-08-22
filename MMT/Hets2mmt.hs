@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./MMT/Hets2mmt.hs
 Description :  interface for MMT jar
 Copyright   :
 License     :

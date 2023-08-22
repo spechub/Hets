@@ -1,0 +1,48 @@
+logic OWL serialization Functional
+
+spec a = 
+Prefix(:=<http://example.org/>)
+Prefix(dc:=<http://purl.org/dc/elements/1.1/>)
+Prefix(ex:=<http://www.example.org#>)
+Prefix(ns0:=<http://cohse.semanticweb.org/ontologies/people#>)
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Prefix(rdf:=<http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
+Prefix(vin:=<http://www.w3.org/2002/03owlt/miscellaneous/consistent001#>)
+Prefix(xml:=<http://www.w3.org/XML/1998/namespace>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Prefix(food:=<http://www.w3.org/2002/03owlt/miscellaneous/consistent002#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+Prefix(owl11:=<http://www.w3.org/2006/12/owl11#>)
+Prefix(pizza:=<http://www.co-ode.org/ontologies/pizza/pizza.owl#>)
+Prefix(owl11xml:=<http://www.w3.org/2006/12/owl11-xml#>)
+
+
+Ontology(
+Declaration(Class(:A))
+Declaration(DataProperty(:dp))
+Declaration(NamedIndividual(:a))
+Declaration(Datatype(xsd:float))
+Declaration(Datatype(xsd:integer))
+Declaration(Datatype(owl:real2))
+
+
+############################
+#   Classes
+############################
+
+# Class: :A (:A)
+
+SubClassOf(:A DataAllValuesFrom(:dp owl:real2))
+
+
+############################
+#   Named Individuals
+############################
+
+# Individual: :a (:a)
+
+ClassAssertion(:A :a)
+
+
+)
+end

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./QVTR/As.hs
 Description :  abstract QVT-Relational syntax
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -13,6 +14,8 @@ module QVTR.As where
 
 import Common.Id
 
+import Data.Data
+
 import qualified CSMOF.As as CSMOF
 
 -- Simplified QVTR Tranformation
@@ -23,7 +26,7 @@ data Transformation = Transformation
                  , targetMetamodel :: (String, String, CSMOF.Metamodel)
                  , keys :: [Key]
                  , relations :: [Relation]
-                 } deriving (Eq, Ord)
+                 } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange Transformation where
   getRange _ = nullRange
@@ -34,7 +37,7 @@ data Key = Key
         { metamodel :: String
         , typeName :: String
         , properties :: [PropKey]
-        } deriving (Eq, Ord)
+        } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange Key where
   getRange _ = nullRange
@@ -43,7 +46,7 @@ instance GetRange Key where
 
 data PropKey = SimpleProp { propName :: String }
              | OppositeProp { oppPropType :: String, oppPropName :: String }
-             deriving (Eq, Ord)
+             deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange PropKey where
   getRange _ = nullRange
@@ -59,7 +62,7 @@ data Relation = Relation
               , targetDomain :: Domain
               , whenCond :: Maybe WhenWhere
               , whereCond :: Maybe WhenWhere
-              } deriving (Eq, Ord)
+              } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange Relation where
   getRange _ = nullRange
@@ -69,7 +72,7 @@ instance GetRange Relation where
 data RelVar = RelVar
             { varType :: String
             , varName :: String
-            } deriving (Eq, Ord)
+            } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange RelVar where
   getRange _ = nullRange
@@ -79,7 +82,7 @@ instance GetRange RelVar where
 data PrimitiveDomain = PrimitiveDomain
                      { primName :: String
                      , primType :: String
-                     } deriving (Eq, Ord)
+                     } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange PrimitiveDomain where
   getRange _ = nullRange
@@ -89,7 +92,7 @@ instance GetRange PrimitiveDomain where
 data Domain = Domain
             { domModelId :: String
             , template :: ObjectTemplate
-            } deriving (Eq, Ord)
+            } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange Domain where
   getRange _ = nullRange
@@ -101,7 +104,7 @@ data ObjectTemplate = ObjectTemplate
                     , domMeta :: String
                     , domType :: String
                     , templateList :: [PropertyTemplate]
-                    } deriving (Eq, Ord)
+                    } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange ObjectTemplate where
   getRange _ = nullRange
@@ -112,14 +115,15 @@ data PropertyTemplate = PropertyTemplate
                       { pName :: String
                       , oclExpre :: Maybe OCL
                       , objTemp :: Maybe ObjectTemplate
-                      } deriving (Eq, Ord)
+                      } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange PropertyTemplate where
   getRange _ = nullRange
   rangeSpan _ = []
 
 
-data WhenWhere = WhenWhere { relInvokWhen :: [RelInvok], oclExpreWhen :: [OCL] } deriving (Eq, Ord)
+data WhenWhere = WhenWhere { relInvokWhen :: [RelInvok], oclExpreWhen :: [OCL] }
+  deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange WhenWhere where
   getRange _ = nullRange
@@ -129,7 +133,7 @@ instance GetRange WhenWhere where
 data RelInvok = RelInvok
               { name :: String
               , params :: [String]
-              } deriving (Eq, Ord)
+              } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange RelInvok where
   getRange _ = nullRange
@@ -145,7 +149,7 @@ data OCL = Paren { exp :: OCL }
          | AndB { lExpA :: OCL, rExpA :: OCL }
          | OrB { lExpO :: OCL, rExpO :: OCL }
          | Equal { lExpre :: STRING, rExpre :: STRING }
-         deriving (Eq, Ord)
+         deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange OCL where
   getRange _ = nullRange
@@ -155,7 +159,7 @@ instance GetRange OCL where
 data STRING = Str { simpleStr :: String }
             | ConcatExp { lStr :: STRING, rStr :: STRING }
             | VarExp { varExp :: String }
-            deriving (Eq, Ord)
+            deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange STRING where
   getRange _ = nullRange

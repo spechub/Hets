@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances,
              UndecidableInstances, ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./TopHybrid/Logic_TopHybrid.hs
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  : nevrenato@gmail.com
@@ -48,8 +48,8 @@ instance Category Sgn_Wrap Mor where
 
 instance Syntax Hybridize Spc_Wrap Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
         parse_basic_spec Hybridize = Just $ \ _ -> thBasic getLogic
-        parse_symb_items Hybridize = Just $ error "parse_symb_items !"
-        parse_symb_map_items Hybridize = Just $ error "parse_symb_map_items !"
+        parse_symb_items Hybridize = Just . const $ error "parse_symb_items !"
+        parse_symb_map_items Hybridize = Just . const $ error "parse_symb_map_items !"
         toItem Hybridize = error "toItem !"
 
 instance Sentences Hybridize Frm_Wrap Sgn_Wrap Mor Symbol where
@@ -103,7 +103,6 @@ instance Logic Hybridize () Spc_Wrap Frm_Wrap SYMB_ITEMS SYMB_MAP_ITEMS
                 parse_basic_sen Hybridize = Just formParser'
                 proj_sublogic_epsilon Hybridize =
                  error "proj_sublogic_epsilon !"
-                all_sublogics Hybridize = error "all_sublogics !"
                 empty_proof_tree Hybridize = error "empty_proof_tree !"
                 addOMadtToTheory Hybridize = error "addOMadtToTheory !"
                 addOmdocToTheory Hybridize = error "addOmdocToTheory !"

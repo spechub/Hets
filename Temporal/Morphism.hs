@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Temporal/Morphism.hs
 Description :  Morphisms in Temporal logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -32,16 +33,21 @@ module Temporal.Morphism
   , applyMorphism               -- application function for morphism
   ) where
 
+import Data.Data
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
 import Temporal.Sign as Sign
-import qualified Common.Result as Result
 import qualified Temporal.AS_BASIC_Temporal as AS_BASIC
-import Common.Id as Id
+
+import qualified Common.Result as Result
 import Common.Result
+import Common.Id as Id
 import Common.Doc
 import Common.DocUtils
+
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
 
 {- | The datatype for morphisms in temporal logic as
 maps of sets -}
@@ -49,7 +55,7 @@ data Morphism = Morphism
   { source :: Sign
   , target :: Sign
   , propMap :: Map.Map Id Id
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show, Typeable)
 
 instance Pretty Morphism where
     pretty = printMorphism
@@ -66,7 +72,7 @@ isLegalMorphism pmor =
         pdom = Map.keysSet $ propMap pmor
         pcodom = Set.map (applyMorphism pmor) psource
     in unless (Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource) $
-        fail "illegal Temporal morphism"
+        Fail.fail "illegal Temporal morphism"
 
 -- | Application funtion for morphisms
 applyMorphism :: Morphism -> Id -> Id

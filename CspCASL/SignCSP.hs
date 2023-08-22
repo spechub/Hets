@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/SignCSP.hs
 Description :  CspCASL signatures
 Copyright   :  (c) Markus Roggenbach and Till Mossakowski and Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -63,6 +64,7 @@ import Common.Utils (keepMins)
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Data
 import Data.List
 import Data.Ord
 
@@ -170,7 +172,7 @@ sameChan t1 t2 = case (t1, t2) of
 data CspSign = CspSign
     { chans :: ChanNameMap
     , procSet :: ProcNameMap
-    } deriving (Eq, Ord, Show)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | plain union
 cspSignUnion :: CspSign -> CspSign -> CspSign
@@ -305,7 +307,7 @@ process equation has on the LHS a process name, a list of parameters which
 are qualified variables (which are terms), a constituent( or is it permitted
 ?) communication alphabet and finally on the RHS a fully qualified process. -}
 data CspSen = ProcessEq FQ_PROCESS_NAME FQProcVarList CommAlpha PROCESS
-      deriving (Show, Eq, Ord)
+      deriving (Show, Eq, Ord, Typeable, Data)
 
 type CspCASLSen = FORMULA CspSen
 

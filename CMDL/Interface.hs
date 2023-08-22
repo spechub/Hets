@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      : $Header$
+Module      : ./CMDL/Interface.hs
 Description : The definition of CMDL interface for
               standard input and file input
 Copyright   : uni-bremen and DFKI
@@ -19,9 +19,10 @@ module CMDL.Interface where
 import System.Console.Haskeline
 import Interfaces.DataTypes
 import Comorphisms.LogicGraph (logicGraph)
-import Proofs.AbstractState (getConsCheckers, sublogicOfTheory, getCcName )
 import Logic.Grothendieck
 #endif
+
+import Proofs.AbstractState (getListOfConsCheckers, usableCC)
 
 import System.IO
 
@@ -43,6 +44,8 @@ import Control.Monad
 import Control.Monad.Trans (MonadIO (..))
 
 #ifdef HASKELINE
+import Proofs.AbstractState (getAllConsCheckers, sublogicOfTheory, getCcName)
+
 shellSettings :: IORef CmdlState -> Settings IO
 shellSettings st =
   Settings {
@@ -81,10 +84,12 @@ cmdlComplete st (left, _) = do
        case elements pS of
         Element z _ : _ ->
           do
-           let consCheckList = getConsCheckers $ findComorphismPaths
-                                  logicGraph $ sublogicOfTheory z
-               shortConsCList = nub $ map (\ (y, _) -> getCcName y)
-                                       consCheckList
+           let paths = findComorphismPaths logicGraph $ sublogicOfTheory z
+               fullConsCheckerList = map fst $ getAllConsCheckers $ paths
+               stateConsCheckList = consCheckers state
+               filteredConsCheckerList =
+                 filter (\cc -> elem cc stateConsCheckList) fullConsCheckerList
+               shortConsCList = nub $ map getCcName filteredConsCheckerList
            showCmdComplete state shortConsCList comps left
         [] -> showCmdComplete state [] comps left
      Nothing -> showCmdComplete state [] comps left
@@ -172,11 +177,17 @@ shellLoop st isTerminal =
                         liftIO $ writeIORef st newState'
                         shellLoop st isTerminal
 
+saveConsCheckersInState :: CmdlState -> IO CmdlState
+saveConsCheckersInState state = do
+  consCheckerList <- filterM usableCC getListOfConsCheckers
+  return $ state { consCheckers = consCheckerList }
+
 -- | The function runs hets in a shell
 cmdlRunShell :: CmdlState -> IO CmdlState
 cmdlRunShell state = do
   isTerminal <- hIsTerminalDevice stdin
-  st <- newIORef state
+  st' <- saveConsCheckersInState state
+  st <- newIORef st'
 #ifdef HASKELINE
   runInputT (shellSettings st) $ shellLoop st isTerminal
 #else

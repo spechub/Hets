@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/AutoProofUtils.hs
 Description :  Utils for automatic proving procedure of multiple nodes
 Copyright   :  (c) Simon Ulbricht, Uni Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

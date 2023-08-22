@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Fpl/As.der.hs
 Description :  abstract syntax for FPL
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -34,6 +35,7 @@ import CASL.SortItem
 import CASL.OpItem
 import CASL.ToDoc
 
+import Data.Data
 import Data.List (delete)
 import Data.Maybe (isNothing)
 
@@ -45,17 +47,17 @@ type FplForm = FORMULA TermExt
 data FplExt =
     FplSortItems [Annoted FplSortItem] Range
   | FplOpItems [Annoted FplOpItem] Range
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 data FplSortItem =
     FreeType DATATYPE_DECL
   | CaslSortItem (SORT_ITEM TermExt)
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 data FplOpItem =
     FunOp FunDef
   | CaslOpItem (OP_ITEM TermExt)
-  deriving Show
+  deriving (Show, Typeable, Data)
 
 prepPunctBar :: [Doc] -> [Doc]
 prepPunctBar = punctuate (Doc.space <> bar)
@@ -93,7 +95,7 @@ instance Pretty FplOpItem where
     CaslOpItem s -> printOpItem s
 
 data FunDef = FunDef OP_NAME OP_HEAD (Annoted FplTerm) Range
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 kindHead :: OpKind -> OP_HEAD -> OP_HEAD
 kindHead k (Op_head _ args r ps) = Op_head k args r ps
@@ -116,7 +118,7 @@ data TermExt =
   | IfThenElse FplTerm FplTerm FplTerm Range
   | EqTerm FplTerm FplTerm Range
   | BoolTerm FplTerm
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 instance FormExtension TermExt
 

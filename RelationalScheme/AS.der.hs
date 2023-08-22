@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./RelationalScheme/AS.der.hs
 Description :  abstract syntax for Relational Schemes
 Copyright   :  Dominik Luecke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt or LIZENZ.txt
@@ -12,8 +13,7 @@ Abstract syntax for Relational Schemes
 -}
 
 module RelationalScheme.AS
-        (
-            RSRelType (..)
+        ( RSRelType (..)
         , RSQualId (..)
         , RSRel (..)
         , RSRelationships (..)
@@ -22,23 +22,27 @@ module RelationalScheme.AS
         , map_rel
         , getRels
         , getSignature
-        )
-        where
+        ) where
+
+import Data.Data
+import qualified Data.Map as Map
 
 import Common.Id
 import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
+import Common.Result
+import qualified Control.Monad.Fail as Fail
+
 import RelationalScheme.Keywords
 import RelationalScheme.Sign
-import qualified Data.Map as Map
-import Common.Result
+
 
 -- DrIFT command
 {-! global: GetRange !-}
 
 data RSRelType = RSone_to_one | RSone_to_many | RSmany_to_one | RSmany_to_many
-                 deriving (Eq, Ord)
+                 deriving (Eq, Ord, Typeable, Data)
 
 -- first Id is TableId, second is columnId
 data RSQualId = RSQualId
@@ -47,7 +51,7 @@ data RSQualId = RSQualId
                 , column :: Id
                 , q_pos :: Range
                 }
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 data RSRel = RSRel
              {
@@ -56,13 +60,13 @@ data RSRel = RSRel
              , r_type :: RSRelType
              , r_pos :: Range
              }
-             deriving (Eq, Ord, Show)
+             deriving (Eq, Ord, Show, Typeable, Data)
 
 data RSRelationships = RSRelationships [Annoted RSRel] Range
-                        deriving (Eq, Ord, Show)
+                        deriving (Eq, Ord, Show, Typeable, Data)
 
 data RSScheme = RSScheme RSTables RSRelationships Range
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 type Sentence = RSRel
 
@@ -99,7 +103,7 @@ map_qualId mor qid =
     let
         (tid, rid, rn) = case qid of
             RSQualId i1 i2 rn1 -> (i1, i2, rn1)
-    in maybe (fail "map_qualId") return $ do
+    in maybe (Fail.fail "map_qualId") return $ do
             mtid <- Map.lookup tid $ table_map mor
             rmor <- Map.lookup tid $ column_map mor
             mrid <- Map.lookup rid $ col_map rmor

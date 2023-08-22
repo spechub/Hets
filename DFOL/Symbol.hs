@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./DFOL/Symbol.hs
 Description :  Symbol definition for first-order logic with
                dependent types
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
@@ -13,13 +14,16 @@ Portability :  portable
 module DFOL.Symbol where
 
 import DFOL.AS_DFOL
+
 import Common.Id
 import Common.Doc
 import Common.DocUtils
+
+import Data.Data
 import qualified Data.Map as Map
 
 -- a symbol is just a name
-data Symbol = Symbol {name :: NAME} deriving (Show, Eq, Ord)
+data Symbol = Symbol {name :: NAME} deriving (Show, Eq, Ord, Typeable, Data)
 
 -- pretty printing
 instance Pretty Symbol where

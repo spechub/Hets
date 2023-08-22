@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./TopHybrid/TopHybridSign.hs
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  nevrenato@gmail.com
@@ -19,7 +19,7 @@ import TopHybrid.AS_TopHybrid
 import Logic.Logic
 import Common.Result
 import Common.Id
-import Data.Typeable
+import Data.Data
 import Data.Set
 import Unsafe.Coerce
 import Control.Monad (liftM)
@@ -46,7 +46,7 @@ data THybridSign s = THybridSign
     modies :: Set MODALITY
   , nomies :: Set NOMINAL
   , extended :: s
-  } deriving (Show, Eq, Ord)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyHybridSign :: Sgn_Wrap
 emptyHybridSign = EmptySign

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./DFOL/Morphism.hs
 Description :  Definition of signature morphisms for
                first-order logic with dependent types (DFOL)
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
@@ -29,21 +30,24 @@ module DFOL.Morphism
 import DFOL.AS_DFOL
 import DFOL.Sign
 import DFOL.Symbol
+
 import Common.Result
 import Common.Doc
 import Common.DocUtils
 import Common.Id
 import Common.ExtSign
 import qualified Common.Result as Result
+
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+import Data.Data
 
 -- morphisms for DFOL - maps of symbol names
 data Morphism = Morphism
   { source :: Sign
   , target :: Sign
   , symMap :: Map.Map NAME NAME
-  } deriving (Ord, Show)
+  } deriving (Ord, Show, Typeable)
 
 -- constructs an identity morphism
 idMorph :: Sign -> Morphism

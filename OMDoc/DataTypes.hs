@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./OMDoc/DataTypes.hs
 Description :  The OMDoc Data Types
 Copyright   :  (c) Ewaryst Schulz, DFKI 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -20,7 +20,7 @@ import Common.Amalgamate (readShow)
 import Common.Id
 import Common.Lexer
 import Common.AnnoParser
-import Common.IRI (escapeIRIString)
+import Common.Percent (encodeBut)
 
 import Data.List
 import Data.Typeable
@@ -297,7 +297,7 @@ nameDecode s =
 
 nameToString :: UniqName -> String
 nameToString (s, i) =
-    let s' = escapeIRIString (`notElem` "/?%#") s
+    let s' = encodeBut (`notElem` "/?%#") s
     in if i > 0 then nameEncode ("over_" ++ show i) [s'] else s'
 
 -- * Constructing/Extracting Values

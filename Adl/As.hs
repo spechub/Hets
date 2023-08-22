@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Adl/As.hs
 Description :  abstract ADL syntax
 Copyright   :  (c) Stef Joosten, Christian Maeder DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -13,6 +14,7 @@ Portability :  portable
 module Adl.As where
 
 import Data.Char
+import Data.Data
 import Data.List (sortBy)
 
 import Common.Id
@@ -21,7 +23,7 @@ import Common.Keywords
 data Concept
   = C Token -- ^ The name of this Concept
   | Anything -- ^ Really anything as introduced by I and V
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Typeable, Data)
 
 instance GetRange Concept where
     getRange c = case c of
@@ -34,7 +36,7 @@ instance GetRange Concept where
 data RelType = RelType
   { relSrc :: Concept -- ^ the source concept
   , relTrg :: Concept -- ^ the target concept
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show, Typeable, Data)
 
 instance GetRange RelType where
     getRange = getRange . relSrc
@@ -44,7 +46,7 @@ instance GetRange RelType where
 data Relation = Sgn
   { decnm :: Token  -- ^ the name
   , relType :: RelType
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show, Typeable, Data)
 
 instance GetRange Relation where
     getRange = getRange . decnm
@@ -63,7 +65,7 @@ data UnOp
   | K1 -- ^ Transitive closure +
   | Cp -- ^ Complement -
   | Co -- ^ Converse ~
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Typeable, Data)
 
 instance Show UnOp where
   show o = case o of
@@ -80,7 +82,7 @@ data MulOp
   | Ri -- ^ Rule implication |-
   | Rr -- ^ Rule reverse implication -|
   | Re -- ^ Rule equivalence
-    deriving (Eq, Ord)
+    deriving (Eq, Ord, Typeable, Data)
 
 instance Show MulOp where
   show o = case o of
@@ -96,7 +98,7 @@ data Rule
   = Tm Relation
   | MulExp MulOp [Rule]
   | UnExp UnOp Rule
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Typeable, Data)
 
 instance GetRange Rule where
   getRange e = case e of
@@ -118,7 +120,7 @@ data Prop
   | Trn          -- ^ transitive
   | Rfx          -- ^ reflexive
   | Prop         -- ^ meta property
-    deriving (Enum, Eq, Ord, Show)
+    deriving (Enum, Eq, Ord, Show, Typeable, Data)
 
 showUp :: Show a => a -> String
 showUp = map toUpper . show
@@ -129,7 +131,8 @@ allProps = [Uni .. Rfx]
 data RangedProp = RangedProp
   { propProp :: Prop
   , propRange :: Range }
-    deriving (Eq, Ord, Show) -- should be fine since ranges are always equal
+    deriving (Eq, Ord, Show, Typeable, Data)
+  -- should be fine since ranges are always equal
 
 instance GetRange RangedProp where
    getRange = propRange
@@ -144,9 +147,9 @@ data Object = Object
   , expr :: Rule
   , props :: [RangedProp]
   , subobjs :: [Object]
-  } deriving Show
+  } deriving (Show, Typeable, Data)
 
-data KeyAtt = KeyAtt (Maybe Token) Rule deriving Show
+data KeyAtt = KeyAtt (Maybe Token) Rule deriving (Show, Typeable, Data)
 
 instance GetRange KeyAtt where
   getRange (KeyAtt _ e) = getRange e
@@ -156,23 +159,25 @@ data KeyDef = KeyDef
   { kdlbl :: Token
   , kdcpt :: Concept
   , kdats :: [KeyAtt]
-  } deriving Show
+  } deriving (Show, Typeable, Data)
 
 instance GetRange KeyDef where
   getRange (KeyDef _ c _) = getRange c
   rangeSpan (KeyDef _ c as) = joinRanges [rangeSpan c, rangeSpan as]
 
-data RuleKind = SignalOn | Signals | Maintains deriving (Eq, Ord, Show)
+data RuleKind = SignalOn | Signals | Maintains
+  deriving (Eq, Ord, Show, Typeable, Data)
 
 showRuleKind :: RuleKind -> String
 showRuleKind k = if k == SignalOn then "ON"
              else showUp k
 
-data RuleHeader = Always | RuleHeader RuleKind Token deriving (Eq, Show)
+data RuleHeader = Always | RuleHeader RuleKind Token
+  deriving (Eq, Show, Typeable, Data)
 
-data Pair = Pair Token Token deriving Show
+data Pair = Pair Token Token deriving (Show, Typeable, Data)
 
-data Plugin = Service | Sqlplug | Phpplug deriving Show
+data Plugin = Service | Sqlplug | Phpplug deriving (Show, Typeable, Data)
 
 data PatElem
   = Pr RuleHeader Rule
@@ -181,9 +186,9 @@ data PatElem
   | Pm [RangedProp] Relation Bool -- True indicates population
   | Plug Plugin Object
   | Population Bool Relation [Pair] -- True indicates declaration
-    deriving Show
+    deriving (Show, Typeable, Data)
 
-data Context = Context (Maybe Token) [PatElem] deriving Show
+data Context = Context (Maybe Token) [PatElem] deriving (Show, Typeable, Data)
 
 instance GetRange Context where
   getRange (Context mt _) = getRange mt

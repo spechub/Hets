@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/GraphAlgo.hs
 Description :  Algorithms on Graphs
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -37,7 +37,7 @@ exampleGraph conns = Graph {
 }
 
 mapMin :: (a -> a -> Bool) -> Map.Map k a -> Maybe (k, a)
-mapMin less = Map.foldWithKey (\ k a b -> case b of
+mapMin less = Map.foldrWithKey (\ k a b -> case b of
  Just (_, a1) -> if less a1 a then b else Just (k, a)
  Nothing -> Just (k, a)) Nothing
 

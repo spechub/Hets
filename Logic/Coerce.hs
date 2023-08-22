@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Coerce.hs
 Description :  coerce logic entities dynamically
 Copyright   :  (c) T. Mossakowski, C. Maeder, Uni Bremen 2005-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -19,6 +19,7 @@ import Common.ExtSign
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
+import qualified Control.Monad.Fail as Fail
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Data.Dynamic
@@ -29,11 +30,11 @@ import Data.Maybe (fromMaybe)
 
 -- coercion using the language name
 primCoerce :: (Typeable a, Typeable b, Language lid1, Language lid2,
-               Monad m) => lid1 -> lid2 -> String -> a -> m b
+               Fail.MonadFail m) => lid1 -> lid2 -> String -> a -> m b
 primCoerce i1 i2 err a =
   if language_name i1 == language_name i2
      then return $ fromDyn (toDyn a) $ error "primCoerce"
-     else fail $ (if null err then "" else err ++ ": ") ++ "Logic "
+     else Fail.fail $ (if null err then "" else err ++ ": ") ++ "Logic "
               ++ language_name i2 ++ " expected, but "
               ++ language_name i1 ++ " found"
 
@@ -50,7 +51,7 @@ coerceSublogic ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m)
+   Fail.MonadFail m)
    => lid1 -> lid2 -> String -> sublogics1 -> m sublogics2
 coerceSublogic = primCoerce
 
@@ -67,7 +68,7 @@ coercePlainSign ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String -> sign1 -> m sign2
+   Fail.MonadFail m) => lid1 -> lid2 -> String -> sign1 -> m sign2
 coercePlainSign = primCoerce
 
 coerceSign ::
@@ -75,7 +76,7 @@ coerceSign ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String -> ExtSign sign1 symbol1
+   Fail.MonadFail m) => lid1 -> lid2 -> String -> ExtSign sign1 symbol1
     -> m (ExtSign sign2 symbol2)
 coerceSign = primCoerce
 
@@ -84,7 +85,7 @@ coerceBasicTheory ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String
+   Fail.MonadFail m) => lid1 -> lid2 -> String
             -> (sign1, [Named sentence1]) -> m (sign2, [Named sentence2])
 coerceBasicTheory = primCoerce
 
@@ -93,7 +94,7 @@ coerceTheoryMorphism ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String
+   Fail.MonadFail m) => lid1 -> lid2 -> String
             -> TheoryMorphism sign1 sentence1 morphism1 proof_tree1 -> m (TheoryMorphism sign2 sentence2 morphism2 proof_tree2)
 coerceTheoryMorphism = primCoerce
 
@@ -102,7 +103,7 @@ coerceSens ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String
+   Fail.MonadFail m) => lid1 -> lid2 -> String
             -> [Named sentence1] -> m [Named sentence2]
 coerceSens = primCoerce
 
@@ -111,7 +112,7 @@ coerceMorphism ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String -> morphism1 -> m morphism2
+   Fail.MonadFail m) => lid1 -> lid2 -> String -> morphism1 -> m morphism2
 coerceMorphism = primCoerce
 
 coerceSymbol ::
@@ -147,7 +148,7 @@ coerceSymbItemsList ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String -> [symb_items1] -> m [symb_items2]
+   Fail.MonadFail m) => lid1 -> lid2 -> String -> [symb_items1] -> m [symb_items2]
 coerceSymbItemsList = primCoerce
 
 coerceSymbMapItemsList ::
@@ -155,7 +156,7 @@ coerceSymbMapItemsList ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String
+   Fail.MonadFail m) => lid1 -> lid2 -> String
       -> [symb_map_items1] -> m [symb_map_items2]
 coerceSymbMapItemsList = primCoerce
 
@@ -164,7 +165,7 @@ coerceProofStatus ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String
+   Fail.MonadFail m) => lid1 -> lid2 -> String
       -> ProofStatus proof_tree1 -> m (ProofStatus proof_tree2)
 coerceProofStatus = primCoerce
 
@@ -173,7 +174,7 @@ coerceSymbolSet ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String -> Set.Set symbol1 -> m (Set.Set symbol2)
+   Fail.MonadFail m) => lid1 -> lid2 -> String -> Set.Set symbol1 -> m (Set.Set symbol2)
 coerceSymbolSet = primCoerce
 
 coerceRawSymbolMap ::
@@ -181,7 +182,7 @@ coerceRawSymbolMap ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String -> EndoMap raw_symbol1
+   Fail.MonadFail m) => lid1 -> lid2 -> String -> EndoMap raw_symbol1
       -> m (EndoMap raw_symbol2)
 coerceRawSymbolMap = primCoerce
 
@@ -190,7 +191,7 @@ coerceFreeDefMorphism ::
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1,
    Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2,
-   Monad m) => lid1 -> lid2 -> String
+   Fail.MonadFail m) => lid1 -> lid2 -> String
                 -> FreeDefMorphism sentence1 morphism1
                 -> m (FreeDefMorphism sentence2 morphism2)
 coerceFreeDefMorphism = primCoerce

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/OMDocImport.hs
 Description :  OMDoc-to-CommonLogic conversion
 Copyright   :  (c) Iulia Ignatov, DFKI Bremen 2009, Eugen Kuksa, Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -29,6 +29,7 @@ import CommonLogic.OMDoc
 import Common.Id
 import Common.Result
 import Common.AS_Annotation
+import qualified Control.Monad.Fail as Fail
 
 
 type Env = SigMapI Symbol
@@ -38,8 +39,8 @@ omdocToSym :: Env -> TCElement -> String -> Result Symbol
 omdocToSym _ (TCSymbol _ _ sr _) n =
      case sr of
        Obj -> return $ Symbol (nameToId n)
-       _ -> fail $ "omdocToSym: only objects are allowed as symbol roles, but found" ++ show sr
-omdocToSym _ symb _ = fail $ "omdocToSym: only TCSymbols are allowed, but found: " ++ show symb
+       _ -> Fail.fail $ "omdocToSym: only objects are allowed as symbol roles, but found" ++ show sr
+omdocToSym _ symb _ = Fail.fail $ "omdocToSym: only TCSymbols are allowed, but found: " ++ show symb
 
 
 -- | Sentences from OMElements
@@ -55,7 +56,7 @@ omdocToSen e (TCSymbol _ t sr _) n =
                Axiom -> res True
                Theorem -> res False
                _ -> return Nothing
-omdocToSen _ sym _ = fail $ concat [ "omdocToSen: only TCSymbol is allowed,"
+omdocToSen _ sym _ = Fail.fail $ concat [ "omdocToSen: only TCSymbol is allowed,"
                                    , " but found: ", show sym ]
 
 toText :: Env -> OMElement -> TEXT

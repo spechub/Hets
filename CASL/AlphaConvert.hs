@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/AlphaConvert.hs
 Description :  alpha-conversion (renaming of bound variables) for CASL formulas
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -12,14 +12,17 @@ uniquely rename variables in quantified formulas to allow for
 a formula equality modulo alpha conversion
 -}
 
-module CASL.AlphaConvert (alphaEquiv, convertFormula) where
+module CASL.AlphaConvert (alphaEquiv, convertFormula, alphaConvert) where
 
 import CASL.AS_Basic_CASL
 import CASL.Fold
 import CASL.Utils
 import CASL.Quantification
-import qualified Data.Map as Map
+
 import Common.Id
+
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 convertRecord :: Int -> (f -> f) -> Record f (FORMULA f) (TERM f)
 convertRecord n mf = (mapRecord mf)
@@ -40,6 +43,10 @@ convertRecord n mf = (mapRecord mf)
      quantify only over a single variable -}
 convertFormula :: Int -> (f -> f) -> FORMULA f -> FORMULA f
 convertFormula n = foldFormula . convertRecord n
+
+alphaConvert :: Int -> (f -> f) -> FORMULA f -> (FORMULA f, Int)
+alphaConvert n mf f = let f2 = convertFormula n mf f in
+  (f2, Set.size (getQuantVars f2) + 2) -- leave a gap
 
 -- | formula equality modulo alpha conversion
 alphaEquiv :: Eq f => (f -> f) -> FORMULA f -> FORMULA f -> Bool

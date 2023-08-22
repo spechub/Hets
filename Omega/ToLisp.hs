@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Omega/ToLisp.hs
 Description :  Omega Lisp Output
 Copyright   :  (c) Ewaryst Schulz, DFKI 2008
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Propositional/Symbol.hs
 Description :  Symbols of propositional logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -28,14 +29,17 @@ module Propositional.Symbol
 import qualified Common.Id as Id
 import Common.Doc
 import Common.DocUtils
+
+import Data.Data
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+
 import qualified Propositional.Sign as Sign
 import Propositional.Morphism as Morphism
 
 -- | Datatype for symbols
 newtype Symbol = Symbol {symName :: Id.Id}
-            deriving (Show, Eq, Ord)
+            deriving (Show, Eq, Ord, Typeable, Data)
 
 instance Id.GetRange Symbol where
     getRange = Id.getRange . symName

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./QBF/Sublogic.hs
 Description :  Sublogics for propositional logic
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -52,22 +53,26 @@ module QBF.Sublogic
 
 import qualified QBF.Tools as Tools
 import qualified QBF.AS_BASIC_QBF as AS_BASIC
-import qualified Common.AS_Annotation as AS_Anno
-import qualified Propositional.Sign as Sign
 import qualified QBF.Symbol as Symbol
 import qualified QBF.Morphism as Morphism
+
+import qualified Propositional.Sign as Sign
+
 import qualified Common.Lib.State as State
+import qualified Common.AS_Annotation as AS_Anno
+
+import Data.Data
 
 -- | types of propositional formulae
 data QBFFormulae = PlainFormula      -- Formula without structural constraints
                   | HornClause        -- Horn Clause Formulae
-                  deriving (Show, Eq, Ord)
+                  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | sublogics for propositional logic
 data QBFSL = QBFSL
     {
       format :: QBFFormulae     -- Structural restrictions
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 isProp :: QBFSL -> Bool
 isProp sl = format sl == PlainFormula

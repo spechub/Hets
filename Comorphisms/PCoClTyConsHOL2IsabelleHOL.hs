@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/PCoClTyConsHOL2IsabelleHOL.hs
 Description :  translating a HasCASL subset to Isabelle
 Copyright   :  (c) C. Maeder, DFKI 2006
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Syntax/ToXml.hs
 Description :  xml output of Hets specification libaries
 Copyright   :  (c) Ewaryst Schulz, Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -99,7 +99,7 @@ spec lg ga s = case s of
     , unode "Within" $ annoted spec lg ga ins]
   Closed_spec as rg -> withRg rg $ unode "Closed" $ annoted spec lg ga as
   Group as rg -> withRg rg $ unode "Group" $ annoted spec lg ga as
-  Spec_inst n fa rg ->
+  Spec_inst n fa _ rg ->
     add_attrs (mkNameAttr (iriToStr n) : rgAttrs rg)
     $ unode "Actuals" $ map (annoted fitArg lg ga) fa
   Qualified_spec ln as rg -> withRg rg $ unode "Qualified"

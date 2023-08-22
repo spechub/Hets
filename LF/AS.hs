@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./LF/AS.hs
 Description :  Abstract syntax for the Edinburgh Logical Framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -23,26 +24,28 @@ import Common.Id
 import Common.Doc
 import Common.DocUtils
 
+import Data.Data
+
 -- grammar for basic specs
 data BASIC_SPEC = Basic_spec [Annoted BASIC_ITEM]
-                  deriving Show
+                  deriving (Show, Typeable)
 
 instance GetRange BASIC_SPEC
 
 data BASIC_ITEM = Decl String
                 | Form String
-                  deriving Show
+                  deriving (Show, Typeable)
 
 -- grammar for symbols and symbol maps
 data SYMB_ITEMS = Symb_items [String]
-                  deriving (Show, Eq)
+                  deriving (Show, Eq, Typeable)
 
 data SYMB_MAP_ITEMS = Symb_map_items [SYMB_OR_MAP]
-                      deriving (Show, Eq)
+                      deriving (Show, Eq, Typeable)
 
 data SYMB_OR_MAP = Symb String
                  | Symb_map String String
-                   deriving (Show, Eq)
+                   deriving (Show, Eq, Typeable)
 
 -- pretty printing
 instance Pretty BASIC_SPEC where

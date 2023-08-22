@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/ToSExpr.hs
 Description :  translate CASL to S-Expressions
 Copyright   :  (c) C. Maeder, DFKI 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -149,14 +149,14 @@ morToSExprs m =
       sm = sort_map m
   in map (\ (s, t) -> SList [SSymbol "map", sortToSSymbol s, sortToSSymbol t])
      (Map.toList sm)
-     ++ Map.foldWithKey (\ i s -> case Set.toList s of
+     ++ Map.foldrWithKey (\ i s -> case Set.toList s of
           [] -> id
           ot : _ -> let (j, nt) = mapOpSym sm (op_map m) (i, ot) in
              if i == j then id else
                (SList [ SSymbol "map", opIdToSSymbol src i ot
                       , opIdToSSymbol tar j nt] :)) []
         (MapSet.toMap $ opMap src)
-     ++ Map.foldWithKey (\ i s -> case Set.toList s of
+     ++ Map.foldrWithKey (\ i s -> case Set.toList s of
           [] -> id
           ot : _ -> let (j, nt) = mapPredSym sm (pred_map m) (i, ot) in
              if i == j then id else

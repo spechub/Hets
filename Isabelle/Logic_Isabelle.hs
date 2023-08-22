@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Isabelle/Logic_Isabelle.hs
 Description :  Isabelle instance of class Logic
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -32,7 +32,7 @@ data Isabelle = Isabelle deriving Show
 
 instance Language Isabelle where
  description _ =
-  "Isabelle - a generic theorem prover\n" ++
+  "logic of the generic theorem prover Isabelle\n" ++
   "This logic corresponds to the logic of Isabelle,\n" ++
   "a weak intuitionistic type theory\n" ++
   "Also, the logics encoded in Isabelle, like FOL, HOL, HOLCF, ZF " ++
@@ -63,7 +63,9 @@ instance Logic Isabelle () () Sentence () ()
          stability _ = Testing
     -- again default implementations are fine
          empty_proof_tree _ = ()
-         provers Isabelle = [isabelleProver, isabelleBatchProver]
+         provers Isabelle =
+           [isabelleProver Emacs, isabelleProver JEdit, isabelleBatchProver]
          cons_checkers Isabelle = [isabelleConsChecker]
 
-instance LogicalFramework Isabelle () () Sentence () () Sign IsabelleMorphism () () ()
+instance LogicalFramework Isabelle () () Sentence () () Sign IsabelleMorphism
+  () () ()

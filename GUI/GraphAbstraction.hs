@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GraphAbstraction.hs
 Description :  Interface for graph viewing and abstraction
 Copyright   :  (c) Thiemo Wiedemeyer, T. Mossakowski, Uni Bremen 2002-2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -451,7 +451,7 @@ hideSetOfEdgeTypes' :: AbstractionGraph -- ^ The graph
                     -> [DGEdgeType] -- ^ IDs of the edgetypes to hide
                     -> IO AbstractionGraph
 hideSetOfEdgeTypes' g eTypes = do
-  let (hEdges, sEdges) = Map.foldWithKey (\ eid e (he, se) ->
+  let (hEdges, sEdges) = Map.foldrWithKey (\ eid e (he, se) ->
          if elem (gaeType e) eTypes then (eid : he, se) else (he, eid : se))
          ([], []) $ edges g'
       g' = g { edgeTypes = Map.mapWithKey

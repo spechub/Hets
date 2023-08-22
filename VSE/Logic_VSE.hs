@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
   , FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./VSE/Logic_VSE.hs
 Description :  the incomplete Logic instance for VSE
 Copyright   :  (c) C. Maeder, DFKI 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -34,9 +34,7 @@ import VSE.As
 import VSE.Parse
 import VSE.Ana
 import VSE.ATC_VSE ()
-#ifdef UNI_PACKAGE
 import VSE.Prove (vse)
-#endif
 import Logic.Logic
 
 import qualified Data.Map as Map
@@ -52,8 +50,8 @@ instance SignExtension Procs where
 
 instance Syntax VSE VSEBasicSpec Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
     parse_basic_spec VSE = Just $ basicSpec reservedWords
-    parse_symb_items VSE = Just $ symbItems reservedWords
-    parse_symb_map_items VSE = Just $ symbMapItems reservedWords
+    parse_symb_items VSE = Just . const $ symbItems reservedWords
+    parse_symb_map_items VSE = Just . const $ symbMapItems reservedWords
 
 instance Sentences VSE Sentence VSESign VSEMor Symbol where
       map_sen VSE m = return . mapSen mapDlformula m
@@ -109,8 +107,6 @@ instance Logic VSE ()
                VSESign
                VSEMor
                Symbol RawSymbol () where
-         stability VSE = Unstable
+         stability VSE = Testing
          empty_proof_tree VSE = ()
-#ifdef UNI_PACKAGE
          provers VSE = [vse]
-#endif

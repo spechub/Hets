@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/IOS.hs
 Description :  An IO State Monad implementation
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

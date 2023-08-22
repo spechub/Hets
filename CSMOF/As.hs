@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSMOF/As.hs
 Description :  abstract CSMOF syntax
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -13,13 +14,15 @@ module CSMOF.As where
 
 import Common.Id
 
+import Data.Data
+
 -- Simplified MOF Metamodel
 
 data Metamodel = Metamodel
                  { metamodelName :: String
                  , element :: [NamedElement]
                  , model :: [Model]
-                 } deriving (Eq, Ord)
+                 } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange Metamodel where
  getRange _ = nullRange
@@ -30,7 +33,7 @@ data NamedElement = NamedElement
                     { namedElementName :: String
                     , namedElementOwner :: Metamodel
                     , namedElementSubClasses :: TypeOrTypedElement
-                    } deriving (Eq, Ord)
+                    } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange NamedElement where
  getRange _ = nullRange
@@ -39,7 +42,7 @@ instance GetRange NamedElement where
 
 data TypeOrTypedElement = TType { getType :: Type }
                         | TTypedElement { getTypeElement :: TypedElement }
-                        deriving (Eq, Ord)
+                        deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange TypeOrTypedElement where
  getRange _ = nullRange
@@ -49,16 +52,16 @@ instance GetRange TypeOrTypedElement where
 -- When going downside-up, we can sort the auxiliary class TypeOrTypedElement and make super of type NamedElement
 data Type = Type { typeSuper :: NamedElement
                  , typeSubClasses :: DataTypeOrClass
-                 } deriving (Eq, Ord)
+                 } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange Type where
  getRange _ = nullRange
  rangeSpan _ = []
 
 
-data DataTypeOrClass = DDataType { getDataType :: DataType }
+data DataTypeOrClass = DDataType { getDataType :: Datatype }
                      | DClass { getClass :: Class }
-                     deriving (Eq, Ord)
+                     deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange DataTypeOrClass where
  getRange _ = nullRange
@@ -66,9 +69,9 @@ instance GetRange DataTypeOrClass where
 
 
 -- When going downside-up, we can sort the auxiliary class DataTypeOrClass and make super of type Type
-data DataType = DataType { classSuper :: Type } deriving (Eq, Ord)
+data Datatype = Datatype { classSuper :: Type } deriving (Eq, Ord, Typeable, Data)
 
-instance GetRange DataType where
+instance GetRange Datatype where
  getRange _ = nullRange
  rangeSpan _ = []
 
@@ -79,7 +82,7 @@ data Class = Class
              , isAbstract :: Bool
              , superClass :: [Class]
              , ownedAttribute :: [Property]
-             } deriving (Eq, Ord)
+             } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange Class where
  getRange _ = nullRange
@@ -91,7 +94,7 @@ data TypedElement = TypedElement
                     { typedElementSuper :: NamedElement
                     , typedElementType :: Type
                     , typedElementSubClasses :: Property
-                    } deriving (Eq, Ord)
+                    } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange TypedElement where
  getRange _ = nullRange
@@ -103,7 +106,7 @@ data Property = Property
                 , multiplicityElement :: MultiplicityElement
                 , opposite :: Maybe Property
                 , propertyClass :: Class
-                } deriving (Eq, Ord)
+                } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange Property where
  getRange _ = nullRange
@@ -114,7 +117,7 @@ data MultiplicityElement = MultiplicityElement
                            { lower :: Integer
                            , upper :: Integer
                            , multiplicityElementSubClasses :: Property
-                           } deriving (Eq, Ord)
+                           } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange MultiplicityElement where
  getRange _ = nullRange
@@ -128,7 +131,7 @@ data Model = Model
              , object :: [Object]
              , link :: [Link]
              , modelType :: Metamodel
-             } deriving (Eq, Ord)
+             } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange Model where
  getRange _ = nullRange
@@ -139,7 +142,7 @@ data Object = Object
               { objectName :: String
               , objectType :: Type
               , objectOwner :: Model
-              } deriving (Eq, Ord)
+              } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange Object where
  getRange _ = nullRange
@@ -151,7 +154,7 @@ data Link = Link
             , source :: Object
             , target :: Object
             , linkOwner :: Model
-            } deriving (Eq, Ord)
+            } deriving (Eq, Ord, Typeable, Data)
 
 instance GetRange Link where
  getRange _ = nullRange

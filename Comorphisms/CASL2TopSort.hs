@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2TopSort.hs
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -112,7 +112,8 @@ generateSubSortMap sortRels pMap =
     let disAmbMap = Map.map disAmbPred
         disAmbPred v = let pn = predicatePI v in
           case dropWhile (`Set.member` MapSet.keysSet pMap)
-                   $ pn : map (appendNumber (predicatePI v)) [1 ..] of
+                   $ pn : map (\x -> appendString (predicatePI v) $ show x) 
+                          [1::Int ..] of
             n : _ -> v { predicatePI = n }
             [] -> error "generateSubSortMap"
         mR = (Rel.flatSet .
@@ -184,7 +185,7 @@ transOpMap sRel subSortMap = rmOrAddPartsMap True . MapSet.map transType
 procOpMapping :: SubSortMap -> OP_NAME -> Set.Set OpType
   -> [Named (FORMULA ())] -> [Named (FORMULA ())]
 procOpMapping subSortMap opName =
-  (++) . Map.foldWithKey procProfMapOpMapping [] . mkProfMapOp subSortMap
+  (++) . Map.foldrWithKey procProfMapOpMapping [] . mkProfMapOp subSortMap
   where
     procProfMapOpMapping :: [SORT] -> (OpKind, Set.Set [Maybe PRED_NAME])
                          -> [Named (FORMULA ())] -> [Named (FORMULA ())]
@@ -213,12 +214,12 @@ symmetryAxioms ssMap sortRels =
 generateAxioms :: SubSortMap -> PredMap -> OpMap -> [Named (FORMULA ())]
 generateAxioms subSortMap pMap oMap = hi_axs ++ p_axs ++ axs
     where -- generate argument restrictions for operations
-          axs = Map.foldWithKey (procOpMapping subSortMap) []
+          axs = Map.foldrWithKey (procOpMapping subSortMap) []
                 $ MapSet.toMap oMap
           p_axs =
           -- generate argument restrictions for predicates
-           Map.foldWithKey (\ pName ->
-              (++) . Map.foldWithKey
+           Map.foldrWithKey (\ pName ->
+              (++) . Map.foldrWithKey
                              (\ sl -> genArgRest
                                       (genSenName "p" pName $ length sl)
                                       (genPredication pName)

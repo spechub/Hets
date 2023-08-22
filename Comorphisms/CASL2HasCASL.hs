@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2HasCASL.hs
 Description :  embedding CASL into HasCASL
 Copyright   :  (c) Till Mossakowski, Christian Maeder and Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -71,6 +71,7 @@ instance Comorphism CASL2HasCASL
              CasSub.Atomic -> HasSub.Atomic
              CasSub.Horn -> HasSub.Horn
              CasSub.GHorn -> HasSub.GHorn
+             CasSub.Prenex -> HasSub.FOL -- at least for now
              CasSub.FOL -> HasSub.FOL
              CasSub.SOL -> HasSub.HOL
         }

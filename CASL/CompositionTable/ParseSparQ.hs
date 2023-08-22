@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/CompositionTable/ParseSparQ.hs
 Description :  parsing SparQ CompositionTables
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -21,6 +21,8 @@ import Common.Parsec
 
 import Data.Char
 
+import qualified Control.Monad.Fail as Fail
+
 parseSparQTableOld :: Parser Table
 parseSparQTableOld = inParens $ do
   calculusName <- parseCalculusName
@@ -33,8 +35,8 @@ parseSparQTableOld = inParens $ do
     [i] -> return $ Table
       (Table_Attrs calculusName i $ rs1 ++ rs2 ++ rs3)
       compt ct (Reflectiontable []) $ Models []
-    [] -> fail "missing identity relation"
-    is -> fail $ "non-unique identity relation " ++ show is
+    [] -> Fail.fail "missing identity relation"
+    is -> Fail.fail $ "non-unique identity relation " ++ show is
 
 parseIdBaOths :: Parser ([Baserel], [Baserel])
 parseIdBaOths = fmap (\ l ->

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/SoftFOL2CommonLogic.hs
 Description :  Coding of SoftFOL into CommonLogic
 Copyright   :  (c) Eugen Kuksa and Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -27,6 +27,7 @@ import Common.Utils (concatMapM)
 import qualified Common.AS_Annotation as AS_Anno
 import qualified Common.DefaultMorphism as DefaultMorphism
 import qualified Common.Lib.Rel as Rel
+import qualified Control.Monad.Fail as Fail
 
 import Logic.Logic
 import Logic.Comorphism
@@ -141,7 +142,7 @@ signToTexts srcSign =
 sortRelText :: Map.Map FOLSign.SPIdentifier (Set.Set FOLSign.SPIdentifier)
                 -> Maybe TEXT_META
 sortRelText m =
-  let ps = Map.foldWithKey (\ subSrt set phrs ->
+  let ps = Map.foldrWithKey (\ subSrt set phrs ->
         Set.fold (\ superSrt phrs2 ->
             Sentence (Quant_sent Universal [Name xName]
                       (Bool_sent (BinOp Implication
@@ -164,7 +165,7 @@ typesWithIndv args =
 forall x y z. (if (and (T1 x) (T2 y) (T3 z)) (T4 f[x,y,z])) -}
 funcMapText :: Map.Map Token (Set.Set ([Token], Token)) -> Maybe TEXT_META
 funcMapText m =
-  let ps = Map.foldWithKey (\ f set phrs ->
+  let ps = Map.foldrWithKey (\ f set phrs ->
           Set.fold (\ (args, res) phrs2 ->
             let argsAndNames = typesWithIndv args
             in Sentence (
@@ -197,7 +198,7 @@ funcMapText m =
 forall x y z. (P[x,y,z]) => (and (T1 x) (T2 y) (T3 z)) -}
 predMapText :: Map.Map Token (Set.Set [Token]) -> Maybe TEXT_META
 predMapText m =
-  let ps = Map.foldWithKey (\ prd set phrs ->
+  let ps = Map.foldrWithKey (\ prd set phrs ->
           Set.fold (\ args phrs2 ->
             let argsAndNames = typesWithIndv args
             in Sentence (Quant_sent Universal
@@ -228,7 +229,7 @@ trmToSen s t = case t of
         l@(_ : _ : _) -> do
             eqs <- mapM toEquation $ zip l $ tail l
             return $ Bool_sent (Junction Conjunction eqs) nullRange
-        x -> fail $ "equation needs at least two arguments, but found: " ++ show x
+        x -> Fail.fail $ "equation needs at least two arguments, but found: " ++ show x
     FOLSign.SPTrue -> return clTrue
     FOLSign.SPFalse -> return clFalse
     FOLSign.SPOr -> do
@@ -241,7 +242,7 @@ trmToSen s t = case t of
         [x] -> do
           sen <- trmToSen s x
           return $ Bool_sent (Negation sen) nullRange
-        _ -> fail $
+        _ -> Fail.fail $
               "negation can only be applied to a single argument, but found: "
               ++ show t
     FOLSign.SPImplies -> case args of
@@ -249,7 +250,7 @@ trmToSen s t = case t of
             sen1 <- trmToSen s x
             sen2 <- trmToSen s y
             return $ Bool_sent (BinOp Implication sen1 sen2) nullRange
-        _ -> fail $
+        _ -> Fail.fail $
               "implication can only be applied to two arguments, but found: "
               ++ show t
     FOLSign.SPImplied -> case args of
@@ -257,7 +258,7 @@ trmToSen s t = case t of
             sen1 <- trmToSen s x
             sen2 <- trmToSen s y
             return $ Bool_sent (BinOp Implication sen2 sen1) nullRange
-        _ -> fail $
+        _ -> Fail.fail $
               "implication can only be applied to two arguments, but found: "
               ++ show t
     FOLSign.SPEquiv -> case args of
@@ -265,7 +266,7 @@ trmToSen s t = case t of
             sen1 <- trmToSen s x
             sen2 <- trmToSen s y
             return $ Bool_sent (BinOp Biconditional sen1 sen2) nullRange
-        _ -> fail $
+        _ -> Fail.fail $
               "equivalence can only be applied to two arguments, but found: "
               ++ show t
     _ -> predicateSPTerms (symToTerm sym) args
@@ -312,7 +313,7 @@ quantTrm sig qsymm vs f = do
   quantifier <- case qsymm of
         FOLSign.SPForall -> return Universal
         FOLSign.SPExists -> return Existential
-        _ -> fail "custom quantifiers not allowed"
+        _ -> Fail.fail "custom quantifiers not allowed"
   return $ Quant_sent quantifier trans_vs trans_f nullRange
 
 typeSentence :: FOLSign.Sign -> [FOLSign.SPTerm] -> Result SENTENCE
@@ -326,10 +327,10 @@ typeSentence sig vs = case vs of
 typeSentence1 :: FOLSign.Sign -> FOLSign.SPTerm -> Result SENTENCE
 typeSentence1 sig v = case v of
   FOLSign.SPComplexTerm _ [] ->
-    fail "bug (typeSentence1): nullary functions should not occur here"
+    Fail.fail "bug (typeSentence1): nullary functions should not occur here"
   FOLSign.SPComplexTerm sym args -> typeSentenceGetTypes sig (symToName sym) args
   FOLSign.SPQuantTerm {} ->
-    fail "quantification not allowed in bound variable list"
+    Fail.fail "quantification not allowed in bound variable list"
 
 typeSentenceGetTypes :: FOLSign.Sign -> FOLSign.SPIdentifier -> [FOLSign.SPTerm]
                         -> Result SENTENCE
@@ -337,7 +338,7 @@ typeSentenceGetTypes sig symN args =
   case Map.lookup symN $ FOLSign.funcMap sig of
     Nothing -> case Map.lookup symN $ FOLSign.predMap sig of
       Nothing -> case Map.lookup symN $ FOLSign.sortMap sig of
-        Nothing -> fail $ "symbol has no type: " ++ show symN
+        Nothing -> Fail.fail $ "symbol has no type: " ++ show symN
         Just _ -> typeSentencesSort args symN
       Just ts -> typeSentencesDisjPred sig args $ Set.elems ts
     Just ts -> typeSentencesDisjFunc sig args $ Set.elems ts
@@ -345,7 +346,7 @@ typeSentenceGetTypes sig symN args =
 typeSentencesSort :: [FOLSign.SPTerm] -> FOLSign.SPIdentifier
                      -> Result SENTENCE
 typeSentencesSort args srt = case args of
-  [] -> fail $ "no arguments for sort " ++ show srt
+  [] -> Fail.fail $ "no arguments for sort " ++ show srt
   [arg] -> do
       funtrm <- trmToFunctTrm arg
       return $ predicateTerm srt funtrm
@@ -372,7 +373,7 @@ typeSentencesDisjPred sig args typeSet = case typeSet of
               FOLSign.SPComplexTerm _ _ ->
                 typeSentence1 sig arg
               FOLSign.SPQuantTerm {} ->
-                fail "quantification not allowed in quantifier-argument list"
+                Fail.fail "quantification not allowed in quantifier-argument list"
             ) $ zip args t
           return $ Bool_sent (Junction Conjunction sens) nullRange
 
@@ -394,7 +395,7 @@ typeSentencesDisjFunc sig args typeSet = case typeSet of
                 typsen <- typeSentence1 sig arg
                 return [predicateTerm resType funtrm, typsen]
               FOLSign.SPQuantTerm {} ->
-                fail "quantification not allowed in quantifier-argument list"
+                Fail.fail "quantification not allowed in quantifier-argument list"
             ) $ zip args t
           return $ Bool_sent (Junction Conjunction sens) nullRange
 
@@ -415,7 +416,7 @@ trmToNameSeq t = case t of
 -- converts an SPTerm to a TERM, i.e. for the arguments of an equation
 trmToTerm :: FOLSign.SPTerm -> Result TERM
 trmToTerm t = case t of
-  FOLSign.SPQuantTerm {} -> fail "quantification not allowed for a term"
+  FOLSign.SPQuantTerm {} -> Fail.fail "quantification not allowed for a term"
   FOLSign.SPComplexTerm _ [] -> return $ Name_term $ trmToName t
   FOLSign.SPComplexTerm _ _ -> trmToFunctTrm t
 
@@ -426,7 +427,7 @@ trmToTermSeq t = case t of
     tseq <- trmToTerm t
     return $ Term_seq tseq
   FOLSign.SPQuantTerm {} ->
-      fail "quantification not allowed in argument list"
+      Fail.fail "quantification not allowed in argument list"
 
 trmToFunctTrm :: FOLSign.SPTerm -> Result TERM
 trmToFunctTrm t = case t of
@@ -437,7 +438,7 @@ trmToFunctTrm t = case t of
         tseq <- mapM trmToTermSeq args
         return $ Funct_term (symToTerm sym) tseq nullRange
   FOLSign.SPQuantTerm {} ->
-      fail "quantification not allowed in quantifier-argument list"
+      Fail.fail "quantification not allowed in quantifier-argument list"
 
 -- | converts a custom symbol to a NAME, used in
 symToName :: FOLSign.SPSymbol -> NAME

@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./VSE/As.hs
 Description :  abstract syntax of VSE programs and dynamic logic
 Copyright   :  (c) C. Maeder, DFKI 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -16,6 +17,7 @@ Bruno Langenstein's API description
 module VSE.As where
 
 import Data.Char
+import Data.Data
 import qualified Data.Map as Map
 import Control.Monad (foldM)
 
@@ -31,25 +33,29 @@ import CASL.AS_Basic_CASL
 import CASL.ToDoc
 
 -- | input or output procedure parameter kind
-data Paramkind = In | Out deriving (Show, Eq, Ord)
+data Paramkind = In | Out deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | a procedure parameter
-data Procparam = Procparam Paramkind SORT deriving (Show, Eq, Ord)
+data Procparam = Procparam Paramkind SORT
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | procedure or function declaration
-data Profile = Profile [Procparam] (Maybe SORT) deriving (Show, Eq, Ord)
+data Profile = Profile [Procparam] (Maybe SORT)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | further VSE signature entries
-data Sigentry = Procedure Id Profile Range deriving (Show, Eq)
+data Sigentry = Procedure Id Profile Range
+  deriving (Show, Eq, Ord, Typeable, Data)
 
-data Procdecls = Procdecls [Annoted Sigentry] Range deriving (Show, Eq)
+data Procdecls = Procdecls [Annoted Sigentry] Range
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 instance GetRange Procdecls where
   getRange (Procdecls _ r) = r
 
 -- | wrapper for positions
 data Ranged a = Ranged { unRanged :: a, range :: Range }
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | attach a nullRange
 mkRanged :: a -> Ranged a
@@ -69,10 +75,11 @@ data PlainProgram =
   | Seq Program Program
   | If (FORMULA ()) Program Program
   | While (FORMULA ()) Program
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | alternative variable declaration
-data VarDecl = VarDecl VAR SORT (Maybe (TERM ())) Range deriving Show
+data VarDecl = VarDecl VAR SORT (Maybe (TERM ())) Range
+  deriving (Show, Typeable, Data)
 
 toVarDecl :: [VAR_DECL] -> [VarDecl]
 toVarDecl = concatMap
@@ -93,20 +100,22 @@ data VSEforms =
     Dlformula BoxOrDiamond Program Sentence
   | Defprocs [Defproc]
   | RestrictedConstraint [Constraint] (Map.Map SORT Id) Bool
-    deriving (Show, Eq, Ord)
+    deriving (Show, Eq, Ord, Typeable, Data)
 
 type Dlformula = Ranged VSEforms
 type Sentence = FORMULA Dlformula
 
 -- | box or diamond indicator
-data BoxOrDiamond = Box | Diamond deriving (Show, Eq, Ord)
+data BoxOrDiamond = Box | Diamond deriving (Show, Eq, Ord, Typeable, Data)
 
-data ProcKind = Proc | Func deriving (Show, Eq, Ord)
+data ProcKind = Proc | Func deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | procedure definitions as basic items becoming sentences
-data Defproc = Defproc ProcKind Id [VAR] Program Range deriving (Show, Eq, Ord)
+data Defproc = Defproc ProcKind Id [VAR] Program Range
+  deriving (Show, Eq, Ord, Typeable, Data)
 
-data Procs = Procs { procsMap :: Map.Map Id Profile } deriving (Show, Eq, Ord)
+data Procs = Procs { procsMap :: Map.Map Id Profile }
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 emptyProcs :: Procs
 emptyProcs = Procs Map.empty

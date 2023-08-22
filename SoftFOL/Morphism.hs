@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/Morphism.hs
 Description :  Symbol related functions for SoftFOL.
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -11,7 +11,7 @@ Portability :  portable
 Functions for symbols of SoftFOL.
 -}
 
-module SoftFOL.Morphism (symOf, symbolToId) where
+module SoftFOL.Morphism (symOf, symsOfTerm, symbolToId) where
 
 import SoftFOL.Sign
 
@@ -19,6 +19,7 @@ import Common.Id
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import Data.Monoid ()
 
 symOf :: Sign -> Set.Set SFSymbol
 symOf sig =
@@ -46,3 +47,17 @@ toSortSymb ident = SFSymbol { sym_ident = ident
 
 symbolToId :: SFSymbol -> Id
 symbolToId = simpleIdToId . sym_ident
+
+
+idsOfTerm :: SPTerm -> Set.Set SPIdentifier
+idsOfTerm (SPQuantTerm _ vars f) = idsOfTerm f Set.\\ mconcat (map idsOfTerm vars)
+idsOfTerm (SPComplexTerm (SPCustomSymbol s) args) = 
+  Set.insert s $ mconcat $ map idsOfTerm args
+idsOfTerm (SPComplexTerm _ args) = mconcat $ map idsOfTerm args
+
+symsOfTerm :: Sign -> SPTerm -> Set.Set SFSymbol
+symsOfTerm sig t = Set.filter in_term sig_syms
+   where sig_syms = symOf sig
+         term_ids = idsOfTerm t
+         in_term sy = sym_ident sy `Set.member` term_ids 
+

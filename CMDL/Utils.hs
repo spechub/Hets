@@ -1,5 +1,5 @@
 {- |
-Module      : $Header$
+Module      : ./CMDL/Utils.hs
 Description : utilitary functions used throughout the CMDL interface
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt
@@ -31,7 +31,6 @@ module CMDL.Utils
   , isOpenConsEdge
   , checkIntString
   , delExtension
-  , checkPresenceProvers
   , arrowLink
   ) where
 
@@ -47,34 +46,6 @@ import Static.DevGraph
 import Static.DgUtils
 
 import Common.Utils
-
--- a any version of function that supports IO
-anyIO :: (a -> IO Bool) -> [a] -> IO Bool
-anyIO fn ls = case ls of
-    [] -> return False
-    e : l -> do
-      result <- fn e
-      if result then return True else anyIO fn l
-
-{- checks if provers in the prover list are availabe on
-   the current machine -}
-checkPresenceProvers :: [String] -> IO [String]
-checkPresenceProvers ls = case ls of
-    [] -> return []
-    s@"SPASS" : l -> do
-                  path <- getEnvDef "PATH" ""
-                  path2 <- getEnvDef "Path" ""
-                  let lsPaths = map trim $ splitPaths path ++ splitPaths path2
-                      completePath x = x </> s
-                  result <- anyIO (doesFileExist . completePath)
-                               lsPaths
-                  if result then do
-                     contd <- checkPresenceProvers l
-                     return (s : contd)
-                   else checkPresenceProvers l
-    x : l -> do
-            contd <- checkPresenceProvers l
-            return (x : contd)
 
 {- removes the extension of the file find in the
    name of the prompter ( it delets everything
@@ -315,7 +286,7 @@ fNames ns input = let i = trimLeft input in
 
 {- | Given a list of files and folders the function filters
    only directory names and files ending in extenstion
-   .casl or .het -}
+   .casl or .het or .dol -}
 fileFilter :: String -> [String] -> [String] -> IO [String]
 fileFilter lPath ls cons = case ls of
     [] -> return cons
@@ -327,7 +298,7 @@ fileFilter lPath ls cons = case ls of
            then addTrailingPathSeparator x : cons
            {- if it is not a folder then it must be a file
               so check the extension -}
-           else if elem (takeExtensions x) [".casl", ".het" ]
+           else if elem (takeExtensions x) [".casl", ".het", ".dol" ]
                 then x : cons else cons
 
 {- | Given a list of files and folders the function expands

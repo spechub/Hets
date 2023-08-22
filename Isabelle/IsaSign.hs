@@ -1,6 +1,6 @@
-{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Isabelle/IsaSign.hs
 Description :  abstract Isabelle HOL and HOLCF syntax
 Copyright   :  (c) University of Cambridge, Cambridge, England
                adaption (c) Till Mossakowski, Uni Bremen 2002-2005
@@ -17,6 +17,7 @@ Data structures for Isabelle signatures and theories.
 module Isabelle.IsaSign where
 
 import qualified Data.Map as Map
+import Data.Data
 import Data.List
 import Common.Utils (splitOn)
 
@@ -26,17 +27,14 @@ import Common.Utils (splitOn)
 -- | type names
 type TName = String
 
+data AltSyntax = AltSyntax String [Int] Int
+  deriving (Show, Eq, Ord, Typeable, Data)
+
 -- | names for values or constants (non-classes and non-types)
 data VName = VName
     { new :: String -- ^ name within Isabelle
     , altSyn :: Maybe AltSyntax  -- ^ mixfix template syntax
-    } deriving Show
-
-data AltSyntax = AltSyntax String [Int] Int deriving (Show, Eq, Ord)
-
--- | the original (Haskell) name
-orig :: VName -> String
-orig = new
+    } deriving (Show, Typeable, Data)
 
 instance Eq VName where
     v1 == v2 = new v1 == new v2
@@ -44,15 +42,17 @@ instance Eq VName where
 instance Ord VName where
     v1 <= v2 = new v1 <= new v2
 
+-- | the original (Haskell) name
+orig :: VName -> String
+orig = new
+
 data QName = QName
     { qname :: String
     , qualifiers :: [String] }
+  deriving (Eq, Ord, Typeable, Data)
 
 instance Show QName where
     show q = intercalate "." $ qualifiers q ++ [qname q]
-
-deriving instance Eq QName
-deriving instance Ord QName
 
 mkQName :: String -> QName
 mkQName s = case splitOn '.' s of
@@ -64,11 +64,11 @@ mkQName s = case splitOn '.' s of
 data Indexname = Indexname
     { unindexed :: String
     , indexOffset :: Int
-    } deriving (Ord, Eq, Show)
+    } deriving (Ord, Eq, Show, Typeable, Data)
 
 -- Types are classified by sorts.
 
-data IsaClass = IsaClass String deriving (Ord, Eq, Show)
+data IsaClass = IsaClass String deriving (Ord, Eq, Show, Typeable, Data)
 
 type Sort = [IsaClass]
 
@@ -81,7 +81,7 @@ data Typ = Type { typeId :: TName,
                    typeSort :: Sort }
          | TVar { indexname :: Indexname,
                    typeSort :: Sort }
-         deriving (Eq, Ord, Show)
+         deriving (Eq, Ord, Show, Typeable, Data)
 
 {- Terms.  Bound variables are indicated by depth number.
   Free variables, (scheme) variables and constants have names.
@@ -92,9 +92,9 @@ data Typ = Type { typeId :: TName,
   or type mismatches.  But such terms are not allowed in rules. -}
 
 -- IsCont True - lifted; IsCont False - not lifted, used for constructors
-data Continuity = IsCont Bool | NotCont deriving (Eq, Ord, Show)
+data Continuity = IsCont Bool | NotCont deriving (Eq, Ord, Show, Typeable, Data)
 
-data TAttr = TFun | TMet | TCon | NA deriving (Eq, Ord, Show)
+data TAttr = TFun | TMet | TCon | NA deriving (Eq, Ord, Show, Typeable, Data)
 
 data DTyp = Hide { typ :: Typ,
                    kon :: TAttr,
@@ -102,7 +102,7 @@ data DTyp = Hide { typ :: Typ,
           | Disp { typ :: Typ,
                    kon :: TAttr,
                    arit :: Maybe Int }
-      deriving (Eq, Ord, Show)
+      deriving (Eq, Ord, Show, Typeable, Data)
 
 data Term =
         Const { termName :: VName,
@@ -126,22 +126,16 @@ data Term =
                 secondTerm :: Term }
       | Tuplex [Term] Continuity
       | Set SetDecl
-      deriving (Eq, Ord, Show)
+      deriving (Eq, Ord, Show, Typeable, Data)
 
 data Prop = Prop {
    prop :: Term
- , propPats :: [Term] } deriving Eq
-
-deriving instance Ord Prop
-deriving instance Show Prop
+ , propPats :: [Term] } deriving (Eq, Ord, Show, Typeable, Data)
 
 data Props = Props {
    propsName :: Maybe QName
  , propsArgs :: Maybe String
- , props :: [Prop] } deriving Eq
-
-deriving instance Ord Props
-deriving instance Show Props
+ , props :: [Prop] } deriving (Eq, Ord, Show, Typeable, Data)
 
 data Sentence =
     Sentence { isSimp :: Bool   -- True for "[simp]"
@@ -233,39 +227,42 @@ data Sentence =
       defsUnchecked :: Bool,
       defsOverloaded :: Bool,
       defsEquations :: [DefEquation] }
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Typeable, Data)
 
 data DefEquation = DefEquation {
  defEquationName :: QName,
  defEquationConst :: String,
  defEquationConstType :: Typ,
  defEquationTerm :: Term,
- defEquationArgs :: String } deriving (Eq, Ord, Show)
+ defEquationArgs :: String } deriving (Eq, Ord, Show, Typeable, Data)
 
 data FixrecEquation = FixrecEquation {
  fixrecEquationUnchecked :: Bool,
  fixrecEquationPremises :: [Term],
  fixrecEquationPatterns :: [Term],
- fixrecEquationTerm :: Term } deriving (Eq, Ord, Show)
+ fixrecEquationTerm :: Term } deriving (Eq, Ord, Show, Typeable, Data)
 
 data Ctxt = Ctxt {
         fixes :: [(String, Maybe Mixfix, Typ)],
-        assumes :: [(String, Term)] } deriving (Eq, Ord, Show)
+        assumes :: [(String, Term)] } deriving (Eq, Ord, Show, Typeable, Data)
 
 data Mixfix = Mixfix {
  mixfixNargs :: Int,
  mixfixPrio :: Int,
  mixfixPretty :: String,
- mixfixTemplate :: [MixfixTemplate] } deriving (Eq, Ord, Show)
+ mixfixTemplate :: [MixfixTemplate] }
+ deriving (Eq, Ord, Show, Typeable, Data)
 
 data MixfixTemplate = Arg Int | Str String | Break Int |
-                      Block Int [MixfixTemplate] deriving (Eq, Ord, Show)
+                      Block Int [MixfixTemplate]
+  deriving (Eq, Ord, Show, Typeable, Data)
 
 data Datatype = Datatype {
       datatypeName :: QName,
       datatypeTVars :: [Typ],
       datatypeMixfix :: Maybe Mixfix,
-      datatypeConstructors :: [DatatypeConstructor] } deriving (Eq, Ord, Show)
+      datatypeConstructors :: [DatatypeConstructor] }
+  deriving (Eq, Ord, Show, Typeable, Data)
 
 data DatatypeConstructor = DatatypeConstructor {
       constructorName :: QName,
@@ -273,32 +270,36 @@ data DatatypeConstructor = DatatypeConstructor {
       constructorMixfix :: Maybe Mixfix,
       constructorArgs :: [Typ] } |
      DatatypeNoConstructor {
-      constructorArgs :: [Typ] } deriving (Eq, Ord, Show)
+      constructorArgs :: [Typ] }
+  deriving (Eq, Ord, Show, Typeable, Data)
 
 data Domain = Domain {
       domainName :: QName,
       domainTVars :: [Typ],
       domainMixfix :: Maybe Mixfix,
-      domainConstructors :: [DomainConstructor] } deriving (Eq, Ord, Show)
+      domainConstructors :: [DomainConstructor] }
+  deriving (Eq, Ord, Show, Typeable, Data)
 
 data DomainConstructor = DomainConstructor {
       domainConstructorName :: QName,
       domainConstructorType :: Typ,
-      domainConstructorArgs :: [DomainConstructorArg] } deriving (Eq, Ord, Show)
+      domainConstructorArgs :: [DomainConstructorArg] }
+  deriving (Eq, Ord, Show, Typeable, Data)
 
 data DomainConstructorArg = DomainConstructorArg {
       domainConstructorArgSel :: Maybe QName,
       domainConstructorArgType :: Typ,
-      domainConstructorArgLazy :: Bool } deriving (Eq, Ord, Show)
+      domainConstructorArgLazy :: Bool }
+  deriving (Eq, Ord, Show, Typeable, Data)
 
 data Axiom = Axiom {
       axiomName :: QName,
       axiomArgs :: String,
-      axiomTerm :: Term } deriving (Eq, Ord, Show)
+      axiomTerm :: Term } deriving (Eq, Ord, Show, Typeable, Data)
 
 data FunSig = FunSig {
        funSigName :: QName,
-       funSigType :: Maybe Typ } deriving (Eq, Ord, Show)
+       funSigType :: Maybe Typ } deriving (Eq, Ord, Show, Typeable, Data)
 
 -- Other SetDecl variants to be added later
 data SetDecl
@@ -309,11 +310,11 @@ data SetDecl
     = SubSet Term Typ Term
     -- | A set declared using a list of terms. e.g. {1,2,3} would be Set [1,2,3]
     | FixedSet [Term]
-               deriving (Eq, Ord, Show)
+               deriving (Eq, Ord, Show, Typeable, Data)
 
 data MetaTerm = Term Term
               | Conditional [Term] Term -- List of preconditions, conclusion.
-                deriving (Eq, Ord, Show)
+                deriving (Eq, Ord, Show, Typeable, Data)
 
 mkSenAux :: Bool -> MetaTerm -> Sentence
 mkSenAux b t = Sentence
@@ -386,7 +387,7 @@ data TypeSig =
     abbrs :: Abbrs, -- constructor name, variable names, type.
     arities :: Arities }
     -- actually isa-instances. the former field tycons can be computed.
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Typeable)
 
 emptyTypeSig :: TypeSig
 emptyTypeSig = TySg {
@@ -427,7 +428,7 @@ data BaseSig =
   | MHsHOL_thy
   | MHsHOLCF_thy
   | CspHOLComplex_thy
-    deriving (Eq, Ord, Show)
+    deriving (Eq, Ord, Show, Typeable)
              {- possibly simply supply a theory like MainHC as string
                 or recursively as Isabelle.Sign -}
 
@@ -442,7 +443,7 @@ data Sign = Sign
   , constTab :: ConstTab  -- value cons with type
   , domainTab :: DomainTab
   , showLemmas :: Bool
-  } deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show, Typeable)
 
  {- list of datatype definitions
     each of these consists of a list of (mutually recursive) datatypes
@@ -527,7 +528,7 @@ values of functions.
 data IsaProof = IsaProof
     { proof :: [ProofCommand],
       end :: ProofEnd
-    } deriving (Show, Eq, Ord)
+    } deriving (Show, Eq, Ord, Typeable, Data)
 
 data ProofCommand
     {- | Apply a list of proof methods, which will be applied in sequence
@@ -540,7 +541,7 @@ data ProofCommand
     | Defer Int
     | Prefer Int
     | Refute
-      deriving (Show, Eq, Ord)
+      deriving (Show, Eq, Ord, Typeable, Data)
 
 data ProofEnd
     = By ProofMethod
@@ -548,7 +549,7 @@ data ProofEnd
     | Done
     | Oops
     | Sorry
-      deriving (Show, Eq, Ord)
+      deriving (Show, Eq, Ord, Typeable, Data)
 
 data Modifier
     -- | No_asm means that assumptions are completely ignored.
@@ -560,7 +561,7 @@ data Modifier
     not used in the simplification of each other or the
     conclusion. -}
     | No_asm_use
-      deriving (Show, Eq, Ord)
+      deriving (Show, Eq, Ord, Typeable, Data)
 
 data ProofMethod
     {- | This is a plain auto with no parameters - it is used
@@ -594,7 +595,7 @@ data ProofMethod
     {- | Used for proof methods that have not been implemented yet.
     This includes auto and simp with parameters -}
     | Other String
-      deriving (Show, Eq, Ord)
+      deriving (Show, Eq, Ord, Typeable, Data)
 
 toIsaProof :: ProofEnd -> IsaProof
 toIsaProof = IsaProof []

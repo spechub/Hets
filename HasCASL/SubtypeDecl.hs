@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/SubtypeDecl.hs
 Description :  analysis of subtype declarations
 Copyright   :  (c) Christian Maeder and Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt

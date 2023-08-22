@@ -1,7 +1,7 @@
 {-# LANGUAGE FunctionalDependencies, FlexibleInstances, FlexibleContexts
   , MultiParamTypeClasses, TypeSynonymInstances, ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Interpreter.hs
 Description :  Interpreter for CPL programs
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

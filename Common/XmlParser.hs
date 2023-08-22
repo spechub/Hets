@@ -1,6 +1,6 @@
-{-# LANGUAGE CPP, TypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/XmlParser.hs
 Description :  Interface to the Xml Parsing Facility
 Copyright   :  (c) Ewaryst Schulz, DFKI 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -16,36 +16,54 @@ Provides an xml parse function which depends on external libraries.
 module Common.XmlParser (XmlParseable (parseXml), readXmlFile) where
 
 import Text.XML.Light
+import qualified Xeno.DOM as Xeno
+import Data.ByteString.UTF8 (toString)
+import qualified Control.Monad.Fail as Fail
 
-import qualified Data.ByteString.Lazy as BS
-#ifdef HEXPAT
-import qualified Common.XmlExpat as XE
-#else
-import Data.ByteString.Lazy.UTF8
-#endif
+import qualified Data.ByteString as BS
 
 readXmlFile :: FilePath -> IO BS.ByteString
 readXmlFile fp = do
   bs <- BS.readFile fp
   if BS.length bs > 0 then return bs else
-      fail "Common.XmlParser.readXmlFile: empty file"
+      Fail.fail "Common.XmlParser.readXmlFile: empty file"
 
-{- | This class provides an xml parsing function which is instantiated
-by using the hexpat or the XML.Light library, dependent on the haskell
-environment. -}
+parseXmlXeno :: BS.ByteString -> Either String Element
+parseXmlXeno s = case Xeno.parse s of
+  Left err -> Left $ show err
+  Right nd -> let Elem e = xenoNodeToContent nd
+    in Right e
+
+xenoNodeToContent :: Xeno.Node -> Content
+xenoNodeToContent nd =
+  Elem $
+    blank_element
+      { elName = strToQName (Xeno.name nd),
+        elAttribs = map attrToAttr (Xeno.attributes nd),
+        elContent = xenoContentToContent (Xeno.contents nd)
+      }
+
+xenoContentToContent :: [Xeno.Content] -> [Content]
+xenoContentToContent (Xeno.Text t : xs) = strToCData (toString t) : xenoContentToContent xs
+xenoContentToContent (Xeno.CData t : xs) = strToCData (toString t) : xenoContentToContent xs
+xenoContentToContent (Xeno.Element nd : xs) = xenoNodeToContent nd : xenoContentToContent xs
+xenoContentToContent _ = []
+
+strToCData :: String -> Content
+strToCData s = Text $ blank_cdata { cdData = s }
+
+
+attrToAttr :: (BS.ByteString, BS.ByteString) -> Attr
+attrToAttr (n, v) = Attr { attrKey = strToQName n
+                         , attrVal = toString v }
+
+strToQName :: BS.ByteString -> QName
+strToQName s = case break (':' ==) $ toString s of
+                 (n, []) -> unqual n
+                 (pr, _ : n) -> blank_name { qName = n, qPrefix = Just pr }
+
 class XmlParseable a where
-    parseXml :: a -> IO (Either String Element)
+  parseXml :: a -> IO (Either String Element)
 
-#ifdef HEXPAT
 instance XmlParseable BS.ByteString where
-    parseXml = return . XE.parseXml
-
--- 169MB on Basic/Algebra_I
-#else
-instance XmlParseable BS.ByteString where
-    parseXml s = return $ case parseXMLDoc $ toString s of
-                   Just x -> Right x
-                   _ -> Left "parseXMLDoc: parse error"
-
--- 426MB on Basic/Algebra_I
-#endif
+  parseXml = return . parseXmlXeno

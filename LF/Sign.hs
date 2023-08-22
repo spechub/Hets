@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./LF/Sign.hs
 Description :  Definition of signatures for the Edinburgh
                Logical Framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
@@ -59,6 +60,7 @@ import Common.DocUtils
 import Common.Result
 import Common.Keywords
 
+import Data.Data
 import Data.Maybe
 import Data.List
 import qualified Data.Set as Set
@@ -79,7 +81,7 @@ data Symbol = Symbol
             { symBase :: BASE
             , symModule :: MODULE
             , symName :: NAME
-            } deriving (Ord, Eq, Show)
+            } deriving (Ord, Eq, Show, Typeable, Data)
 
 type RAW_SYM = String
 
@@ -92,7 +94,7 @@ data EXP = Type
          | Func [EXP] EXP
          | Pi CONTEXT EXP
          | Lamb CONTEXT EXP
-           deriving (Ord, Show)
+           deriving (Ord, Show, Typeable, Data)
 
 instance GetRange EXP
 
@@ -104,13 +106,13 @@ data DEF = Def
          { getSym :: Symbol
          , getType :: EXP
          , getValue :: Maybe EXP
-         } deriving (Eq, Ord, Show)
+         } deriving (Eq, Ord, Show, Typeable, Data)
 
 data Sign = Sign
           { sigBase :: BASE
           , sigModule :: MODULE
           , getDefs :: [DEF]
-          } deriving (Eq, Ord, Show)
+          } deriving (Eq, Ord, Show, Typeable, Data)
 
 emptySig :: Sign
 emptySig = Sign gen_base gen_module []

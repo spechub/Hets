@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Adl/adl.hs
 Description :  ADL syntax parser
 Copyright   :  (c) Stef Joosten, Christian Maeder DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -16,6 +16,7 @@ import Common.DocUtils (pretty)
 import Common.Parsec ((<<))
 import Common.Result
 import Common.Lib.State
+import qualified Control.Monad.Fail as Fail
 import Text.ParserCombinators.Parsec (parse, eof)
 
 import Adl.As
@@ -56,4 +57,4 @@ process f = do
 #endif
       $ pretty es
       else printDiags 5 ds >> exitFailure
-    Left err -> fail $ show err
+    Left err -> Fail.fail $ show err

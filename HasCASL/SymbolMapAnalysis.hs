@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/SymbolMapAnalysis.hs
 Description :  analysis of symbol mappings
 Copyright   :  (c) Till Mossakowski, Christian Maeder and Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -77,14 +77,14 @@ inducedFromMorphism rmap sigma = do
     let tarTypeMap = addUnit (addCpoMap srcClassMap) tarTypeMap0
         tarAliases = filterAliases tarTypeMap
   -- compute the op map (as a Map)
-    op_Map <- Map.foldWithKey
+    op_Map <- Map.foldrWithKey
       (opFun rmap sigma myClassIdMap tarAliases myTypeIdMap)
       (return Map.empty) assMap
   -- compute target signature
     let tarTypeMap2 = Map.map
           (mapRestTypeInfo myClassIdMap tarAliases myTypeIdMap op_Map)
                         tarTypeMap
-        sigma' = Map.foldWithKey
+        sigma' = Map.foldrWithKey
           (mapOps myClassIdMap tarAliases myTypeIdMap op_Map) sigma
                    { typeMap = tarTypeMap2
                    , classMap = tarClassMap

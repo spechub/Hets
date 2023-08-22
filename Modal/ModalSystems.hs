@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Modal/ModalSystems.hs
 Copyright   :  DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
 

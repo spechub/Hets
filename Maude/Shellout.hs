@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Shellout.hs
 Description :  Maude Development Graphs
 Copyright   :  (c) Adrian Riesco, Facultad de Informatica UCM 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -36,6 +36,8 @@ import Data.List (isPrefixOf)
 import Common.Doc
 import Common.DocUtils ()
 import Common.Utils
+
+import qualified Control.Monad.Fail as Fail
 
 maudePath :: String
 maudePath = "maude"
@@ -75,7 +77,7 @@ basicAnalysis sign (MaudeText mt) = do
     case readMaybe spStr of
       Just sp -> return $ convertSpec sp
       Nothing ->
-          fail $ "cannot interpret the following maude output:\n" ++ spStr
+          Fail.fail $ "cannot interpret the following maude output:\n" ++ spStr
           ++ "\ncreated for:\n" ++ sigStr
           ++ "\nmaude return:\n" ++ specOut
 

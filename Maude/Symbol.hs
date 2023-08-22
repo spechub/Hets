@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Symbol.hs
 Description :  Maude Symbols
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -20,6 +21,8 @@ module Maude.Symbol (
     SymbolSet,
     SymbolMap,
     SymbolRel,
+    SymbolKind (..),
+    sym_kind,
     kindSym2sortSym,
     -- * Conversion
     toId,
@@ -38,6 +41,7 @@ module Maude.Symbol (
 import Maude.AS_Maude
 import Maude.Meta.HasName
 
+import Data.Data
 import Data.Set (Set)
 import Data.Map (Map)
 import Common.Lib.Rel (Rel)
@@ -59,12 +63,34 @@ data Symbol = Sort Qid                      -- ^ A 'Sort' Symbol
             | Labl Qid                      -- ^ A 'Label' Symbol
             | Operator Qid Symbols Symbol   -- ^ A qualified 'Operator' Symbol
             | OpWildcard Qid                -- ^ A wildcard 'Operator' Symbol
-            deriving (Show, Read, Ord, Eq)
+            deriving (Show, Read, Ord, Eq, Typeable)
 -- ** Auxiliary types
 type Symbols = [Symbol]
 type SymbolSet = Set Symbol
 type SymbolMap = Map Symbol Symbol
 type SymbolRel = Rel Symbol
+
+data SymbolKind = SortK | KindK | LablK | OpK 
+        deriving (Show, Read, Ord, Eq, Typeable)
+
+-- | the kind of a symbol
+
+sym_kind :: Symbol -> SymbolKind
+sym_kind (Sort _) = SortK
+sym_kind (Kind _) = KindK
+sym_kind (Labl _) = LablK
+sym_kind _ = OpK
+
+instance Pretty SymbolKind where 
+ pretty k = case k of
+   SortK -> text "sort"
+   KindK -> text "kind"
+   LablK -> text "label"
+   OpK   -> text "op"
+
+
+ 
+
 
 -- ** Symbol instances
 

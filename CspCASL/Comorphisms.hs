@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/Comorphisms.hs
 Description :  generic CspCASL instance for comorphisms
 Copyright   :  (c) Liam O'Reilly, Swansea University 2009
 License     :  GPLv2 or higher, see LICENSE.txt

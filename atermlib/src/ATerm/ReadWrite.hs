@@ -1,5 +1,6 @@
+{-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./atermlib/src/ATerm/ReadWrite.hs
 Description :  read and write ATerms to and from strings
 Copyright   :  (c) Klaus Luettich, C.Maeder, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -46,6 +47,10 @@ module ATerm.ReadWrite (
 
         accidental support for the empty aterm: ShAAppl "" [] []
 -}
+
+#if __GLASGOW_HASKELL__ >= 803
+import Prelude hiding ((<>))
+#endif
 
 import ATerm.AbstractSyntax
 import ATerm.SimpPretty

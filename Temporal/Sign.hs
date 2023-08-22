@@ -1,5 +1,6 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Temporal/Sign.hs
 Description :  Signature for propositional logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -30,7 +31,9 @@ module Temporal.Sign
     , sigUnion                      -- Union for Logic.Logic
     ) where
 
+import Data.Data
 import qualified Data.Set as Set
+
 import Common.Id
 import Common.Result
 import Common.Doc
@@ -38,7 +41,7 @@ import Common.DocUtils
 
 {- | Datatype for propositional Signatures
 Signatures are just sets -}
-newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show)
+newtype Sign = Sign {items :: Set.Set Id} deriving (Eq, Ord, Show, Typeable)
 
 instance Pretty Sign where
     pretty = printSign

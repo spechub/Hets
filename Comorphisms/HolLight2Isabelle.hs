@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/HolLight2Isabelle.hs
 Description :  translating from HolLight to Isabelle
 Copyright   :  (c) Jonathan von Schroeder and M. Codescu, DFKI 2010
 License     :  GPLv2 or higher, see LICENSE.txt

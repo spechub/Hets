@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Project.hs
 Description :  replace casts with explicit projection functions
 Copyright   :  (c) Christian Maeder, Uni Bremen 2005-2006
 License     :  GPLv2 or higher, see LICENSE.txt

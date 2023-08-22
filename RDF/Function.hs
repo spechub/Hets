@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 
 {- |
-Module      :  $Header$
+Module      :  ./RDF/Function.hs
 Copyright   :  (c) Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -13,7 +13,7 @@ Instances for some of the functions used in RDF
 -}
 
 module RDF.Function where
-import OWL2.AS
+import Common.IRI
 import RDF.AS
 -- import RDF.Sign
 

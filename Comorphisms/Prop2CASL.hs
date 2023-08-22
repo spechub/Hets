@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/Prop2CASL.hs
 Description :  Coding of Propositional into CASL
 Copyright   :  (c) Dominik Luecke and Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
