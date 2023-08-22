@@ -38,8 +38,6 @@ module Static.AnalysisStructured
     , networkDiagram
     ) where
 
-import Debug.Trace
-
 import Driver.Options
 
 import Logic.Logic
@@ -638,7 +636,7 @@ networkDiagram :: DGraph
                         -> [LABELED_ONTO_OR_INTPR_REF]
                         -> [NodeOrLink]
                         -> ([Node], [(Node, Node, DGLinkLab)])
-networkDiagram dg cItems eItems = trace ("eItems:" ++ show eItems) $  let 
+networkDiagram dg cItems eItems = let 
         -- add to/remove from a list of nodes and a list of edges
         -- the graph of a network element
         -- if remove is true, nElem gets removed 
@@ -729,7 +727,7 @@ networkDiagram dg cItems eItems = trace ("eItems:" ++ show eItems) $  let
         (eNodes, eEdges) = foldl (getNodes True) ([], []) eItems
         (cNodes', cEdges') = (nub (cNodes ++ iNodes) \\ eNodes,
                               cEdges \\ eEdges)
- in trace("eNodes:" ++ show eNodes) $ (cNodes', cEdges')
+ in (cNodes', cEdges')
 
 getItems :: [LABELED_ONTO_OR_INTPR_REF] -> [IRI]
 getItems [] = []
