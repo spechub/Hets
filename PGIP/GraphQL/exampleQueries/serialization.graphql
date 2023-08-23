@@ -1,0 +1,11 @@
+query Serialization {
+  serialization(id: "foo") {
+    id
+    language {
+      id
+      name
+      description
+    }
+    name
+  }
+}

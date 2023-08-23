@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GtkLinkTypeChoice.hs
 Description :  Gtk GUI for the selection of linktypes
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -16,7 +16,6 @@ module GUI.GtkLinkTypeChoice
   where
 
 import Graphics.UI.Gtk
-import Graphics.UI.Gtk.Glade
 
 import GUI.GtkUtils
 import qualified GUI.Glade.LinkTypeChoice as LinkTypeChoice
@@ -36,17 +35,17 @@ mapEdgeTypesToNames = Map.fromList $ map
 -- | Displays the linktype selection window
 showLinkTypeChoice :: IORef [String] -> ([DGEdgeType] -> IO ()) -> IO ()
 showLinkTypeChoice ioRefDeselect updateFunction = postGUIAsync $ do
-  xml <- getGladeXML LinkTypeChoice.get
-  window <- xmlGetWidget xml castToWindow "linktypechoice"
-  ok <- xmlGetWidget xml castToButton "btnOk"
-  cancel <- xmlGetWidget xml castToButton "btnCancel"
-  select <- xmlGetWidget xml castToButton "btnSelect"
-  deselect <- xmlGetWidget xml castToButton "btnDeselect"
-  invert <- xmlGetWidget xml castToButton "btnInvert"
+  builder <- getGTKBuilder LinkTypeChoice.get
+  window <- builderGetObject builder castToWindow "linktypechoice"
+  ok <- builderGetObject builder castToButton "btnOk"
+  cancel <- builderGetObject builder castToButton "btnCancel"
+  select <- builderGetObject builder castToButton "btnSelect"
+  deselect <- builderGetObject builder castToButton "btnDeselect"
+  invert <- builderGetObject builder castToButton "btnInvert"
 
   deselectEdgeTypes <- readIORef ioRefDeselect
   mapM_ (\ name -> do
-          cb <- xmlGetWidget xml castToCheckButton name
+          cb <- builderGetObject builder castToCheckButton name
           toggleButtonSetActive cb False
         ) deselectEdgeTypes
 
@@ -54,7 +53,7 @@ showLinkTypeChoice ioRefDeselect updateFunction = postGUIAsync $ do
     edgeMap = mapEdgeTypesToNames
     keys = Map.keys edgeMap
     setAllTo to = mapM_ (\ name -> do
-                                cb <- xmlGetWidget xml castToCheckButton name
+                                cb <- builderGetObject builder castToCheckButton name
                                 to' <- to cb
                                 toggleButtonSetActive cb to'
                               ) keys
@@ -70,7 +69,7 @@ showLinkTypeChoice ioRefDeselect updateFunction = postGUIAsync $ do
 
   onClicked ok $ do
     edgeTypeNames <- filterM (\ name -> do
-                               cb <- xmlGetWidget xml castToCheckButton name
+                               cb <- builderGetObject builder castToCheckButton name
                                selected <- toggleButtonGetActive cb
                                return $ not selected
                              ) keys

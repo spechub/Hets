@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CSMOF/Print.hs
 Description :  pretty printing for CSMOF
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt

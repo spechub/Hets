@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./FreeCAD/XMLPrinter.hs
 Description :  XML Printer function for FreeCAD datatypes
 Copyright   :  (c) Robert Savu and Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./ConstraintCASL/StaticAna.hs
 Description :  static analysis for ConstraintCASL
 Copyright   :  (c) Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

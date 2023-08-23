@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Temporal/Symbol.hs
 Description :  Symbols of propositional logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -57,7 +57,7 @@ symOf x = Set.fold (\ y -> Set.insert Symbol {symName = y}) Set.empty $
 
 -- | Determines the symbol map of a morhpism
 getSymbolMap :: Morphism.Morphism -> Map.Map Symbol Symbol
-getSymbolMap f = Map.foldWithKey
+getSymbolMap f = Map.foldrWithKey
                  (\ k a -> Map.insert Symbol {symName = k} Symbol {symName = a})
                  Map.empty $ Morphism.propMap f
 

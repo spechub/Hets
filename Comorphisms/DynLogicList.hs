@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/DynLogicList.hs
 Description :  Automatically modified file, includes the user-defined
                logics in the Hets logic list. Do not change.
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010

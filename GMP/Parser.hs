@@ -1,4 +1,4 @@
-{- | Module     : $Header$
+{- | Module     : ./GMP/Parser.hs
  -  Description : Implementation of logic formula parser
  -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
  -  License     : GPLv2 or higher, see LICENSE.txt

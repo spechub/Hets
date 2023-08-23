@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASLProver/TransProcesses.hs
 Description :  Provides transformations from Csp Processes to Isabelle terms
 Copyright   :  (c) Liam O'Reilly and Markus Roggenbach,
                    Swansea University 2008

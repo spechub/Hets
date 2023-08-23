@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Prover.hs
 Description :  General datastructures for theorem prover interfaces
 Copyright   :  (c) Till Mossakowski, Klaus Luettich, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -22,6 +22,7 @@ import Common.ProverTools
 import qualified Common.OrderedMap as OMap
 
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import Data.List
 import Data.Maybe (isJust)
 import Data.Time (TimeOfDay, midnight)
@@ -87,6 +88,13 @@ joinSensAux s1 s2 = let
 
 joinSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b -> ThSens a b
 joinSens s1 = fst . joinSensAux s1
+
+intersectSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b -> ThSens a b
+intersectSens s1 s2 = let
+  sens1 = map sentence $ OMap.elems s1
+  sens2 = map sentence $ OMap.elems s2
+  sensI = Set.intersection (Set.fromList sens1) (Set.fromList sens2)
+ in toThSens $ map (AS_Anno.makeNamed "") $ Set.toList sensI
 
 reduceSens :: (Ord a, Eq b) => ThSens a b -> ThSens a b
 reduceSens =

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./RDF/Morphism.hs
 Description :  RDF Morphism
 Copyright   :  (c) Francisc-Nicolae Bungiu, Felix Gabriel Mance, 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -21,7 +21,7 @@ import Common.Lib.State
 import Common.Lib.MapSet (setToMap)
 import Common.Result
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import RDF.AS
 -}
 import RDF.Sign

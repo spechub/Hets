@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Parsec.hs
 Description :  Parsec extensions
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

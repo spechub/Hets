@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CoCFOL2IsabelleHOL.hs
 Description :  Extension of CFOL2IsabelleHOL to CoCASL
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt

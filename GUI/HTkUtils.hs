@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./GUI/HTkUtils.hs
 Copyright   :  (c) K. Luettich, Rene Wagner, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -159,7 +159,7 @@ displayTheoryWithWarning :: String -- ^ kind of theory
 displayTheoryWithWarning kind thname warningTxt gth =
     let str = warningTxt ++ showDoc gth "\n"
         title = kind ++ " of " ++ thname
-     in createTextSaveDisplay title (thname ++ ".het") str
+     in createTextSaveDisplay title (thname ++ ".dol") str
 
 {- - added by RW
 Represents the state of a goal in a 'ListBox' that uses 'populateGoalsListBox'

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/StatAna.hs
 Copyright   :  (c) Christian Maeder, Bremen 2015
 License     :  GPLv2 or higher, see LICENSE.txt
 

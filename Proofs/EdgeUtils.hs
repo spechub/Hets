@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/EdgeUtils.hs
 Description :  utility functions for edges of development graphs
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -32,6 +32,7 @@ import Data.Maybe (isNothing)
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Control.Exception (assert)
+import qualified Control.Monad.Fail as Fail
 
 -- * other methods on edges
 
@@ -83,9 +84,9 @@ getAllPathsOfType dgraph isType =
 realMorphism :: DGLinkLab -> Maybe GMorphism
 realMorphism lbl = let mor = dgl_morphism lbl in case dgl_type lbl of
   ScopedLink {} -> return mor
-  HidingDefLink -> fail "hiding definition link"
+  HidingDefLink -> Fail.fail "hiding definition link"
   FreeOrCofreeDefLink _ _ -> return $ ide $ cod mor
-  HidingFreeOrCofreeThm {} -> fail "hiding or free thm link"
+  HidingFreeOrCofreeThm {} -> Fail.fail "hiding or free thm link"
 
 -- | determines the morphism of a given path
 calculateMorphismOfPath :: [LEdge DGLinkLab] -> Maybe GMorphism

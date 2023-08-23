@@ -1,7 +1,7 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleContexts,
              FlexibleInstances, MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/AnEvenTool.hs
 Description :  The AnEven-Tool: an (An)alyzer and (Ev)aluator for (En)CL
                specifications
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010

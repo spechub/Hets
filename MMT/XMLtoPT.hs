@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./MMT/XMLtoPT.hs
 Description :  parsing functions from XML to parse tree
 Copyright   :
 License     :

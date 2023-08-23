@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Formula.hs
 Description :  Parser for CASL terms and formulae
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

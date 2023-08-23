@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/PredefinedCASLAxioms.hs
 Description :  Central datastructures for development graphs
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -79,7 +79,7 @@ baseListAxioms =
   , ga_nil_append
   , ga_cons_append ]
 
--- currently a list annotation is needed in the .het file %list [__], nil, cons
+-- currently a list annotation is needed in the .dol file %list [__], nil, cons
 brId :: Id
 brId = mkId [mkSimpleId "[", placeTok, mkSimpleId "]"]
 

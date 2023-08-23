@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HolLight/Helper.hs
 Description :  Helper functions for dealing with terms
                 (mainly for pretty printing which is
                  directly adapted from hollight)

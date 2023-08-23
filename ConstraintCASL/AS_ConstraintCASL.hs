@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./ConstraintCASL/AS_ConstraintCASL.hs
 Copyright   :  (c) Florian Mossakowski, Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt
 

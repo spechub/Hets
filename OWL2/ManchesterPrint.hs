@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/ManchesterPrint.hs
 Copyright   :  (c) Felix Gabriel Mance
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -15,9 +15,9 @@ module OWL2.ManchesterPrint where
 import Common.Doc
 import Common.DocUtils
 import Common.AS_Annotation as Anno
-import Common.Lib.State
+import Common.IRI
 
-import OWL2.AS
+import qualified OWL2.AS as AS
 import OWL2.Extract
 import OWL2.MS
 import OWL2.Sign
@@ -26,49 +26,38 @@ import OWL2.Print
 import OWL2.Keywords
 import OWL2.ColonKeywords
 
-import Data.Function
 import Data.List
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
+import OWL2.Pretty()
+
 -- | OWL2 signature printing
 
-printOneNamed :: Anno.Named Axiom -> Doc
-printOneNamed ns = pretty
-  $ (if Anno.isAxiom ns then rmImplied else addImplied) $ Anno.sentence ns
 
-delTopic :: Extended -> Sign -> Sign
-delTopic e s = case e of
-  ClassEntity (Expression c) -> s { concepts = Set.delete c $ concepts s }
-  ObjectEntity (ObjectProp o) -> s
-    { objectProperties = Set.delete o $ objectProperties s }
-  SimpleEntity et -> execState (modEntity Set.delete et) s
-  _ -> s
-
-groupAxioms :: [Axiom] -> [Frame]
-groupAxioms =
-  concatMap (\ l@(PlainAxiom e _ : _) -> case e of
-    Misc _ -> map (Frame e . (: []) . axiomBit) l
-    _ -> [Frame e $ map axiomBit l])
-  . groupBy (on (==) axiomTopic) . sortBy (on compare axiomTopic)
-
-printOWLBasicTheory :: (Sign, [Named Axiom]) -> Doc
+printOWLBasicTheory :: (Sign, [Named AS.Axiom]) -> Doc
 printOWLBasicTheory = printBasicTheory . prepareBasicTheory
 
-prepareBasicTheory :: (Sign, [Named Axiom]) -> (Sign, [Named Axiom])
+prepareBasicTheory :: (Sign, [Named AS.Axiom]) -> (Sign, [Named AS.Axiom])
 prepareBasicTheory (s, l) =
-  (s { prefixMap = Map.union (prefixMap s) predefPrefixes }, l)
+  (s { prefixMap = Map.union (prefixMap s) AS.predefPrefixes }, l)
 
-printBasicTheory :: (Sign, [Named Axiom]) -> Doc
+printBasicTheory :: (Sign, [Named AS.Axiom]) -> Doc
 printBasicTheory = pretty . convertBasicTheory
 
-convertBasicTheory :: (Sign, [Named Axiom]) -> OntologyDocument
+convertBasicTheory :: (Sign, [Named AS.Axiom]) -> AS.OntologyDocument
 convertBasicTheory (sig, l) = let
   (axs, ths) = partition Anno.isAxiom l
-  cnvrt f = map f . groupAxioms . map Anno.sentence
-  s = foldr (delTopic . axiomTopic . sentence) sig l
-  in OntologyDocument (prefixMap s) $ emptyOntology
-  $ toDecl s ++ cnvrt rmImpliedFrame axs ++ cnvrt addImpliedFrame ths
+  cnvrt f = map f . map Anno.sentence
+  in convertBasicTheory' (sig, cnvrt rmImplied axs ++ cnvrt addImplied ths)
+
+convertBasicTheory' :: (Sign, [AS.Axiom]) -> AS.OntologyDocument
+convertBasicTheory' (sig, axs) = AS.emptyOntologyDoc {
+        AS.prefixDeclaration = AS.changePrefixMapTypeToGA $ prefixMap sig,
+        AS.ontology = AS.emptyOntology {
+            AS.axioms = toDecl sig ++ axs
+        }
+    }
 
 instance Pretty Sign where
     pretty = printSign
@@ -79,7 +68,7 @@ printSignElem s ty f = vcat $ map (\ t -> keyword ty <+> pretty t)
 
 printSign :: Sign -> Doc
 printSign s = vcat
-    (map (\ (c, l) -> hsep $ map text [prefixC, c ++ ":", '<' : l ++ ">"])
+    (map (\ (c, l) -> hsep $ map text [prefixC, c ++ ":", l])
     $ Map.toList $ prefixMap s)
         $++$ foldl1 ($++$) (map (uncurry $ printSignElem s)
                 [ (datatypeC, datatypes)
@@ -117,13 +106,13 @@ printMisc :: Pretty a => Annotations -> (b -> Doc) -> b -> AnnotatedList a
 printMisc a f r anl = f r <+> (printAnnotations a $+$ printAnnotatedList anl)
 
 -- | Misc ListFrameBits
-printMiscBit :: Relation -> Annotations -> ListFrameBit -> Doc
+printMiscBit :: AS.Relation -> Annotations -> ListFrameBit -> Doc
 printMiscBit r a lfb = case lfb of
-    ExpressionBit anl -> printMisc a printEquivOrDisjointClasses (getED r) anl
-    ObjectBit anl -> printMisc a printEquivOrDisjointProp (getED r) anl
-    DataBit anl -> printMisc a printEquivOrDisjointProp (getED r) anl
+    ExpressionBit anl -> printMisc a printEquivOrDisjointClasses (AS.getED r) anl
+    ObjectBit anl -> printMisc a printEquivOrDisjointProp (AS.getED r) anl
+    DataBit anl -> printMisc a printEquivOrDisjointProp (AS.getED r) anl
     IndividualSameOrDifferent anl ->
-        printMisc a printSameOrDifferentInd (getSD r) anl
+        printMisc a printSameOrDifferentInd (AS.getSD r) anl
     _ -> empty
 
 printAnnFrameBit :: Annotations -> AnnFrameBit -> Doc
@@ -162,7 +151,7 @@ instance Pretty Frame where
 
 printFrame :: Frame -> Doc
 printFrame (Frame eith bl) = case eith of
-    SimpleEntity (Entity _ e uri) -> keyword (showEntityType e) <+>
+    SimpleEntity (AS.Entity _ e uri) -> keyword (AS.showEntityType e) <+>
             fsep [pretty uri $+$ vcat (map pretty bl)]
     ObjectEntity ope -> keyword objectPropertyC <+>
             (pretty ope $+$ fsep [vcat (map pretty bl)])
@@ -171,7 +160,7 @@ printFrame (Frame eith bl) = case eith of
     Misc a -> case bl of
         [ListFrameBit (Just r) lfb] -> printMiscBit r a lfb
         [AnnFrameBit ans (AnnotationFrameBit Assertion)] ->
-            let [Annotation _ iri _] = a
+            let [AS.Annotation _ iri _] = a
             in keyword individualC <+> (pretty iri $+$ printAnnotations ans)
         h : r -> printFrame (Frame eith [h])
           $+$ printFrame (Frame eith r)
@@ -183,10 +172,10 @@ instance Pretty Axiom where
 printAxiom :: Axiom -> Doc
 printAxiom (PlainAxiom e fb) = printFrame (Frame e [fb])
 
-printImport :: ImportIRI -> Doc
+printImport :: AS.ImportIRI -> Doc
 printImport x = keyword importC <+> pretty x
 
-printPrefixes :: PrefixMap -> Doc
+printPrefixes :: AS.PrefixMap -> Doc
 printPrefixes x = vcat (map (\ (a, b) ->
        (text "Prefix:" <+> text a <> colon <+> text ('<' : b ++ ">")))
           (Map.toList x))
@@ -197,7 +186,7 @@ instance Pretty Ontology where
 
 printOntology :: Ontology -> Doc
 printOntology Ontology {name = a, imports = b, ann = c, ontFrames = d} =
-    (if nullQName == a then empty else keyword ontologyC <+> pretty a)
+    (if nullIRI == a then empty else keyword ontologyC <+> pretty a)
     $++$ vcat (map printImport b)
     $++$ vcat (map printAnnotations c) $+$ vcat (map pretty d)
 

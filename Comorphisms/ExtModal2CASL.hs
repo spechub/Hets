@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/ExtModal2CASL.hs
 Copyright   :  (c) Christian Maeder, DFKI 2012
 License     :  GPLv2 or higher, see LICENSE.txt
 

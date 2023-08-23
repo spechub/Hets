@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/THFP_P2THFP.hs
 Description :  Comorphism from THFP_P to THFP
 Copyright   :  (c) J. von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

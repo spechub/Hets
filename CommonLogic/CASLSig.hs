@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/CASLSig.hs
 Description :  Central datastructures for development graphs
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt

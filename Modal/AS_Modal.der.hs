@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Modal/AS_Modal.der.hs
 Copyright   :  (c) T.Mossakowski, W.Herding, C.Maeder, Uni Bremen 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 

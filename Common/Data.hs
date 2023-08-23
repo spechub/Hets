@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Data.hs
 Description :  generate output from Data instances
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2014
 License     :  GPLv2 or higher, see LICENSE.txt

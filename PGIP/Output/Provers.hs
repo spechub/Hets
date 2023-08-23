@@ -10,7 +10,7 @@ module PGIP.Output.Provers
 import PGIP.Output.Formatting
 import PGIP.Output.Mime
 
-import PGIP.Query (ProverMode (..))
+import PGIP.Shared (ProverMode (..))
 
 import Logic.Comorphism (AnyComorphism)
 

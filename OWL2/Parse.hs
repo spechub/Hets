@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Parse.hs
 Description :  Manchester syntax parser for OWL 2
 Copyright   :  (c) DFKI GmbH, Uni Bremen 2007-2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -21,7 +21,7 @@ import OWL2.Keywords
 import OWL2.ColonKeywords
 
 import Common.Keywords
-import Common.Id
+import Common.IRI
 import Common.Lexer
 import Common.Parsec
 import Common.AnnoParser (commentLine)
@@ -34,6 +34,7 @@ import Text.ParserCombinators.Parsec
 import Control.Monad (liftM2)
 import Data.Char
 import qualified Data.Map as Map
+import Data.Maybe (isJust)
 
 characters :: [Character]
 characters = [minBound .. maxBound]
@@ -154,35 +155,21 @@ skips :: CharParser st a -> CharParser st a
 skips = (<< skipMany
         (forget space <|> forget commentLine <|> nestCommentOut <?> ""))
 
-abbrIriNoPos :: CharParser st QName
-abbrIriNoPos = try $ do
-    pre <- try $ prefix << char ':'
-    r <- hierPartWithOpts <|> return "" -- allow an empty local part
-    return nullQName { namePrefix = pre, localPart = r }
-  <|> fmap mkQName hierPartWithOpts
 
-abbrIri :: CharParser st QName
-abbrIri = do
-  p <- getPos
-  q <- abbrIriNoPos
-  return q { iriPos = Range [p],
-                iriType = if namePrefix q == "_" then NodeID else Abbreviated }
+uriQ :: CharParser st IRI
+-- uriQ = fullIri <|> abbrIri
+uriQ = Common.IRI.compoundIriCurie
 
-fullIri :: CharParser st QName
-fullIri = do
-    char '<'
-    QN pre r _ _ p <- abbrIri
-    char '>'
-    return $ QN pre r Full (if null pre then r else pre ++ ":" ++ r) p
+fullIri :: CharParser st IRI
+fullIri = angles iriParser
 
-uriQ :: CharParser st QName
-uriQ = fullIri <|> abbrIri
-
-uriP :: CharParser st QName
-uriP =
-  skips $ try $ checkWithUsing showQN uriQ $ \ q -> let p = namePrefix q in
-  if null p then notElem (localPart q) owlKeywords
-   else notElem p $ map (takeWhile (/= ':'))
+uriP :: CharParser st IRI
+uriP = skips $ try $ do
+  colonM <- optionMaybe . try . lookAhead $ char ':'
+  checkWithUsing (\i -> "keyword \"" ++ showIRI i ++ "\"") uriQ $ \ q -> let p = prefixName q in
+    if not (isAbbrev q) || isJust colonM then True
+    else if null p then notElem (iFragment q) owlKeywords
+    else notElem p $ map (takeWhile (/= ':'))
         $ colonKeywords
         ++ [ show d ++ e | d <- equivOrDisjointL, e <- [classesC, propertiesC]]
 
@@ -233,8 +220,8 @@ uriPair = uriP >>= \ u -> do
     return (u, Just u2)
   <|> return (u, Nothing)
 
-datatypeUri :: CharParser st QName
-datatypeUri = fmap mkQName (choice $ map keyword datatypeKeys) <|> uriP
+datatypeUri :: CharParser st IRI
+datatypeUri = fmap mkIRI (choice $ map keyword datatypeKeys) <|> uriP
 
 optSign :: CharParser st Bool
 optSign = option False $ fmap (== '-') (oneOf "+-")
@@ -291,7 +278,7 @@ stringLiteral = do
         string asP
         t <- skips $ optionMaybe languageTag
         return $ Literal s $ Untyped t
-    <|> skips (return $ Literal s $ Typed $ mkQName stringS)
+    <|> skips (return $ Literal s $ Typed $ (mkIRI stringS) {prefixName = "xsd"} )
 
 literal :: CharParser st Literal
 literal = do
@@ -302,16 +289,16 @@ literal = do
 
 -- * description
 
-owlClassUri :: CharParser st QName
+owlClassUri :: CharParser st IRI
 owlClassUri = uriP
 
-individualUri :: CharParser st QName
+individualUri :: CharParser st IRI
 individualUri = uriP
 
 individual :: CharParser st Individual
 individual = do
     i <- individualUri
-    return $ if namePrefix i == "_" then i {iriType = NodeID}
+    return $ if prefixName i == "_" then i {isBlankNode = True}
                                     else i
 
 skipChar :: Char -> CharParser st ()
@@ -397,7 +384,7 @@ dataPrimary = do
 
 mkDataJunction :: JunctionType -> [DataRange] -> DataRange
 mkDataJunction ty ds = case nubOrd ds of
-  [] -> error "mkObjectJunction"
+  [] -> error "mkDataJunction"
   [x] -> x
   ns -> DataJunction ty ns
 
@@ -416,7 +403,7 @@ card = do
   n <- skips getNumber
   return (c, value 10 n)
 
--- tries to parse either a QName or a literal
+-- tries to parse either a IRI or a literal
 individualOrConstant :: CharParser st (Either Individual Literal)
 individualOrConstant = fmap Right literal <|> fmap Left individual
 
@@ -488,7 +475,7 @@ restrictionAny opExpr = do
       case pr of
         Left p -> return $ ObjectValuesFrom v opExpr p
         Right r -> case opExpr of
-          ObjectProp dpExpr -> return $ DataValuesFrom v dpExpr r
+          ObjectProp dpExpr -> return $ DataValuesFrom v [dpExpr] r
           _ -> unexpected $ "dataRange after " ++ showQuantifierType v
     <|> do
       (c, n) <- card
@@ -583,7 +570,7 @@ domainOrRange = choice
   $ map (\ f -> pkeyword (showDomainOrRange f) >> return f)
   [ADomain, ARange]
 
-nsEntry :: CharParser st (String, QName)
+nsEntry :: CharParser st (String, IRI)
 nsEntry = do
     pkeyword prefixC
     p <- skips (option "" prefix << char ':')
@@ -595,7 +582,7 @@ nsEntry = do
     i <- skips fullIri
     return (p, i)
 
-importEntry :: CharParser st QName
+importEntry :: CharParser st IRI
 importEntry = pkeyword importC >> uriP
 
 convertPrefixMap :: GA.PrefixMap -> Map.Map String String

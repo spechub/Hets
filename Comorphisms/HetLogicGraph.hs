@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/HetLogicGraph.hs
 Description :  Compute graph with logics and interesting sublogics
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -29,6 +29,7 @@ import Logic.Grothendieck
 import Logic.Coerce
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Map as Map
 import qualified Data.Set as Set
@@ -102,7 +103,7 @@ hetSublogicGraph = do
 {- | adds the interesting comorphisms without adding new nodes;
 considering as start and end points only existing nodes -}
 addComorphismEdges :: HetSublogicGraph -> HetSublogicGraph
-addComorphismEdges hsg = Map.fold insComs hsg $ sublogicNodes hsg
+addComorphismEdges hsg = Map.foldr insComs hsg $ sublogicNodes hsg
     where insComs gsl h = foldr (insCom gsl) h comorphismList
           insCom gsl acm hsg' =
              case acm of
@@ -216,7 +217,7 @@ mapSublogic_preImage :: (Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2)
                    => cid -> Map.Map G_sublogics (Set.Set G_sublogics)
 mapSublogic_preImage cid =
-    Map.foldWithKey toG_sublogics Map.empty $
+    Map.foldrWithKey toG_sublogics Map.empty $
     preImageMaybe (mapSublogic cid) $ all_sublogics $ sourceLogic cid
     where toG_sublogics s2 set_s1 =
              Map.insert (G_sublogics (targetLogic cid) s2)
@@ -234,7 +235,7 @@ onlyMaximal_preImage = Map.map shrink
 {- | inserts an edge into the graph without checking if the
 sublogic pair is compatible with the comorphism;
 but both nodes must be already present in the graph -}
-insertEdge :: (Monad m) =>
+insertEdge :: (Fail.MonadFail m) =>
               G_sublogics -> G_sublogics
            -> AnyComorphism -> HetSublogicGraph
            -> m HetSublogicGraph
@@ -245,7 +246,7 @@ insertEdge src trg acm hsg =
          hsg { comorphismEdges = Map.insertWith (++)
                                                 (show src, show trg) [acm] $
                                                 comorphismEdges hsg }
-    else fail ("Comorphisms.HetLogicGraph: insertEdge: both nodes need " ++
+    else Fail.fail ("Comorphisms.HetLogicGraph: insertEdge: both nodes need " ++
                "to be present")
 
 removeLoops :: HetSublogicGraph -> HetSublogicGraph

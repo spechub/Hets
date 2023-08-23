@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CSMOF2CASL.hs
 Description :  Coding CSMOF into CASL
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -78,7 +78,7 @@ instance Comorphism CSMOF2CASL
       mapSublogic CSMOF2CASL _ = Just $ caslTop
         { has_part = False
         , sub_features = LocFilSub
-        , cons_features = SortGen True True }
+        , cons_features = SortGen True True OnlyFree }
       map_theory CSMOF2CASL = mapTheory
       map_sentence CSMOF2CASL s = return . mapSen (mapSign s)
       map_morphism CSMOF2CASL = mapMor

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/ProveDarwin.hs
 Description :  Interface to the TPTP theorem prover via Darwin.
 Copyright   :  (c) Heng Jiang, Uni Bremen 2004-2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -16,9 +16,12 @@ module SoftFOL.ProveDarwin
   ( darwinProver
   , darwinCMDLautomaticBatch
   , darwinConsChecker
+  , runDarwinProcess
   , ProverBinary (..)
   , darwinExe
+  , proverBinary
   , tptpProvers
+  , eproverOpts
   ) where
 
 -- preliminary hacks for display of CASL models
@@ -244,12 +247,12 @@ runDarwinProcess bin saveTPTP options tmpFileName prob = do
 
 mkGraph :: String -> IO ()
 mkGraph f = do
- (_, cat, _) <- executeProcess "cat" [f] ""
- (_, tac, _) <- executeProcess "tac" [f] ""
+ fContent <- readFile f
+ let fLines = lines fContent
  let ((p_set, (cs, axs)), res) =
       processProof (zipF proofInfo $ zipF conjectures axioms)
-       (Set.empty, ([], [])) $ lines tac
-     (aliases, _) = processProof alias Map.empty $ lines cat
+       (Set.empty, ([], [])) $ reverse fLines
+     (aliases, _) = processProof alias Map.empty fLines
      same_rank = intercalate "; " $ map (\ (_, n) -> 'v' : n) $
                  filter (\ (_, n) -> Set.member n p_set
                                 && isNothing (Map.lookup n aliases)) $ cs ++ axs
@@ -259,7 +262,7 @@ mkGraph f = do
  writeFile "/tmp/graph.dot" $ unlines ["digraph {",
   "subgraph { rank = same; " ++ same_rank ++ " }",
   (\ (_, _, d, _) -> d) . fst $ processProof (digraph p_set aliases)
-   (Set.empty, Set.empty, "", Map.empty) $ lines cat, "}"]
+   (Set.empty, Set.empty, "", Map.empty) fLines, "}"]
 
 runEProverBuffered
   :: Bool -- ^ save problem
@@ -293,12 +296,11 @@ runEProverBuffered saveTPTP graph fullgraph options tmpFileName prob = do
                `Exception.catch` (\ ThreadKilled -> terminateProcess h)
               hClose buff
               mkGraph bufferFile
-              runInteractiveCommand $ unwords ["grep", "-e", "axiom",
-               "-e", "SZS", bufferFile, "&&", "rm", "-f", bufferFile]
+              runInteractiveCommand $ unwords ["egrep", "axiom|SZS",
+                bufferFile, "&&", "rm", "-f", bufferFile]
         else runInteractiveCommand $ unwords
              [bin, "--proof-object", options, timeTmpFile,
-              "|", "grep", "-e", "axiom", "-e", "SZS",
-               "&&", "rm", timeTmpFile]
+              "|", "egrep", "axiom|SZS", "&&", "rm", timeTmpFile]
        return (out, err)
    perr <- hGetContents err
    pout <- hGetContents out

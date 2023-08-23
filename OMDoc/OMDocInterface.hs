@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./OMDoc/OMDocInterface.hs
 Description :  Handpicked model of OMDoc subset
 Copyright   :  (c) Hendrik Iben, Uni Bremen 2005-2007
 License     :  GPLv2 or higher, see LICENSE.txt

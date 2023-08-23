@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/OrderedMap.hs
 Description :  ordered maps (these keep insertion order)
 Copyright   :  (c)  Klaus Luettich and Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -37,6 +37,7 @@ import Data.Data
 import Data.Ord
 import qualified Data.List as List
 import qualified Data.Map as Map
+import qualified Control.Monad.Fail as Fail
 
 data ElemWOrd a = EWOrd
   { order :: Int
@@ -54,8 +55,8 @@ type OMap a b = Map.Map a (ElemWOrd b)
 null :: OMap k a -> Bool
 null = Map.null
 
-lookup :: (Monad m, Ord k) => k -> OMap k a -> m a
-lookup k = maybe (fail "Common.OrderedMap.lookup")
+lookup :: (Fail.MonadFail m, Ord k) => k -> OMap k a -> m a
+lookup k = maybe (Fail.fail "Common.OrderedMap.lookup")
   (return . ele) . Map.lookup k
 
 insert :: Ord k => k -> a -> OMap k a -> OMap k a

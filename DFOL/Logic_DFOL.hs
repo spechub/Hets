@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./DFOL/Logic_DFOL.hs
 Description :  Instances of classes defined in Logic.hs for first-order logic
                with dependent types (DFOL)
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009
@@ -18,10 +18,11 @@ module DFOL.Logic_DFOL where
 
 import Common.Result
 
-import Data.Monoid
+import Data.Monoid ()
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
 
 import DFOL.AS_DFOL
 import DFOL.Sign
@@ -48,17 +49,18 @@ instance Category Sign Morphism where
    cod = target
    isInclusion = Map.null . symMap . canForm
    composeMorphisms = compMorph
-   legal_mor m = unless (isValidMorph m) $ fail "illegal DFOL morphism"
+   legal_mor m = unless (isValidMorph m) $ Fail.fail "illegal DFOL morphism"
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- syntax for DFOL
 instance Syntax DFOL BASIC_SPEC Symbol SYMB_ITEMS SYMB_MAP_ITEMS where
    parse_basic_spec DFOL = Just basicSpec
-   parse_symb_items DFOL = Just symbItems
-   parse_symb_map_items DFOL = Just symbMapItems
+   parse_symb_items DFOL = Just . const $ symbItems
+   parse_symb_map_items DFOL = Just . const $ symbMapItems
 
 -- sentences for DFOL
 instance Sentences DFOL FORMULA Sign Morphism Symbol where

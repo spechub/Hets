@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./FreeCAD/VecTools.hs
 Description :  definition of 3-dimensional vector operations, transformations
                between rotation matrices and rotation quaternions
 Copyright   :  (c) Robert Savu and Uni Bremen 2011

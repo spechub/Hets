@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/Logic_THF.hs
 Description :  Instance of class Logic for THF.
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
                (c) Jonathan von Schroeder, DFKI Bremen 2012
@@ -20,8 +20,10 @@ import ATC.ProofTree ()
 import Common.DefaultMorphism
 import Common.ProofTree
 
-import Data.Monoid
-import Data.Map (isSubmapOf, fold)
+import Data.Monoid ()
+import Data.Map (isSubmapOf)
+import qualified Data.Map (toList, foldr)
+import qualified Data.Set (fromList)
 
 import Logic.Logic
 
@@ -38,8 +40,6 @@ import THF.ParseTHF
 import qualified THF.Sublogic as SL
 import THF.Poly (getSymbols)
 import THF.Utils (toId)
-import qualified Data.Map (toList)
-import qualified Data.Set (fromList)
 
 -- TODO implement more instance methods
 
@@ -51,10 +51,11 @@ instance Language THF where
         "For further information please refer to" ++
         "http://www.cs.miami.edu/~tptp/TPTP/SyntaxBNF.html"
 
+instance Semigroup BasicSpecTHF where
+    (BasicSpecTHF l1) <> (BasicSpecTHF l2) =
+        BasicSpecTHF $ l1 ++ l2
 instance Monoid BasicSpecTHF where
     mempty = BasicSpecTHF []
-    mappend (BasicSpecTHF l1) (BasicSpecTHF l2) =
-        BasicSpecTHF $ l1 ++ l2
 
 instance Logic.Logic.Syntax THF BasicSpecTHF SymbolTHF () () where
     parse_basic_spec THF = Just (\ _ -> fmap BasicSpecTHF parseTHF)
@@ -118,10 +119,10 @@ instance MinSublogic SL.THFSl () where
  minSublogic _ = SL.tHF0
 
 instance MinSublogic SL.THFSl SignTHF where
- minSublogic (Sign tp c _) = lub (Data.Map.fold
+ minSublogic (Sign tp c _) = lub (Data.Map.foldr
    (\ t sl -> lub sl $ minSublogic $ typeKind t)
    SL.tHF0 tp)
-  (Data.Map.fold
+  (Data.Map.foldr
    (\ cs sl -> lub sl $ minSublogic $ constType cs)
    SL.tHF0 c)
 

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Haskell/PreludeString.append.hs
 Description :  the programatica prelude as string
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

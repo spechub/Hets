@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Analysis.hs
 Description :  Basic analysis for common logic
 Copyright   :  (c) Eugen Kuksa, Karl Luc, Uni Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -32,6 +32,7 @@ import Common.IRI (parseIRIReference)
 import Common.DocUtils
 import Common.Lib.Graph
 import Common.SetColimit
+import qualified Control.Monad.Fail as Fail
 
 import CommonLogic.Symbol as Symbol
 import qualified CommonLogic.AS_CommonLogic as AS
@@ -113,21 +114,37 @@ addFormula formulae nf _ = formulae ++
       i = nfnum nf
       lnum = AS_Anno.opt_pos f
 
+-- | extract comment from text, used as formula label
+getComment :: AS.TEXT -> String
+getComment (AS.Text ((AS.Comment_text (AS.Comment s _) _ _) :_) _)= s
+getComment (AS.Text (_:rest) pos) = getComment (AS.Text rest pos)
+getComment _ = ""
+
+stripQuote :: String -> String
+stripQuote ('"':rest) = rest
+stripQuote s = s
+
+stripQuotes :: String -> String
+stripQuotes ('"':rest) = reverse (stripQuote (reverse rest))
+stripQuotes s = s
+
 -- | generates a named formula
 makeNamed :: AS_Anno.Annoted AS.TEXT_META -> Int
              -> AS_Anno.Named AS.TEXT_META
 makeNamed f i =
   (AS_Anno.makeNamed (
-      if null label
+      if null label2
         then case text of
                 AS.Named_text n _ _ -> Id.tokStr n
                 _ -> "Ax_" ++ show i
-        else label
+        else label2
     ) $ AS_Anno.item f)
   { AS_Anno.isAxiom = not isTheorem }
    where
       text = AS.getText $ AS_Anno.item f
       label = AS_Anno.getRLabel f
+      label2 = if null label then stripQuotes $ getComment text
+                else label
       annos = AS_Anno.r_annos f
       isImplies = any AS_Anno.isImplies annos
       isImplied = any AS_Anno.isImplied annos
@@ -259,7 +276,7 @@ inducedFromToMorphism m (ExtSign s sys) (ExtSign t ty) = let
        , sequenceMarkers = Set.map (applyMap p) $ sequenceMarkers s
        }
   in if isSubSigOf t2 t then return $ mkMorphism s t p else
-        fail $ "cannot map symbols from\n" ++ showDoc (sigDiff t2 t) "\nto\n"
+        Fail.fail $ "cannot map symbols from\n" ++ showDoc (sigDiff t2 t) "\nto\n"
           ++ showDoc t ""
 
 -- | negate sentence (text) - propagates negation to sentences

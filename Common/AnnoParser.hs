@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/AnnoParser.hs
 Description :  parsers for annotations and annoted items
 Copyright   :  (c) Klaus Luettich, Christian Maeder and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -39,6 +39,7 @@ import Common.IRI as IRI
 import Common.Keywords
 import Common.AS_Annotation
 import Common.Utils (trimRight)
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Map as Map
 import Data.List
@@ -104,7 +105,7 @@ annote = annoLabel <|> do
     case parseAnno anno p of
       Left err -> do
         setPosition (errorPos err)
-        fail (tail (showErrorMessages "or" "unknown parse error"
+        Fail.fail (tail (showErrorMessages "or" "unknown parse error"
                     "expecting" "unexpected" "end of input"
                     (errorMessages err)))
       Right pa -> return pa
@@ -119,7 +120,7 @@ annoLabel = do
 annoIdent :: GenParser Char st Annote_word
 annoIdent = fmap Annote_word $ string percentS >>
     (scanAnyWords <|>
-     fail "wrong comment or annotation starting with a single %")
+     Fail.fail "wrong comment or annotation starting with a single %")
 
 annoteGroup :: Pos -> Annote_word -> GenParser Char st Annotation
 annoteGroup p s =
@@ -241,7 +242,7 @@ prefixAnno ps = do
         p <- (string colonS >> return "") <|>
              (IRI.ncname << string colonS)
         spaces
-        i <- angles iri
+        i <- angles IRI.iriParser
         spaces
         return (p, i)
     return $ Prefix_anno prefixes ps

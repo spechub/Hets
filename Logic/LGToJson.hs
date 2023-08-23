@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Logic/LGToJson.hs
 Description :  export logic graph information as Json
 Copyright   :  (c) Christian Maeder DFKI GmbH 2013
 License     :  GPLv2 or higher, see LICENSE.txt

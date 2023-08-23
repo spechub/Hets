@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/CheckGlobalContext.hs
 Description :  checking consistency of indices
 Copyright   :  (c) Jianchun Wang, C. Maeder, Uni Bremen 2002-2007
 License     :  GPLv2 or higher, see LICENSE.txt

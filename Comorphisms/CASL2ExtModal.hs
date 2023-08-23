@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2ExtModal.hs
 Description :  embedding from CASL to ExtModal
 Copyright   :  (c) C. Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt

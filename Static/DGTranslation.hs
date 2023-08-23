@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Static/DGTranslation.hs
 Description :  Translation of development graphs along comorphisms
 Copyright   :  Heng Jiang, Uni Bremen 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -38,23 +38,24 @@ import qualified Data.Set as Set
 import Data.Graph.Inductive.Graph
 
 import Control.Monad (foldM)
+import qualified Control.Monad.Fail as Fail
 
 -- | translation of a LibEnv (a map of globalcontext)
 libEnv_translation :: LibEnv -> AnyComorphism -> Result LibEnv
 libEnv_translation libEnv com =
   foldM (\ le ln -> do
-    dgTr <- dg_translation le (lookupDGraph ln libEnv) com
+    dgTr <- dg_translation le ln (lookupDGraph ln libEnv) com
     return $ Map.insert ln dgTr le) Map.empty $ getTopsortedLibs libEnv
 
-dg_translation :: LibEnv -> DGraph -> AnyComorphism -> Result DGraph
-dg_translation le gc acm@(Comorphism cidMor) =
+dg_translation :: LibEnv -> LibName -> DGraph -> AnyComorphism -> Result DGraph
+dg_translation le ln gc acm@(Comorphism cidMor) =
     let labNodesList = labNodesDG gc
         labEdgesList = labEdgesDG gc
     in addErrorDiag ("translation failed via: " ++ language_name cidMor) ()
        $ do
         resOfEdges <- mapM (updateEdges acm gc) labEdgesList
         resOfNodes <- mapM (updateNodes acm) labNodesList
-        return $ computeDGraphTheories le
+        return $ computeDGraphTheories le ln
           $ mkGraphDG resOfNodes resOfEdges emptyDG
 
 updateEdges :: AnyComorphism -> DGraph -> LEdge DGLinkLab
@@ -75,7 +76,7 @@ updateEdges (Comorphism cidMor) gc (s, t, lbl) = case dgl_morphism lbl of
          (ExtSign lsign' $ Set.unions
          $ map (map_symbol cidMor lsign) $ Set.toList sys)
          startSigId lmorphism' startMorId })
-   else fail $ "Link " ++ showFromTo s t gc ++ " is not homogeneous."
+   else Fail.fail $ "Link " ++ showFromTo s t gc ++ " is not homogeneous."
 
 updateNodes :: AnyComorphism -> LNode DGNodeLab -> Result (LNode DGNodeLab)
 updateNodes (Comorphism cidMor) (node, dgNodeLab) =
@@ -120,11 +121,11 @@ getSublogicFromDGraph le ln = do
 
 combineSublogics :: [G_sublogics] -> Result G_sublogics
 combineSublogics l = case l of
-  [] -> fail "Static.DGTranslation.combineSublogics.empty"
+  [] -> Fail.fail "Static.DGTranslation.combineSublogics.empty"
   h : t -> case foldr (\ s ms -> case ms of
            Just u -> joinSublogics s u
            _ -> Nothing) (Just h) t of
-     Nothing -> fail "Static.DGTranslation.combineSublogics"
+     Nothing -> Fail.fail "Static.DGTranslation.combineSublogics"
      Just s -> return s
 
 testAndGetSublogicFromEdge :: LEdge DGLinkLab -> Result G_sublogics
@@ -142,7 +143,7 @@ getSubLogicsFromNodes logic (_, lnode) =
         case dgn_theory lnode of
           th@(G_theory lid _ _ _ _ _) ->
               if Logic lid == logic then return $ sublogicOfTh th
-                 else fail $ "the node " ++ getDGNodeName lnode ++
+                 else Fail.fail $ "the node " ++ getDGNodeName lnode ++
                                "  has a different logic \"" ++ show lid ++
                                "\" as the logic of Graph \"" ++ show logic ++
                                " is not homogeneous."

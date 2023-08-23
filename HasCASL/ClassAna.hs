@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/ClassAna.hs
 Description :  analyse kinds using a class map
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -24,6 +24,7 @@ import Common.Lib.State
 import Common.Result
 import Common.DocUtils
 import Common.Utils
+import qualified Control.Monad.Fail as Fail
 
 -- * analyse kinds
 
@@ -40,14 +41,14 @@ anaKindM k cm = case k of
         return $ FunKind v rk1 rk2 ps
 
 -- | get minimal function kinds of (class) kind
-getFunKinds :: Monad m => ClassMap -> Kind -> m (Set.Set Kind)
+getFunKinds :: Fail.MonadFail m => ClassMap -> Kind -> m (Set.Set Kind)
 getFunKinds cm k = case k of
     FunKind {} -> return $ Set.singleton k
     ClassKind c -> case Map.lookup c cm of
          Just info -> do
              ks <- mapM (getFunKinds cm) $ Set.toList $ classKinds info
              return $ keepMinKinds cm ks
-         _ -> fail $ "not a function kind '" ++ showId c "'"
+         _ -> Fail.fail $ "not a function kind '" ++ showId c "'"
 
 -- | compute arity from a raw kind
 kindArity :: RawKind -> Int
@@ -126,8 +127,8 @@ lesserRawKind k1 k2 = case k1 of
             && lesserRawKind r1 r2 && lesserRawKind a2 a1
         _ -> False
 
-minRawKind :: Monad m => String -> RawKind -> RawKind -> m RawKind
-minRawKind str k1 k2 = let err = fail $ diffKindString str k1 k2 in case k1 of
+minRawKind :: Fail.MonadFail m => String -> RawKind -> RawKind -> m RawKind
+minRawKind str k1 k2 = let err = Fail.fail $ diffKindString str k1 k2 in case k1 of
     ClassKind _ -> case k2 of
         ClassKind _ -> return $ ClassKind ()
         _ -> err

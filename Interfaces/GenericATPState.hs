@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Interfaces/GenericATPState.hs
 Description :  Help functions for GUI.GenericATP
 Copyright   :  (c) Klaus Luettich, Rainer Grabbe, Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -311,7 +311,7 @@ printCfgText :: Map.Map ATPIdentifier (GenericConfig proof_tree)
 printCfgText mp = text "* Configuration *" $+$ dc
              $++$ text "* Results *" $+$ dr
   where
-  (dc, dr) = Map.foldWithKey (\ k cfg (dCfg, dRes) ->
+  (dc, dr) = Map.foldrWithKey (\ k cfg (dCfg, dRes) ->
       let r = proofStatus cfg
       in
       (quotes (text k) <+> equals <+> specBraces (

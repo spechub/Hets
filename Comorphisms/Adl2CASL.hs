@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/Adl2CASL.hs
 Description :  Coding a description language into CASL
 Copyright   :  (c)  Stef Joosten, Christian Maeder DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

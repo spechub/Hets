@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./QVTR/Sign.hs
 Description :  QVTR signature and sentences
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -65,9 +65,9 @@ instance Pretty Sign where
     $++$
     text "Definition of Relations"
     $+$
-    Map.fold (($+$) . pretty) empty topRel
+    Map.foldr (($+$) . pretty) empty topRel
     $+$
-    Map.fold (($+$) . pretty) empty nonRel
+    Map.foldr (($+$) . pretty) empty nonRel
     $++$
     text "Definition of Keys"
     $+$

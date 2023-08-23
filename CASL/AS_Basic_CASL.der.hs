@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/AS_Basic_CASL.der.hs
 Description :  Abstract syntax of CASL basic specifications
 Copyright   :  (c) Klaus Luettich, Christian Maeder, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -143,6 +143,10 @@ varDeclRange (Var_decl vs s _) = case vs of
 
 data Junctor = Con | Dis deriving (Show, Eq, Ord, Typeable, Data)
 
+dualJunctor :: Junctor -> Junctor
+dualJunctor Con = Dis
+dualJunctor Dis = Con
+
 data Relation = Implication | RevImpl | Equivalence
   deriving (Show, Eq, Ord, Typeable, Data)
 
@@ -154,7 +158,9 @@ data FORMULA f = Quantification QUANTIFIER [VAR_DECL] (FORMULA f) Range
                -- pos: "/\"s or "\/"s
              | Relation (FORMULA f) Relation (FORMULA f) Range
                {- pos: "<=>", "=>" or "if"
-               note: the first formula is the premise also for "if"! -}
+               Note: The first formula is the premise also for "if"!
+               Explicitly: During parsing, "f2 if f1" is saved as
+               "Relation f1 RevImpl f2 _" -}
              | Negation (FORMULA f) Range
                -- pos: not
              | Atom Bool Range
@@ -449,6 +455,12 @@ type VAR = Token
 data SYMB_ITEMS = Symb_items SYMB_KIND [SYMB] Range
                   -- pos: SYMB_KIND, commas
                   deriving (Show, Eq, Ord, Typeable, Data)
+
+symbItemsName :: SYMB_ITEMS -> [String]
+symbItemsName (Symb_items _ syms _ ) =
+ map (\x -> case x of 
+                    Symb_id i -> show i
+                    Qual_id i _ _ -> show i) syms 
 
 data SYMB_MAP_ITEMS = Symb_map_items SYMB_KIND [SYMB_OR_MAP] Range
                       -- pos: SYMB_KIND, commas

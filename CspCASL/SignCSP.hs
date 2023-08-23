@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/SignCSP.hs
 Description :  CspCASL signatures
 Copyright   :  (c) Markus Roggenbach and Till Mossakowski and Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

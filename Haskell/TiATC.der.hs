@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP, StandaloneDeriving, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Haskell/TiATC.der.hs
 Description :  ShATermConvertible instances
 Copyright   :  (c) Christian Maeder, Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt

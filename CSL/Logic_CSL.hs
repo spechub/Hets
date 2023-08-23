@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Logic_CSL.hs
 Description :  Instance of class Logic for CSL
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -11,6 +11,11 @@ Portability :  non-portable (imports Logic.Logic)
 
 Instance of class Logic for the CSL logic
    Also the instances for Syntax and Category.
+
+see
+Dominik Dietrich, Lutz Schröder, and Ewaryst Schulz:
+Formalizing and Operationalizing Industrial Standards.
+D. Giannakopoulou and F. Orejas (Eds.): FASE 2011, LNCS 6603, pp. 81–95, 2011.
 -}
 
 
@@ -29,7 +34,7 @@ import CSL.Symbol
 import CSL.Tools
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 import Logic.Logic
 
@@ -40,7 +45,7 @@ instance Show CSL where
     show _ = "EnCL"
 
 instance Language CSL where
-    description _ = "EnCL Logic\n"
+    description _ = "A Domain-Specific Language for Engineering Calculations\n"
 -- language_name _ = "EnCL"
 
 -- | Instance of Category for CSL logic
@@ -73,17 +78,19 @@ instance Sentences CSL CMD
     map_sen CSL = mapSentence
     -- there is nothing to leave out
     simplify_sen CSL _ = id
+    symKind CSL _ = "op"
 
+instance Semigroup BASIC_SPEC where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid BASIC_SPEC where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- | Syntax of CSL logic
 instance Syntax CSL BASIC_SPEC Symbol
     SYMB_ITEMS SYMB_MAP_ITEMS where
          parse_basic_spec CSL = parseBasicSpec
-         parse_symb_items CSL = parseSymbItems
-         parse_symb_map_items CSL = parseSymbMapItems
+         parse_symb_items CSL = fmap const parseSymbItems
+         parse_symb_map_items CSL = fmap const parseSymbMapItems
 
 -- | Instance of Logic for reduce logc
 instance Logic CSL

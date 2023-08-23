@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Analysis.hs
 Description :  Static Analysis for EnCL
 Copyright   :  (c) Dominik Dietrich, Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

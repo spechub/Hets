@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Logic_Maude.hs
 Description :  Instance of class Logic for Maude
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -15,6 +15,8 @@ Instance of class Logic for Maude. See <http://maude.cs.uiuc.edu/>
 module Maude.Logic_Maude where
 
 import Logic.Logic
+
+import Common.DocUtils
 
 import Maude.AS_Maude (MaudeText (..))
 import Maude.Parse (mStuff)
@@ -33,7 +35,7 @@ import Maude.Shellout
 import Common.AS_Annotation
 import Common.ExtSign
 
-import Data.Monoid
+import Data.Monoid ()
 
 import System.IO.Unsafe
 
@@ -73,13 +75,15 @@ instance Sentences Maude Sentence Sign Morphism Symbol where
     simplify_sen Maude = Sign.simplifySentence
     -- symbols --
     sym_name Maude = Symbol.toId
+    symKind Maude = show . pretty . Symbol.sym_kind
     sym_of Maude = singletonList . Sign.symbols
     symmap_of Maude = Morphism.symbolMap
 
+instance Semigroup MaudeText where
+    (MaudeText l1) <> (MaudeText l2) = MaudeText
+      . unlines $ lines l1 ++ lines l2
 instance Monoid MaudeText where
     mempty = MaudeText ""
-    mappend (MaudeText l1) (MaudeText l2) = MaudeText
-      . unlines $ lines l1 ++ lines l2
 
 -- | Instance of Syntax for Maude
 instance Syntax Maude MaudeText Symbol () () where

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./MMT/Tools.hs
 Description :  parse tree produced by MMT
 Copyright   :
 License     :

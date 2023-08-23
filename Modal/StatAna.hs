@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Modal/StatAna.hs
 Copyright   :  (c) Christian Maeder, Uni Bremen 2004-2005
 License     :  GPLv2 or higher, see LICENSE.txt
 

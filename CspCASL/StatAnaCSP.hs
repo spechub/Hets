@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CspCASL/StatAnaCSP.hs
 Description :  Static analysis of CspCASL
 Copyright   :  (c) Andy Gimblett, Liam O'Reilly, Markus Roggenbach,
                    Swansea University 2008, C. Maeder, DFKI 2011

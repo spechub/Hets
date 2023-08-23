@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/CompositionTable/ModelFormula.hs
 Description :  intermediate calculus formula
 Copyright   :  (c) DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

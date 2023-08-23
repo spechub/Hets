@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/Freeness.hs
 Description :  normalization of freeness
 Copyright   :  (c) Mihai Codescu, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -46,15 +46,15 @@ freenessRule = DGRule "Freeness"
 freeness :: LibName -> LibEnv -> Result LibEnv
 freeness ln le = do
   let dg = lookupDGraph ln le
-  newDg <- freenessDG le dg
+  newDg <- freenessDG le ln dg
   return $ Map.insert ln
     (groupHistory dg freenessRule newDg) le
 
-freenessDG :: LibEnv -> DGraph -> Result DGraph
-freenessDG le dgraph = foldM (handleEdge le) dgraph $ labEdgesDG dgraph
+freenessDG :: LibEnv -> LibName -> DGraph -> Result DGraph
+freenessDG le ln dgraph = foldM (handleEdge le ln) dgraph $ labEdgesDG dgraph
 
-handleEdge :: LibEnv -> DGraph -> LEdge DGLinkLab -> Result DGraph
-handleEdge libEnv dg edge@(m, n, x) =
+handleEdge :: LibEnv -> LibName -> DGraph -> LEdge DGLinkLab -> Result DGraph
+handleEdge libEnv ln dg edge@(m, n, x) =
     case dgl_type x of
      FreeOrCofreeDefLink _ _ -> do
       let phi = dgl_morphism x
@@ -99,10 +99,10 @@ handleEdge libEnv dg edge@(m, n, x) =
                 labelN = labDG dg n
                 succs = map (\ y -> (y, labDG dg y)) $ descs (dgBody dg) n
                 labCh = [SetNodeLab labelK (k, labelK
-                          { globalTheory = computeLabelTheory libEnv newDG
+                          { globalTheory = computeLabelTheory libEnv ln newDG
                                (k, labelK) }),
                          SetNodeLab labelN (n, labelN
-                          { globalTheory = computeLabelTheory libEnv newDG
+                          { globalTheory = computeLabelTheory libEnv ln newDG
                                (n, labelN)
                             , labelHasHiding = True })
                          ] ++

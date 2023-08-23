@@ -1,0 +1,98 @@
+logic OWL serialization Functional
+
+spec a = 
+Prefix(:=<http://example.org/>)
+Prefix(dc:=<http://purl.org/dc/elements/1.1/>)
+Prefix(ex:=<http://www.example.org#>)
+Prefix(ns0:=<http://cohse.semanticweb.org/ontologies/people#>)
+Prefix(owl:=<http://www.w3.org/2002/07/owl#>)
+Prefix(rdf:=<http://www.w3.org/1999/02/22-rdf-syntax-ns#>)
+Prefix(vin:=<http://www.w3.org/2002/03owlt/miscellaneous/consistent001#>)
+Prefix(xml:=<http://www.w3.org/XML/1998/namespace>)
+Prefix(xsd:=<http://www.w3.org/2001/XMLSchema#>)
+Prefix(food:=<http://www.w3.org/2002/03owlt/miscellaneous/consistent002#>)
+Prefix(rdfs:=<http://www.w3.org/2000/01/rdf-schema#>)
+Prefix(owl11:=<http://www.w3.org/2006/12/owl11#>)
+Prefix(pizza:=<http://www.co-ode.org/ontologies/pizza/pizza.owl#>)
+Prefix(owl11xml:=<http://www.w3.org/2006/12/owl11-xml#>)
+
+
+Ontology(
+Declaration(Class(<http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N>))
+Declaration(Class(<http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N-times-M>))
+Declaration(Class(<http://www.w3.org/2002/03owlt/description-logic/consistent905#only-d>))
+Declaration(Class(owl:Thing))
+Declaration(ObjectProperty(<http://www.w3.org/2002/03owlt/description-logic/consistent905#invP-1-to-N>))
+Declaration(ObjectProperty(<http://www.w3.org/2002/03owlt/description-logic/consistent905#invQ-1-to-M>))
+Declaration(ObjectProperty(<http://www.w3.org/2002/03owlt/description-logic/consistent905#invR-N-times-M-to-1>))
+Declaration(ObjectProperty(<http://www.w3.org/2002/03owlt/description-logic/consistent905#p-N-to-1>))
+Declaration(ObjectProperty(<http://www.w3.org/2002/03owlt/description-logic/consistent905#q-M-to-1>))
+Declaration(ObjectProperty(<http://www.w3.org/2002/03owlt/description-logic/consistent905#r-N-times-M-to-1>))
+Declaration(NamedIndividual(<http://www.w3.org/2002/03owlt/description-logic/consistent905#d>))
+############################
+#   Object Properties
+############################
+
+# Object Property: <http://www.w3.org/2002/03owlt/description-logic/consistent905#invP-1-to-N> (<http://www.w3.org/2002/03owlt/description-logic/consistent905#invP-1-to-N>)
+
+InverseObjectProperties(<http://www.w3.org/2002/03owlt/description-logic/consistent905#invP-1-to-N> <http://www.w3.org/2002/03owlt/description-logic/consistent905#p-N-to-1>)
+
+# Object Property: <http://www.w3.org/2002/03owlt/description-logic/consistent905#invQ-1-to-M> (<http://www.w3.org/2002/03owlt/description-logic/consistent905#invQ-1-to-M>)
+
+InverseObjectProperties(<http://www.w3.org/2002/03owlt/description-logic/consistent905#invQ-1-to-M> <http://www.w3.org/2002/03owlt/description-logic/consistent905#q-M-to-1>)
+
+# Object Property: <http://www.w3.org/2002/03owlt/description-logic/consistent905#invR-N-times-M-to-1> (<http://www.w3.org/2002/03owlt/description-logic/consistent905#invR-N-times-M-to-1>)
+
+InverseObjectProperties(<http://www.w3.org/2002/03owlt/description-logic/consistent905#invR-N-times-M-to-1> <http://www.w3.org/2002/03owlt/description-logic/consistent905#r-N-times-M-to-1>)
+
+# Object Property: <http://www.w3.org/2002/03owlt/description-logic/consistent905#p-N-to-1> (<http://www.w3.org/2002/03owlt/description-logic/consistent905#p-N-to-1>)
+
+FunctionalObjectProperty(<http://www.w3.org/2002/03owlt/description-logic/consistent905#p-N-to-1>)
+ObjectPropertyDomain(<http://www.w3.org/2002/03owlt/description-logic/consistent905#p-N-to-1> <http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N>)
+ObjectPropertyRange(<http://www.w3.org/2002/03owlt/description-logic/consistent905#p-N-to-1> <http://www.w3.org/2002/03owlt/description-logic/consistent905#only-d>)
+
+# Object Property: <http://www.w3.org/2002/03owlt/description-logic/consistent905#q-M-to-1> (<http://www.w3.org/2002/03owlt/description-logic/consistent905#q-M-to-1>)
+
+FunctionalObjectProperty(<http://www.w3.org/2002/03owlt/description-logic/consistent905#q-M-to-1>)
+ObjectPropertyDomain(<http://www.w3.org/2002/03owlt/description-logic/consistent905#q-M-to-1> <http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N-times-M>)
+ObjectPropertyRange(<http://www.w3.org/2002/03owlt/description-logic/consistent905#q-M-to-1> <http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N>)
+
+# Object Property: <http://www.w3.org/2002/03owlt/description-logic/consistent905#r-N-times-M-to-1> (<http://www.w3.org/2002/03owlt/description-logic/consistent905#r-N-times-M-to-1>)
+
+FunctionalObjectProperty(<http://www.w3.org/2002/03owlt/description-logic/consistent905#r-N-times-M-to-1>)
+ObjectPropertyDomain(<http://www.w3.org/2002/03owlt/description-logic/consistent905#r-N-times-M-to-1> <http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N-times-M>)
+ObjectPropertyRange(<http://www.w3.org/2002/03owlt/description-logic/consistent905#r-N-times-M-to-1> <http://www.w3.org/2002/03owlt/description-logic/consistent905#only-d>)
+
+
+############################
+#   Classes
+############################
+
+# Class: <http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N> (<http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N>)
+
+EquivalentClasses(<http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N> ObjectSomeValuesFrom(<http://www.w3.org/2002/03owlt/description-logic/consistent905#p-N-to-1> <http://www.w3.org/2002/03owlt/description-logic/consistent905#only-d>))
+EquivalentClasses(<http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N> ObjectExactCardinality(3 <http://www.w3.org/2002/03owlt/description-logic/consistent905#invQ-1-to-M>))
+
+# Class: <http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N-times-M> (<http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N-times-M>)
+
+EquivalentClasses(<http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N-times-M> ObjectSomeValuesFrom(<http://www.w3.org/2002/03owlt/description-logic/consistent905#q-M-to-1> <http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N>))
+EquivalentClasses(<http://www.w3.org/2002/03owlt/description-logic/consistent905#cardinality-N-times-M> ObjectSomeValuesFrom(<http://www.w3.org/2002/03owlt/description-logic/consistent905#r-N-times-M-to-1> <http://www.w3.org/2002/03owlt/description-logic/consistent905#only-d>))
+
+# Class: <http://www.w3.org/2002/03owlt/description-logic/consistent905#only-d> (<http://www.w3.org/2002/03owlt/description-logic/consistent905#only-d>)
+
+EquivalentClasses(<http://www.w3.org/2002/03owlt/description-logic/consistent905#only-d> ObjectOneOf(<http://www.w3.org/2002/03owlt/description-logic/consistent905#d>))
+EquivalentClasses(<http://www.w3.org/2002/03owlt/description-logic/consistent905#only-d> ObjectExactCardinality(2 <http://www.w3.org/2002/03owlt/description-logic/consistent905#invP-1-to-N>))
+EquivalentClasses(<http://www.w3.org/2002/03owlt/description-logic/consistent905#only-d> ObjectExactCardinality(6 <http://www.w3.org/2002/03owlt/description-logic/consistent905#invR-N-times-M-to-1>))
+
+
+############################
+#   Named Individuals
+############################
+
+# Individual: <http://www.w3.org/2002/03owlt/description-logic/consistent905#d> (<http://www.w3.org/2002/03owlt/description-logic/consistent905#d>)
+
+ClassAssertion(owl:Thing <http://www.w3.org/2002/03owlt/description-logic/consistent905#d>)
+
+
+)
+end

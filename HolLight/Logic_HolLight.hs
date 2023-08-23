@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./HolLight/Logic_HolLight.hs
 Description :  Instance of class Logic for HolLight
 
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
@@ -38,7 +38,7 @@ data HolLight = HolLight deriving Show
 
 
 instance Language HolLight where
-    description _ = "Hol Light\n"
+    description _ = "input language of the theorem prover Hol Light\n"
         ++ "for more information please refer to\n"
         ++ "http://www.cl.cam.ac.uk/~jrh13/hol-light/"
 

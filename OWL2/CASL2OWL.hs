@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/CASL2OWL.hs
 Description :  Comorphism from CASL to OWL2
 Copyright   :  (c) C. Maeder, DFKI GmbH 2012
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -22,6 +22,7 @@ import Common.Id
 import Common.ProofTree
 import Common.Utils
 import qualified Common.Lib.MapSet as MapSet
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -30,8 +31,8 @@ import Data.Maybe
 
 -- OWL = codomain
 import OWL2.Logic_OWL2
-import OWL2.MS
 import OWL2.AS
+import Common.IRI
 import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()
 import OWL2.Morphism
@@ -97,39 +98,27 @@ toC = Expression . idToIRI
 toO :: Id -> Int -> ObjectPropertyExpression
 toO i = ObjectProp . idToNumberedIRI i
 
-toACE :: Id -> (Annotations, ClassExpression)
-toACE i = ([], toC i)
+mkObjEnt :: String -> Id -> Int -> String -> Axiom -> Named Axiom
+mkObjEnt s i n m = makeNamed (s ++ show i ++ (if n < 0 then "" else '_' : show n) ++ m)
 
-toEBit :: Id -> ListFrameBit
-toEBit i = ExpressionBit [toACE i]
-
-mkDR :: DomainOrRange -> Id -> FrameBit
-mkDR dr = ListFrameBit (Just $ DRRelation dr) . toEBit
-
-mkObjEnt :: String -> Id -> Int -> String -> FrameBit -> Named Axiom
-mkObjEnt s i n m = makeNamed (s ++ show i
-  ++ (if n < 0 then "" else '_' : show n) ++ m) . PlainAxiom
-       (ObjectEntity $ toO i n)
-
-toSubClass :: Id -> [ClassExpression] -> Axiom
-toSubClass i = PlainAxiom (ClassEntity $ toC i) . ListFrameBit (Just SubClass)
-  . ExpressionBit . map (\ c -> ([], c))
+toSubClass :: Id -> [ClassExpression] -> [Axiom]
+toSubClass i = map (ClassAxiom . SubClassOf [] (toC i))
 
 getPropSens :: Id -> [SORT] -> Maybe SORT -> [Named Axiom]
 getPropSens i args mres = let
   ncs = number args
   opOrPred = if isJust mres then "op " else "pred "
-  in makeNamed (opOrPred ++ show i)
+  in fmap (makeNamed (opOrPred ++ show i))
          (toSubClass i [ObjectJunction IntersectionOf
             $ maybeToList (fmap toC mres)
             ++ map (\ (a, n) -> ObjectValuesFrom SomeValuesFrom
                  (toO i n) $ toC a) ncs])
-  : concatMap (\ (a, n) -> let mki = mkObjEnt opOrPred i n in
-      maybeToList (fmap (mki " domain" . mkDR ADomain) mres)
-      ++ [mki " range" $ mkDR ARange a]) ncs
+  ++ concatMap (\ (a, n) -> let mki = mkObjEnt opOrPred i n in
+      maybeToList (fmap (mki " domain" . ObjectPropertyAxiom . ObjectPropertyDomain [] (toO i n) . toC) mres) ++
+      [mki " range" $ ObjectPropertyAxiom $ ObjectPropertyRange [] (toO i n) (toC a)]) ncs
 
-getPropNames :: (a -> [b]) -> MapSet.MapSet Id a -> Set.Set QName
-getPropNames f = Map.foldWithKey (\ i s l ->
+getPropNames :: (a -> [b]) -> MapSet.MapSet Id a -> Set.Set IRI
+getPropNames f = Map.foldrWithKey (\ i s l ->
     case Set.toList s of
       [] -> l
       h : _ -> Set.union l $ Set.fromList
@@ -140,21 +129,21 @@ commonType :: CS.Sign f e -> [[SORT]] -> Result [SORT]
 commonType csig l =
   case map (keepMaximals csig) $ transpose l of
     hl | all (not . null) hl -> return $ map head hl
-    _ -> fail $ "no common types for " ++ show l
+    _ -> Fail.fail $ "no common types for " ++ show l
 
 commonOpType :: CS.Sign f e -> Set.Set OpType -> Result OpType
 commonOpType csig os = do
   l <- commonType csig $ map (\ o -> opRes o : opArgs o) $ Set.toList os
   case l of
     r : args -> return $ mkTotOpType args r
-    _ -> fail $ "no common types for " ++ showDoc os ""
+    _ -> Fail.fail $ "no common types for " ++ showDoc os ""
 
 commonPredType :: CS.Sign f e -> Set.Set PredType -> Result PredType
 commonPredType csig ps = do
   args <- commonType csig $ map predArgs $ Set.toList ps
   case args of
     _ : _ -> return $ PredType args
-    _ -> fail $ "no common types for " ++ showDoc ps ""
+    _ -> Fail.fail $ "no common types for " ++ showDoc ps ""
 
 getCommonSupers :: CS.Sign f e -> [SORT] -> Set.Set SORT
 getCommonSupers csig s = let supers t = Set.insert t $ supersortsOf t csig in
@@ -170,25 +159,22 @@ mapSign csig = let
   srel = sortRel csig
   (eqs, subss) = eqAndSubsorts False srel
   (isos, rels) = singleAndRelatedSorts srel
-  disjSorts = concatMap (\ l -> case l of
-    _ : _ : _ -> [makeNamed ("disjoint " ++ show l) $ mkMisc Disjoint l]
-    _ -> []) . sequence $ map (: []) isos ++ map (keepMaximals csig) rels
   ss = sortSet csig
   nsorts = Set.difference ss esorts
-  mkMisc ed l = PlainAxiom (Misc []) $ ListFrameBit (Just $ EDRelation ed)
-          $ ExpressionBit $ map toACE l
+  mkDisjC l = ClassAxiom $ DisjointClasses [] $ map toC l
+  mkEqivC l = ClassAxiom $ EquivalentClasses [] $ map toC l
+  disjSorts = concatMap (\ l -> case l of
+    _ : _ : _ -> [makeNamed ("disjoint " ++ show l) $ mkDisjC l]
+    _ -> []) . sequence $ map (: []) isos ++ map (keepMaximals csig) rels
   eqSorts = map (\ es -> makeNamed ("equal sorts " ++ show es)
-                 $ mkMisc Equivalent es) eqs
-  subSens = map (\ (s, ts) -> makeNamed
-    ("subsort " ++ show s ++ " of " ++ show ts) $ toSC s ts) subss
-  nonEmptySens = map (\ s -> mkIndi True s [s]) $ Set.toList nsorts
+                 $ mkEqivC es) eqs
+  subSens = concatMap (\ (s, ts) -> makeNamed
+    ("subsort " ++ show s ++ " of " ++ show ts) <$> toSC s ts) subss
+  nonEmptySens = concatMap (\ s -> mkIndi True s [s]) $ Set.toList nsorts
   sortSens = eqSorts ++ disjSorts ++ subSens ++ nonEmptySens
   mkIndi b i ts = makeNamed
         ("individual " ++ show i ++ " of class " ++ showDoc ts "")
-        $ PlainAxiom (SimpleEntity $ mkEntity NamedIndividual
-        $ idToAnonIRI b i)
-        $ ListFrameBit (Just Types) $ ExpressionBit
-        $ map toACE ts
+        <$> map (\t -> Assertion $ ClassAssertion [] (toC t) (idToAnonIRI b i)) ts
   om = opMap csig
   keepMaxs = keepMaximals csig
   mk s i = mkObjEnt s i (-1)
@@ -197,8 +183,8 @@ mapSign csig = let
   (cs, ncs) = MapSet.partition (null . opArgs) om
   (sos, os) = MapSet.partition isSingleArgOp ncs
   (props, nps) = MapSet.partition (null . predArgs) pm
-  (sps, rps) = MapSet.partition (isSingle . predArgs) nps
-  (bps, ps) = MapSet.partition isBinPredType rps
+  (sps, rps') = MapSet.partition (isSingle . predArgs) nps
+  (bps, ps) = MapSet.partition isBinPredType rps'
   pm = predMap csig
   osig = OS.emptySign
     { concepts = toIris $ Set.unions
@@ -210,47 +196,50 @@ mapSign csig = let
     , individuals = toIris $ MapSet.keysSet cs
     }
   in do
-  s1 <- Map.foldWithKey (\ i s ml -> do
+  s1 <- Map.foldrWithKey (\ i s ml -> do
       l <- ml
       return $ mkIndi False i
-        (keepMinimals csig id $ map opRes $ Set.toList s) : l)
+        (keepMinimals csig id $ map opRes $ Set.toList s) ++ l)
     (return sortSens) (MapSet.toMap cs)
-  s2 <- Map.foldWithKey (\ i s ml -> do
+  s2 <- Map.foldrWithKey (\ i s ml -> do
     l <- ml
     let sl = Set.toList s
         mki = mk "plain function " i
+        oi = toO i (-1)
     case (keepMaxs $ concatMap opArgs sl, keepMaxs $ map opRes sl) of
       ([a], [r]) -> return
-         $ [ mki " character" $ ListFrameBit Nothing
-             $ ObjectCharacteristics [([], Functional)]
-           , mki " domain" $ mkDR ADomain a, mki " range" $ mkDR ARange r]
+         $ [ mki " character" $ ObjectPropertyAxiom $ FunctionalObjectProperty [] oi
+           , mki " domain" $ ObjectPropertyAxiom $ ObjectPropertyDomain [] oi (toC a)
+           , mki " range" $ ObjectPropertyAxiom $ ObjectPropertyRange [] oi (toC r)]
          ++ l
-      (as, rs) -> fail $ "CASL2OWL.mapSign2: " ++ show i ++ " args: "
+      (as, rs) -> Fail.fail $ "CASL2OWL.mapSign2: " ++ show i ++ " args: "
                    ++ show as ++ " resulttypes: " ++ show rs)
     (return s1) (MapSet.toMap sos)
-  s3 <- Map.foldWithKey (\ i s ml -> do
+  s3 <- Map.foldrWithKey (\ i s ml -> do
     l <- ml
     let mkp = mk "binary predicate " i
+        oi = toO i (-1)
     pTy <- commonPredType csig s
     case predArgs pTy of
       [a, r] -> return
-         $ [mkp " domain" $ mkDR ADomain a, mkp " range" $ mkDR ARange r]
+         $ [ mkp " domain" $ ObjectPropertyAxiom $ ObjectPropertyDomain [] oi (toC a)
+           , mkp " range" $ ObjectPropertyAxiom $ ObjectPropertyRange [] oi (toC r)]
          ++ l
-      ts -> fail $ "CASL2OWL.mapSign3: " ++ show i ++ " types: " ++ show ts)
+      ts -> Fail.fail $ "CASL2OWL.mapSign3: " ++ show i ++ " types: " ++ show ts)
     (return s2) (MapSet.toMap bps)
-  s4 <- Map.foldWithKey (\ i s ml ->
+  s4 <- Map.foldrWithKey (\ i s ml ->
      case keepMaxs $ concatMap predArgs $ Set.toList s of
        [r] -> do
          l <- ml
-         return $ makeNamed ("plain predicate " ++ show i) (toSC i [r]) : l
-       ts -> fail $ "CASL2OWL.mapSign4: " ++ show i ++ " types: " ++ show ts)
+         return $ fmap (makeNamed ("plain predicate " ++ show i)) (toSC i [r]) ++ l
+       ts -> Fail.fail $ "CASL2OWL.mapSign4: " ++ show i ++ " types: " ++ show ts)
      (return s3) (MapSet.toMap sps)
-  s5 <- Map.foldWithKey (\ i s ml -> do
+  s5 <- Map.foldrWithKey (\ i s ml -> do
      l <- ml
      ot <- commonOpType csig s
      return $ getPropSens i (opArgs ot) (Just $ opRes ot) ++ l
      ) (return s4) (MapSet.toMap os)
-  s6 <- Map.foldWithKey (\ i s ml -> do
+  s6 <- Map.foldrWithKey (\ i s ml -> do
      l <- ml
      pt <- commonPredType csig s
      return $ getPropSens i (predArgs pt) Nothing ++ l
@@ -285,11 +274,9 @@ mapSortGenAx cs b = map (\ (s, as) ->
                 [] -> ObjectOneOf [idToIRI n]
                 [_] -> ObjectValuesFrom SomeValuesFrom (toO n (-1)) $ toC s
                 _ -> toC n) as
-  in makeNamed ("generated " ++ show s)
-         $ PlainAxiom (ClassEntity $ toC s)
-         $ if b && not (isSingle is) then AnnFrameBit [] $ ClassDisjointUnion is
-           else ListFrameBit (Just $ EDRelation Equivalent)
-             $ ExpressionBit [([], case is of
-                 [i] -> i
-                 _ -> ObjectJunction UnionOf is)])
+  in makeNamed ("generated " ++ show s) $ ClassAxiom $
+    if b && not (isSingle is) then DisjointUnion [] (idToIRI s) is
+    else EquivalentClasses [] $ [toC s, case is of
+        [i] -> i
+        _ -> ObjectJunction UnionOf is])
   $ recoverSortGen cs

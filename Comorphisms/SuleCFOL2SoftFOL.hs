@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/SuleCFOL2SoftFOL.hs
 Description :  Coding of a CASL subset into SoftFOL
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -16,10 +16,12 @@ module Comorphisms.SuleCFOL2SoftFOL
   ( suleCFOL2SoftFOL
   , suleCFOL2SoftFOLInduction
   , suleCFOL2SoftFOLInduction2
+  , extractCASLModel
   ) where
 
 import Control.Exception (assert)
 import Control.Monad (foldM)
+import qualified Control.Monad.Fail as Fail
 
 import Logic.Logic as Logic
 import Logic.Comorphism
@@ -130,7 +132,7 @@ deleteSPId i t m =
 
 -- | specialized elems into a set for IdTypeSPIdMap
 elemsSPIdSet :: IdTypeSPIdMap -> Set.Set SPIdentifier
-elemsSPIdSet = Map.fold (\ m res -> Set.union res
+elemsSPIdSet = Map.foldr (\ m res -> Set.union res
                                       (Set.fromList (Map.elems m)))
                          Set.empty
 
@@ -166,6 +168,9 @@ instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
                       { sub_features = LocFilSub
                       , cons_features = emptyMapConsFeature
                       , has_empty_sorts = show a == show PlainSoftFOL }
+    sourceSublogicLossy (GenSuleCFOL2SoftFOL a) = SL.fol
+                      { sub_features = LocFilSub
+                      , has_empty_sorts = show a == show PlainSoftFOL }
     targetLogic (GenSuleCFOL2SoftFOL _) = SoftFOL
     mapSublogic cid sl =
         if isSubElem sl $ sourceSublogic cid
@@ -183,7 +188,7 @@ instance Show a => Comorphism (GenSuleCFOL2SoftFOL a)
 transFuncMap :: IdTypeSPIdMap ->
                 CSign.Sign e f ->
                 (FuncMap, IdTypeSPIdMap)
-transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
+transFuncMap idMap sign = Map.foldrWithKey toSPOpType (Map.empty, idMap)
   . MapSet.toMap $ CSign.opMap sign
     where toSPOpType iden typeSet (fm, im) =
               if isSingleton typeSet then
@@ -207,7 +212,7 @@ transFuncMap idMap sign = Map.foldWithKey toSPOpType (Map.empty, idMap)
 transPredMap :: IdTypeSPIdMap -> CSign.Sign e f
   -> (SPSign.PredMap, IdTypeSPIdMap)
 transPredMap idMap sign =
-    Map.foldWithKey toSPPredType (Map.empty, idMap) . MapSet.toMap
+    Map.foldrWithKey toSPPredType (Map.empty, idMap) . MapSet.toMap
       $ CSign.predMap sign
     where toSPPredType iden typeSet (fm, im) =
               if isSingleton typeSet then
@@ -463,7 +468,7 @@ mkInjOp _ _ = error "SuleCFOL2SoftFOL.mkInjOp: Wrong constructor!!"
 mkInjSentences :: IdTypeSPIdMap
                -> FuncMap
                -> [Named SPTerm]
-mkInjSentences idMap = Map.foldWithKey genInjs []
+mkInjSentences idMap = Map.foldrWithKey genInjs []
     where genInjs k tset fs = Set.fold (genInj k) fs tset
           genInj k (args, res) =
               assert (length args == 1)
@@ -827,7 +832,7 @@ extractCASLModel sign (ProofTree output) =
          return $ makeNamed n $ simplifyFormula id cf) rs
       Result (map mkWarn es) $ Just ()
       return (nsign, doms ++ distfs ++ terms ++ sens)
-    Left err -> fail $ showErr err
+    Left err -> Fail.fail $ showErr err
 
 type RMap = Map.Map SPIdentifier (CType, Maybe Id)
 
@@ -848,7 +853,7 @@ getUneqElems :: Set.Set SPTerm -> SPTerm -> Result (Set.Set SPTerm)
 getUneqElems s trm = case trm of
   SPComplexTerm SPNot [SPComplexTerm SPEqual [a1, a2]] ->
       return $ Set.insert a2 $ Set.insert a1 s
-  _ -> fail $ "unexpected disjointness formula: " ++ showDoc trm ""
+  _ -> Fail.fail $ "unexpected disjointness formula: " ++ showDoc trm ""
 
 splitDisjs :: SPTerm -> [SPTerm]
 splitDisjs trm = case trm of
@@ -863,9 +868,9 @@ getDomElems trm = case trm of
         SPComplexTerm SPEqual [a1, a2]
           | var == a1 -> return a2
           | var == a2 -> return a1
-        _ -> fail $ "expecting equation with " ++ show var
+        _ -> Fail.fail $ "expecting equation with " ++ show var
              ++ ", got: " ++ showDoc t "") $ splitDisjs frm
-  _ -> fail $ "expecting simple quantified disjunction, got: "
+  _ -> Fail.fail $ "expecting simple quantified disjunction, got: "
        ++ showDoc trm ""
 
 createDomain :: CASLSign -> RMap -> [SPTerm] -> Result (FORMULA ())
@@ -873,13 +878,13 @@ createDomain sign m l = do
   let es = map ((\ (e, _, s) -> (e, s)) . typeCheckTerm sign Nothing m) l
   tys <- mapM (\ (e, ms) -> case ms of
           Just s -> return s
-          _ -> fail $ unlines e) es
+          _ -> Fail.fail $ unlines e) es
   cs <- mapM (\ ds -> do
         ts@(trm : r) <- mapM (toTERM m . snd) ds
         let mtys = keepMinimals sign id . Set.toList . foldl1 Set.intersection
                   $ map (\ (ty, _) -> Set.insert ty $ supersortsOf ty sign) ds
         case mtys of
-          [] -> fail $ "no common supersort found for: " ++ showDoc ds ""
+          [] -> Fail.fail $ "no common supersort found for: " ++ showDoc ds ""
           ty : _ -> do
             let v = mkVarDeclStr "X" ty
             return $ mkForall [v]
@@ -977,7 +982,7 @@ typeCheckTerm sign ty m trm =
       _ -> (["unexpected predicate in term: " ++ showDoc trm ""], m, ty)
     _ -> (["unexpected term: " ++ showDoc trm ""], m, ty)
 
-toForm :: Monad m => CASLSign -> RMap -> SPTerm -> m (FORMULA ())
+toForm :: Fail.MonadFail m => CASLSign -> RMap -> SPTerm -> m (FORMULA ())
 toForm sign m t = case t of
     SPQuantTerm q vars frm -> do
         let vs = concatMap getVars vars
@@ -986,7 +991,7 @@ toForm sign m t = case t of
             nvs = mapMaybe (toVar nm) vars
         nf <- toForm sign nm frm
         if null b then return $ Quantification (toQuant q) nvs nf nullRange
-           else fail $ unlines b
+           else Fail.fail $ unlines b
     SPComplexTerm SPEqual [a1, a2] -> do
         t1 <- toTERM m a1
         t2 <- toTERM m a2
@@ -998,24 +1003,25 @@ toForm sign m t = case t of
               case mi of
                 Nothing -> case args of
                   [_] -> return trueForm
-                  _ -> fail $ "unkown predicate: " ++ show cst
+                  _ -> Fail.fail $ "unkown predicate: " ++ show cst
                 Just i -> return $ mkPredication
                       (mkQualPred i $ toPRED_TYPE pt) ts
-          _ -> fail $ "inconsistent pred symbol: " ++ show cst
+          _ -> Fail.fail $ "inconsistent pred symbol: " ++ show cst
     SPComplexTerm symb args -> do
          fs <- mapM (toForm sign m) args
          case (symb, fs) of
            (SPNot, [f]) -> return (mkNeg f)
            (SPImplies, [f1, f2]) -> return (mkImpl f1 f2)
+           -- During parsing, "f2 if f1" is saved as "Relation f1 RevImpl f2 _"
            (SPImplied, [f2, f1]) -> return (Relation f1 RevImpl f2 nullRange)
            (SPEquiv, [f1, f2]) -> return (mkEqv f1 f2)
            (SPAnd, _) -> return (conjunct fs)
            (SPOr, _) -> return (disjunct fs)
            (SPTrue, []) -> return trueForm
            (SPFalse, []) -> return falseForm
-           _ -> fail $ "wrong boolean formula: " ++ showDoc t ""
+           _ -> Fail.fail $ "wrong boolean formula: " ++ showDoc t ""
 
-toTERM :: Monad m => RMap -> SPTerm -> m (TERM ())
+toTERM :: Fail.MonadFail m => RMap -> SPTerm -> m (TERM ())
 toTERM m spt = case spt of
   SPComplexTerm (SPCustomSymbol cst) args -> case Map.lookup cst m of
     Just (CVar s, _) | null args -> return $ Qual_var cst s nullRange
@@ -1025,8 +1031,8 @@ toTERM m spt = case spt of
               Just i -> i
               _ -> simpleIdToId cst) (toOP_TYPE ot) nullRange)
         ts nullRange
-    _ -> fail $ "cannot reconstruct term: " ++ showDoc spt ""
-  _ -> fail $ "cannot reconstruct term: " ++ showDoc spt ""
+    _ -> Fail.fail $ "cannot reconstruct term: " ++ showDoc spt ""
+  _ -> Fail.fail $ "cannot reconstruct term: " ++ showDoc spt ""
 
 toQuant :: SPQuantSym -> QUANTIFIER
 toQuant sp = case sp of
@@ -1034,12 +1040,12 @@ toQuant sp = case sp of
   SPExists -> Existential
   _ -> error "toQuant"
 
-toVar :: Monad m => RMap -> SPTerm -> m VAR_DECL
+toVar :: Fail.MonadFail m => RMap -> SPTerm -> m VAR_DECL
 toVar m sp = case sp of
   SPComplexTerm (SPCustomSymbol cst) [] | isVar cst -> case Map.lookup cst m of
     Just (CVar s, _) -> return $ Var_decl [cst] s nullRange
-    _ -> fail $ "unknown variable: " ++ show cst
-  _ -> fail $ "quantified term as variable: " ++ showDoc sp ""
+    _ -> Fail.fail $ "unknown variable: " ++ show cst
+  _ -> Fail.fail $ "quantified term as variable: " ++ showDoc sp ""
 
 isVar :: SPIdentifier -> Bool
 isVar cst = case tokStr cst of

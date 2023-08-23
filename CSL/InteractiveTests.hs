@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleContexts #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/InteractiveTests.hs
 Description :  Test environment for CSL
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -404,14 +404,14 @@ charInfo = do
 
 testspecs :: [(Int, (String, String))]
 testspecs =
-    [ (44, ("EnCL/EN1591.het", "EN1591"))
-    , (45, ("EnCL/flange.het", "Flange"))
-    , (46, ("EnCL/flange.het", "FlangeComplete"))
-    , (54, ("EnCL/EN1591S.het", "EN1591"))
-    , (55, ("EnCL/flangeS.het", "Flange"))
-    , (56, ("EnCL/flangeS.het", "FlangeComplete"))
-    , (65, ("EnCL/flangeDefault.het", "FlangeDefault"))
-    , (66, ("EnCL/flangeExported.het", "FlangeComplete"))
+    [ (44, ("EnCL/EN1591.dol", "EN1591"))
+    , (45, ("EnCL/flange.dol", "Flange"))
+    , (46, ("EnCL/flange.dol", "FlangeComplete"))
+    , (54, ("EnCL/EN1591S.dol", "EN1591"))
+    , (55, ("EnCL/flangeS.dol", "Flange"))
+    , (56, ("EnCL/flangeS.dol", "FlangeComplete"))
+    , (65, ("EnCL/flangeDefault.dol", "FlangeDefault"))
+    , (66, ("EnCL/flangeExported.dol", "FlangeComplete"))
     ]
 
 
@@ -431,8 +431,8 @@ siggy :: Int -> IO (SigSens Sign CMD)
 siggy = uncurry sigsensGen . libFP
 
 libFP :: Int -> (String, String)
-libFP i = fromMaybe (if i >= 0 then ("EnCL/Tests.het", "Test" ++ show i)
-                            else ("EnCL/ExtParamExamples.het", 'E' : show (- i)))
+libFP i = fromMaybe (if i >= 0 then ("EnCL/Tests.dol", "Test" ++ show i)
+                            else ("EnCL/ExtParamExamples.dol", 'E' : show (- i)))
           $ Prelude.lookup i testspecs
 
 sigsens :: Int -> IO (Sign, [Named CMD])
@@ -705,7 +705,7 @@ pM2s = mapM_ pM2
 toEPR :: String -> EPRange
 toEPR = Atom . toEPs
 
--- Test for partitioning taken from E82 in CSL/ExtParamExamples.het
+-- Test for partitioning taken from E82 in CSL/ExtParamExamples.dol
 el11 :: [EPRange]
 el11 = let x1 = toEPR "I>=0" in [x1, Complement x1]
 

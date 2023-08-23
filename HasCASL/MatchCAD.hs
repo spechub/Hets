@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/MatchCAD.hs
 Description :  MatchCAD program
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2010
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt
@@ -52,7 +52,7 @@ dmHeader :: String
 dmHeader = unlines
            [ "Usage: matchcad [OPTION...] [file]"
                   , ""
-                  , "matchcad /tmp/flange.het -sMatch -pFlangePattern -dComponent"
+                  , "matchcad /tmp/flange.dol -sMatch -pFlangePattern -dComponent"
                   , ""
                   ]
 

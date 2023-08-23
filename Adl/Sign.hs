@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Adl/Sign.hs
 Description :  ADL signature and sentences
 Copyright   :  (c) Stef Joosten, Christian Maeder DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -56,6 +56,18 @@ data Symbol
   = Con Concept
   | Rel Relation
     deriving (Eq, Ord, Show, Typeable, Data)
+
+data SymbolKind = ConK | RelK 
+  deriving (Eq, Ord, Show, Typeable, Data)
+
+sym_kind :: Symbol -> SymbolKind
+sym_kind (Con _) = ConK
+sym_kind (Rel _) = RelK
+
+
+instance Pretty SymbolKind where 
+ pretty ConK = text "concept"
+ pretty RelK = text "relation" 
 
 instance GetRange Symbol where
   getRange s = case s of

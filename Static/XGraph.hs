@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Static/XGraph.hs
 Description :  xml input for Hets development graphs
 Copyright   :  (c) Simon Ulbricht, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -24,6 +24,7 @@ import Common.Utils (readMaybe)
 import Common.XUpdate (getAttrVal, readAttrVal)
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Data.Data
 import Data.List
@@ -103,10 +104,10 @@ xGraph xml = do
   allNodes <- extractXNodes xml
   allLinks <- extractXLinks xml
   _ <- foldM (\ s l -> let e = edgeId l in
-    if Set.member e s then fail $ "duplicate edge id: " ++ show e
+    if Set.member e s then Fail.fail $ "duplicate edge id: " ++ show e
     else return $ Set.insert e s) Set.empty allLinks
   nodeMap <- foldM (\ m n -> let s = showName $ nodeName n in
-    if Map.member s m then fail $ "duplicate node name: " ++ s
+    if Map.member s m then Fail.fail $ "duplicate node name: " ++ s
        else return $ Map.insert s n m) Map.empty allNodes
   let (thmLk, defLk) = partition (\ l -> case edgeTypeModInc $ lType l of
                          ThmType {} -> True
@@ -120,9 +121,9 @@ xGraph xml = do
       srcs = Set.unions $ map Map.keysSet $ Map.elems edgeMap
       missingSrcs = Set.difference srcs tgts
   unless (Set.null missingTgts)
-    $ fail $ "missing nodes for edge targets " ++ show missingTgts
+    $ Fail.fail $ "missing nodes for edge targets " ++ show missingTgts
   unless (Set.null missingSrcs)
-    $ fail $ "missing nodes for edge sources " ++ show missingSrcs
+    $ Fail.fail $ "missing nodes for edge sources " ++ show missingSrcs
   nm <- getAttrVal "libname" xml
   fl <- getAttrVal "filename" xml
   let ln = setFilePath fl $ emptyLibName nm
@@ -131,29 +132,29 @@ xGraph xml = do
   xg <- builtXGraph (Map.keysSet initN) edgeMap restN []
   return $ XGraph ln ga i' thmLk (Map.elems initN) xg
 
-builtXGraph :: Monad m => Set.Set String -> EdgeMap -> Map.Map String XNode
+builtXGraph :: Fail.MonadFail m => Set.Set String -> EdgeMap -> Map.Map String XNode
             -> XTree -> m XTree
 builtXGraph ns xls xns xg = if Map.null xls && Map.null xns then return xg
   else do
-  when (Map.null xls) $ fail $ "unprocessed nodes: " ++ show (Map.keysSet xns)
-  when (Map.null xns) $ fail $ "unprocessed links: "
+  when (Map.null xls) $ Fail.fail $ "unprocessed nodes: " ++ show (Map.keysSet xns)
+  when (Map.null xns) $ Fail.fail $ "unprocessed links: "
        ++ show (map edgeId $ concat $ concatMap Map.elems $ Map.elems xls)
   let (sls, rls) = Map.partition ((`Set.isSubsetOf` ns) . Map.keysSet) xls
       bs = Map.intersectionWith (,) sls xns
-  when (Map.null bs) $ fail $ "cannot continue with source nodes:\n "
+  when (Map.null bs) $ Fail.fail $ "cannot continue with source nodes:\n "
     ++ show (Set.difference (Set.unions $ map Map.keysSet $ Map.elems rls) ns)
     ++ "\nfor given nodes: " ++ show ns
   builtXGraph (Set.union ns $ Map.keysSet bs) rls
     (Map.difference xns bs) $
        map (\ (m, x) -> (concat $ Map.elems m, x)) (Map.elems bs) : xg
 
-extractXNodes :: Monad m => Element -> m [XNode]
+extractXNodes :: Fail.MonadFail m => Element -> m [XNode]
 extractXNodes = mapM mkXNode . findChildren (unqual "DGNode")
 
-extractXLinks :: Monad m => Element -> m [XLink]
+extractXLinks :: Fail.MonadFail m => Element -> m [XLink]
 extractXLinks = mapM mkXLink . findChildren (unqual "DGLink")
 
-mkXNode :: Monad m => Element -> m XNode
+mkXNode :: Fail.MonadFail m => Element -> m XNode
 mkXNode el = let spcs = unlines . map strContent
                    . concatMap (findChildren $ unqual "Text")
                    $ deepSearch ["Axiom", "Theorem"] el
@@ -181,17 +182,17 @@ mkXNode el = let spcs = unlines . map strContent
         xp1 <- readXPath (nm0 ++ xp0)
         return $ XNode nm { xpath = reverse xp1 } lgN hdSyms spcs $ readCons el
 
-extractNodeName :: Monad m => Element -> m NodeName
+extractNodeName :: Fail.MonadFail m => Element -> m NodeName
 extractNodeName e = liftM parseNodeName $ getAttrVal "name" e
 
-mkXLink :: Monad m => Element -> m XLink
+mkXLink :: Fail.MonadFail m => Element -> m XLink
 mkXLink el = do
   sr <- getAttrVal "source" el
   tr <- getAttrVal "target" el
   ei <- extractEdgeId el
   tp <- case findChild (unqual "Type") el of
           Just tp' -> return $ revertDGEdgeTypeName $ strContent tp'
-          Nothing -> fail "links type description is missing"
+          Nothing -> Fail.fail "links type description is missing"
   rl <- case findChild (unqual "Rule") el of
           Nothing -> return $ DGRule "no rule"
           Just r' -> case findChildren (unqual "MovedTheorems") el of
@@ -202,7 +203,7 @@ mkXLink el = do
                 return (nmOld, nmNew)) mThs
   prB <- mapM (getAttrVal "linkref") $ findChildren (unqual "ProofBasis") el
   (mrNm, mrSrc) <- case findChild (unqual "GMorphism") el of
-    Nothing -> fail "Links morphism description is missing!"
+    Nothing -> Fail.fail "Links morphism description is missing!"
     Just mor -> do
         nm <- getAttrVal "name" mor
         return (nm, findAttr (unqual "morphismsource") mor)
@@ -217,7 +218,7 @@ readCons el = case findChild (unqual "ConsStatus") el of
   Nothing -> None
   Just c' -> fromMaybe None $ readMaybe $ strContent c'
 
-extractEdgeId :: Monad m => Element -> m EdgeId
+extractEdgeId :: Fail.MonadFail m => Element -> m EdgeId
 extractEdgeId = liftM EdgeId . readAttrVal "XGraph.extractEdgeId" "linkid"
 
 readEdgeId :: String -> EdgeId

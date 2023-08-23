@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/SetColimit.hs
 Description :  colimit of an arbitrary diagram in Set
 Copyright   :  (c) Mihai Codescu, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -18,18 +18,23 @@ Computes the colimit of an arbitrary diagram in Set:
 
 module Common.SetColimit (
     computeColimitSet,
+    computeColimitRel,
+    colimitRel,
     addIntToSymbols,
     SymbolName (..)
   )
  where
 
 import Common.Id
+import Common.IRI
 import Common.Lib.Graph
 import Common.Lib.Rel (leqClasses)
 
 import Data.Graph.Inductive.Graph
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+
+import qualified Data.Relation as Rel
 
 compose :: (Ord a) => Set.Set (a, Int) ->
                       Map.Map (a, Int) (a, Int) ->
@@ -105,10 +110,16 @@ computeCoeqs graph (colim, morMap) edgeList =
     in computeCoeqs graph (colim', morMap') edges'
 
 class (Eq a, Ord a) => SymbolName a where
-  addIntAsSuffix :: (a, Int) -> a
+  addString :: (a, String) -> a
+
+instance SymbolName Token where
+ addString (t, s) = addStringToTok t s
 
 instance SymbolName Id where
- addIntAsSuffix (x, y) = appendNumber x y
+ addString (x, y) = appendString x y
+
+instance SymbolName IRI where
+ addString (x, y) = addSuffixToIRI y x
 
 addIntToSymbols :: (SymbolName a) =>
                (Set.Set (a, Node), Map.Map Node (Map.Map a (a, Node))) ->
@@ -132,10 +143,11 @@ addIntToSymbols (set, fun) = let
     in namePartitions ps f0 s2 f2
                 else
      -- several elements with same name, the number is added at the end
-    let s2 = Set.union s1 $ Set.fromList $ map addIntAsSuffix p
+    let s2 = Set.union s1 $ Set.fromList $ map (\(x,y) -> addString (x, show y)) p
+        a2String (x,y) = (x, show y) 
         updateF node = Map.union (Map.findWithDefault (error "f1") node f1) $
              Map.fromList $
-             map ( \ x -> (x, addIntAsSuffix $
+             map ( \ x -> (x, addString $ a2String $  
                              Map.findWithDefault (error "addSuffixToId") x
                              (Map.findWithDefault (error "f0") node f0))) $
              filter (\ x -> Map.findWithDefault (error "fo(node)") x
@@ -146,3 +158,24 @@ addIntToSymbols (set, fun) = let
     in namePartitions ps f0 s2 f2
  in namePartitions (partList set) fun Set.empty $
     Map.fromList $ zip (Map.keys fun) (repeat Map.empty)
+
+colimitRel :: (Ord a) => 
+              [(Int, Rel.Relation a a)] -> Map.Map Node (Map.Map a a) ->
+              Rel.Relation a a
+colimitRel rels nMaps = 
+  foldl (\r (n, r') -> let nf = Map.findWithDefault (error "nf") n nMaps 
+                           r'' = Rel.fromList $ 
+                                           map (\(x,y) -> (Map.findWithDefault x x nf, 
+                                                           Map.findWithDefault y y nf)) $ 
+                                           Rel.toList r'
+                       in r `Rel.union` r'') 
+        Rel.empty rels
+
+computeColimitRel :: (Ord a, SymbolName a) =>
+                     Gr (Rel.Relation a a) (Int, Map.Map a a) ->
+                     (Rel.Relation a a, Map.Map Node (Map.Map a a))
+computeColimitRel gr = 
+  let grSet = nmap (\r -> (Rel.dom r) `Set.union` (Rel.ran r)) gr
+      (_cSet, nMaps) = addIntToSymbols $ computeColimitSet grSet
+      rel = colimitRel (labNodes gr) nMaps
+  in (rel, nMaps)

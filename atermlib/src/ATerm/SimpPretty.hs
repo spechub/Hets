@@ -1,5 +1,6 @@
+{-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./atermlib/src/ATerm/SimpPretty.hs
 Description :  simple pretty printing combinators
 Copyright   :  (c) Klaus Luettich, C. Maeder Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -37,6 +38,10 @@ module ATerm.SimpPretty (
 
         render, fullRender, writeFileSDoc
   ) where
+
+#if __GLASGOW_HASKELL__ >= 803
+import Prelude hiding ((<>))
+#endif
 
 import System.IO
 

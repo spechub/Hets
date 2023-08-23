@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./RelationalScheme/ParseRS.hs
 Description :  abstract syntax for Relational Schemes
 Copyright   :  Dominik Luecke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt or LIZENZ.txt
@@ -27,6 +27,7 @@ import Common.Parsec
 import Common.GlobalAnnotations (PrefixMap)
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import RelationalScheme.AS
 import RelationalScheme.Keywords
@@ -108,7 +109,7 @@ parseRSTables =
                         tables = Set.empty
                     }
 
-setCol :: (Monad m) => [RSColumn] -> m (Set.Set RSColumn)
+setCol :: (Fail.MonadFail m) => [RSColumn] -> m (Set.Set RSColumn)
 setCol t =
     let
         names = map c_name t
@@ -117,7 +118,7 @@ setCol t =
         foldM_ (flip insertUnique) Set.empty names
         return $ foldl (flip Set.insert) Set.empty t
 
-setConv :: (Monad m) => [RSTable] -> m (Set.Set RSTable)
+setConv :: (Fail.MonadFail m) => [RSTable] -> m (Set.Set RSTable)
 setConv t =
     let
         names = map t_name t
@@ -126,10 +127,10 @@ setConv t =
         foldM_ (flip insertUnique) Set.empty names
         return $ foldl (flip Set.insert) Set.empty t
 
-insertUnique :: (Monad m) => Id -> Set.Set Id -> m (Set.Set Id)
+insertUnique :: (Fail.MonadFail m) => Id -> Set.Set Id -> m (Set.Set Id)
 insertUnique t s =
     if t `Set.notMember` s then return $ Set.insert t s
-    else fail $ "Duplicate definition of " ++ show t
+    else Fail.fail $ "Duplicate definition of " ++ show t
 
 -- ^ parser for table
 parseRSTable :: AParser st RSTable
@@ -183,7 +184,7 @@ testParse par = runParser par (emptyAnnos ()) ""
 
 longTest :: IO (Either ParseError RSScheme)
 longTest = do
-  x <- readFile "RelationalScheme/test/rel.het"
+  x <- readFile "RelationalScheme/test/rel.dol"
   return $ testParse (parseRSScheme Map.empty) x
 
 -- boring parser for rel types

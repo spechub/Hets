@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Modal/Utils.hs
 Copyright   :  (c) (c) Klaus Luettich and Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt
 

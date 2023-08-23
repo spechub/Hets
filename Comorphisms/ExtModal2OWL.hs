@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/ExtModal2OWL.hs
 Description :  Comorphism from ExtModal to OWL2
 Copyright   :  (c) C. Maeder, DFKI GmbH 2012
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -19,7 +19,6 @@ import Common.ProofTree
 
 -- OWL = codomain
 import OWL2.Logic_OWL2
-import OWL2.MS
 import OWL2.AS
 import OWL2.ProfilesAndSublogics
 import OWL2.ManchesterPrint ()

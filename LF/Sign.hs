@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./LF/Sign.hs
 Description :  Definition of signatures for the Edinburgh
                Logical Framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009

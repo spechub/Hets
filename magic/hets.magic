@@ -73,13 +73,13 @@
 !:mime  text/obo
 
 # Turtle (.ttl extension)
-0       search/4096/t   \@prefix\ owl:          Turtle document
+0       search/4096/t   @prefix\ owl:          Turtle document
 !:mime  text/turtle
 
-0       search/4096/t   \@prefix\ rdfs:         Turtle document
+0       search/4096/t   @prefix\ rdfs:         Turtle document
 !:mime  text/turtle
 
-0       search/4096/t   \@prefix\ xsd:          Turtle document
+0       search/4096/t   @prefix\ xsd:          Turtle document
 !:mime  text/turtle
 
 # OMN
@@ -100,18 +100,17 @@
 0       search/4096/t   interpretation\         DOL document
 !:mime  text/dol
 
-# HetCASL
-0       search/4096/t   spec\                   HetCASL document
-!:mime  text/het
+0       search/4096/t   spec\                   DOL document
+!:mime  text/dol
 
-0       search/4096/t   library\                HetCASL document
-!:mime  text/het
+0       search/4096/t   library\                DOL document
+!:mime  text/dol
 
-0       search/4096/t   view\                   HetCASL document
-!:mime  text/het
+0       search/4096/t   view\                   DOL document
+!:mime  text/dol
 
-0       search/4096/t   logic\                  HetCASL document
-!:mime  text/het
+0       search/4096/t   logic\                  DOL document
+!:mime  text/dol
 
 # CASL
 0       search/4096/t   sort\                   CASL document
@@ -123,45 +122,67 @@
 0       search/4096/t   module\                 Haskell document
 !:mime  text/haskell
 
+# TPTP
+0       search/4096/t   thf(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tfx(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tff(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tcf(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   fof(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   cnf(              TPTP document
+!:mime  text/tptp
+
+0       search/4096/t   tpi(              TPTP document
+!:mime  text/tptp
+
 # CLIF
-0       search/4096/t   \(cl-text \              CLIF document
+0       search/4096/t   (cl-text\               CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(cl-module \            CLIF document
+0       search/4096/t   (cl-module\             CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(cl-excludes \          CLIF document
+0       search/4096/t   (cl-excludes\           CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(cl-imports \           CLIF document
+0       search/4096/t   (cl-imports\            CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(cl-module \            CLIF document
+0       search/4096/t   (cl-module\             CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(cl-comment \           CLIF document
+0       search/4096/t   (cl-comment\            CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(cl-roleset \           CLIF document
+0       search/4096/t   (cl-roleset\            CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(forall \               CLIF document
+0       search/4096/t   (forall\                CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(exists \               CLIF document
+0       search/4096/t   (exists\                CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(and \                  CLIF document
+0       search/4096/t   (and\                   CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(or \                   CLIF document
+0       search/4096/t   (or\                    CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(if \                   CLIF document
+0       search/4096/t   (if\                    CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(iff \                  CLIF document
+0       search/4096/t   (iff\                   CLIF document
 !:mime  text/clif
 
-0       search/4096/t   \(not \                  CLIF document
+0       search/4096/t   (not\                   CLIF document
 !:mime  text/clif

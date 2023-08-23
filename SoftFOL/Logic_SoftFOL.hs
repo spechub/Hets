@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
   , FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/Logic_SoftFOL.hs
 Description :  Instance of class Logic for SoftFOL.
 Copyright   :  (c) Rene Wagner, Klaus Luettich, Uni Bremen 2005-2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -14,6 +14,8 @@ Instance of class Logic for SoftFOL.
 -}
 
 module SoftFOL.Logic_SoftFOL where
+
+import Data.Set (toList)
 
 import Common.DefaultMorphism
 import Common.DocUtils
@@ -65,6 +67,7 @@ instance Sentences SoftFOL Sentence Sign
                            SoftFOLMorphism SFSymbol where
       map_sen SoftFOL _ = return
       sym_of SoftFOL = singletonList . symOf
+      symsOfSen SoftFOL sign = toList . symsOfTerm sign
       sym_name SoftFOL = symbolToId
       symKind SoftFOL = sfSymbKind . sym_type
       print_named SoftFOL = printFormula
@@ -83,7 +86,7 @@ instance StaticAnalysis SoftFOL [TPTP] Sentence
 instance Logic SoftFOL () [TPTP] Sentence () ()
                Sign
                SoftFOLMorphism SFSymbol () ProofTree where
-         stability _ = Testing
+         stability _ = Stable
          provers SoftFOL = [spassProver]
 #ifndef NOHTTP
            ++ [mathServBroker, vampire]

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./ATC/Sml_cats.hs
 Description :  conversions to and from old SML aterm format
 Copyright   :  (c) Klaus Luettich and Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -1189,7 +1189,7 @@ instance ATermConvertibleSML SPEC where
         case aterm of
             (ShAAppl "basic" [ aa ] _) ->
                 let
-                aa' = from_sml_ShATerm (getATermByIndex1 aa att)
+                aa' = from_sml_ShATerm (getATermByIndex1 aa att) :: CASLBasicSpec
                 aa'' = G_basic_spec CASL aa'
                 in group (Syntax.AS_Structured.Basic_spec aa''
                           nullRange) group_flag

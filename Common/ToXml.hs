@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/ToXml.hs
 Description :  xml utilities
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -88,5 +88,5 @@ myDataToXml d =
 class ToXml a where
   asXml :: a -> Element
 
-instance Data a => ToXml a where
+instance {-# OVERLAPPABLE #-} Data a => ToXml a where
   asXml = myDataToXml . normalizeMyDataForSerialization . dataToMyData

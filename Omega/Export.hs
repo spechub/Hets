@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Omega/Export.hs
 Description :  export a development graph to an omega library
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

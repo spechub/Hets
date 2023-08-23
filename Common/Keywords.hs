@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Keywords.hs
 Description :  String constants for CASL keywords to be used for parsing
   and printing
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2003
@@ -179,7 +179,22 @@ diamondS = "<>"
 greaterS :: String
 greaterS = ">"
 
+
+maxInclusiveS :: String
+maxInclusiveS = "maxInclusive"
+
+maxExclusiveS :: String
+maxExclusiveS = "maxExclusive"
+
 -- * OWL key signs
+
+minInclusiveS :: String
+minInclusiveS = "minInclusive"
+
+
+minExclusiveS :: String
+minExclusiveS = "minExclusive"
+
 
 lessEq :: String
 lessEq = "<="
@@ -315,6 +330,9 @@ ontologyS = "ontology"
 networkS :: String
 networkS = "network"
 
+patternS :: String
+patternS = "pattern"
+
 relationS :: String
 relationS = "relation"
 
@@ -438,6 +456,9 @@ etypeS = "etype"
 existsS :: String
 existsS = "exists"
 
+extractS :: String
+extractS = "extract"
+
 falseS :: String
 falseS = "false"
 
@@ -494,6 +515,9 @@ instanceS = "instance"
 
 internalS :: String
 internalS = "internal"
+
+intersectS :: String
+intersectS = "intersect"
 
 lambdaS :: String
 lambdaS = "lambda"
@@ -561,6 +585,9 @@ refinementS = "refinement"
 
 rejectS :: String
 rejectS = "reject"
+
+removeS :: String
+removeS = "remove"
 
 resultS :: String
 resultS = "result"

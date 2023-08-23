@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Overload.hs
 Description :  Overload resolution
 Copyright   :  (c) Martin Kuehl, T. Mossakowski, C. Maeder, 2004-2007
 License     :  GPLv2 or higher, see LICENSE.txt

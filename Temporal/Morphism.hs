@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Temporal/Morphism.hs
 Description :  Morphisms in Temporal logic
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -47,6 +47,7 @@ import Common.Doc
 import Common.DocUtils
 
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
 
 {- | The datatype for morphisms in temporal logic as
 maps of sets -}
@@ -71,7 +72,7 @@ isLegalMorphism pmor =
         pdom = Map.keysSet $ propMap pmor
         pcodom = Set.map (applyMorphism pmor) psource
     in unless (Set.isSubsetOf pcodom ptarget && Set.isSubsetOf pdom psource) $
-        fail "illegal Temporal morphism"
+        Fail.fail "illegal Temporal morphism"
 
 -- | Application funtion for morphisms
 applyMorphism :: Morphism -> Id -> Id

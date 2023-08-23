@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {- |
-Module      :  $Header$
+Module      :  ./TopHybrid/Parse_AS.hs
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  nevrenato@gmail.com

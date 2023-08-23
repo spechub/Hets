@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/test/sublogicGraph.hs
 Copyright   :  (c) C. Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -20,11 +20,15 @@ import Logic.Logic
 import Data.Maybe
 import qualified Data.Map as Map
 
+import Control.Monad (unless)
+import System.Exit (exitFailure)
+
 main :: IO ()
 main = do
-  testInj_mapSublogicAll
+  testSuccess <- testInj_mapSublogicAll
   hsg <- hetSublogicGraph
   putStrLn ("Size of HetSublogicGraph (n,e): " ++ show (size hsg))
+  unless testSuccess exitFailure
 
 size :: HetSublogicGraph -> (Int, Int)
 size hsg = (Map.size $ sublogicNodes hsg,
@@ -40,11 +44,12 @@ testInj_mapSublogic cid =
         all (isJust . parseSublogic (targetLogic cid) . sublogicName)
         $ mapMaybe (mapSublogic cid) $ all_sublogics $ sourceLogic cid
 
-testInj_mapSublogicAll :: IO ()
+testInj_mapSublogicAll :: IO Bool
 testInj_mapSublogicAll = do
   putStrLn "Every Comorphism should be followed by True"
   let testResults = map (\ (Comorphism c) -> testInj_mapSublogic c)
                           comorphismList
   mapM_ showTest $ zip comorphismList testResults
   putStrLn ("Test " ++ if and testResults then "succeeded." else "failed!")
+  return (and testResults)
     where showTest (acm, res) = putStrLn (show acm ++ " : " ++ show res)

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./ConstraintCASL/Formula.hs
 Copyright   :  (c) Florian Mossakowski, Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt
 

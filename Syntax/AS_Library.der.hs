@@ -1,8 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
-Description :  abstract syntax of CASL specification libraries
-Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2006
+Module      :  ./Syntax/AS_Library.der.hs
+Description :  abstract syntax of DOL documents and CASL specification libraries
+Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  till@informatik.uni-bremen.de
 Stability   :  provisional
@@ -10,6 +10,8 @@ Portability :  non-portable(Grothendieck)
 
 Abstract syntax of HetCASL specification libraries
    Follows Sect. II:2.2.5 of the CASL Reference Manual.
+Abstract syntax of DOL documents
+   Follows the DOL OMG standard, clauses 9.3 and M.1
 -}
 
 module Syntax.AS_Library where
@@ -70,7 +72,7 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos: "unit", "spec", "=", opt "end"
               | Ref_spec_defn SPEC_NAME REF_SPEC Range
               -- pos: "refinement", "=", opt "end"
-              | Graph_defn IRI Network Range
+              | Network_defn IRI Network Range
               -- pos: "network", "=", opt "end"
               | Download_items LibName DownloadItems Range
               -- pos: "from", "get", "|->", commas, opt "end"
@@ -99,7 +101,7 @@ addDownload unique = emptyAnno . addDownloadAux unique
 addDownloadAux :: Bool -> SPEC_NAME -> LIB_ITEM
 addDownloadAux unique j =
   let libPath = deleteQuery j
-      query = abbrevQuery j -- this used to be the fragment
+      query = iriQuery j -- this used to be the fragment
       i = case query of
         "" -> j
         "?" -> libPath

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./GUI/ShowLibGraph.hs
 Copyright   :  (c) Uni Bremen 2003-2007
 License     :  GPLv2 or higher, see LICENSE.txt
 

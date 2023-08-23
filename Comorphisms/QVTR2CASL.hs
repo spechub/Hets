@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/QVTR2CASL.hs
 Description :  Coding QVTR into CASL
 Copyright   :  (c) Daniel Calegari Universidad de la Republica, Uruguay 2013
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -82,7 +82,7 @@ instance Comorphism QVTR2CASL
       mapSublogic QVTR2CASL _ = Just $ caslTop
         { has_part = False
         , sub_features = LocFilSub
-        , cons_features = SortGen True True }
+        , cons_features = SortGen True True OnlyFree }
       map_theory QVTR2CASL = mapTheory
       map_sentence QVTR2CASL s = return . mapSen s (mapSign s)
       map_morphism QVTR2CASL = mapMor

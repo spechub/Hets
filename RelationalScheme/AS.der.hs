@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./RelationalScheme/AS.der.hs
 Description :  abstract syntax for Relational Schemes
 Copyright   :  Dominik Luecke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt or LIZENZ.txt
@@ -32,6 +32,7 @@ import Common.AS_Annotation
 import Common.Doc
 import Common.DocUtils
 import Common.Result
+import qualified Control.Monad.Fail as Fail
 
 import RelationalScheme.Keywords
 import RelationalScheme.Sign
@@ -102,7 +103,7 @@ map_qualId mor qid =
     let
         (tid, rid, rn) = case qid of
             RSQualId i1 i2 rn1 -> (i1, i2, rn1)
-    in maybe (fail "map_qualId") return $ do
+    in maybe (Fail.fail "map_qualId") return $ do
             mtid <- Map.lookup tid $ table_map mor
             rmor <- Map.lookup tid $ column_map mor
             mrid <- Map.lookup rid $ col_map rmor

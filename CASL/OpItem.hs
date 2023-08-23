@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/OpItem.hs
 Description :  Parser for OP-ITEMs (operation declarations and definitions)
 Copyright   :  (c) Christian Maeder, Uni Bremen 2002-2004
 License     :  GPLv2 or higher, see LICENSE.txt

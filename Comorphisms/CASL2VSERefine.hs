@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2VSERefine.hs
 Description :  VSE refinement as comorphism
 Copyright   :  (c) M. Codescu, DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -34,6 +34,7 @@ import Common.Result
 import Common.Utils (number)
 import Common.Lib.State
 import qualified Common.Lib.MapSet as MapSet
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
@@ -74,7 +75,7 @@ mapCASLTheory (sig, n_sens) =
       tsens = map mapNamedSen n_sens
       allSens = tsens ++ genAx
   in if null $ checkCases tsig allSens then return (tsig, allSens) else
-     fail "case error in signature"
+     Fail.fail "case error in signature"
 
 mapSig :: CASLSign -> (VSESign, [Named Sentence])
 mapSig sign =
@@ -776,7 +777,7 @@ mapCASLSenAux f = case f of
                        foldr1 (\ p1 p2 -> Ranged (Seq p1 p2) nullRange) prgs
                        else Ranged Skip nullRange
      case pn of
-      Pred_name _ -> fail "must be qualified"
+      Pred_name _ -> Fail.fail "must be qualified"
       Qual_pred_name pname (Pred_type ptype _) _ -> return $ ExtFORMULA $ Ranged
        (Dlformula Diamond
         (Ranged
@@ -862,8 +863,8 @@ mapCASLSenAux f = case f of
                  [foldr1 (\ sen1 sen2 -> conjunct [sen1, sen2]) h,
                  trSen]
      return $ Quantification q vars sen' nullRange
-    Unique_existential -> fail "nyi Unique_existential"
-  _ -> fail "Comorphisms.CASL2VSERefine.mapCASLSenAux"
+    Unique_existential -> Fail.fail "nyi Unique_existential"
+  _ -> Fail.fail "Comorphisms.CASL2VSERefine.mapCASLSenAux"
 
 
 mapCASLTerm :: Int -> TERM () -> State (Int, VarSet) Program
@@ -881,7 +882,7 @@ mapCASLTerm n t = case t of
                        foldr1 (\ p1 p2 -> Ranged (Seq p1 p2) nullRange) prgs
                        else Ranged Skip nullRange
    case opsym of
-    Op_name _ -> fail "must be qualified"
+    Op_name _ -> Fail.fail "must be qualified"
     Qual_op_name oName (Op_type _ args res _) _ ->
       case args of
        [] -> return $ Ranged (Assign (genNumVar "x" n)
@@ -906,7 +907,7 @@ mapCASLTerm n t = case t of
                        xvars nullRange))
                   nullRange))
                 nullRange
-  _ -> fail "nyi term"
+  _ -> Fail.fail "nyi term"
 
 freshIndex :: SORT -> State (Int, VarSet) Int
 freshIndex ss = do

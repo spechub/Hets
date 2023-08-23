@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/ProveLeoII.hs
 Description :  Interface to the Leo II theorem prover.
 Copyright   :  (c) Jonathan von Schroeder, DFKI Bremen 2012
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./SoftFOL/MathServMapping.hs
 Description :  Maps a MathServResponse into a prover configuration.
 Copyright   :  (c) Rainer Grabbe
 License     :  GPLv2 or higher, see LICENSE.txt

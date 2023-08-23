@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/ProverTools.hs
 Description :  Check for availability of provers
 Copyright   :  (c) Dminik Luecke, and Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -39,11 +39,14 @@ check4FileAux name env = do
 
 -- | Checks if a file exists in PATH
 checkBinary :: String -> IO (Maybe String)
-checkBinary name = fmap
-  (\ l -> if null l
+checkBinary name =
+  fmap
+    ( \l ->
+        if null l
           then Just $ "missing binary in $PATH: " ++ name
-          else Nothing)
-  $ check4FileAux name "PATH"
+          else Nothing
+    )
+    $ check4FileAux name "PATH"
 
 -- | Checks if a file exists
 check4File :: String -- ^ file name

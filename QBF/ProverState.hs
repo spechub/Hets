@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./QBF/ProverState.hs
 Description :  Help functions for all automatic theorem provers.
 Copyright   :  (c) Jonatzhan von Schroeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

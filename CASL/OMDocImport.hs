@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/OMDocImport.hs
 Description :  OMDoc-to-CASL conversion
 Copyright   :  (c) Ewaryst Schulz, DFKI Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -32,6 +32,7 @@ import CASL.Sign
 import CASL.OMDoc
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Map as Map
 import Data.List
@@ -99,15 +100,15 @@ omdocToSym :: Env -> TCElement -> String -> Result Symbol
 omdocToSym e sym@(TCSymbol _ ctp srole _) n =
     case srole of
       Typ | ctp == const_sort -> return $ idToSortSymbol $ nameToId n
-          | otherwise -> fail $ "omdocToSym: No sorttype for " ++ show sym
+          | otherwise -> Fail.fail $ "omdocToSym: No sorttype for " ++ show sym
       Obj -> return $
              case omdocToType e ctp of
                Left ot -> idToOpSymbol (nameToId n) ot
                Right pt -> idToPredSymbol (nameToId n) pt
-      _ -> fail $ concat [ "omdocToSym: only type or object are allowed as"
+      _ -> Fail.fail $ concat [ "omdocToSym: only type or object are allowed as"
                          , " symbol roles, but found: ", show srole ]
 
-omdocToSym _ sym _ = fail $ concat [ "omdocToSym: only TCSymbol is allowed,"
+omdocToSym _ sym _ = Fail.fail $ concat [ "omdocToSym: only TCSymbol is allowed,"
                                    , " but found: ", show sym ]
 
 
@@ -125,7 +126,7 @@ omdocToSen e (TCSymbol _ t sr _) n =
                Theorem -> res False
                _ -> return Nothing
 
-omdocToSen _ sym _ = fail $ concat [ "omdocToSen: only TCSymbol is allowed,"
+omdocToSen _ sym _ = Fail.fail $ concat [ "omdocToSen: only TCSymbol is allowed,"
                                    , " but found: ", show sym ]
 
 

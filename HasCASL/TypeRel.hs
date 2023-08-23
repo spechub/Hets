@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/TypeRel.hs
 Description :  compute subtype dependencies
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -32,7 +32,7 @@ import Data.Maybe
 
 typeRel :: TypeMap -> Rel.Rel Id
 typeRel = Rel.transReduce . Rel.irreflex . Rel.transClosure
-  . Map.foldWithKey ( \ i ti r ->
+  . Map.foldrWithKey ( \ i ti r ->
     Set.fold (Rel.insertPair i) r $ superTypes ti) Rel.empty
 
 getRawKind :: TypeMap -> Id -> RawKind

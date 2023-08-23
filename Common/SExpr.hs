@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/SExpr.hs
 Description :  S-Expressions as intermediate output format
 Copyright   :  (c) E. Schulz, D. Dietrich, C. Maeder, DFKI 2008
 License     :  GPLv2 or higher, see LICENSE.txt

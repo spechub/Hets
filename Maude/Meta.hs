@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Meta.hs
 Description :  Meta information about Maude data types
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
 License     :  GPLv2 or higher, see LICENSE.txt

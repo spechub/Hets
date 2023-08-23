@@ -1,6 +1,6 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Lib/SizedList.hs
 Description :  lists with their size similar to Data.Edison.Seq.SizedSeq
 Copyright   :  C. Maeder DFKI Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -36,7 +36,9 @@ import Prelude hiding (null, head, tail, reverse, take, drop, map)
 import Data.Data
 import qualified Data.List as List
 
-data SizedList a = N !Int [a] deriving (Show, Eq, Ord, Typeable, Data)
+import GHC.Generics (Generic)
+
+data SizedList a = N !Int [a] deriving (Show, Eq, Ord, Typeable, Data, Generic)
 
 fromList :: [a] -> SizedList a
 fromList xs = N (length xs) xs

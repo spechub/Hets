@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./FreeCAD/As.hs
 Description :  definition of the datatype describing
                the abstract FreeCAD terms and and a few tools describing simple
                mathematical operations on those building-blocks (3d vectors,

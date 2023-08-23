@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL_DL/StatAna.hs
 Description :  static analysis of DL parts
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -358,7 +358,7 @@ checkSymbolMapDL rsm =
     let checkSourceSymbol sSym _ =
               if any (`matches` sSym) symOfPredefinedSign then
                   (sSym :) else id
-        syms = Map.foldWithKey checkSourceSymbol [] rsm
+        syms = Map.foldrWithKey checkSourceSymbol [] rsm
     in if null syms
        then return rsm
        else mkError "Predefined CASL_DL symbols cannot be mapped" syms

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Propositional/Parse_AS_Basic.hs
 Description :  Parser for basic specs
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt

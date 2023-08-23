@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/Lib/Graph.hs
 Description :  Tree-based implementation of 'Graph' and 'DynGraph'
   using Data.Map
 Copyright   :  (c) Martin Erwig, Christian Maeder and Uni Bremen 1999-2006
@@ -137,7 +137,7 @@ clearPred v _ c = c { nodePreds = Map.delete v $ nodePreds c }
 updAdj :: Map.IntMap (GrContext a b) -> Map.IntMap [b]
        -> ([b] -> GrContext a b -> GrContext a b)
        -> Map.IntMap (GrContext a b)
-updAdj g m f = Map.foldWithKey (\ v -> updGrContext v . f) g m
+updAdj g m f = Map.foldrWithKey (\ v -> updGrContext v . f) g m
 
 updGrContext :: Node -> (GrContext a b -> GrContext a b)
              -> Map.IntMap (GrContext a b) -> Map.IntMap (GrContext a b)
@@ -158,7 +158,7 @@ composeGr v c (Gr g) = let
 getPaths :: Node -> Gr a b -> [[LEdge b]]
 getPaths src gr = case decomposeGr src gr of
     Just (c, ng) ->
-      Map.foldWithKey (\ nxt lbls l ->
+      Map.foldrWithKey (\ nxt lbls l ->
            l ++ map (\ b -> [(src, nxt, b)]) lbls
              ++ concatMap (\ p -> map (\ b -> (src, nxt, b) : p) lbls)
                            (getPaths nxt ng)) [] $ nodeSuccs c
@@ -168,7 +168,7 @@ getPaths src gr = case decomposeGr src gr of
 getAllPathsTo :: Node -> Gr a b -> [[LEdge b]]
 getAllPathsTo tgt gr = case decomposeGr tgt gr of
     Just (c, ng) ->
-      Map.foldWithKey (\ nxt lbls l ->
+      Map.foldrWithKey (\ nxt lbls l ->
            l ++ map (\ b -> [(nxt, tgt, b)]) lbls
              ++ concatMap (\ p -> map (\ b -> (nxt, tgt, b) : p) lbls)
                            (getAllPathsTo nxt ng)) [] $ nodePreds c
@@ -179,7 +179,7 @@ getPathsTo :: Node -> Node -> Gr a b -> [[LEdge b]]
 getPathsTo src tgt gr = case decomposeGr src gr of
     Just (c, ng) -> let
       s = nodeSuccs c
-      in Map.foldWithKey (\ nxt lbls ->
+      in Map.foldrWithKey (\ nxt lbls ->
             (++ concatMap (\ p -> map (\ b -> (src, nxt, b) : p) lbls)
                 (getPathsTo nxt tgt ng)))
           (map (\ lbl -> [(src, tgt, lbl)]) $ Map.findWithDefault [] tgt s)

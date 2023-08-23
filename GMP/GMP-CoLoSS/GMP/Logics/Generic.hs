@@ -1,4 +1,4 @@
-{- | Module     : $Header$
+{- | Module     : ./GMP/GMP-CoLoSS/GMP/Logics/Generic.hs
  -  Description : Implementation of generic data structures and functions
  -  Copyright   : (c) Daniel Hausmann & Georgel Calin & Lutz Schroeder, DFKI Lab Bremen,
  -                Rob Myers & Dirk Pattinson, Department of Computing, ICL

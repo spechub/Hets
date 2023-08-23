@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Static/DevGraph.hs
 Description :  Central datastructures for development graphs
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -72,6 +72,8 @@ import qualified Data.Set as Set
 
 import Common.Result
 
+import qualified Control.Monad.Fail as Fail
+
 -- * types for structured specification analysis
 
 -- ** basic types
@@ -121,6 +123,8 @@ data DGOrigin =
   | DGLogicCoercion
   | DGTranslation Renamed
   | DGUnion
+  | DGIntersect
+  | DGExtract
   | DGRestriction (MaybeRestricted) (Set.Set G_symbol)
   | DGRevealTranslation
   | DGFreeOrCofree FreeOrCofree
@@ -129,6 +133,7 @@ data DGOrigin =
   | DGLogicQual
   | DGData
   | DGFormalParams
+  | DGVerificationGeneric
   | DGImports
   | DGInst IRI
   | DGFitSpec
@@ -167,7 +172,6 @@ data DGNodeLab =
   , nodeMod :: NodeMod
   , xnode :: Maybe XGraph.XNode
   , dgn_lock :: Maybe (MVar ())
-  , dgn_symbolpathlist :: G_symbolmap [SLinkPath]
   } deriving Typeable
 
 instance Show DGNodeLab where
@@ -252,6 +256,7 @@ data DGLinkOrigin =
   | DGLinkTranslation
   | DGLinkClosedLenv
   | DGLinkImports
+  | DGLinkIntersect
   | DGLinkMorph IRI
   | DGLinkInst IRI Fitted
   | DGLinkInstArg IRI
@@ -429,6 +434,11 @@ isCofreeEdge :: DGLinkType -> Bool
 isCofreeEdge edge = case edge of
     FreeOrCofreeDefLink Cofree _ -> True
     _ -> False
+
+hasOutgoingFreeEdge :: DGraph -> Node -> Bool
+hasOutgoingFreeEdge dg n =
+ let nEdges = outDG dg n in
+ not $ null $ filter (\(_,_, e) -> isFreeEdge $ dgl_type e) nEdges 
 
 -- ** types for global environments
 
@@ -644,7 +654,7 @@ refSigComposition (BranchRefSig n1 (usig1, Just (UnitSigAsBranchSig usig2)))
                   (BranchRefSig n2 (usig3, bsig)) =
   if equalSigs usig2 usig3 then
     return $ BranchRefSig (compPointer n1 n2) (usig1, bsig)
-    else fail $ "Signatures: \n" ++ show usig2 ++ "\n and \n " ++ show usig3 ++
+    else Fail.fail $ "Signatures: \n" ++ show usig2 ++ "\n and \n " ++ show usig3 ++
                 "  do not compose"
 
 refSigComposition _rsig1@(BranchRefSig n1
@@ -654,7 +664,7 @@ refSigComposition _rsig1@(BranchRefSig n1
           return $ BranchRefSig (compPointer n1 n2)
                    (usig1, Just $ BranchStaticContext $
                           modifyCtx (Map.keys rsmap) rsmap bstc)
-      else fail ("Signatures do not match:" ++ show (Map.keys bstc) ++ " "
+      else Fail.fail ("Signatures do not match:" ++ show (Map.keys bstc) ++ " "
                 ++ show (Map.keys rsmap))
 
 refSigComposition (ComponentRefSig n1 rsmap1) (ComponentRefSig n2 rsmap2) = do
@@ -667,7 +677,7 @@ refSigComposition (ComponentRefSig n1 rsmap1) (ComponentRefSig n2 rsmap2) = do
   return $ ComponentRefSig (compPointer n1 n2) unionMap
 
 refSigComposition _rsig1 _rsig2 =
-  fail "composition of refinement signatures"
+  Fail.fail "composition of refinement signatures"
 
 -- | an entry of the global environment
 data GlobalEntry =
@@ -676,6 +686,7 @@ data GlobalEntry =
   | ArchOrRefEntry Bool RefSig
   | AlignEntry AlignSig
   | UnitEntry UnitSig
+  | NetworkEntry GDiagram
     deriving (Show, Typeable)
 
 getGlobEntryNodes :: GlobalEntry -> Set.Set Node
@@ -684,13 +695,14 @@ getGlobEntryNodes g = case g of
   ViewOrStructEntry _ e -> getExtViewSigNodes e
   UnitEntry u -> getUnitSigNodes u
   ArchOrRefEntry _ r -> getRefSigNodes r
+  NetworkEntry gdiag -> Set.fromList $ nodes gdiag
   _ -> Set.empty
 
 data AlignSig = AlignMor NodeSig GMorphism NodeSig
               | AlignSpan NodeSig GMorphism NodeSig GMorphism NodeSig
               | WAlign
-                          NodeSig GMorphism GMorphism -- s1, i1, sig1
-                          NodeSig GMorphism GMorphism -- s2, i2, sig2
+                          NodeSig GMorphism GMorphism -- s1, i1:s1 to b, sig1: s1 to t1
+                          NodeSig GMorphism GMorphism -- s2, i2: s2 to b, sig2: s2 to t2
                           NodeSig                     -- t1
                           NodeSig                     -- t2
                           NodeSig                     -- b
@@ -772,7 +784,7 @@ addSpecNodeRT :: DGraph -> UnitSig -> String -> (Node, DGraph)
 addSpecNodeRT dg usig s =
  let
   (n, dg') = addNodeRT dg usig s
-  f = Map.insert s n $ specRoots dg'
+  f = Map.insert s [n] $ specRoots dg'
  in (n, dg' {specRoots = f})
 
 updateNodeNameRT :: DGraph -> Node -> Bool -> String -> DGraph
@@ -805,7 +817,7 @@ updateSigRT dg n usig =
 updateNodeNameSpecRT :: DGraph -> Node -> String -> DGraph
 updateNodeNameSpecRT dg n s =
  let dg' = updateNodeNameRT dg n False s
- in dg' {specRoots = Map.insert s n $ specRoots dg}
+ in dg' {specRoots = Map.insert s [n] $ specRoots dg}
 
 addSubTree :: DGraph -> Maybe RTLeaves -> RTPointer -> (DGraph, RTPointer)
 addSubTree dg Nothing (NPComp h) =
@@ -920,7 +932,7 @@ data DGraph = DGraph
   , dgBody :: Tree.Gr DGNodeLab DGLinkLab  -- ^ actual 'DGraph` tree
   , currentBaseTheory :: Maybe NodeSig
   , refTree :: Tree.Gr RTNodeLab RTLinkLab -- ^ the refinement tree
-  , specRoots :: Map.Map String Node -- ^ root nodes for named specs
+  , specRoots :: Map.Map String [Node] -- ^ root nodes for named specs, several for comp ref
   , nameMap :: MapSet.MapSet String Node -- ^ all nodes by name
   , archSpecDiags :: Map.Map String Diag
       -- ^ dependency diagrams between units
@@ -1024,7 +1036,7 @@ newRefInfo ln n = DGRef
 
 -- | create a new node label
 newInfoNodeLab :: NodeName -> DGNodeInfo -> G_theory -> DGNodeLab
-newInfoNodeLab name info gTh@(G_theory lid _ _ _ _ _) = DGNodeLab
+newInfoNodeLab name info gTh = DGNodeLab
   { dgn_name = name
   , dgn_theory = gTh
   , globalTheory = Nothing
@@ -1037,8 +1049,7 @@ newInfoNodeLab name info gTh@(G_theory lid _ _ _ _ _) = DGNodeLab
   , nodeInfo = info
   , nodeMod = unMod
   , xnode = Nothing
-  , dgn_lock = Nothing
-  , dgn_symbolpathlist = G_symbolmap lid Map.empty }
+  , dgn_lock = Nothing }
 
 -- | create a new node label using 'newNodeInfo' and 'newInfoNodeLab'
 newNodeLab :: NodeName -> DGOrigin -> G_theory -> DGNodeLab
@@ -1393,12 +1404,12 @@ getDGLinksById :: EdgeId -> DGraph -> [LEdge DGLinkLab]
 getDGLinksById e = filter (\ (_, _, l) -> e == dgl_id l) . labEdgesDG
 
 -- | find a unique link given its source node and edgeId
-lookupUniqueLink :: Monad m => Node -> EdgeId -> DGraph -> m (LEdge DGLinkLab)
+lookupUniqueLink :: Fail.MonadFail m => Node -> EdgeId -> DGraph -> m (LEdge DGLinkLab)
 lookupUniqueLink s ei dg = let (Just (_, _, _, outs), _) = match s $ dgBody dg
   in case filter ((== ei) . dgl_id . fst) outs of
-    [] -> fail $ "could not find linkId #" ++ show ei
+    [] -> Fail.fail $ "could not find linkId #" ++ show ei
     [(lbl, t)] -> return (s, t, lbl)
-    _ -> fail $ "ambigous occurance of linkId #" ++ show ei
+    _ -> Fail.fail $ "ambigous occurance of linkId #" ++ show ei
 
 -- ** top-level functions
 
@@ -1525,7 +1536,7 @@ getConservativityOfPath path = minimum [getConservativity e | e <- path]
 -- | Creates a LibName relation wrt dependencies via reference nodes
 getLibDepRel :: LibEnv -> Rel.Rel LibName
 getLibDepRel = Rel.transClosure
-  . Rel.fromSet . Map.foldWithKey (\ ln dg s ->
+  . Rel.fromSet . Map.foldrWithKey (\ ln dg s ->
     foldr ((\ x -> if isDGRef x then Set.insert (ln, dgn_libname x) else id)
            . snd) s $ labNodesDG dg) Set.empty
 
@@ -1588,3 +1599,11 @@ duplicateDefEdges :: DGraph -> [Edge]
 duplicateDefEdges = concat .
   filter (not . isSingle) . group . map (\ (s, t, _) -> (s, t))
   . filter (liftE isDefEdge) . labEdgesDG
+
+ensureUniqueNames :: DGraph -> IRI -> Int -> NodeName
+ensureUniqueNames dg anIRI n = 
+ let allNames = map (getName . dgn_name . snd) $  labNodesDG dg
+     iri' = addSuffixToIRI (show n) anIRI
+ in if iri' `elem` allNames 
+     then ensureUniqueNames dg anIRI (n + 1) 
+     else makeName iri'

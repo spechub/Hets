@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/Local.hs
 Description :  local proof rules for development graphs
 Copyright   :  (c) Jorina F. Gerken, Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -115,7 +115,7 @@ localInferenceFromAux :: LibName -> LibEnv -> DGraph -> [LEdge DGLinkLab]
 localInferenceFromAux ln libEnv dgraph localThmEdges =
    let finalLocalThmEdges = filter (liftE isUnprovenLocalThm) localThmEdges
        nextDGraph = foldl (localInferenceAux libEnv) dgraph finalLocalThmEdges
-   in Map.insert ln (computeDGraphTheories libEnv nextDGraph) libEnv
+   in Map.insert ln (computeDGraphTheories libEnv ln nextDGraph) libEnv
 
 -- | local inference for all edges
 localInference :: LibName -> LibEnv -> LibEnv

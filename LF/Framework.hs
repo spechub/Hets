@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./LF/Framework.hs
 Description :  Functions for defining LF as a logical framework
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

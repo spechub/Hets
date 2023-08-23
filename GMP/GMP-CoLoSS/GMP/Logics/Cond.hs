@@ -1,4 +1,4 @@
-{- | Module     : $Header$
+{- | Module     : ./GMP/GMP-CoLoSS/GMP/Logics/Cond.hs
  -  Description : Implementation of logic instance CK+CEM
  -  Copyright   : (c) Daniel Hausmann & Georgel Calin & Lutz Schroeder, DFKI Lab Bremen,
  -                Rob Myers & Dirk Pattinson, Department of Computing, ICL

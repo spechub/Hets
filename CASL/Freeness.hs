@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Freeness.hs
 Description :  Computation of the constraints needed for free definition links.
 Copyright   :  (c) Adrian Riesco, Facultad de Informatica UCM 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -722,7 +722,7 @@ quantifyUniversally form = if null var_decl
 {- | traverses a map with sorts as keys and sets of variables as value
 and creates a list of variable declarations -}
 listVarDecl :: Map.Map Id (Set.Set Token) -> [VAR_DECL]
-listVarDecl = Map.foldWithKey f []
+listVarDecl = Map.foldrWithKey f []
       where f sort var_set = (Var_decl (Set.toList var_set) sort nullRange :)
 
 -- | generates a new variable qualified with the given number

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/Doc.hs
 Description :  document data type Doc for (pretty) printing in various formats
 Copyright   :  (c) Christian Maeder and Uni Bremen 2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -66,7 +66,7 @@ fit on the same line (as nest is used for indenting).
 
 Further functions are documented in "Common.DocUtils".
 
-Examples can be produced using: hets -v2 -o pp.het,pp.tex
+Examples can be produced using: hets -v2 -o pp.dol,pp.tex
 -}
 
 module Common.Doc
@@ -110,7 +110,7 @@ module Common.Doc
     , quotes
     , doubleQuotes
       -- * combining documents
-    , (<>)
+    -- , (<>)  -- exported via instance Semigroup Doc
     , (<+>)
     , hcat
     , hsep
@@ -205,8 +205,7 @@ import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
-infixl 6 <>
-infixl 6 <+>
+infixr 6 <+>
 infixl 5 $+$
 infixl 5 $++$
 
@@ -266,18 +265,10 @@ renderText = renderExtText $ StripComment False
 
 renderExtText :: StripComment -> GlobalAnnos -> Doc -> String
 renderExtText stripCs ga =
-  removeTrailingSpaces 0 . Pretty.renderStyle textStyle . toText stripCs ga
+  id . Pretty.renderStyle textStyle . toText stripCs ga
 
 instance Show Doc where
     show = renderText emptyGlobalAnnos
-
-removeTrailingSpaces :: Int -> String -> String
-removeTrailingSpaces n s = case s of
-  "" -> ""
-  c : r -> case c of
-    ' ' -> removeTrailingSpaces (n + 1) r
-    _ -> (if c == '\n' then "" else replicate n ' ')
-         ++ c : removeTrailingSpaces 0 r
 
 renderHtml :: GlobalAnnos -> Doc -> String
 renderHtml = renderExtHtml (StripComment False) $ MkLabel False
@@ -383,8 +374,8 @@ quotes d = hcat [quote, d, quote]
 doubleQuotes :: Doc -> Doc     -- ^ Wrap document in @\"...\"@
 doubleQuotes d = hcat [doubleQuote, d, doubleQuote]
 
-(<>) :: Doc -> Doc -> Doc      -- ^Beside
-a <> b = hcat [a, b]
+instance Semigroup Doc where
+  a <> b = hcat [a, b]
 
 rmEmpties :: [Doc] -> [Doc]
 rmEmpties = filter (not . isEmpty)

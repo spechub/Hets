@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CSL/ASUtils.hs
 Description :  Utils for the abstract syntax of EnCL
 Copyright   :  (c) Dominik Dietrich, Ewaryst Schulz, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

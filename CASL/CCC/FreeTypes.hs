@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/CCC/FreeTypes.hs
 Description :  consistency checking of free types
 Copyright   :  (c) Mingyi Liu and Till Mossakowski and Uni Bremen 2004-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -37,6 +37,7 @@ import qualified Common.Lib.MapSet as MapSet
 import qualified Common.Lib.Rel as Rel
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Data.Either
 import Data.Function
@@ -549,7 +550,7 @@ getNotComplete sig doms fsn constructors =
                     [(p, i)] -> completePatterns sig doms consMap consMap2
                       ([(showId p "", i)]
                       , zip g $ map snd l)
-                    l2 -> fail $ "wrongly grouped leading terms "
+                    l2 -> Fail.fail $ "wrongly grouped leading terms "
                       ++ show l2
          , g)) fsn
 
@@ -582,7 +583,7 @@ completePatterns tsig doms consMap consMap2 (leadingArgs, pas)
     | all (null . snd) pas =
        let fs = checkExhaustive tsig doms $ map fst pas
        in return $ map (\ f -> (showLeadingArgs "" leadingArgs, f)) fs
-    | any (null . snd) pas = fail "wrongly grouped leading terms"
+    | any (null . snd) pas = Fail.fail "wrongly grouped leading terms"
     | otherwise = let hds = map (\ (f, hd : _) -> (f, hd)) pas in
             if all (isVar . snd) hds
             then let
@@ -599,12 +600,12 @@ completePatterns tsig doms consMap consMap2 (leadingArgs, pas)
                 $ map (\ (_, _, os) -> Set.map res_OP_TYPE os) consAppls
               in case filter (not . Set.null . (`MapSet.lookup` consMap))
                      $ Set.toList consSrt of
-                  [] -> fail $
+                  [] -> Fail.fail $
                     "no common result type for constructors found: "
                        ++ showDoc (map snd hds) ""
                   cSrt : _ -> do
                     let allCons = MapSet.lookup cSrt consMap
-                    when (Set.null allCons) . fail
+                    when (Set.null allCons) . Fail.fail
                       $ "no constructors for result type found: " ++ show cSrt
                     let cons_group = map (\ (c, ct) -> (c, ct,
                           filter (\ (_, h : _) -> case unsortedTerm h of

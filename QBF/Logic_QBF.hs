@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./QBF/Logic_QBF.hs
 Description :  Instance of class Logic for propositional logic
                extended with QBFs
 
@@ -47,13 +47,13 @@ import ATC.ProofTree ()
 import Common.ProofTree
 
 import qualified Data.Map as Map
-import Data.Monoid
+import Data.Monoid ()
 
 -- | Lid for propositional logic
 data QBF = QBF deriving Show
 
 instance Language QBF where
-    description _ = "Propositional Logic extended with QBFs\n"
+    description _ = "Propositional Logic extended with quantified boolean formulas\n"
         ++ "for more information please refer to\n"
         ++ "http://en.wikipedia.org/wiki/Propositional_logic"
         ++ "http://www.voronkov.com/lics.cgi"
@@ -79,6 +79,8 @@ instance Sentences QBF FORMULA
     negation QBF = Just . negateFormula
     -- returns the set of symbols
     sym_of QBF = singletonList . symOf
+    -- kind of symbols is always prop
+    symKind QBF _ = "prop"
     -- returns the symbol map
     symmap_of QBF = getSymbolMap
     -- returns the name of a symbol
@@ -88,16 +90,17 @@ instance Sentences QBF FORMULA
     -- there is nothing to leave out
     simplify_sen QBF _ = simplify
 
+instance Semigroup BASICSPEC where
+    (BasicSpec l1) <> (BasicSpec l2) = BasicSpec $ l1 ++ l2
 instance Monoid BASICSPEC where
     mempty = BasicSpec []
-    mappend (BasicSpec l1) (BasicSpec l2) = BasicSpec $ l1 ++ l2
 
 -- | Syntax of Propositional logic
 instance Syntax QBF BASICSPEC Symbol
     SYMBITEMS SYMBMAPITEMS where
          parse_basic_spec QBF = Just basicSpec
-         parse_symb_items QBF = Just symbItems
-         parse_symb_map_items QBF = Just symbMapItems
+         parse_symb_items QBF = Just . const $ symbItems
+         parse_symb_map_items QBF = Just . const $ symbMapItems
 
 -- | Instance of Logic for propositional logc
 instance Logic QBF
@@ -112,7 +115,7 @@ instance Logic QBF
     Symbol                    -- raw_symbol
     ProofTree                 -- proof_tree
     where
-      stability QBF = Experimental
+      stability QBF = Stable
       top_sublogic QBF = Sublogic.top
       all_sublogics QBF = sublogicsAll
       empty_proof_tree QBF = emptyProofTree

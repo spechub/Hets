@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./THF/Print.hs
 Description :  Seveal Pretty instances.
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -40,8 +40,8 @@ instance Pretty SymbolTHF where
 
 instance Pretty SignTHF where
     pretty s =
-        let ts = Map.fold (\ ti d -> d $+$ pretty ti) empty (types s)
-            cs = Map.fold (\ ci d -> d $+$ pretty ci) empty (consts s)
+        let ts = Map.foldr (\ ti d -> d $+$ pretty ti) empty (types s)
+            cs = Map.foldr (\ ci d -> d $+$ pretty ci) empty (consts s)
         in text "%Types:" $+$ ts $++$ text "%Constants: " $+$ cs
 
 instance Pretty Kind where

@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      :./CMDL/DgCommands.hs
 Description : CMDL interface development graph commands
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt

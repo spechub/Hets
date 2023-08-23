@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./FreeCAD/PrintAs.hs
 Description :  print the abstract syntax of FreeCAD terms
 Copyright   :  (c) Robert Savu and Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

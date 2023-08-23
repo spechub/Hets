@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Printing.hs
 Description :  Translation from Haskell to Maude
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt

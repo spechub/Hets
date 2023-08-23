@@ -13,12 +13,12 @@ cvs -d \
    co -P CASL-lib
 cd CASL-lib
 
-# check differences of *.pp.het and *.pp.pp.het
-hets -v2 -o pp.het Basic/*.casl
-cat Basic/*.pp.het > pp1.txt
+# check differences of *.pp.dol and *.pp.pp.dol
+hets -v2 -o pp.dol Basic/*.casl
+cat Basic/*.pp.dol > pp1.txt
 \rm -f Basic/*.env
-hets -v2 -o pp.het Basic/*.pp.het
-cat Basic/*.pp.pp.het > pp2.txt
+hets -v2 -o pp.dol Basic/*.pp.dol
+cat Basic/*.pp.pp.dol > pp2.txt
 diff pp1.txt pp2.txt
 
 # try consistency check with SPASS
@@ -30,8 +30,8 @@ date
 
 # check other examples
 date
-for i in */*/*.het */*/*.casl; \
-   do hets -v2 -o prf,th,pp.het,pp.tex $i; done
+for i in */*/*.dol */*/*.casl; \
+   do hets -v2 -o prf,th,pp.dol,pp.tex $i; done
 date
 for i in */*/*.prf; do hets -v2 -o th $i; done
 date

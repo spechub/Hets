@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./QBF/Parse_AS_Basic.hs
 Description :  Parser for basic specs
 Copyright   :  (c) Jonathan von Schroeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

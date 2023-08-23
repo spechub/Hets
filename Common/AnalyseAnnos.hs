@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/AnalyseAnnos.hs
 Description :  analyse annotations and add them to global ones
 Copyright   :  (c) Christian Maeder, Klaus Luettich and Uni Bremen 2002-2003
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -33,12 +33,13 @@ import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
 import Data.List (partition)
 import Control.Monad (foldM)
+import qualified Control.Monad.Fail as Fail
 import Text.ParserCombinators.Parsec
 
 getGlobalAnnos :: String -> Result GlobalAnnos
 getGlobalAnnos istr = let str = trimLeft istr in
   case runParser (annotations << eof) () "" str of
-    Left err -> fail $ show err
+    Left err -> Fail.fail $ show err
     Right ans -> addGlobalAnnos emptyGlobalAnnos ans
 
 -- | add global annotations

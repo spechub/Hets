@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Fpl/As.der.hs
 Description :  abstract syntax for FPL
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2011
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -22,6 +22,7 @@ import Common.AnnoState
 import Common.AS_Annotation
 import Common.GlobalAnnotations
 import Common.ExtSign
+import qualified Control.Monad.Fail as Fail
 
 import Comorphisms.Hs2HOLCF
 
@@ -40,7 +41,7 @@ pickParser c = do
               hatAna (b, HatAna.emptySign, emptyGlobalAnnos)
           uncurry transTheory c sig sens
    case m of
-      Nothing -> fail $ show res
+      Nothing -> Fail.fail $ show res
       Just x -> return x
 
 main :: IO ()

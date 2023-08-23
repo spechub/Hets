@@ -1,4 +1,8 @@
+#SUBLOGIC=ALC
 Prefix(: = <http://example.org/>)
  Prefix(rdfs: = <http://www.w3.org/2000/01/rdf-schema#>)
  Ontology(
-   EquivalentClasses(Annotation(rdfs:comment "I hereby annotate this") :a :b :c))
+   Declaration(Class(:a))
+   Declaration(Class(:b))
+   Declaration(Class(:c))
+   EquivalentClasses(Annotation(rdfs:comment "I hereby annotate this") :a :b :c)) 

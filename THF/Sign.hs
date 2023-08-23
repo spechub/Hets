@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/Sign.hs
 Description :  Signature for THF
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -117,14 +117,14 @@ toEitherLeftMap :: Map.Map c x -> EitherMap c x
 toEitherLeftMap = Map.map Left
 
 eitherMapHasDiagnosis :: EitherMap c x -> Bool
-eitherMapHasDiagnosis = Map.fold (\ a b -> case a of
+eitherMapHasDiagnosis = Map.foldr (\ a b -> case a of
     Right _ -> True
     _ -> b ) False
 
 -- only use after eitherMapHasDiagnosis returned true
 eitherMapGetDiagnosis :: EitherMap c x -> [Diagnosis]
 eitherMapGetDiagnosis =
-    Map.fold (\ e dl -> either (const dl) (: dl) e) []
+    Map.foldr (\ e dl -> either (const dl) (: dl) e) []
 
 -- only use after eitherMapHasDiagnosis returned false
 eitherMapGetMap :: EitherMap c x -> Map.Map c x

@@ -1,7 +1,7 @@
 {- |
-Module      :  $Header$
-Description :  parser for CASL (heterogeneous) structured specifications
-Copyright   :  (c) Till Mossakowski, Christian Maeder, Uni Bremen 2002-2005
+Module      :  ./Syntax/Parse_AS_Structured.hs
+Description :  parser for DOL OMS and CASL (heterogeneous) structured specifications
+Copyright   :  (c) Till Mossakowski, Christian Maeder, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
@@ -10,6 +10,8 @@ Portability :  non-portable(Grothendieck)
 Parser for CASL (heterogeneous) structured specifications
    Concerning the homogeneous syntax, this follows Sect II:3.1.3
    of the CASL Reference Manual.
+Parser for DOL ontologies, models and specifications and networks.
+   Follows the DOL OMG standard, clauses 9.4 and 9.5
 -}
 
 module Syntax.Parse_AS_Structured
@@ -40,6 +42,7 @@ import Syntax.AS_Structured
 import Common.AS_Annotation
 import Common.AnnoState
 import Common.AnnoParser
+import Common.GlobalAnnotations
 import Common.Id
 import Common.IRI
 import Common.Keywords
@@ -52,6 +55,7 @@ import Text.ParserCombinators.Parsec
 import Data.Char
 import Data.Maybe
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 expandCurieM :: LogicGraph -> IRI -> GenParser Char st IRI
 expandCurieM lG i =
@@ -91,7 +95,7 @@ lookupLogicM i = if isSimple i
                  then return l
                  else case lookupLogicName l of
                    Just s -> return s
-                   Nothing -> fail $ "logic " ++ show i ++ " not found"
+                   Nothing -> Fail.fail $ "logic " ++ show i ++ " not found"
   where l = iriToStringUnsecure i
 
 {- keep these identical in order to
@@ -99,13 +103,12 @@ decide after seeing ".", ":" or "->" what was meant -}
 logicName :: LogicGraph -> AParser st Logic_name
 logicName l = do
       i <- hetIriCurie >>= expandCurieMConservative l
-      let (ft, rt) = if isSimple i
-                     then break (== '.') $ abbrevPath i -- HetCASL
-                     else (abbrevPath i, [])
+      let (ft, rt) = if isSimple i then break (== '.') $ iFragment i else ( iFragment i, [])
       (e, ms) <- if null rt then return (i, Nothing)
          else do
            s <- sublogicChars -- try more sublogic characters
-           return (i { abbrevPath = ft}, Just . mkSimpleId $ tail rt ++ s)
+           return (i { iFragment = ft},
+                   Just . mkSimpleId $ tail rt ++ s)
       skipSmart
       -- an optional spec name for a sublogic based on a theory #171
       mt <- optionMaybe
@@ -200,19 +203,19 @@ plainComma = anComma `notFollowedWith` asKey logicS
 
 -- * parse G_mapping
 
-callSymParser :: Bool -> Maybe (AParser st a) -> String -> String ->
+callSymParser :: Bool -> Maybe (PrefixMap -> AParser st a) -> PrefixMap -> String -> String ->
                  AParser st ([a], [Token])
-callSymParser oneOnly p name itemType = case p of
+callSymParser oneOnly p pm name itemType = case p of
     Nothing ->
-        fail $ "no symbol" ++ itemType ++ " parser for language " ++ name
+        Fail.fail $ "no symbol" ++ itemType ++ " parser for language " ++ name
     Just pa -> if oneOnly then do
-        s <- pa
+        s <- pa pm
         return ([s], [])
-      else separatedBy pa plainComma
+      else separatedBy (pa pm) plainComma
 
-parseItemsMap :: AnyLogic -> AParser st (G_symb_map_items_list, [Token])
-parseItemsMap (Logic lid) = do
-      (cs, ps) <- callSymParser False (parse_symb_map_items lid)
+parseItemsMap :: AnyLogic -> PrefixMap -> AParser st (G_symb_map_items_list, [Token])
+parseItemsMap (Logic lid) pm = do
+      (cs, ps) <- callSymParser False (parse_symb_map_items lid) pm
                   (language_name lid) " maps"
       return (G_symb_map_items_list lid cs, ps)
 
@@ -222,38 +225,38 @@ parseMapping =
   parseMapOrHide "translation" G_logic_translation G_symb_map parseItemsMap
 
 parseMapOrHide :: String -> (Logic_code -> a) -> (t -> a)
-               -> (AnyLogic -> AParser st (t, [Token])) -> LogicGraph
+               -> (AnyLogic -> PrefixMap -> AParser st (t, [Token])) -> LogicGraph
                -> AParser st ([a], [Token])
 parseMapOrHide altKw constrLogic constrMap pa lG =
     do (n, nLg) <- parseLogic altKw lG
-       do optional anComma
+       do anComma
           (gs, ps) <- parseMapOrHide altKw constrLogic constrMap pa nLg
           return (constrLogic n : gs, ps)
         <|> return ([constrLogic n], [])
     <|> do
       l <- lookupCurrentLogic "parseMapOrHide" lG
-      (m, ps) <- pa l
-      do optional anComma
+      (m, ps) <- pa l $ prefixes lG
+      do anComma
          (gs, qs) <- parseMapOrHide altKw constrLogic constrMap pa lG
          return (constrMap m : gs, ps ++ qs)
         <|> return ([constrMap m], ps)
 
 -- * parse G_hiding
 
-parseItemsList :: AnyLogic -> AParser st (G_symb_items_list, [Token])
-parseItemsList (Logic lid) = do
-      (cs, ps) <- callSymParser False (parse_symb_items lid)
+parseItemsList :: AnyLogic -> PrefixMap -> AParser st (G_symb_items_list, [Token])
+parseItemsList (Logic lid) pm = do
+      (cs, ps) <- callSymParser False (parse_symb_items lid) pm
                   (language_name lid) ""
       return (G_symb_items_list lid cs, ps)
 
-parseSingleSymb :: AnyLogic -> AParser st (G_symb_items_list, [Token])
-parseSingleSymb (Logic lid) = do
-      (cs, ps) <- callSymParser True (parseSingleSymbItem lid)
+parseSingleSymb :: AnyLogic -> PrefixMap -> AParser st (G_symb_items_list, [Token])
+parseSingleSymb (Logic lid) pm = do
+      (cs, ps) <- callSymParser True (parseSingleSymbItem lid) pm
                   (language_name lid) ""
       return (G_symb_items_list lid cs, ps)
 
 parseHiding :: LogicGraph -> AParser st ([G_hiding], [Token])
-parseHiding =
+parseHiding = 
   parseMapOrHide "along" G_logic_projection G_symb_list parseItemsList
 
 -- * specs
@@ -286,10 +289,14 @@ specThen l = do
 
 specA :: LogicGraph -> AParser st (Annoted SPEC)
 specA l = do
-  (sps, ps) <- annoParser2 (specB l) `separatedBy` asKey andS
-  return $ case sps of
-    [sp] -> sp
-    _ -> emptyAnno (Union sps $ catRange ps)
+  sp <- annoParser2 $ specB l
+  option sp $ do
+    t <- asKey andS <|> asKey intersectS
+    (sps, ts) <- annoParser2 (specB l) `separatedBy` asKey (tokStr t)
+    let cons = case tokStr t of
+                 "and" -> Union
+                 _ -> Intersection
+    return $ emptyAnno (cons (sp : sps) $ catRange (t : ts))
 
 specB :: LogicGraph -> AParser st (Annoted SPEC)
 specB l = do
@@ -359,7 +366,7 @@ restriction lg =
     <|> -- reveal
     do kReveal <- asKey revealS
        nl <- lookupCurrentLogic "reveal" lg
-       (mappings, commas) <- parseItemsMap nl
+       (mappings, commas) <- parseItemsMap nl $ prefixes lg
        return (Revealed mappings (catRange (kReveal : commas)))
 
 -- | Parse approximation
@@ -382,16 +389,27 @@ minimization lg = do
 
 extraction :: LogicGraph -> AParser st EXTRACTION
 extraction lg = do
-  p <- asKey "extract" <|> asKey "remove"
-  is <- many1 (hetIRI lg)
-  return . ExtractOrRemove (tokStr p == "extract") is $ tokPos p
+  p <- asKey extractS <|> asKey removeS
+  (is,commas) <- separatedBy (hetIRI lg) commaT
+  return . ExtractOrRemove (tokStr p == extractS) is $ catRange (p:commas)
 
 filtering :: LogicGraph -> AParser st FILTERING
 filtering lg = do
   p <- asKey selectS <|> asKey rejectS
-  s <- lookupCurrentSyntax "filtering" lg
-  Basic_spec bs _ <- basicSpec lg s
-  return . SelectOrReject (tokStr p == selectS) bs $ tokPos p
+  filtering_aux p lg
+
+filtering_aux :: Token -> LogicGraph -> AParser st FILTERING
+filtering_aux p lg =
+  do 
+    s <- lookupCurrentSyntax "filtering" lg
+    Basic_spec bs _ <- basicSpec lg s
+    return . FilterBasicSpec (tokStr p == selectS) bs $ tokPos p
+ <|>
+  do
+    s <- lookupCurrentSyntax "filtering" lg
+    (g_symb_items_list,ps) <- parseItemsList (fst s) $ prefixes lg
+    return . FilterSymbolList (tokStr p == selectS) 
+               g_symb_items_list $ catRange (p : ps)
 
 groupSpecLookhead :: LogicGraph -> AParser st IRI
 groupSpecLookhead lG =
@@ -564,11 +582,11 @@ corr1 :: LogicGraph
                     , Maybe RELATION_REF, Maybe CONFIDENCE, G_symb_items_list)
 corr1 l = do
     al <- lookupCurrentLogic "correspondence" l
-    (eRef, _) <- parseSingleSymb al
+    (eRef, _) <- parseSingleSymb al $ prefixes l
     (mrRef, mconf, toer) <- corr2 l
     cids <- annotations
     if not (null cids || null (tail cids))
-      then fail "more than one correspondence id"
+      then Fail.fail "more than one correspondence id"
       else return (listToMaybe cids, eRef, mrRef, mconf, toer)
 
 corr2 :: LogicGraph
@@ -582,7 +600,7 @@ corr3 :: LogicGraph -> AParser st (Maybe CONFIDENCE, G_symb_items_list)
 corr3 l = do
     al <- lookupCurrentLogic "corr3" l
     conf <- optionMaybe $ try confidence
-    (sym, _) <- parseSingleSymb al
+    (sym, _) <- parseSingleSymb al $ prefixes l
     return (conf, sym)
 
 relationRefWithLookAhead :: LogicGraph -> AParser st RELATION_REF

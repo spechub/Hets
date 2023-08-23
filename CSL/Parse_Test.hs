@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Parse_Test.hs
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -188,7 +188,7 @@ time p = do
   return res
 
 
--- Run e.g.: time $ testBS "Hets-lib/EnCL/antlr/t2.het" "/tmp/t2.out"
+-- Run e.g.: time $ testBS "Hets-lib/EnCL/antlr/t2.dol" "/tmp/t2.out"
 testBS fpin fpout = do
   putStr "Reading time was "
   s <- time $ do

@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, DeriveDataTypeable
   , FlexibleInstances, UndecidableInstances, ExistentialQuantification #-}
 {- |
-Module      :  $Header$
+Module      :  ./Logic/Comorphism.hs
 Description :  interface and class for logic translations
 Copyright   :  (c) Till Mossakowski, Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -28,12 +28,15 @@ module Logic.Comorphism
     , targetSublogic
     , map_sign
     , wrapMapTheory
+    , wrapMapTheoryPossiblyLossy
     , mkTheoryMapping
     , AnyComorphism (..)
     , idComorphism
     , isIdComorphism
     , isModelTransportable
     , hasModelExpansion
+    , isEps
+    , isRps
     , isWeaklyAmalgamable
     , compComorphism
     ) where
@@ -48,6 +51,7 @@ import Common.Id
 import Common.LibName
 import Common.ProofUtils
 import Common.Result
+import qualified Control.Monad.Fail as Fail
 
 import Data.Data
 import Data.Maybe
@@ -75,6 +79,10 @@ class (Language cid,
     sourceLogic :: cid -> lid1
     sourceSublogic :: cid -> sublogics1
     sourceSublogic cid = top_sublogic $ sourceLogic cid
+    {- needed for lossy translations. Is stricter than sourceSublogic.
+       Should be merged with sourceSublogic once #1706 has been fixed. -}
+    sourceSublogicLossy :: cid -> sublogics1
+    sourceSublogicLossy = sourceSublogic
     minSourceTheory :: cid -> Maybe (LibName, String)
     minSourceTheory _ = Nothing
     targetLogic :: cid -> lid2
@@ -105,7 +113,7 @@ class (Language cid,
     map_symbol = errMapSymbol
     extractModel :: cid -> sign1 -> proof_tree2
                  -> Result (sign1, [Named sentence1])
-    extractModel cid _ _ = fail
+    extractModel cid _ _ = Fail.fail
       $ "extractModel not implemented for comorphism "
       ++ language_name cid
     -- properties of comorphisms
@@ -124,6 +132,17 @@ class (Language cid,
     constituents cid = [language_name cid]
     isInclusionComorphism :: cid -> Bool
     isInclusionComorphism _ = False
+    -- reduction preserves satisfaction
+    rps :: cid -> Bool
+    rps _ = True
+    -- expansion preserves satisfaction
+    eps :: cid -> Bool
+    eps _ = True
+    -- a comorphism is a generalized theoroidal comorphism (GTC)
+    -- if the presence of an axiom in a theory
+    -- impacts on the signature of the translated theory along the GTC
+    isGTC :: cid -> Bool 
+    isGTC _ = False
 
 targetSublogic :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -161,7 +180,7 @@ failMapSentence :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
          => cid -> sign1 -> sentence1 -> Result sentence2
 failMapSentence cid _ _ =
-    fail $ "Unsupported sentence translation " ++ show cid
+    Fail.fail $ "Unsupported sentence translation " ++ show cid
 
 errMapSymbol :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -172,6 +191,42 @@ errMapSymbol :: Comorphism cid
 errMapSymbol cid _ _ = error $ "no symbol mapping for " ++ show cid
 
 -- | use this function instead of 'mapMarkedTheory'
+wrapMapTheoryPossiblyLossy :: Comorphism cid
+            lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+                sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+            lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+                sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+            => Bool -> cid -> (sign1, [Named sentence1])
+                   -> Result (sign2, [Named sentence2])
+wrapMapTheoryPossiblyLossy lossy cid (sign, sens) =
+  let res = mapMarkedTheory cid (sign, sens)
+      lid1 = sourceLogic cid
+      thDoc = show (vcat $ pretty sign : map (print_named lid1) sens)
+  in
+  if isIdComorphism $ Comorphism cid
+  then res
+  else let sub = if lossy then sourceSublogicLossy cid else sourceSublogic cid
+           sigLog = minSublogic sign
+           senLog = foldl lub sigLog $ map (minSublogic . sentence) sens
+           isInSub s = isSubElem (minSublogic $ sentence s) sub 
+           sensLossy = filter isInSub sens
+           resLossy = mapMarkedTheory cid (sign, sensLossy)
+        in if isSubElem senLog sub
+                 then res
+                 else
+                    if lossy && isSubElem sigLog sub
+                    then resLossy 
+                    else Result
+                     [ Diag Hint thDoc nullRange
+                     , Diag Error
+                         ("for '" ++ language_name cid ++
+                              "' expected sublogic '" ++
+                              sublogicName sub ++
+                              "'\n but found sublogic '" ++
+                              sublogicName senLog ++
+                              "' with signature sublogic '" ++
+                              sublogicName sigLog ++ "'") nullRange] Nothing
+
 wrapMapTheory :: Comorphism cid
             lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
                 sign1 morphism1 symbol1 raw_symbol1 proof_tree1
@@ -179,28 +234,7 @@ wrapMapTheory :: Comorphism cid
                 sign2 morphism2 symbol2 raw_symbol2 proof_tree2
             => cid -> (sign1, [Named sentence1])
                    -> Result (sign2, [Named sentence2])
-wrapMapTheory cid (sign, sens) =
-  let res = mapMarkedTheory cid (sign, sens)
-      lid1 = sourceLogic cid
-      thDoc = show (vcat $ pretty sign : map (print_named lid1) sens)
-  in
-  if isIdComorphism $ Comorphism cid then res else case sourceSublogic cid of
-        sub -> case minSublogic sign of
-          sigLog -> case foldl lub sigLog
-                    $ map (minSublogic . sentence) sens of
-            senLog ->
-              if isSubElem senLog sub
-                 then res
-                 else Result
-                  [ Diag Hint thDoc nullRange
-                  , Diag Error
-                      ("for '" ++ language_name cid ++
-                           "' expected sublogic '" ++
-                           sublogicName sub ++
-                           "'\n but found sublogic '" ++
-                           sublogicName senLog ++
-                           "' with signature sublogic '" ++
-                           sublogicName sigLog ++ "'") nullRange] Nothing
+wrapMapTheory = wrapMapTheoryPossiblyLossy False
 
 mkTheoryMapping :: Monad m => (sign1 -> m (sign2, [Named sentence2]))
                    -> (sign1 -> sentence1 -> m sentence2)
@@ -232,7 +266,7 @@ mkIdComorphism lid sub = InclComorphism
 mkInclComorphism :: (Logic lid sublogics
                            basic_spec sentence symb_items symb_map_items
                            sign morphism symbol raw_symbol proof_tree,
-                     Monad m) =>
+                     Fail.MonadFail m) =>
                     lid -> sublogics -> sublogics
                  -> m (InclComorphism lid sublogics)
 mkInclComorphism lid srcSub trgSub =
@@ -241,7 +275,7 @@ mkInclComorphism lid srcSub trgSub =
       { inclusion_logic = lid
       , inclusion_source_sublogic = srcSub
       , inclusion_target_sublogic = trgSub }
-    else fail ("mkInclComorphism: first sublogic must be a " ++
+    else Fail.fail ("mkInclComorphism: first sublogic must be a " ++
                "subElem of the second sublogic")
 
 instance (Language lid, Eq sublogics, Show sublogics, SublogicName sublogics)
@@ -368,7 +402,7 @@ instance (Comorphism cid1
            coerceBasicTheory (targetLogic cid1) lid3 "extractModel1" bTh1
          bTh2 <- extractModel cid2 sign1 pt3
          coerceBasicTheory lid3 lid1 "extractModel2" bTh2
-     else fail $ "extractModel not implemented for comorphism composition with "
+     else Fail.fail $ "extractModel not implemented for comorphism composition with "
           ++ language_name cid1
    constituents (CompComorphism cid1 cid2) =
       constituents cid1 ++ constituents cid2
@@ -441,8 +475,17 @@ hasModelExpansion (Comorphism cid) = has_model_expansion cid
 isWeaklyAmalgamable :: AnyComorphism -> Bool
 isWeaklyAmalgamable (Comorphism cid) = is_weakly_amalgamable cid
 
+-- | Tests whether a comorphism is rps or eps
+
+isEps :: AnyComorphism -> Bool
+isEps (Comorphism cid) = eps cid
+
+isRps :: AnyComorphism -> Bool
+isRps (Comorphism cid) = rps cid
+
+
 -- | Compose comorphisms
-compComorphism :: Monad m => AnyComorphism -> AnyComorphism -> m AnyComorphism
+compComorphism :: Fail.MonadFail m => AnyComorphism -> AnyComorphism -> m AnyComorphism
 compComorphism (Comorphism cid1) (Comorphism cid2) =
    let l1 = targetLogic cid1
        l2 = sourceLogic cid2
@@ -453,11 +496,11 @@ compComorphism (Comorphism cid1) (Comorphism cid2) =
       if isSubElem (forceCoerceSublogic l1 l2 $ targetSublogic cid1)
             $ sourceSublogic cid2
        then return $ Comorphism (CompComorphism cid1 cid2)
-       else fail $ "Subl" ++ msg ++ " (Expected sublogic "
+       else Fail.fail $ "Subl" ++ msg ++ " (Expected sublogic "
                           ++ sublogicName (sourceSublogic cid2)
                           ++ " but found sublogic "
                           ++ sublogicName (targetSublogic cid1) ++ ")"
-    else fail $ 'L' : msg ++ " (Expected logic "
+    else Fail.fail $ 'L' : msg ++ " (Expected logic "
                           ++ language_name l2
                           ++ " but found logic "
                           ++ language_name l1 ++ ")"

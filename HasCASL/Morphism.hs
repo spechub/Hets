@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/Morphism.hs
 Description :  morphisms implementation
 Copyright   :  (c) Christian Maeder and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -32,14 +32,15 @@ import Common.Utils (composeMap)
 import Common.Lib.MapSet (setToMap)
 
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import qualified Data.Set as Set
 import qualified Data.Map as Map
 
-disjointKeys :: (Ord a, Pretty a, Monad m) => Map.Map a b -> Map.Map a c
+disjointKeys :: (Ord a, Pretty a, Fail.MonadFail m) => Map.Map a b -> Map.Map a c
              -> m ()
 disjointKeys m1 m2 = let d = Map.keysSet $ Map.intersection m1 m2 in
-  unless (Set.null d) $ fail $ show
+  unless (Set.null d) $ Fail.fail $ show
          (sep [ text "overlapping identifiers for types and classes:"
               , pretty d])
 
@@ -176,7 +177,7 @@ compMor m1 m2 = let
       { typeIdMap = ctm
       , classIdMap = ccm
       , funMap = Map.intersection
-          (Map.foldWithKey ( \ p1@(i, sc) p2 ->
+          (Map.foldrWithKey ( \ p1@(i, sc) p2 ->
                        let p3 = mapFunSym ccm tm tm2 fm2 p2
                            nSc = mapTypeScheme ccm tm ctm sc
                        in if (i, nSc) == p3 then Map.delete p1 else
@@ -205,7 +206,7 @@ legalMor m = let
     && all (`elem` Map.keys (classMap t)) (Map.elems cs)
     && all ((`elem` Map.keys (assumps s)) . fst) (Map.keys fs)
     && all ((`elem` Map.keys (assumps t)) . fst) (Map.elems fs))
-     (fail "illegal HasCASL morphism")
+     (Fail.fail "illegal HasCASL morphism")
 
 morphismUnion :: Morphism -> Morphism -> Result Morphism
 morphismUnion m1 m2 = do
@@ -249,13 +250,13 @@ morphismUnion m1 m2 = do
       fma2 = Map.union fm2 $ setToMap uf2
       showFun (i, ty) = showId i . (" : " ++) . showDoc ty
   tma <- mergeMap ( \ t1 t2 -> if t1 == t2 then return t1 else
-                      fail $ "incompatible type mapping to `"
+                      Fail.fail $ "incompatible type mapping to `"
                          ++ showId t1 "' and '" ++ showId t2 "'") ima1 ima2
   cma <- mergeMap ( \ t1 t2 -> if t1 == t2 then return t1 else
-                      fail $ "incompatible class mapping to `"
+                      Fail.fail $ "incompatible class mapping to `"
                          ++ showId t1 "' and '" ++ showId t2 "'") cima1 cima2
   fma <- mergeMap ( \ o1 o2 -> if o1 == o2 then return o1 else
-                      fail $ "incompatible mapping to '"
+                      Fail.fail $ "incompatible mapping to '"
                          ++ showFun o1 "' and '" ++ showFun o2 "'") fma1 fma2
   disjointKeys tma cma
   return (mkMorphism s t)
@@ -270,17 +271,17 @@ morphismToSymbMap mor = let
     im = typeIdMap mor
     jm = classIdMap mor
     tm = filterAliases $ typeMap tar
-    classSymMap = Map.foldWithKey ( \ i ti ->
+    classSymMap = Map.foldrWithKey ( \ i ti ->
        let j = Map.findWithDefault i i jm
            k = rawKind ti
            in Map.insert (idToClassSymbol i k)
                $ idToClassSymbol j k) Map.empty $ classMap src
-    typeSymMap = Map.foldWithKey ( \ i ti ->
+    typeSymMap = Map.foldrWithKey ( \ i ti ->
        let j = Map.findWithDefault i i im
            k = typeKind ti
            in Map.insert (idToTypeSymbol i k)
                $ idToTypeSymbol j k) classSymMap $ typeMap src
-   in Map.foldWithKey
+   in Map.foldrWithKey
          ( \ i s m ->
              Set.fold ( \ oi ->
              let ty = opType oi

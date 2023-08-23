@@ -1,5 +1,6 @@
+{-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./GUI/GtkUtils.hs
 Description :  Access to the .glade files stored as strings inside the binary
 Copyright   :  (c) Thiemo Wiedemeyer, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -14,7 +15,7 @@ we want to distribute them within the binary.
 -}
 
 module GUI.GtkUtils
-  ( getGladeXML
+  ( getGTKBuilder
   , startMainLoop
   , stopMainLoop
   , forkIO_
@@ -69,11 +70,11 @@ module GUI.GtkUtils
   , activate
 
   , escapeGtkMarkup
-  )
-  where
+  , ComboBoxText
+  , toComboBoxText
+  ) where
 
 import Graphics.UI.Gtk
-import Graphics.UI.Gtk.Glade
 
 import qualified GUI.Glade.Utils as Utils
 
@@ -81,24 +82,22 @@ import Static.GTheory
 
 import Common.DocUtils (showDoc)
 import Common.IO
-import Common.Utils (getTempFile)
 
 import Control.Concurrent (forkIO)
 import Control.Monad (when)
 
-import System.Directory ( removeFile, doesFileExist
+import qualified Data.Text as Text
+
+import System.Directory ( doesFileExist
                         , canonicalizePath)
 import System.FilePath (takeFileName, takeDirectory)
 
 -- | Returns a GladeXML Object of a xmlstring.
-getGladeXML :: (String, String) -> IO GladeXML
-getGladeXML (name, xmlstr) = do
-  filename <- getTempFile xmlstr name
-  mxml <- xmlNew filename
-  removeFile filename
-  case mxml of
-    Just xml -> return xml
-    Nothing -> error "GtkUtils: Can't load xml string."
+getGTKBuilder :: (String, String) -> IO Builder
+getGTKBuilder (_, xmlstr) = do
+  builder <- builderNew
+  builderAddFromString builder xmlstr
+  return builder
 
 -- | Starts the gtk main event loop in a thread
 startMainLoop :: IO ()
@@ -291,10 +290,10 @@ listChoiceAux :: String -- ^ Title
               -> [a] -- ^ Rows to display
               -> IO (Maybe (Int, a)) -- ^ Selected row
 listChoiceAux title showF items = do
-  xml <- getGladeXML Utils.get
+  builder <- getGTKBuilder Utils.get
   -- get objects
-  dlg <- xmlGetWidget xml castToDialog "ListView"
-  trvList <- xmlGetWidget xml castToTreeView "trvList"
+  dlg <- builderGetObject builder castToDialog "ListView"
+  trvList <- builderGetObject builder castToTreeView "trvList"
 
   windowSetTitle dlg title
   store <- setListData trvList showF items
@@ -336,11 +335,11 @@ progressBarAux :: Bool -- ^ Percent or pulse
                -> String -- ^ Description
                -> IO (Double -> String -> IO (), IO ())
 progressBarAux isProgress title description = do
-  xml <- getGladeXML Utils.get
+  builder <- getGTKBuilder Utils.get
   -- get window
-  window <- xmlGetWidget xml castToWindow "ProgressBar"
+  window <- builderGetObject builder castToWindow "ProgressBar"
   -- get progress bar
-  bar <- xmlGetWidget xml castToProgressBar "pbProgress"
+  bar <- builderGetObject builder castToProgressBar "pbProgress"
 
   windowSetTitle window title
   progressBarSetText bar description
@@ -397,10 +396,10 @@ textView :: String -- ^ Title
          -> Maybe FilePath -- ^ Filename
          -> IO ()
 textView title message mfile = do
-  xml <- getGladeXML Utils.get
+  builder <- getGTKBuilder Utils.get
   -- get objects
-  dlg <- xmlGetWidget xml castToDialog "TextView"
-  tvText <- xmlGetWidget xml castToTextView "tvText"
+  dlg <- builderGetObject builder castToDialog "TextView"
+  tvText <- builderGetObject builder castToTextView "tvText"
 
   windowSetTitle dlg title
   buffer <- textViewGetBuffer tvText
@@ -445,7 +444,7 @@ displayTheoryWithWarning :: String -- ^ Kind of theory
                          -> G_theory -- ^ Theory
                          -> IO ()
 displayTheoryWithWarning k n w t =
-  textView (k ++ " of " ++ n) (w ++ showDoc t "\n") $ Just $ n ++ ".het"
+  textView (k ++ " of " ++ n) (w ++ showDoc t "\n") $ Just $ n ++ ".dol"
 
 -- | displays a theory with warning in a window
 displayTheoryWithWarningExt :: String -- ^ Kind of theory
@@ -546,7 +545,7 @@ getSelectedMultiple view list = do
 setListData :: TreeView -> (a -> String) -> [a] -> IO (ListStore a)
 setListData view getT listData = do
   store <- listStoreNew listData
-  treeViewSetModel view store
+  treeViewSetModel view (Just store)
   treeViewSetHeadersVisible view False
   ren <- cellRendererTextNew
   col <- treeViewColumnNew
@@ -565,3 +564,12 @@ updateListData list listData = do
 -- | Activates or deactivates a list of widgets
 activate :: [Widget] -> Bool -> IO ()
 activate widgets active = mapM_ (`widgetSetSensitive` active) widgets
+
+toComboBoxText :: Show a => [a] -> [ComboBoxText]
+#ifdef GTK12
+toComboBoxText = map show
+
+type ComboBoxText = String
+#else
+toComboBoxText = map (Text.pack . show)
+#endif

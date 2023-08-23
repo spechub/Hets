@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/ModuleElimination.hs
 Description :  Module elimination in CommonLogic
 Copyright   :  (c) Eugen Kuksa, Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

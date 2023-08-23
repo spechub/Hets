@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CommonLogic/Sublogic.hs
 Description :  Sublogics for CommonLogic
 Copyright   :  (c) Eugen Kuksa, Uni Bremen 2011
 License     :  GPLv2 or higher, see LICENSE.txt

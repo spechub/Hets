@@ -1,4 +1,4 @@
-{- | Module     : $Header$
+{- | Module     : ./GMP/ModalLogic.hs
  -  Description : Abstract syntax for the Compositional Modal Prover
  -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
  -  License     : GPLv2 or higher, see LICENSE.txt

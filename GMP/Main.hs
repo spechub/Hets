@@ -1,4 +1,4 @@
-{- | Module     : $Header$
+{- | Module     : ./GMP/Main.hs
  -  Description : Implementation of main file for the prover
  -  Copyright   : (c) Georgel Calin & Lutz Schroeder, DFKI Lab Bremen
  -  License     : GPLv2 or higher, see LICENSE.txt

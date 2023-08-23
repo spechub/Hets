@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2Prop.hs
 Description :  Coding of a CASL sublogic to Propositional
 Copyright   :  (c) Dominik Luecke and Uni Bremen 2007
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -44,6 +44,7 @@ import Common.Id
 import Common.Result
 import Common.DocUtils
 import qualified Common.Lib.MapSet as MapSet
+import qualified Control.Monad.Fail as Fail
 
 -- | lid of the morphism
 data CASL2Prop = CASL2Prop deriving Show
@@ -102,7 +103,7 @@ mapMor :: CASLMor -> Result PMor.Morphism
 mapMor mor = return PMor.Morphism
   { PMor.source = mapSig (msource mor)
   , PMor.target = mapSig (mtarget mor)
-  , PMor.propMap = Map.foldWithKey (\ (i, pt) j ->
+  , PMor.propMap = Map.foldrWithKey (\ (i, pt) j ->
       if null (predArgs pt) then Map.insert i j else id) Map.empty
       $ pred_map mor }
 
@@ -143,4 +144,4 @@ trForm form = case form of
   Atom b rn -> return $ (if b then PBasic.True_atom else PBasic.False_atom) rn
   Predication (Qual_pred_name pid (Pred_type [] _) _) [] _ ->
     return . PBasic.Predication . mkSimpleId $ show pid
-  _ -> fail $ "not a propositional formula: " ++ showDoc form ""
+  _ -> Fail.fail $ "not a propositional formula: " ++ showDoc form ""

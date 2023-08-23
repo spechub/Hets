@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {- |
-Module      :  $Header$
+Module      :  ./Temporal/Logic_Temporal.hs
 Description :  Instance of class Logic for temporal logic
 Copyright   :  (c) Klaus Hartke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -15,7 +15,7 @@ Instance of class Logic for temporal logic
 
 module Temporal.Logic_Temporal where
 
-import Data.Monoid
+import Data.Monoid ()
 
 import Logic.Logic
 
@@ -65,10 +65,12 @@ instance Sentences Temporal
         -- Translation of sentences along signature morphism
         simplify_sen Temporal _ form = form
         -- There is nothing to leave out
+        symKind Temporal _ = "prop"
 
+instance Semigroup AS_BASIC.BASIC_SPEC where
+    _ <> _ = Basic_spec
 instance Monoid AS_BASIC.BASIC_SPEC where
     mempty = Basic_spec
-    mappend _ _ = Basic_spec
 
 -- | Syntax of Temporal logic
 instance Syntax Temporal

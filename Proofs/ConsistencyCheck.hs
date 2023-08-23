@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Proofs/ConsistencyCheck.hs
 Description :  devGraph rule that calls consistency checker for specific logics
 Copyright   :  (c) C. Maeder DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt

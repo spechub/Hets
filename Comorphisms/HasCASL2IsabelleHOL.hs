@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/HasCASL2IsabelleHOL.hs
 Description :  old translation that is only better for case terms
 Copyright   :  (c) Sonja Groening, C. Maeder, Uni Bremen 2003-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -79,11 +79,11 @@ transSignature sign =
     baseSig = baseSign,
     -- translation of typeconstructors
     tsig = emptyTypeSig
-             { arities = Map.foldWithKey extractTypeName
+             { arities = Map.foldrWithKey extractTypeName
                                         Map.empty
                                         (typeMap sign) },
     -- translation of operation declarations
-    constTab = Map.foldWithKey insertOps
+    constTab = Map.foldrWithKey insertOps
                                Map.empty
                                (assumps sign),
     -- translation of datatype declarations
@@ -149,7 +149,7 @@ transType t = case getTypeAppl t of
 -- * translation of a datatype declaration
 
 transDatatype :: TypeMap -> DomainTab
-transDatatype tm = map transDataEntry (Map.fold extractDataypes [] tm)
+transDatatype tm = map transDataEntry (Map.foldr extractDataypes [] tm)
   where extractDataypes ti des = case typeDefn ti of
                                    DatatypeDefn de -> des ++ [de]
                                    _ -> des

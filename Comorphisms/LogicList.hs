@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/LogicList.hs
 Description :  Assembles all the logics into a list, as a prerequisite
   for the logic graph
 Copyright   :  (c)  Till Mossakowski and Uni Bremen 2003
@@ -76,6 +76,7 @@ import LF.Logic_LF
 import Framework.Logic_Framework
 import Maude.Logic_Maude
 import CommonLogic.Logic_CommonLogic
+import TPTP.Logic_TPTP
 #endif
 #ifndef NOOWLLOGIC
 import DMU.Logic_DMU
@@ -85,6 +86,7 @@ import OWL2.Logic_OWL2
 import RDF.Logic_RDF
 #endif
 import Comorphisms.DynLogicList
+import NeSyPatterns.Logic_NeSyPatterns
 
 logicList :: [AnyLogic]
 logicList =
@@ -95,7 +97,6 @@ logicList =
   , Logic SoftFOL
   , Logic Propositional
   , Logic QBF
-  , Logic HolLight
   , Logic FreeCAD
   , Logic CSL
 #ifdef PROGRAMATICA
@@ -124,6 +125,7 @@ logicList =
   , Logic Framework
   , Logic Maude
   , Logic CommonLogic
+  , Logic TPTP
 #endif
 #ifndef NOOWLLOGIC
   , Logic DMU
@@ -134,6 +136,7 @@ logicList =
 #endif
   , Logic CSMOF
   , Logic QVTR
+  , Logic NeSyPatterns
   ] ++ dynLogicList
 
 addLogicName :: AnyLogic -> (String, AnyLogic)

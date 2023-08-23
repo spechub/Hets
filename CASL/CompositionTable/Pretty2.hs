@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL/CompositionTable/Pretty2.hs
 Description :  pretty output for composition tables
 Copyright   :  (c) Christian Maeder DFKI 2012
 License     :  GPLv2 or higher, see LICENSE.txt

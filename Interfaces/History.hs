@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      :./Interfaces/History.hs
 Description : history management functions
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt

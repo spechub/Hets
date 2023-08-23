@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Common/XPath.hs
 Description :  XPath utilities
 Copyright   :  (c) Christian Maeder, DFKI GmbH 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -29,6 +29,7 @@ import Text.ParserCombinators.Parsec
 import Common.Parsec
 import Data.Char
 import Data.List
+import qualified Control.Monad.Fail as Fail
 
 -- * data types and pretty printing (via show)
 
@@ -404,7 +405,7 @@ fct = do
   q <- try $ do
     n <- qualName
     if elem n $ pIS : map lowerShow nodeTypes
-      then fail $ n ++ " not allowed as function name"
+      then Fail.fail $ n ++ " not allowed as function name"
       else lpar >> return n
   args <- sepBy expr (symbol ",")
   rpar

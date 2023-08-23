@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL_DL/Sublogics.hs
 Description :  sublogic analysis for CASL_DL
 Copyright   :  (c) Dominik Luecke 2008
 License     :  GPLv2 or higher, see LICENSE.txt

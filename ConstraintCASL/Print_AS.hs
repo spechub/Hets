@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./ConstraintCASL/Print_AS.hs
 Copyright   :  (c) Wiebke Herding, C. Maeder, Uni Bremen 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 

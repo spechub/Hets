@@ -17,6 +17,7 @@ import System.Environment
 import Haskell.Wrapper
 import Common.Parsec
 import Text.ParserCombinators.Parsec
+import qualified Control.Monad.Fail as Fail
 
 main :: IO ()
 main = getArgs >>= mapM_ process
@@ -26,4 +27,4 @@ process f = do
   s <- readFile f
   case parse (hStuff << eof) f s of
              Right x -> putStrLn x
-             Left err -> fail $ show err
+             Left err -> Fail.fail $ show err

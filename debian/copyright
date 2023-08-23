@@ -1,0 +1,33 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Files: *
+Copyright: 2000, University of Bremen
+           2014, Otto-von-Guericke-University Magdeburg
+License: GPL-2+
+Comment: https://github.com/spechub/Hets/
+
+Files: OWL2/java/lib/native/* OWL2/java/lib/*.factplusplus-*.jar
+Copyright: 2007, University of Manchester
+License: LGPL-2.1+
+Comment: https://bitbucket.org/dtsarkov/factplusplus
+
+Files: OWL2/java/lib/owlapi-osgidistribution-*.jar
+License: LGPL-3 or Apache-2
+Copyright: 2007, University of Manchester
+Comment: https://github.com/owlcs/owlapi
+
+Files: OWL2/java/lib/guava-*.jar
+License: Apache-2.0
+Copyright: 2011, The Guava Authors
+Comment: https://github.com/google/guava/
+
+Files: OWL2/java/lib/trove4j-*.jar
+License: LGPL-2.1
+Copyright: 1999, CERN - European Organization for Nuclear Research
+Comment: https://bitbucket.org/trove4j/trove/
+
+Files: CASL/Termination/AProVE.jar
+License: APROVE
+  "APROVE" software license agreement - see
+  http://aprove.informatik.rwth-aachen.de/download.html#license
+Copyright: unknown
+Comment: http://aprove.informatik.rwth-aachen.de/

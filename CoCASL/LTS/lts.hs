@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CoCASL/LTS/lts.hs
 Copyright   :  (c) Daniel Hausmann, Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt
 

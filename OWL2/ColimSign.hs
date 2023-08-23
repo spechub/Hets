@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/ColimSign.hs
 Description :  OWL signatures colimits
 Copyright   :  (c) Mihai Codescu, and Uni Bremen 2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -17,6 +17,7 @@ module OWL2.ColimSign where
 import OWL2.Sign
 import OWL2.Morphism
 import OWL2.AS
+import Common.IRI
 
 import Common.SetColimit
 import Common.Lib.Graph
@@ -86,13 +87,8 @@ signColimit graph = let
                      ) $ labNodes graph
   in (colimSign, colimMor)
 
-instance SymbolName QName where
- addIntAsSuffix (q, i) = q { namePrefix = show i,
-                             expandedIRI = expandedIRI q ++ show i
-                           }
-
 getEntityTypeMap :: EntityType -> (Int, OWLMorphism)
-                    -> (Int, Map.Map QName QName)
+                    -> (Int, Map.Map IRI IRI)
 getEntityTypeMap e (i, phi) = let
  f = Map.filterWithKey
       (\ (Entity _ x _) _ -> x == e) $ mmaps phi
@@ -100,16 +96,16 @@ getEntityTypeMap e (i, phi) = let
     map (\ (Entity _ _ x, y) -> (x, y)) $
     Map.toAscList f)
 
-setEntityTypeMap :: EntityType -> Map.Map QName QName
-                    -> Map.Map Entity QName
+setEntityTypeMap :: EntityType -> Map.Map IRI IRI
+                    -> Map.Map Entity IRI
 setEntityTypeMap = Map.mapKeys . mkEntity
 
-getPrefixMap :: (Int, OWLMorphism) -> (Int, Map.Map QName QName)
+getPrefixMap :: (Int, OWLMorphism) -> (Int, Map.Map IRI IRI)
 getPrefixMap (i, phi) = let
     f = pmap phi
     in (i, Map.fromList $
-        map (\ (x, y) -> (mkQName x, mkQName y)) $
+        map (\ (x, y) -> (mkIRI x, mkIRI y)) $
             Map.toAscList f)
 
-toQName :: PrefixMap -> Map.Map QName String
-toQName pm = Map.fromList $ map (\ (p, s) -> (mkQName p, s)) $ Map.toList pm
+toQName :: PrefixMap -> Map.Map IRI String
+toQName pm = Map.fromList $ map (\ (p, s) -> (mkIRI p, s)) $ Map.toList pm

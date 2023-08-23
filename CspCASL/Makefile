@@ -40,10 +40,10 @@ clean:
 nuke:		clean
 
 testwrap:	$(SOURCES)
-		make -C .. CspCASL/testwrap
+		$(MAKE) -C .. CspCASL/testwrap
 
 ccparse:	ccparse.hs $(SOURCES) Print_CspCASL_Isabelle.hs
-		make -C .. CspCASL/ccparse
+		$(MAKE) -C .. CspCASL/ccparse
 
 test:		testwrap
 		./testwrap -d test/simple.testcases

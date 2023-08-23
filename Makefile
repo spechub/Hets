@@ -1,22 +1,91 @@
+#!/usr/bin/make -f
+
 # Makefile
-# $Id$
-# Author: (c) Klaus Luettich, Christian Maeder, Uni Bremen 2002-2009
+#
+# Authors: (c) Klaus Luettich, Christian Maeder, Uni Bremen 2002-2009
+#              Jens Elkner, Uni Magdeburg 2016
 
-# This Makefile will compile the hets system and provides also
+# This GNU Makefile will compile the hets system and provides also
 # targets for test programs during implementation phases.
+#
+# If the following environment variables are set, their values get passed to
+# the corresponding tool as is: GHC_PKG_FLAGS (ghc-pkg), GHC_FLAGS (ghc).
+# For profiling, call make with PROFILE=on 
 
-# !!! Note: This makefile is written for GNU make !!!
-#           (gmake on solaris)
-
-all: hets
+## dummy line to re-trigger CI runs like GHA, travic-ci, etc.
 
 include var.mk
+
+NO_BIND_WARNING := -fno-warn-unused-do-bind
+HC_WARN := -Wall -fwarn-tabs \
+  -fwarn-unrecognised-pragmas -fno-warn-orphans $(NO_BIND_WARNING)
+HC_OPTS += $(HC_WARN) $(HC_PROF) $(GHC_FLAGS)
+# -ddump-minimal-imports
+# uncomment the above line to generate .imports files for displayDependencyGraph
+
+.DEFAULT_GOAL := hets
+
+# GHA 16 color pallete is junk. So use 256 colors (i.e. BG >= 16). That's much
+# closer to what *x terminals would show.
+#	bold, black, cyan
+COLOR_INFO := \E[1;38;5;0;48;5;80m
+#	bold, red, yellow
+COLOR_WARN := \E[1;38;5;1;48;5;226m
+#	bold, yellow, red
+COLOR_ERROR := \E[1;38;5;226;48;5;196m
+#	# bold, black, green
+COLOR_OK := \E[1;38;5;0;48;5;82m
+COLOR_END := \E[0m
+
+OSR := $(shell [ -x /usr/bin/lsb_release ] && lsb_release -cs || uname -s )
+
+# Testing:
+# If != 0 'make check' and related scripts stop immediately if an error occurs.
+# Otherwise continues until all test have been run and finally the target fails.
+FAIL_EARLY ?= 1
+
+.NOTPARALLEL:
+
+# *.bin variants here to let them survive a 'make clean'
+all: hets.bin hets_server.bin
+
+# Documentation (no haddock stuff, i.e. "docs", since developer can
+# generate it on demand by themselves and other users dont't need it). Other
+# papers (doc/*.pdf) are already pre-generated.
+doc: doc/UserGuide.pdf
+
+# Upgrade haskell-stack
+stack_upgrade:
+	$(STACK) $(STACK_OPTS) $(STACK_PROF) upgrade
+	$(STACK_EXEC) $(STACK_PROF) -- ghc-pkg recache
+# Create the build environment
+stack: $(STACK_UPGRADE_TARGET)
+	$(STACK) $(STACK_OPTS) build $(STACK_PROF) --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	touch stack
+restack:
+	rm -f stack
+	$(STACK) $(STACK_OPTS) build $(STACK_PROF) --install-ghc --only-dependencies $(STACK_DEPENDENCIES_FLAGS)
+	touch stack
+
+SED := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gsed' || printf 'sed')
+TAR := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'gtar' || printf 'tar')
+INSTALL := $(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'ginstall' || printf 'install')
+HETS_VERSION ?= $(shell ${SED} -n \
+	-e '/^hetsVersionNumeric =/ { s/.*"\([^"]*\)".*/\1/; p; q; }' \
+	Driver/Version.hs )
+
+define EOL
+
+
+endef
+
+# indicate, whether working on an exported repo
+EXPORTED := $(shell [ -d .git ] || printf 1)
 
 # the 'replacing spaces' example was taken from the (GNU) Make info manual
 empty =
 space = $(empty) $(empty)
 
-DRIFT_ENV = DERIVEPATH=$(subst $(space),:,$(PFE_PATHS))
 
 DRIFT_deps = utils/DrIFT-src/*hs
 GENERATERULES_deps = utils/GenerateRules/*hs $(DRIFT_deps)
@@ -24,7 +93,8 @@ GENITCORRECTIONS_deps = utils/itcor/GenItCorrections.hs
 
 PERL = perl
 GENRULES = utils/genRules
-GENRULECALL = $(GENRULES) -r ShATermConvertible \
+GENRULECALL = $(GENRULES) -r ShATermConvertible -r Json \
+	-i "GHC.Generics(Generic)" -i "Data.Aeson(ToJSON, FromJSON)" \
     -i ATerm.Lib
 
 GENRULECALL2 = $(GENRULES) -r ShATermLG \
@@ -33,17 +103,11 @@ DRIFT = utils/DrIFT
 HADDOCK = haddock
 
 DTD2HS = utils/DtdToHaskell
-ifneq ($(strip $(HAXML_PACKAGE_COMPAT)),)
-DTD2HS_src = utils/DtdToHaskell-src/pre-1.22/
-else
-DTD2HS_src = utils/DtdToHaskell-src/current/
-endif
 
 ifneq ($(strip $(HAXML_PACKAGE)),)
 derived_sources += Isabelle/IsaExport.hs
 endif
 
-DTD2HS_deps = $(DTD2HS_src)*.hs
 
 # list glade files
 GTK_GLADE_FILES = $(wildcard GUI/Glade/*.glade)
@@ -56,34 +120,37 @@ logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
     CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2 RDF CSMOF QVTR
+    FreeCAD OWL2 RDF CSMOF QVTR TPTP NeSyPatterns
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
     ATC/ATCTest.hs ATC/ATCTest2.hs Common/ATerm/ATermLibTest.hs \
-    Common/ATerm/ATermDiffMain.hs Common/annos.hs \
+    Common/ATerm/ATermDiffMain.hs Common/annos.hs Common/testxmldiff.hs \
     SoftFOL/tests/PrintTPTPTests.hs Comorphisms/test/showKP.hs \
     Comorphisms/test/sublogicGraph.hs PGIP/ParseProofScript.hs \
     Common/testxupdate.hs Common/testxpath.hs \
-    SoftFOL/dfg.hs Adl/adl.hs GUI/displayDependencyGraph.hs
+    SoftFOL/dfg.hs Adl/adl.hs GUI/displayDependencyGraph.hs \
+	OWL2/scripts/runTest.hs
 
 ### list of directories to run checks in
 TESTDIRS += Common CASL Fpl/test HasCASL test ExtModal/Tries \
-    CommonLogic/TestData
+    CommonLogic/TestData OWL2/tests
 
 hs_clean_files = Haskell/TiATC.hs Haskell/TiDecorateATC.hs \
     Haskell/TiPropATC.hs Haskell/ATC_Haskell.der.hs
 
-PFE_TOOLDIR = $(wildcard programatica/tools)
-ifneq ($(strip $(PFE_TOOLDIR)),)
-PFE_DIRS = base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
+
+ifneq ($(PFE_FLAGS),)
+PFE_TOOLDIR := $(wildcard $(dir $(PFE_SETUP)))
+PFE_DIRS := base/AST base/TI base/parse2 base/parse2/Lexer base/parse2/Parser \
     base/parse2/LexerGen base/parse2/LexerSpec base/tests/HbcLibraries \
     base/pretty base/syntax base/lib base/lib/Monads base/Modules base/defs \
     base/transforms base/transforms/Deriving property \
     property/syntax property/AST property/transforms \
     property/TI property/defs property/parse2 property/parse2/Parser
 
-PFE_PATHS = $(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS))
+PFE_PATHS := $(addprefix $(PFE_TOOLDIR)/, $(PFE_DIRS))
+DRIFT_ENV := DERIVEPATH=$(subst $(space),:,$(PFE_PATHS))
 
 logics += Haskell
 derived_sources += Haskell/PreludeString.hs
@@ -94,9 +161,7 @@ APPENDPRELUDESTRING = utils/appendHaskellPreludeString \
 ## rule for appendHaskellPreludeString
 Haskell/PreludeString.hs: Haskell/PreludeString.append.hs \
     $(APPENDPRELUDESTRING)
-	$(RM) $@
 	$(APPENDPRELUDESTRING) < $< > $@
-	chmod 444 $@
 
 Ast_Haskell_files = HsDeclStruct HsExpStruct HsFieldsStruct \
     HsGuardsStruct HsKindStruct HsPatStruct HsTypeStruct HsAssocStruct \
@@ -107,57 +172,32 @@ Ast_Haskell_files = HsDeclStruct HsExpStruct HsFieldsStruct \
 
 #Ti_Prop_files = property/TI/TiPropDecorate property/syntax/PropSyntaxRec
 
-Other_PFE_files = property/AST/HsPropStruct base/defs/PNT \
+Other_PFE_files := property/AST/HsPropStruct base/defs/PNT \
     base/defs/UniqueNames base/Modules/TypedIds base/Modules/Ents \
     base/parse2/SourceNames base/syntax/SyntaxRec \
     property/syntax/PropSyntaxStruct
 
-Haskell_files = $(addsuffix .hs, \
+Haskell_files := $(addsuffix .hs, \
     $(addprefix $(PFE_TOOLDIR)/base/AST/, $(Ast_Haskell_files)) \
     $(addprefix $(PFE_TOOLDIR)/, $(Other_PFE_files)))
 
 ## rule for ATC generation
 Haskell/ATC_Haskell.der.hs: $(Haskell_files) $(GENRULES)
 	$(GENRULECALL) -r Typeable -i Data.Typeable -i Haskell.BaseATC \
-  -o $@ $(Haskell_files)
+		-o $@ $(Haskell_files)
 
 hs_der_files += $(hs_clean_files)
-ifneq ($(strip $(PFE_FLAGS)),)
+
 TESTDIRS += ToHaskell
 TESTTARGETFILES += Haskell/hana.hs Haskell/h2h.hs Haskell/h2hf.hs
-endif
 else
-# unset this variable from var.mk because the programatica sources
-# are needed to created our sources!
-PFE_FLAGS =
+DRIFT_ENV := DERIVEPATH=
 endif
-# end of programatica stuff
+# end of programatica stuff (PFE_FLAGS)
 
-TESTTARGETS = $(subst .hs,,$(TESTTARGETFILES))
+TESTTARGETS := $(subst .hs,,$(TESTTARGETFILES))
 
-GHCVERSION = $(shell ghc --numeric-version)
-ifneq ($(findstring 12, $(GHCVERSION)),)
-NO_BIND_WARNING = -fno-warn-unused-do-bind
-endif
 
-ifneq ($(findstring 7, $(GHCVERSION)),)
-NO_BIND_WARNING = -fno-warn-unused-do-bind
-endif
-
-HC_WARN = -Wall -fwarn-tabs \
-  -fwarn-unrecognised-pragmas -fno-warn-orphans $(NO_BIND_WARNING)
-
-# uncomment HC_PROF for profiling (and comment out packages in var.mk)
-# call resulting binary with a final +RTS -p to get a file <binary>.prof
-# HC_PROF = -prof -auto-all -osuf p_o +RTS -K100m -RTS
-
-ifneq ($(findstring -O, $(CFLAGS)),)
-HC_DEBIAN_OPT=-O
-endif
-
-HC_OPTS += $(HC_WARN) $(HC_PROF) $(HC_DEBIAN_OPT)
-# -ddump-minimal-imports
-# uncomment the above line to generate .imports files for displayDependencyGraph
 
 # files generated by DriFT
 drifted_files = Common/AS_Annotation.hs \
@@ -170,6 +210,7 @@ drifted_files = Common/AS_Annotation.hs \
     RelationalScheme/AS.hs ATC/Grothendieck.hs \
     ExtModal/AS_ExtModal.hs QBF/AS_BASIC_QBF.hs \
     CommonLogic/AS_CommonLogic.hs Fpl/As.hs \
+	TPTP/AS.hs NeSyPatterns/AS.hs \
     $(gendrifted_files)
 
 # files to extract data types from to generate ShATermConvertible instances
@@ -206,16 +247,16 @@ ATC/ProofTree.der.hs: Common/ProofTree.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
 
 ATC/AS_Annotation.der.hs: Common/AS_Annotation.der.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -o $@ $<
+	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $<
 
 ATC/Consistency.der.hs: Common/Consistency.hs $(GENRULES)
 	$(GENRULECALL) -x Common.Consistency.ConservativityChecker -o $@ $<
 
 ATC/LibName.der.hs: Common/LibName.hs $(GENRULES)
-	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -o $@ $<
+	$(GENRULECALL) -i ATC.IRI -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $<
 
 ATC/ExtSign.der.hs: Common/ExtSign.hs $(GENRULES)
-	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $<
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $<
 
 ATC/DefaultMorphism.der.hs: Common/DefaultMorphism.hs $(GENRULES)
 	$(GENRULECALL) -o $@ $<
@@ -309,16 +350,21 @@ THF_files = THF/As.hs THF/Cons.hs THF/Sign.hs THF/Sublogic.hs
 
 FreeCAD_files = FreeCAD/As.hs
 
-OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs OWL2/MS.hs \
+OWL2_files = OWL2/AS.hs OWL2/Symbols.hs OWL2/Sign.hs \
   OWL2/Morphism.hs OWL2/ProfilesAndSublogics.hs OWL2/Sublogic.hs \
   OWL2/Profiles.hs
 
-RDF_files = RDF/AS.hs OWL2/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
+NeSyPatterns_files = NeSyPatterns/AS.hs NeSyPatterns/Symbol.hs \
+  NeSyPatterns/Sign.hs NeSyPatterns/Morphism.hs
+
+RDF_files = RDF/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
   RDF/Sublogic.hs
 
 CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
 QVTR_files = QVTR/As.hs QVTR/Sign.hs
+
+TPTP_files = TPTP/AS.hs TPTP/Sign.hs TPTP/Sublogic.hs
 
 # ATC DrIFT-rule generation for logics
 CASL/ATC_CASL.der.hs: $(CASL_files) $(GENRULES)
@@ -410,20 +456,27 @@ THF/ATC_THF.der.hs: $(THF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Id -i ATC.GlobalAnnotations -o $@ $(THF_files)
 
 FreeCAD/ATC_FreeCAD.der.hs: $(FreeCAD_files) $(GENRULES)
-	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(FreeCAD_files)
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $(FreeCAD_files)
 
 OWL2/ATC_OWL2.der.hs: $(OWL2_files) $(GENRULES)
-	$(GENRULECALL) -i ATC.Result -o $@ $(OWL2_files)
+	$(GENRULECALL) -i ATC.Result -i ATC.IRI -o $@ $(OWL2_files)
+
+NeSyPatterns/ATC_NeSyPatterns.der.hs: $(NeSyPatterns_files) $(GENRULES)
+	$(GENRULECALL) -i ATC.Result -i NeSyPatterns.ATC_Relation \
+		-i ATC.AS_Annotation -o $@ $(NeSyPatterns_files)
 
 RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 	$(GENRULECALL) -i ATC.Result -o $@ $(RDF_files)
 
 CSMOF/ATC_CSMOF.der.hs: $(CSMOF_files) $(GENRULES)
-	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(CSMOF_files)
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $(CSMOF_files)
 
 QVTR/ATC_QVTR.der.hs: $(QVTR_files) CSMOF/ATC_CSMOF.hs $(GENRULES)
-	$(GENRULECALL) -i CSMOF.ATC_CSMOF -i Common.ATerm.ConvInstances \
+	$(GENRULECALL) -i CSMOF.ATC_CSMOF -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances \
  -o $@ $(QVTR_files)
+
+TPTP/ATC_TPTP.der.hs: $(TPTP_files) $(GENRULES)
+	$(GENRULECALL)  -i ATC.AS_Annotation -o $@ $(TPTP_files)
 
 # all ATC .der.hs files for all logics
 atc_logic_files = $(foreach logic, $(logics), $(logic)/ATC_$(logic).der.hs)
@@ -437,106 +490,126 @@ genRules: $(generated_rule_files)
 gendrifted_files = $(patsubst %.der.hs, %.hs, $(generated_rule_files))
 
 # all sources that need to be created before ghc can be called
-derived_sources += $(drifted_files) Driver/Version.hs $(hs_der_files)
+derived_sources += $(drifted_files) $(hs_der_files)
+
 
 ####################################################################
-### targets
+# BUILD related targets
+####################################################################
+.PHONY: all hets-opt hets-optimized hets_server-opt doc docs jars \
+	clean o_clean clean_pretty bin_clean java_clean realclean distclean \
+	annos check test capa hacapa h2h h2hf showKP clean_genRules genRules derived \
+    count fromKif release cgi ghci build-hets callghc \
+	get-programatica check_desktop check_server check_cgi \
+	install install-common install-owl-tools archive \
+	build-indep build-arch build binary-indep binary-arch binary
 
-.NOTPARALLEL : genRules
 
-.PHONY : all hets-opt hets-optimized clean o_clean clean_pretty \
-    real_clean bin_clean distclean annos checkversion \
-    check capa hacapa h2h h2hf showKP clean_genRules genRules \
-    count doc fromKif derivedSources release cgi ghci build callghc rev.txt
 
-.FORCE :
+.SECONDARY: $(generated_rule_files)
 
-.SECONDARY : %.hs %.d $(generated_rule_files)
+.PRECIOUS: %.bin
 
 # dummy target to force ghc invocation
 callghc:
 
-hets-opt:
-	$(MAKE) distclean
-	$(MAKE) derivedSources
-	$(MAKE) clean
-	$(MAKE) hets-optimized
+derived: $(derived_sources)
+
+# some trickery to trigger a full clean if the main target (hets, hets_server)
+# changed since last call
+check_desktop:
+	-@[ -e .hets_server -o -e .hets_cgi -o -e .hets_oow ] && $(MAKE) clean
+
+check_server:
+	-@[ -e .hets_desktop -o -e .hets_cgi -o -e .hets_oow ] && $(MAKE) clean
+
+check_cgi:
+	-@[ -e .hets_desktop -o -e .hets_server -o -e .hets_oow ] && $(MAKE) clean
+
+%-opt: HC_OPTS += -O
 
 # the variant without GUI
-hets-server: HASKELINE_PACKAGE =
-hets-server: GLADE_PACKAGE =
-hets-server: UNI_PACKAGE =
-hets-server: $(derived_sources)
-	$(HC) --make -O -o hets-server hets.hs $(HC_OPTS)
+hets_server hets_server-opt check $(TESTTARGETS): HASKELINE_PACKAGE :=
+hets_server hets_server-opt check $(TESTTARGETS): GTK_PACKAGE :=
+hets_server hets_server-opt check $(TESTTARGETS): UNI_PACKAGE :=
+hets_server hets_server-opt: check_server $(derived_sources)
+	@touch .hets_server
+	$(HC) --make $(HC_OPTS) -o hets_server hets.hs
+	@ln -f hets_server hets_server.bin
 
-hets-optimized: $(derived_sources)
-	$(HC) --make -O -o hets hets.hs $(HC_OPTS)
+hets-opt: check_desktop $(derived_sources)
+	@touch .hets_desktop
+	$(HC) --make $(HC_OPTS) -o hets hets.hs
+	@ln -f hets hets.bin
 
-cgi:
-	$(MAKE) distclean
-	$(MAKE) derivedSources
-	$(MAKE) clean
-	$(MAKE) hets.cgi
+# deprecated target name
+hets-optimized: hets-opt
 
-hets.cgi: GUI/hets_cgi.hs
-	ghc --make GUI/hets_cgi.hs -o $@ $(HC_OPTS) -O
+hets_cgi hets_cgi-opt: check_cgi GUI/hets_cgi.hs $(derived_sources)
+	@touch .hets_cgi
+	$(HC) --make $(HC_OPTS) -o hets.cgi GUI/hets_cgi.hs
+	@ln -f hets.cgi hets_cgi.bin
 
-# Documentation via haddock
-doc: docs/index.html
+# For tests: Usually hets_server as well as hets[_desktop] are ok for testing.
+# Thus we avoid re-building one or the other by not adding a hard dep here.
+hets_available:
+	@[[ ! -x hets ]] && { [[ -x hets_server ]] && ln -s hets_server hets ; } \
+		|| true
+	@[[ ! -x hets ]] && { echo 'Build hets_server first' && return 1 ; } || true
 
-HADDOCK_INTERFACES = $(shell find `ghc --print-libdir`/../.. -name \*.haddock)
+TEX_FILES := $(wildcard doc/*.tex doc/*.png doc/*.dot doc/*.sty doc/*.eps)
+doc/UserGuide.pdf: $(TEX_FILES)
+	@X=`which latexmk 2>/dev/null` ; \
+	if [ -n "$$X" ]; then \
+		cd doc ; latexmk -silent -pdf -use-make \
+			-pdflatex="pdflatex -interaction=nonstopmode" UserGuide.tex ; \
+	else \
+		printf '\nMissing "latexmk" - unable to create doc/UserGuide.pdf!\n\n';\
+	fi
+
+# 	replace '$Header$' in all *.hs with the filename of the containing file
+#	call it from time to time
+updateHeaders: $(derived_sources)
+	@find . -name '*.hs' -exec fgrep -l '$$Header$$' {} + | xargs -I@ \
+		${SED} -i -e 's|\$$Header\$$|@|g' @
+
+GHC_LIBDIR := $(shell $(STACK_EXEC) ghc --print-libdir)
+GHC_BASEDIR := $(shell cd $(GHC_LIBDIR)/../.. && printf "$${PWD}")
+
+# scanning the "whole" NFS server isn't so smart, so restrict to wellknown dirs
+HADDOCK_INTERFACES = $(shell find $(GHC_BASEDIR)/share/doc/ghc \
+	$(GHC_BASEDIR)/lib/ghc-doc/haddock -name '*.haddock' 2>/dev/null)
 
 HAD_INTS = $(foreach file, $(HADDOCK_INTERFACES),\
  -i http://hackage.haskell.org/packages/archive/$(basename $(notdir $(file)))/latest/doc/html,$(file))
 
-HADDOCK_OPTS = $(addprefix --optghc=, $(HC_OPTS))
-docs/index.html:
-	$(RM) -r docs
-	mkdir docs
-	$(HADDOCK) -o docs -h -s ../%F $(HAD_INTS) \
+HADDOCK_OPTS := $(addprefix --optghc=, $(HC_OPTS))
+docs: $(derived_sources) $(STACK_UPGRADE_TARGET) 
+	@$(RM) -r docs && mkdir docs && \
+		printf '\nCheck log.haddock for results ...\n'
+	$(STACK) exec -- haddock --html \
+            $(filter-out Setup.hs Scratch.hs, $(wildcard *.hs)) \
             -t 'Hets - the Heterogeneous Tool Set' \
             -p Hets-Haddock-Prologue.txt $(HADDOCK_OPTS) \
-             $(filter-out Scratch.hs, $(wildcard *.hs))
-
-derivedSources: $(derived_sources)
-
-deps: .FORCE $(derived_sources)
-	$(HC) -M -dep-makefile Makefile.deps hets.hs $(HC_OPTS)
-	cat Makefile.deps | grep .hs | awk '{print $$3}' > deps
-
-compile_in_steps: deps
-	cat deps | xargs -L 200 $(HC) --make -odir=.objs $(HC_OPTS)
-
+	    --hyperlinked-source --odir=docs \
+		>log.haddock 
 $(DRIFT): $(DRIFT_deps)
-	(cd utils/DrIFT-src; $(HC) --make DrIFT.hs -o ../DrIFT)
+	cd utils/DrIFT-src; $(HC) --make -o ../DrIFT DrIFT.hs
 
-$(DTD2HS): $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell.hs
-	mkdir -p utils/DtdToHaskell-src/DtdToHaskell
-	cp -f $(DTD2HS_deps) utils/DtdToHaskell-src/DtdToHaskell
-	$(HC) --make -iutils/DtdToHaskell-src \
-            utils/DtdToHaskell-src/DtdToHaskell.hs -o $@ $(HC_OPTS)
+$(DTD2HS): utils/DtdToHaskell-src/DtdToHaskell/*.hs utils/DtdToHaskell-src/DtdToHaskell.hs
+	$(HC) --make $(HC_OPTS) -iutils/DtdToHaskell-src -o $@ \
+            utils/DtdToHaskell-src/DtdToHaskell.hs
 
 Isabelle/IsaExport.hs: $(DTD2HS) Isabelle/IsaExport.dtd
-	($(DTD2HS) Isabelle/IsaExport.dtd Isabelle/IsaExport.hs Isabelle.)
+	$(DTD2HS) Isabelle/IsaExport.dtd Isabelle/IsaExport.hs Isabelle.
 
 $(GENRULES): $(DRIFT) $(GENERATERULES_deps)
-	(cd utils/GenerateRules; \
-            $(HC) --make -i../DrIFT-src -i../.. $(HC_WARN) \
-                GenerateRules.hs -o ../genRules)
+	@cd utils/GenerateRules; \
+	$(HC) --make -i../DrIFT-src -i../.. $(HC_WARN) \
+		-o ../genRules GenerateRules.hs
 
 utils/appendHaskellPreludeString: utils/appendHaskellPreludeString.hs
 	$(HC) --make -o $@ $<
-
-# release management
-release:
-	$(RM) -r Hets
-	git clone --depth=50 $(HETSBRANCH) https://github.com/spechub/Hets
-	(cd Hets; $(MAKE) derivedSources; $(MAKE) clean; \
-            cp Makefile Makefile.orig; \
-            cp ReleaseMakefile Makefile; \
-            ./clean.sh; \
-            $(RM) clean.*; utils/replaceAllHeaders.sh)
-	$(TAR) cf Hets.tar Hets
 
 # Common/LaTeX_maps.hs generation
 utils/genItCorrections: $(GENITCORRECTIONS_deps)
@@ -544,66 +617,76 @@ utils/genItCorrections: $(GENITCORRECTIONS_deps)
 
 pretty/LaTeX_maps.hs: utils/words.pl utils/genItCorrections \
     pretty/words.input pretty/fonts.input pretty/width-table.tex.templ
-	@echo -n "Generating pretty/LaTeX_maps.hs ... "
-	@(cd pretty >/dev/null; $(PERL) ../utils/words.pl > words.pl.log)
-	@(cd pretty >/dev/null; ../utils/genItCorrections \
-            gen_it_characters gen_it_words >> LaTeX_maps.hs)
-	@echo "ready"
-	@echo "please copy the file manually to Common"
+	$(info $(EOL)Generating pretty/LaTeX_maps.hs ...$(EOL))
+	@cd pretty >/dev/null; \
+	$(PERL) ../utils/words.pl > words.pl.log ; \
+	../utils/genItCorrections gen_it_characters gen_it_words >> LaTeX_maps.hs
+	$(info $(EOL)Done.$(EOL)Please copy the file manually to Common$(EOL))
 
 ### clean up
+clean_stack:
+	@$(RM) -rf .stack-work stack
+
 clean_genRules:
-	$(RM) $(generated_rule_files) $(gendrifted_files) \
-            $(hs_clean_files)
+	@$(RM) $(generated_rule_files) $(gendrifted_files) $(hs_clean_files)
 
-clean: bin_clean o_clean clean_pretty clean_javastuff
-
-### removes all *.o, *.hi and *.p_o files in all subdirectories
+### removes all *.o, *.hi and *.p_o files in all subdirectories except for
+### .stack-work, where the compiled dependencies reside
 o_clean:
-	find . -name \*.o -o -name \*.hi -o -name \*.p_o \
-        -o -name \*.dyn_hi -o -name \*.dyn_o \
-        -o -name \*.exe -o -name \*.exe.manifest | xargs $(RM)
+	@find . -path ./.stack-work -prune -type f \
+	    -o \( -name '*.o' -o -name '*.hi' -o -name '*.p_o' \
+        -o -name '*.dyn_hi' -o -name '*.dyn_o' \) -exec rm -f {} +
+	@$(RM) -f .hets*
 
 ### remove binaries
 bin_clean:
-	$(RM) hets
-	$(RM) hets.cgi
-	$(RM) hets-server
-	$(RM) $(TESTTARGETS)
+	@$(RM) hets hets.cgi hets_server \
+		$(TESTTARGETS)
 
+# do not delete on exported archive, because latexmk might not be available
+USER_GUIDE := $(shell [ -n "$(EXPORTED)" ] || printf 'doc/UserGuide.pdf')
+
+# Ubuntu/Debian dash crap really hurts
 clean_pretty:
-	$(RM) pretty/*.c.* pretty/*.h.* pretty/gen_it_* \
-               pretty/generated_words.tex
-	$(RM) test/*/*.{thy,pp.het,pp.tex,th,dfg.c,xml,log,dvi,aux,sty}
-	$(RM) test/*/log
-	$(RM) ToHaskell/test/*.{out,output}
-	$(RM) */test/temp*
-	$(RM) doc/UserGuide.{log,aux,bbl,blg,out,pdf}
+	@ksh -c "rm -rf pretty/*.c.* pretty/*.h.* pretty/gen_it_* \
+			pretty/generated_words.tex \
+		test/*/*.{thy,pp.dol,pp.tex,th,dfg.c,xml,log,dvi,aux,sty} \
+			test/*/log */test/temp* ToHaskell/test/*.{out,output} \
+		ExtModal/Tries/*.{pp.dol,th} Fpl/test/*.{pp.dol,th} \
+		CommonLogic/TestData/*.{pp.dol,th} Common/testxmldiff \
+		OWL2/tests/*.pp* OWL2/tests/*_*.omn OWL2/tests/*_*.th \
+		Static/test/*.xupdate3* Static/test/*.{dol.bak,xh,xhi,xml} \
+			Static/test/patch \
+		doc/UserGuide.{log,aux,bbl,blg,out,fdb_latexmk,fls} doc/hs2isa.ps \
+			$(USER_GUIDE) log.haddock \
+		debian/{root,files,hets-*,tmp} \
+	"
 
-clean_javastuff:
-	$(RM) OWL2/*.jar OWL2/java/lib/*.jar
-	$(RM) -r OWL2/java/build OWL2/lib
+java_clean:
+	@$(RM) -rf OWL2/*.jar OWL2/java/build OWL2/java/tmp OWL2/lib
 
-### additionally removes the library files
-real_clean: clean
+clean: bin_clean o_clean clean_pretty
+
+realclean: clean java_clean
+	@$(RM) -f *.bin debian/changelog*
 
 ### additionally removes generated files not in the repository tree
-distclean: clean clean_genRules
-	$(RM) $(derived_sources)
-	$(RM) utils/appendHaskellPreludeString
-	$(RM) utils/DrIFT utils/genRules
-	$(RM) $(DTD2HS)
-	$(RM) -r utils/DtdToHaskell-src/DtdToHaskell
-	$(RM) utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log
-	$(RM) -r docs
+distclean: clean_stack realclean clean_genRules
+	@$(RM) -rf $(derived_sources) \
+		utils/appendHaskellPreludeString \
+		utils/DrIFT utils/genRules \
+		$(DTD2HS) \
+		utils/genItCorrections pretty/LaTeX_maps.hs pretty/words.pl.log \
+		docs
 
 ### interactive
 ghci: $(derived_sources)
-	ghci $(HC_OPTS)
+	$(STACK_EXEC) ghci $(HC_OPTS)
 
-### build only, don't link
-build: hets.hs
-	$(HC) --make -c $< $(HC_OPTS)
+### build only, don't link. Target was formerly known as 'build'.
+build-hets: hets.hs
+	@touch .hets-oow
+	$(HC) --make $(HC_OPTS) -c $<
 
 ### Kif parser
 fromKif: CASL/fromKif
@@ -625,7 +708,7 @@ h2hf: Haskell/h2hf
 
 Haskell/h2hf: Haskell/h2hf.hs Haskell/*.hs Isabelle/*.hs Common/*.hs \
     Common/Lib/*.hs Comorphisms/*.hs
-	$(HC) -O --make -o $@ $< $(HC_OPTS)
+	$(HC) -O --make $(HC_OPTS) -o $@ $<
 
 ### HasCASL to Haskell translation
 h2h: Haskell/h2h
@@ -633,22 +716,21 @@ h2h: Haskell/h2h
 ### test program to check the known provers
 showKP: Comorphisms/test/showKP
 
-### run tests in other directories
-check: $(TESTTARGETS)
-	for i in $(TESTDIRS); do $(MAKE) -C $$i check; done
+### run tests in other directories. No deps to $(TESTTARGETS) because
+### Makefile in the subdirs would re-make them anyway
+check: hets_available
+	@FAIL=; \
+	for i in $(TESTDIRS) ; do \
+		printf "Test: ${COLOR_INFO}  $(MAKE) -C $$i check  ${COLOR_END}\n"; \
+		FAIL_EARLY=$(FAIL_EARLY) $(MAKE) -C $$i check && \
+			printf "${COLOR_OK}  OK  ${COLOR_END}\n" && continue ; \
+		(( $(FAIL_EARLY) )) && return 99 ; \
+		printf "${COLOR_ERROR}  FAILED  ${COLOR_END}\n" && FAIL=1 ; \
+	done ; \
+	[[ -n $${FAIL} ]] && return 1 || return 0
 
-## Preparing the version of Hets
-Driver/Version.hs: Driver/Version.in version_nr rev.txt
-	$(RM) $@
-	cp Driver/Version.in $@
-	echo "  ++ \"$(shell cat version_nr), $(shell cat rev.txt)\"" >> $@
-	chmod 444 $@
-
-rev.txt:
-	$(RM) $@
-	echo $(shell git log -1 --format=%ct) >> $@
-
-checkversion:
+test:
+	yes X | $(MAKE) check
 
 ATC/DevGraph.hs: Static/DevGraph.hs
 
@@ -664,28 +746,27 @@ $(CASL_DEPENDENT_BINARIES): $(derived_sources)
 .SUFFIXES:
 
 ## rule for GHC
-%: %.hs callghc
-	$(HC) --make -o $@ $< $(HC_OPTS)
+%: %.hs $(STACK_TARGET) callghc
+	@touch .hets-oow
+	$(HC) --make $(HC_OPTS) -o $@ $<
 
 ## rule for DrIFT
 %.hs: %.der.hs $(DRIFT)
-	$(RM) $@
-	($(DRIFT_ENV); export DERIVEPATH; $(DRIFT) $< > $@)
-	chmod 444 $@
+	$(DRIFT_ENV); export DERIVEPATH; $(DRIFT) $< > $@
 
 ## compiling rules for object and interface files
 %.o %.hi: %.hs
-	$(HC) -c $< $(HC_OPTS)
+	$(HC) $(HC_OPTS) -c $<
 
 %.o %.hi: %.lhs
-	$(HC) -c $< $(HC_OPTS)
+	$(HC) $(HC_OPTS) -c $<
 
 ## compiling rules for dependencies
 %.d : %.hs
-	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
+	$(HC) -M $(HC_OPTS) -optdep-f -optdep$@ $<
 
 %.d : %.lhs
-	$(HC) -M $< $(HC_OPTS) -optdep-f -optdep$@
+	$(HC) -M $(HC_OPTS) -optdep-f -optdep$@ $<
 
 ## Rule to generate hs files from glade files. Needed for GTK
 %.hs: %.glade utils/appendHaskellPreludeString \
@@ -694,107 +775,266 @@ $(CASL_DEPENDENT_BINARIES): $(derived_sources)
     cat GUI/Glade/Template.append.hs | sed "s/\%s/$$b/" | \
     utils/appendHaskellPreludeString $< > $@
 
-# directory for installers
-INSTALLER_DIR = ../installers
 
-ifeq ($(strip $(HETS_VERSION)),)
-HETS_VERSION := `cat version_nr`
-# or `date +%F`
-endif
+# just build all required jar files
+jars:
+	@cd OWL2/java ; ant -S
 
-# prepare installer creation
-initialize_installer:
-	mkdir -p $(INSTALLER_DIR)
-	sed "s/^\(HETS_VERSION =\).*/\1$(HETS_VERSION)/" Makefile.installer \
-          > $(INSTALLER_DIR)/Makefile
-	@echo Please do
-	@echo "  -> cd $(INSTALLER_DIR)"
-	@echo "  -> make"
-	@echo and wait until it is finished
 
-initialize_java:
-	ant -q init
 
-java-libs:
-	ant -q java-libs
-
-java-files:
-	ant -q java-files
-
-java-clean:
-	ant -q java-clean
-
-# download dependencies for RDF Jena-api
-rdf_java:
-	mkdir -p RDF/java/lib
-	if [ -f RDF/java/lib/arq-2.8.7.jar ]; then \
-		echo "File arq-2.8.7.jar already exists"; \
-	else \
-		curl -o RDF/java/lib/arq-2.8.7.jar http://repo1.maven.org/maven2/com/hp/hpl/jena/arq/2.8.7/arq-2.8.7.jar; \
+PFE_BASE := $(dir $(PFE_SETUP_FILE))
+get-programatica:
+	@if [ -z $(PROGRAMATICA_SRC_FILE) -o ! -e $(PROGRAMATICA_SRC_FILE) ] && \
+		[ -z "$(PROGRAMATICA_SRC_URL)" ]; then \
+		printf 'Unable to get programatica (%s %s)\n' \
+			'neither PROGRAMATICA_SRC_FILE nor PROGRAMATICA_SRC_FILE' \
+			'environment variable is set/exist.' ; \
+		exit 1 ; \
 	fi
-	if [ -f RDF/java/lib/icu4j-3.4.4.jar ]; then \
-		echo "File icu4j-3.4.4.jar already exists"; \
-	else \
-		curl -o RDF/java/lib/icu4j-3.4.4.jar http://repo1.maven.org/maven2/com/ibm/icu/icu4j/3.4.4/icu4j-3.4.4.jar; \
+	@if [ -e $(PFE_BASE) ]; then \
+		printf '%s already exists.\n' $(PFE_BASE) ; \
+		exit 2 ; \
 	fi
-	if [ -f RDF/java/lib/iri-0.8.jar ]; then \
-		echo "File iri-0.8.jar already exists"; \
-	else \
-		curl -o RDF/java/lib/iri-0.8.jar http://repo1.maven.org/maven2/com/hp/hpl/jena/iri/0.8/iri-0.8.jar; \
+	-@HWD=$${PWD} ; X=`echo $(PFE_BASE)| cut -f1 -d/`; \
+	rm -f $$X 2>/dev/null || rm -rf $(PFE_BASE) ; \
+	mkdir -p $(PFE_BASE); \
+	cd $(PFE_BASE) || exit 3 ; \
+	PFEDIR=$${PWD} ; cd .. ; \
+	if [ -n $(PROGRAMATICA_SRC_FILE) -a -e $(PROGRAMATICA_SRC_FILE) ]; then \
+		printf 'Extracting $(PROGRAMATICA_SRC_FILE) ...\n' ; \
+		if $(TAR) xzf "$(PROGRAMATICA_SRC_FILE)" ; then \
+			mv programatica-*/* $${PFEDIR}/ && rmdir programatica-* ; \
+		fi ; \
+	fi ; \
+	if [ -n "$(PROGRAMATICA_SRC_URL)" -a ! -e $${HWD}/$(PFE_SETUP_FILE) ]; then\
+		printf 'Fetching $(PROGRAMATICA_SRC_URL) ...\n' ; \
+		if wget --no-verbose -O x.tgz "$(PROGRAMATICA_SRC_URL)" ; then \
+			if $(TAR) xzf x.tgz ; then \
+				mv programatica-*/* $${PFEDIR}/ && rmdir programatica-* ; \
+				rm -f x.tgz ; \
+			fi ; \
+		fi ; \
 	fi
-	if [ -f RDF/java/lib/jena-2.6.4.jar ]; then \
-		echo "File jena-2.6.4.jar already exists"; \
+	@if [ -e $(PFE_SETUP_FILE) ]; then \
+		printf 'Programatica support available.\nYou probably need to %s\n\n' \
+			'"make distclean" and make the desired target again.' ; \
 	else \
-		curl -o RDF/java/lib/jena-2.6.4.jar http://repo1.maven.org/maven2/com/hp/hpl/jena/jena/2.6.4/jena-2.6.4.jar; \
-	fi
-	if [ -f RDF/java/lib/junit-4.5.jar ]; then \
-		echo "File junit-4.5.jar already exists"; \
-	else \
-		curl -o RDF/java/lib/junit-4.5.jar http://repo1.maven.org/maven2/junit/junit/4.5/junit-4.5.jar; \
-	fi
-	if [ -f RDF/java/lib/log4j-1.2.13.jar ]; then \
-		echo "File log4j-1.2.13.jar already exists"; \
-	else \
-		curl -o RDF/java/lib/log4j-1.2.13.jar http://repo1.maven.org/maven2/log4j/log4j/1.2.13/log4j-1.2.13.jar; \
-	fi
-	if [ -f RDF/java/lib/lucene-core-2.3.1.jar ]; then \
-		echo "File lucene-core-2.3.1.jar already exists"; \
-	else \
-		curl -o RDF/java/lib/lucene-core-2.3.1.jar http://repo1.maven.org/maven2/org/apache/lucene/lucene-core/2.3.1/lucene-core-2.3.1.jar; \
-	fi
-	if [ -f RDF/java/lib/slf4j-api-1.5.8.jar ]; then \
-		echo "File slf4j-api-1.5.8.jar already exists"; \
-	else \
-		curl -o RDF/java/lib/slf4j-api-1.5.8.jar http://repo2.maven.org/maven2/org/slf4j/slf4j-api/1.5.8/slf4j-api-1.5.8.jar; \
-	fi
-	if [ -f RDF/java/lib/slf4j-log4j12-1.5.8.jar ]; then \
-		echo "File slf4j-log4j12-1.5.8.jar already exists"; \
-	else \
-		curl -o RDF/java/lib/slf4j-log4j12-1.5.8.jar http://repo2.maven.org/maven2/org/slf4j/slf4j-log4j12/1.5.8/slf4j-log4j12-1.5.8.jar; \
-	fi
-	if [ -f RDF/java/lib/stax-api-1.0.1.jar ]; then \
-		echo "File stax-api-1.0.1.jar already exists"; \
-	else \
-		curl -o RDF/java/lib/stax-api-1.0.1.jar http://dist.codehaus.org/stax/jars/stax-api-1.0.1.jar; \
-	fi
-	if [ -f RDF/java/lib/wstx-asl-3.2.9.jar ]; then \
-		echo "File wstx-asl-3.2.9.jar already exists"; \
-	else \
-		curl -o RDF/java/lib/wstx-asl-3.2.9.jar http://repo1.maven.org/maven2/org/codehaus/woodstox/wstx-asl/3.2.9/wstx-asl-3.2.9.jar; \
-	fi
-	if [ -f RDF/java/lib/xercesImpl-2.7.1.jar ]; then \
-		echo "File xercesImpl-2.7.1.jar already exists"; \
-	else \
-		curl -o RDF/java/lib/xercesImpl-2.7.1.jar http://mirrors.ibiblio.org/pub/mirrors/maven2/xerces/xercesImpl/2.7.1/xercesImpl-2.7.1.jar; \
+		rm -rf $(PFE_BASE) ; \
+		printf 'Failed! No programatica support available!\n' ; exit 4 ; \
 	fi
 
-# download rdf4h, unpack and install
-rdf4h:
-	cabal install http://protempore.net/rdf4h/rdf4h-0.6.1.tar.gz
-# DO NOT DELETE: Beginning of Haskell dependencies
-CSMOF/CSMOF/As.o : CSMOF/As.hs
-CSMOF/CSMOF/Test_As.o : CSMOF/Test_As.hs
-CSMOF/CSMOF/Test_As.o : CSMOF/As.hi
+ARC_NAME ?= /tmp/hets-$(HETS_VERSION)-src.tar.xz
 
-#QVTR/QVTR/As.o : QVTR/As.hs
-# DO NOT DELETE: End of Haskell dependencies
+# remove trailing .txz or .tar.xz
+archive: ARC_BNAME = \
+	$(patsubst %.txz,%, $(patsubst %.tar.xz,%,$(notdir $(ARC_NAME))))
+
+archive: $(USER_GUIDE)
+	@[ -n "$(EXPORTED)" ] && \
+		printf '\nThis source tree is already exported.\n' && exit 1 ; \
+	FNAME=$(dir $(ARC_NAME))/$(ARC_BNAME).tar.xz ; \
+	printf "Exporting source to $${FNAME} ...\n" ; \
+	rm -rf tmp ; mkdir tmp || exit 3 ; \
+	git archive --format=tar --prefix=$(ARC_BNAME)/ HEAD | \
+		( cd tmp ; $(TAR) xf - ) ; \
+	if [ -e $(USER_GUIDE) ]; then \
+		cp $(USER_GUIDE) tmp/$(ARC_BNAME)/$(USER_GUIDE) ; \
+	else \
+		printf '\nWARNING: No $(USER_GUIDE) is unavailable\n!' ; \
+	fi ; \
+	cd tmp/$(ARC_BNAME) ; $(MAKE) distclean ; \
+	printf 'Removing unused/non-distributed files ...\n' ; \
+	rm -rf HolLight/OcamlTools/*/*dmtcp OWL2/java/lib/native \
+		MMT/hets-mmt-standalone.jar ; \
+	rm -rf GMP mini .gitignore utils/{nightly,debian,macports,ubuntu} ; \
+	printf 'Done.\n' ; \
+	cd .. ; $(TAR) cJf $(ARC_BNAME).tar.xz $(ARC_BNAME) || exit 4 ; \
+	cd .. ; \
+	ln $${PWD}/tmp/$(ARC_BNAME).tar.xz $${FNAME} 2>/dev/null || \
+		mv -f $${PWD}/tmp/$(ARC_BNAME).tar.xz $${FNAME} ; \
+	ls -l $${FNAME}
+	$(info $(EOL)The next "make clean" will remove the tmp/ directory used.$(EOL))
+
+#############################################################################
+# INSTALL targets
+#############################################################################
+# We use $DEB_BUILD_ARCH to detect, whether this make got triggered via
+# dpkg-buildpackage
+DEFAULT_DESTDIR := \
+	$(shell [ -n "$$DEB_BUILD_ARCH" ] && printf "$$PWD/debian/root")
+SUBDIR_common := \
+	$(shell [ -n "$$DEB_BUILD_ARCH" ] && printf '/common')
+SUBDIR_hets := \
+	$(shell [ -n "$$DEB_BUILD_ARCH" ] && printf '/desktop')
+SUBDIR_hets_server := \
+	$(shell [ -n "$$DEB_BUILD_ARCH" ] && printf '/server')
+DEFAULT_DIST_TEX_LATEX := \
+	$(shell [ "$(OSNAME)" = 'SunOS' ] && printf 'share/texmf/dist/tex/latex' ||\
+		printf 'share/texlive/texmf-dist/tex/latex')
+
+DESTDIR ?= $(DEFAULT_DESTDIR)
+PREFIX ?= /usr
+
+# all _relative_ wrt. $(PREFIX) and w/o trailing slashes
+HETS_DIR := lib/hets
+DOC_DIR ?= share/doc/hets
+MAN_DIR ?= share/man/man1
+DIST_LATEX ?= $(DEFAULT_DIST_TEX_LATEX)
+
+# see OWL2/ProveFact.hs - it doesn't use OSGi so we need to extract JNI libs
+install-owl-tools: \
+	BASEDIR = $(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-owl-tools
+install-owl-tools: jars
+	$(INSTALL) -m 0755 -d \
+		$(BASEDIR)/lib/native/i686 \
+		$(BASEDIR)/lib/native/x86_64 \
+		$(BASEDIR)/tests
+	$(INSTALL) -m 0644 OWL2/tests/wine.rdf $(BASEDIR)/tests/
+	$(INSTALL) -m 0644 OWL2/*.jar $(BASEDIR)/
+	ln -sf ../CASL/Termination/AProVE.jar $(BASEDIR)/AProVE.jar
+	ln -sf ../DMU/OntoDMU.jar $(BASEDIR)/OntoDMU.jar
+	$(INSTALL) -m 0644 OWL2/java/lib/*.jar $(BASEDIR)/lib/
+	$(info Extracting/removing JNI libs from factplusplus*.jar ...$(EOL))
+	rm -rf OWL2/java/tmp ; mkdir -p OWL2/java/tmp; cd OWL2/java/tmp ; \
+	X=`ls ../lib/uk.ac.manchester.cs.owl.factplusplus*.jar` ; \
+	jar xf $$X ; \
+	$(INSTALL) -m 0755 lib/native/32bit/libFaCTPlusPlusJNI.* \
+		$(BASEDIR)/lib/native/i686/ ; \
+	$(INSTALL) -m 0755 lib/native/64bit/libFaCTPlusPlusJNI.* \
+		$(BASEDIR)/lib/native/x86_64/; \
+	rm -rf $(BASEDIR)/lib/native/*/*.dll lib \
+		$(BASEDIR)/lib/`basename $$X` ; \
+	jar cMf $(BASEDIR)/lib/`basename $$X` *
+	@printf 'Sources:\n\t%s\n\t%s\n\t%s\n' \
+		'https://bitbucket.org/trove4j/trove/downloads'\
+		'https://github.com/google/guava' \
+		'https://github.com/owlcs/owlapi' \
+		>$(BASEDIR)/lib/readme.txt
+	@printf '\nNOTE:\n\t%s\n\t%s\n' \
+		'Per default $(BASEDIR)/lib/native' \
+		'contains JNI libs for Linux and MacOSX only!'
+
+# If one would add haddocs as well, add
+#	-m 0755 -d $(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DOC_DIR)/html/
+#	-m 0644 docs/* $(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DOC_DIR)/html/
+install-common: doc install-owl-tools
+	$(INSTALL) -m 0755 -d \
+		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-isa-tools \
+		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-maude-lib \
+		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DIST_LATEX)/hets \
+		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DOC_DIR)
+	$(INSTALL) -m 0644 magic/hets.magic utils/hetcasl.sty \
+		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)
+	$(INSTALL) -m 0755 Isabelle/export/export.sh \
+		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-isa-tools/
+	$(INSTALL) -m 0644 Isabelle/export/export_helper.ml \
+		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-isa-tools/
+	$(INSTALL) -m 0644 Maude/hets.prj Maude/*maude \
+		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(HETS_DIR)/hets-maude-lib/
+	$(INSTALL) -m 0644 doc/*.pdf \
+		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DOC_DIR)/
+	BACK=`printf '$(DIST_LATEX)/hets' | ${SED} -e 's/[^/]\{1,\}/../g'` ; \
+	ln -sf $${BACK}/$(HETS_DIR)/hetcasl.sty \
+		$(DESTDIR)$(SUBDIR_common)$(PREFIX)/$(DIST_LATEX)/hets/hetcasl.sty
+	$(info $(EOL)If TeX is installed, remember to re-run texhash!$(EOL)$(EOL))
+
+
+%.bin:
+	$(MAKE) $*-opt
+
+# for now install-{common,hets,hets_server} are supported, only.
+install-%: IDIR = $(DESTDIR)$(SUBDIR_$*)$(PREFIX)
+install-%: %.bin
+	$(INSTALL) -m 0755 -d \
+		$(IDIR)/bin \
+		$(IDIR)/$(HETS_DIR) \
+		$(IDIR)/$(MAN_DIR)
+	$(SED) -e "s,@CLIENT_BASEDIR@,$(PREFIX)," debian/hets_script \
+		>$(IDIR)/bin/$(subst _,-,$*)
+	chmod 0755 $(IDIR)/bin/$(subst _,-,$*)
+	ln $< $(IDIR)/$(HETS_DIR)/$(subst _,-,$*) 2>/dev/null || \
+		{ cp -f $< $(IDIR)/$(HETS_DIR)/$(subst _,-,$*) || true ; }
+	chmod 0755 $(IDIR)/$(HETS_DIR)/$(subst _,-,$*)
+	[ $* = 'hets' ] && RMSECT='SERVER' || RMSECT='DESKTOP' ; \
+		$(SED) -e "/@S$${RMSECT}@/,/@E$${RMSECT}@/ d" debian/hets.1 \
+			>$(IDIR)/$(MAN_DIR)/$(subst _,-,$*).1
+	[ "$(OSNAME)" = 'SunOS' ] || ${SED} -i -e '/@SSOLARIS@/,/@ESOLARIS@/ d' \
+		$(IDIR)/$(MAN_DIR)/$(subst _,-,$*).1
+
+install: install-hets install-hets_server install-common install-owl-tools
+
+############################################################################
+# DEBIAN rules
+############################################################################
+build-indep: jars doc
+
+build-arch: $(STACK_TARGET) hets.bin hets_server.bin
+
+build: build-indep build-arch
+
+# For PPA source packages we submit a platform specific changelog via
+# *.debian.tar.xz, for local packages we generate it on demand.
+CHANGELOG := $(shell [ -f debian/changelog ] && \
+	printf 'debian/changelog' || printf 'debian/changelog.tmp')
+
+# See Versioning in ./README
+# NOTE: The dash crap sucks! So make sure, we have a ksh93 or bash set as SHELL!
+#       We assume only the 2nd rev num might be padded with a single '0'
+#       to avoid more clutter.
+debian/changelog.tmp: debian/control
+	[[ -e debian/control.0 ]] || cp -p debian/control debian/control.0 ; \
+	cp -p debian/control.0 debian/control ; \
+	echo "# HC_OPTS='$(HC_OPTS)'" >> debian/control ; \
+	[[ "$(HC_OPTS)" =~ -DMYSQL ]] || \
+		$(SED) -i -e 's/libmysqlclient21, //' debian/control ; \
+	[[ ! "$(HC_OPTS)" =~ -DNO_WGET ]] || \
+		$(SED) -i -e 's/wget, //' debian/control
+	-[[ $(OSR) == 'focal' ]] && sed -i -e 's/ksh,/ksh93,/' \
+		-e 's/ *libzstd1,//' -e 's/ *libharfbuzz0b,//' debian/control
+	-[[ $(OSR) == 'jammy' ]] && sed -i -r -e 's/libffi7/libffi8/' \
+		-e 's/libssl1.1/libssl3/' -e 's/ *libatomic1,//' debian/control
+	@SRCPKG=`grep ^Source: debian/control |awk '{ print $$2 ; }'` ; \
+	if [ -z "${FULL_DEBVERS}" ]; then \
+		LSB=`lsb_release -rs`; A="$${LSB%.*}"; B="$${LSB#*.}"; B="$${B##0}"; \
+		FULL_DEBVERS="$(HETS_VERSION).1-1.$${A}.$${B}.1" ; \
+		printf "\nUsing '$${FULL_DEBVERS}' as new version.\n\n" ; \
+	fi ; \
+	[ -z "$${REL_NAME}" ] && REL_NAME=`lsb_release -cs` ; \
+	[ -z "$${GPG_NAME}" ] && GPG_NAME='Foo Bar' ; \
+	[ -z "$${GPG_EMAIL}" ] && GPG_EMAIL='foo.bar@do.main' ; \
+	printf "%s (%s) %s; urgency=low\n\n  %s\n\n -- %s <%s>  %s\n" "$${SRCPKG}" \
+		"$${FULL_DEBVERS}" "$${REL_NAME}" \
+		"* Initial release, automatically generated." \
+		"$${GPG_NAME}" "$${GPG_EMAIL}" "`date -R`" \
+		>debian/changelog.tmp
+
+# NOTE: dpkg-gencontrol is not POSIX conform wrt. arg processing!
+binary-indep: build-indep install-common $(CHANGELOG)
+	-@[ "$${USERNAME}" != 'root' -o -z "$${FAKEROOTKEY}" ] && \
+		printf '\nWARNING: The $<  target should be called using fakeroot!\n\n'
+	$(INSTALL) -m 0755 -d $(DESTDIR)$(SUBDIR_common)/DEBIAN
+	dpkg-gencontrol -P$(DESTDIR)$(SUBDIR_common) -phets-common \
+		-l$(CHANGELOG)
+	dpkg-deb -Z xz -b $(DESTDIR)$(SUBDIR_common) ../hets-A.deb
+	dpkg-name -o ../hets-A.deb
+
+binary-arch: build-arch install-hets install-hets_server $(CHANGELOG)
+	-@[ "$${USERNAME}" != 'root' -o -z "$${FAKEROOTKEY}" ] && \
+		printf '\nWARNING: The $<  target should be called using fakeroot!\n\n'
+	$(INSTALL) -m 0755 -d \
+		$(DESTDIR)$(SUBDIR_hets)/DEBIAN \
+		$(DESTDIR)$(SUBDIR_hets_server)/DEBIAN
+	dpkg-gencontrol -P$(DESTDIR)$(SUBDIR_hets) -phets-desktop \
+		-l$(CHANGELOG)
+	dpkg-deb -Z xz -b $(DESTDIR)$(SUBDIR_hets) ../hets-B.deb
+	dpkg-gencontrol -P$(DESTDIR)$(SUBDIR_hets_server) -phets-server \
+		-l$(CHANGELOG)
+	dpkg-deb -Z xz -b $(DESTDIR)$(SUBDIR_hets_server) ../hets-C.deb
+	dpkg-name -o ../hets-B.deb ../hets-C.deb
+
+# Make sure debian/changelog exists, since dpkg-buildpackage runs finally a
+# "dpkg-genchanges -b -m'...' >../${fullPkgName}.changes"
+binary: binary-indep binary-arch
+	@[ -f debian/changelog ] || ln -s changelog.tmp debian/changelog
+
+# vim: ts=4 sw=4 noet nosta filetype=make

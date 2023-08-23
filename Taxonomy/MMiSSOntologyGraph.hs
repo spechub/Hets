@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Taxonomy/MMiSSOntologyGraph.hs
 Copyright   :  (c) Uni Bremen 2004-2006
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -105,7 +105,7 @@ createNode gid ginfo _ nMap (nodeID, (name, _, objectType)) =
 
 createLink :: A.Descr -> A.GraphInfo -> A.NodeMapping -> LEdge String
            -> IO A.NodeMapping
-createLink gid ginfo nMap (node1, node2, edgeLabel) = do
+createLink gid ginfo nMap (node1, node2, edgeLabel_) = do
     dNodeID_1 <- case Map.lookup node1 nMap of
                    Nothing -> return (-1)
                    Just n -> return n
@@ -114,10 +114,10 @@ createLink gid ginfo nMap (node1, node2, edgeLabel) = do
                    Just n -> return n
     if dNodeID_1 == -1 || dNodeID_2 == -1 then return nMap else do
       A.Result _ err <-
-        if elem edgeLabel ["isa", "instanceOf", "livesIn", "proves"]
-        then A.addlink gid edgeLabel edgeLabel Nothing
+        if elem edgeLabel_ ["isa", "instanceOf", "livesIn", "proves"]
+        then A.addlink gid edgeLabel_ edgeLabel_ Nothing
              dNodeID_2 dNodeID_1 ginfo
-        else A.addlink gid edgeLabel edgeLabel Nothing
+        else A.addlink gid edgeLabel_ edgeLabel_ Nothing
              dNodeID_1 dNodeID_2 ginfo
       Data.Foldable.forM_ err putStr
       return nMap
@@ -372,27 +372,27 @@ getSubSuperSingle g showSuper newGr name =
         _ -> gr
     insPredecessorAndEdge :: ClassGraph -> ClassGraph -> LEdge String
                           -> ClassGraph
-    insPredecessorAndEdge oldGr newGr' (fromNode, toNode, edgeLabel) =
+    insPredecessorAndEdge oldGr newGr' (fromNode, toNode, edgeLabel_) =
       case fst $ match fromNode oldGr of
         Nothing -> newGr'
         Just (_, _, nodeLabel1, _) ->
            case match fromNode newGr' of
              (Nothing, _) ->
-                 ([], fromNode, nodeLabel1, [(edgeLabel, toNode)]) & newGr'
+                 ([], fromNode, nodeLabel1, [(edgeLabel_, toNode)]) & newGr'
              (Just (p, fromNodeID, nodeLabel2, s), newGr2) ->
-                 (p, fromNodeID, nodeLabel2, (edgeLabel, toNode) : s) & newGr2
+                 (p, fromNodeID, nodeLabel2, (edgeLabel_, toNode) : s) & newGr2
     insSuccessorAndEdge :: ClassGraph -> ClassGraph -> LEdge String
                         -> ClassGraph
-    insSuccessorAndEdge oldGr newGr' (fromNode, toNode, edgeLabel) =
+    insSuccessorAndEdge oldGr newGr' (fromNode, toNode, edgeLabel_) =
       case fst $ match toNode oldGr of
         Nothing -> newGr'
         Just (_, _, (nodeLabel1, _, _), _) ->
            case match toNode newGr' of
              (Nothing, _) ->
-              ([(edgeLabel, fromNode)], toNode, (nodeLabel1, "", OntoClass), [])
+              ([(edgeLabel_, fromNode)], toNode, (nodeLabel1, "", OntoClass), [])
               & newGr'
              (Just (p, toNodeID, nodeLabel2, s), newGr2) ->
-                 ((edgeLabel, fromNode) : p, toNodeID, nodeLabel2, s) & newGr2
+                 ((edgeLabel_, fromNode) : p, toNodeID, nodeLabel2, s) & newGr2
 
 getSubSuperClosure :: ClassGraph -> Bool -> ClassGraph -> String -> ClassGraph
 getSubSuperClosure g showSuper newGr name =

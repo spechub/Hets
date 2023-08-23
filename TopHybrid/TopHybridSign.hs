@@ -1,6 +1,6 @@
 {-# LANGUAGE ExistentialQuantification, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./TopHybrid/TopHybridSign.hs
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  nevrenato@gmail.com

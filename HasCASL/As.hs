@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./HasCASL/As.hs
 Description :  abstract syntax for HasCASL
 Copyright   :  (c) Christian Maeder and Uni Bremen 2003-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -22,6 +22,9 @@ import Common.AS_Annotation
 
 import Data.Data
 import qualified Data.Set as Set
+
+import Common.Doc
+import Common.DocUtils
 
 -- * abstract syntax entities with small utility functions
 
@@ -370,6 +373,16 @@ data SymbKind =
   | SyKclass
     deriving (Show, Eq, Ord, Typeable, Data)
 
+instance Pretty SymbKind where
+  pretty symbol_kind = case symbol_kind of
+    Implicit -> text "implicit"
+    SyKtype -> text "type"
+    SyKsort -> text "sort"
+    SyKfun -> text "fun"
+    SyKop -> text "op"
+    SyKpred -> text "pred"
+    SyKclass -> text "class"
+    
 -- | type annotated symbols
 data Symb = Symb Id (Maybe SymbType) Range
   deriving (Show, Eq, Ord, Typeable, Data)

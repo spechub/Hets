@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Taxonomy/MMiSSOntology.hs
 Copyright   :  (c) Uni Bremen 2004-2007
 License     :  GPLv2 or higher, see LICENSE.txt
 
@@ -72,6 +72,7 @@ import Data.Graph.Inductive.Basic
 import Common.Lib.Graph
 import qualified Data.Map as Map
 import Common.Taxonomy
+import qualified Control.Monad.Fail as Fail
 
 type ClassName = String
 type ObjectName = String
@@ -97,8 +98,8 @@ weither :: (String -> b) -> (a -> b) -> WithError a -> b
 weither = either
 
 -- | convert to another monad
-fromWithError :: (Monad m) => WithError a -> m a
-fromWithError = either fail return
+fromWithError :: (Fail.MonadFail m) => WithError a -> m a
+fromWithError = either Fail.fail return
 
 data RelationProperty = InversOf String | Functional deriving (Eq, Read, Show)
 
@@ -407,8 +408,8 @@ insertLink onto source target relName = do
 isComplete :: MMiSSOntology -> [String]
 isComplete onto = case mode onto of
     ThrowError -> []
-    _ -> Map.foldWithKey checkClass [] (classes onto)
-            ++ Map.foldWithKey checkRel [] (relations onto)
+    _ -> Map.foldrWithKey checkClass [] (classes onto)
+            ++ Map.foldrWithKey checkRel [] (relations onto)
   where
     mkMsg str nam = [str ++ nam ++ " is not properly defined."]
     checkClass className (ClassDecl _ _ _ _ inserted _) l =

@@ -1,5 +1,5 @@
 {- |
-Module      : $Header$
+Module      : ./CMDL/Shell.hs
 Description : shell related functions
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt

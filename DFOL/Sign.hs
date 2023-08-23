@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./DFOL/Sign.hs
 Description :  Definition of signatures for first-order logic
                with dependent types (DFOL)
 Copyright   :  (c) Kristina Sojakova, DFKI Bremen 2009

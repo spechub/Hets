@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP, MultiParamTypeClasses, TypeSynonymInstances
   , FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CASL/Logic_CASL.hs
 Description :  Instance of class Logic for the CASL logic
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2002-2005
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -51,13 +51,14 @@ import CASL.Formula (formula)
 
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
+import CASL.Zipperposition
 #endif
 
 import Common.ProofTree
 import Common.Consistency
 import Common.DocUtils
 
-import Data.Monoid
+import Data.Monoid ()
 import qualified Data.Set as Set
 
 import Logic.Logic
@@ -78,6 +79,8 @@ instance Language CASL where
   , "  Sul    -> with a locally filtered subsort relation"
   , "  P      -> with partial functions"
   , "  C      -> with sort generation constraints"
+  , "  tC     -> C without partial constructors"
+  , "  fC     -> C without non-free constraints (implies tC)"
   , "  eC     -> C without renamings"
   , "  sC     -> C with injective constructors"
   , "  seC    -> sC and eC"
@@ -114,9 +117,10 @@ instance (Ord f, Ord e, Ord m, MorphismExtension e m) =>
     isInclusion = isInclusionMorphism isInclusionMorphismExtension
     legal_mor = legalMor
 
+instance Semigroup (BASIC_SPEC b s f) where
+    (Basic_spec l1) <> (Basic_spec l2) = Basic_spec $ l1 ++ l2
 instance Monoid (BASIC_SPEC b s f) where
     mempty = Basic_spec []
-    mappend (Basic_spec l1) (Basic_spec l2) = Basic_spec $ l1 ++ l2
 
 -- abstract syntax, parsing (and printing)
 
@@ -126,10 +130,11 @@ instance Syntax CASL CASLBasicSpec
          parsersAndPrinters CASL = addSyntax "KIF"
            (const $ fmap kif2CASL kifBasic, pretty)
            $ makeDefault (basicSpec [], pretty)
-         parseSingleSymbItem CASL = Just $ symbItem []
-         parse_symb_items CASL = Just $ symbItems []
-         parse_symb_map_items CASL = Just $ symbMapItems []
+         parseSingleSymbItem CASL = Just . const $ symbItem []
+         parse_symb_items CASL = Just . const $ symbItems []
+         parse_symb_map_items CASL = Just . const $ symbMapItems []
          toItem CASL = bsToItem
+         symb_items_name CASL = symbItemsName
 
 -- lattices (for sublogics)
 
@@ -291,5 +296,9 @@ instance Logic CASL CASL_Sublogics
          addOmdocToTheory CASL = OMI.addOmdocToTheory
          syntaxTable CASL = Just . getSyntaxTable
 #ifdef UNI_PACKAGE
-         provers CASL = [quickCheckProver]
+         provers CASL =
+           [ quickCheckProver
+           , zipperpositionFreeFolProver
+           , zipperpositionCFolProver
+           ]
 #endif

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./CASL_DL/Parse_AS.hs
 Description :  Parser for CASL_DL
 Copyright   :  (c) Klaus Luettich, Uni Bremen 2004
 License     :  similar to LGPL, see HetCATS/LICENSE.txt or LIZENZ.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Maude/Morphism.hs
 Description :  Maude Morphisms
 Copyright   :  (c) Martin Kuehl, Uni Bremen 2008-2009
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -68,6 +68,7 @@ import Common.Doc hiding (empty)
 import Common.DocUtils (Pretty (..))
 
 import Control.Monad (unless)
+import qualified Control.Monad.Fail as Fail
 
 -- * Types
 
@@ -229,7 +230,7 @@ inclusion src tgt = Morphism {
 -- | the inverse 'Morphism'
 inverse :: Morphism -> Result Morphism
 inverse mor = let
-    invertMap = Map.foldWithKey (flip Map.insert) Map.empty
+    invertMap = Map.foldrWithKey (flip Map.insert) Map.empty
     in return $ kindMorph Morphism {
         source = target mor,
         target = source mor,
@@ -258,7 +259,7 @@ type Extraction = Morphism -> SymbolMap
 -- | the composition of two 'Morphism's
 compose :: Morphism -> Morphism -> Result Morphism
 compose f g
-    | target f /= source g = fail
+    | target f /= source g = Fail.fail
         "target of the first and source of the second morphism are different"
     | otherwise = let
         {- Take SymbolMap |mp| of each Morphism.
@@ -314,7 +315,7 @@ isLegal mor = let
     lg'labelMap = subset lmap getLabels
     lg'target = Sign.isLegal tgt
     in unless (and [lg'source, lg'sortMap, lg'opMap, lg'labelMap, lg'target]) $
-       fail "illegal Maude morphism"
+       Fail.fail "illegal Maude morphism"
 
 -- * Conversion
 

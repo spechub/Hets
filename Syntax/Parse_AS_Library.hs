@@ -1,14 +1,16 @@
 {- |
-Module      :  $Header$
-Description :  parser for CASL specification librariess
-Copyright   :  (c) Maciek Makowski, Uni Bremen 2002-2006
+Module      :  ./Syntax/Parse_AS_Library.hs
+Description :  parser for DOL documents and CASL specification librariess
+Copyright   :  (c) Maciek Makowski, Uni Bremen 2002-2016
 License     :  GPLv2 or higher, see LICENSE.txt
 Maintainer  :  Christian.Maeder@dfki.de
 Stability   :  provisional
 Portability :  non-portable(Grothendieck)
 
-Parser for CASL specification librariess
+Parser for CASL specification libraries
    Follows Sect. II:3.1.5 of the CASL Reference Manual.
+Parser for DOL documents
+   Follows the DOL OMG standard, clause 9.3
 -}
 
 module Syntax.Parse_AS_Library (library) where
@@ -36,6 +38,7 @@ import Data.List
 import Data.Maybe (maybeToList)
 import qualified Data.Map as Map
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 import Framework.AS
 
@@ -60,9 +63,16 @@ library lG = do
     return (Lib_defn ln ls ps (an1 ++ an2))
 
 -- | Parse library name
+-- For expanding the iri of the library name the empty prefix is to `"file://"
+-- to parse the it as an individual file. Otherwise the default empty prefix
+-- would be used.
 libName :: LogicGraph -> AParser st LibName
-libName lG = liftM2 mkLibName (hetIRI lG)
+libName lG = liftM2 mkLibName (hetIRI lG')
   $ if dolOnly lG then return Nothing else optionMaybe version
+  where
+    fileIRI = nullIRI { iriScheme = "file://"}
+    pm = Map.insert "" fileIRI $ prefixes lG
+    lG' = lG {prefixes = pm}
 
 -- | Parse the library version
 version :: AParser st VersionNumber
@@ -103,17 +113,14 @@ networkDefn l = do
     kEqu <- equalT
     n <- parseNetwork l
     kEnd <- asKey endS
-    return . Graph_defn name n
+    return . Network_defn name n
          . catRange $ [kGraph, kEqu, kEnd]
-
-emptyParams :: GENERICITY
-emptyParams = Genericity (Params []) (Imported []) nullRange
 
 -- CASL spec-defn or DOL OMSDefn
 specDefn :: LogicGraph -> AParser st LIB_ITEM
 specDefn l = do
     s <- choice $ map asKey
-      ["specification", specS, ontologyS, "onto", "model", "OMS"]
+      ["specification", specS, ontologyS, "onto", "model", "OMS", patternS]
     n <- hetIRI l
     g <- generics l
     e <- equalT
@@ -162,7 +169,7 @@ queryDefn l = do
   e <- equalT
   s <- asKey selectS
   lg <- lookupCurrentLogic "query-defn" l
-  (vs, cs) <- parseItemsList lg
+  (vs, cs) <- parseItemsList lg (prefixes l)
   w <- asKey whereS
   Basic_spec bs _ <- lookupCurrentSyntax "query-defn" l >>= basicSpec l
   i <- asKey inS
@@ -180,7 +187,7 @@ substDefn l = do
   vt <- viewType l
   e <- equalT
   lg <- lookupCurrentLogic "subst-defn" l
-  (m, cs) <- parseItemsMap lg
+  (m, cs) <- parseItemsMap lg (prefixes l)
   o <- optEnd
   return . Subst_defn n vt m . catRange
     $ [q, c, e] ++ cs ++ maybeToList o
@@ -305,7 +312,7 @@ libItem l = specDefn l
      do p1 <- getPos
         a <- aSpec l
         p2 <- getPos
-        if p1 == p2 then fail "cannot parse spec" else
+        if p1 == p2 then Fail.fail "cannot parse spec" else
           return (Spec_defn nullIRI
                (Genericity (Params []) (Imported []) nullRange) a nullRange)
 
@@ -332,7 +339,7 @@ entailType l = do
               r <- asKey entailsS
               g <- groupSpec l
               return . OMSInNetwork n nw g $ catRange [i, r]
-            _ -> fail "OMSName expected"
+            _ -> Fail.fail "OMSName expected"
 
 omsOrNetwork :: LogicGraph -> AParser st OmsOrNetwork
 omsOrNetwork l = fmap (MkOms . emptyAnno) $ groupSpec l
@@ -374,7 +381,7 @@ moduleType l = do
 restrictionSignature :: LogicGraph -> AParser st G_symb_items_list
 restrictionSignature lG = do
   l <- lookupCurrentLogic "restrictionSignature" lG
-  fmap fst $ parseItemsList l
+  fmap fst $ parseItemsList l (prefixes lG)
 
 
 simpleIdOrDDottedId :: GenParser Char st Token
@@ -399,7 +406,7 @@ optEnd = try
     << addLineAnnos
 
 generics :: LogicGraph -> AParser st GENERICITY
-generics l = if dolOnly l then return emptyParams else do
+generics l = do
     (pa, ps1) <- params l
     (imp, ps2) <- option ([], nullRange) (imports l)
     return $ Genericity (Params pa) (Imported imp) $ appRange ps1 ps2

@@ -20,7 +20,7 @@ import Text.XML.HaXml.Types (DocTypeDecl (..))
 import Text.XML.HaXml.Namespaces (localName)
 #endif
 import Text.XML.HaXml.Parse (dtdParse)
-import DtdToHaskell.TypeDef (TypeDef, ppTypeDef, mangle)
+import DtdToHaskell.TypeDef (ppTypeDef, mangle)
 import DtdToHaskell.Convert (dtd2TypeDef)
 import DtdToHaskell.Instance (mkInstance)
 import Text.PrettyPrint.HughesPJ (render, vcat)

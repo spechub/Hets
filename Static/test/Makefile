@@ -2,7 +2,7 @@
 
 .PHONY: check
 
-check: hets Common/testxmldiff
+check: hets_available Common/testxmldiff
 	./run.sh
 
 %:

@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./OWL2/Taxonomy.hs
 Description :  Taxonomy extraction for OWL
 Copyright   :  (c) Dominik Luecke, Uni Bremen 2008
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -13,7 +13,6 @@ Taxonomy extraction for OWL
 
 module OWL2.Taxonomy ( onto2Tax ) where
 
-import OWL2.MS
 import OWL2.Sign
 import OWL2.ManchesterPrint
 import OWL2.ProvePellet
@@ -22,6 +21,9 @@ import Common.AS_Annotation
 import Common.Result
 import Taxonomy.MMiSSOntology
 import Common.Taxonomy
+import Common.Utils
+
+import OWL2.AS
 
 import System.IO.Unsafe
 
@@ -29,9 +31,9 @@ import qualified Data.Foldable as Fold
 import qualified Common.Lib.Rel as Rel
 import qualified Data.Map as Map
 import Data.List
-import Data.Maybe
 
 import qualified Data.Set as Set
+import qualified Control.Monad.Fail as Fail
 
 -- | Derivation of an Taxonomy for OWL
 onto2Tax :: TaxoGraphKind
@@ -39,7 +41,7 @@ onto2Tax :: TaxoGraphKind
          -> Sign -> [Named Axiom]
          -> Result MMiSSOntology
 onto2Tax gk inOnto sig sens = case gk of
-  KSubsort -> fail "Dear user, this logic is single sorted, sorry!"
+  KSubsort -> Fail.fail "Dear user, this logic is single sorted, sorry!"
   KConcept -> do
     cs <- unsafePerformIO $ runClassifier sig sens
     tree <- relBuilder cs
@@ -50,7 +52,7 @@ onto2Tax gk inOnto sig sens = case gk of
     makeMiss inOnto superMap classes
 
 dropClutter :: String -> String
-dropClutter a = fromMaybe a (stripPrefix "unamed:" a)
+dropClutter = tryToStripPrefix "unamed:"
 
 -- | Generation of a MissOntology
 makeMiss :: MMiSSOntology
@@ -70,7 +72,7 @@ relBuilder :: String
 relBuilder tr =
   let ln = filter (not . null) $ lines tr in
   if any (isPrefixOf "ERROR: ") ln || null ln then
-    fail "Classification via Pellet failed! Ontology might be inconsistent!"
+    Fail.fail "Classification via Pellet failed! Ontology might be inconsistent!"
     else return $ map relBuild $ splitter $ map tail ln
 
 -- | splitter for output
@@ -92,12 +94,15 @@ relBuild s = case s of
     in Rel.insertKey t $ Rel.fromList (zip (repeat t) suc) `Rel.union` ch
 
 -- | Invocation of Pellet
+-- TODO: commented out in 1993
 runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
 runClassifier sig sen = do
   let th = show $ printOWLBasicTheory (sig, filter isAxiom sen)
       tLimit = 800
   res <- runTimedPellet "classify" "PelletClassifier" th Nothing tLimit
   return $ case res of
-    Nothing -> fail $ "Timeout after " ++ show tLimit ++ " seconds!"
+    Nothing -> Fail.fail $ "Timeout after " ++ show tLimit ++ " seconds!"
     Just (progTh, out, _) ->
-      if progTh then return out else fail "Pellet not found"
+      if progTh then return out else Fail.fail "Pellet not found"
+-- runClassifier :: Sign -> [Named Axiom] -> IO (Result String)
+-- runClassifier _ _ = return $ return []

@@ -1,6 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, TypeSynonymInstances, FlexibleInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./Comorphisms/CASL2Modal.hs
 Description :  embedding from CASL to ModalCASL
 Copyright   :  (c) Till Mossakowski and Uni Bremen 2004
 License     :  GPLv2 or higher, see LICENSE.txt

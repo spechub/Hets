@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/Parse_AS_Basic.hs
 Description :  Parser for basic specs
 Copyright   :  (c) Dominik Dietrich, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -36,6 +36,7 @@ import qualified Data.Set as Set
 import Text.ParserCombinators.Parsec as Parsec
 import Text.ParserCombinators.Parsec.Error
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 -- TODO: extract range information for the basic term and command types
 
@@ -429,7 +430,7 @@ constraint = do
   case exp' of
     Op {} ->
         return $ Cmd "constraint" [exp']
-    _ -> fail "Malformed constraint"
+    _ -> Fail.fail "Malformed constraint"
 
 
 sequenceExpr :: CharParser (AnnoState.AnnoState st) CMD

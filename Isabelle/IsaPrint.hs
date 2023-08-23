@@ -1,5 +1,5 @@
 {- |
-Module      :  $Header$
+Module      :  ./Isabelle/IsaPrint.hs
 Description :  printing Isabelle entities
 Copyright   :  (c) University of Cambridge, Cambridge, England
                adaption (c) Till Mossakowski, Uni Bremen 2002-2006

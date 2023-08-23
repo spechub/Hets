@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/AS_Annotation.der.hs
 Description :  datastructures for annotations of (Het)CASL.
 Copyright   :  (c) Klaus Luettich, Christian Maeder, and Uni Bremen 2002-2006
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -21,6 +21,8 @@ import Common.IRI (IRI)
 import Data.Data
 import Data.Maybe
 import qualified Data.Map as Map
+
+import Data.Graph.Inductive.Graph as Graph
 
 -- DrIFT command
 {-! global: GetRange !-}
@@ -172,6 +174,13 @@ annoRange f a =
 notImplied :: Annoted a -> Bool
 notImplied = not . any isImplied . r_annos
 
+-- | origin of sentences
+
+data SenOrigin = SenOrigin 
+     { dGraphName :: IRI
+     , originNodeId :: Node
+     , senName :: String } deriving (Eq, Ord, Show, Typeable, Data)
+
 -- | naming or labelling sentences
 data SenAttr s a = SenAttr
     { senAttr :: a
@@ -184,6 +193,8 @@ data SenAttr s a = SenAttr
     , simpAnno :: Maybe Bool -- for %simp or %nosimp annotations
     , attrOrigin :: Maybe Id
     , senMark :: String -- a marker for theoroidal comorphisms
+    , senOrigin :: Maybe SenOrigin 
+       -- Nothing for local sentences, Just (libName as iri, node, sentence name) for imported ones
     , sentence :: s } deriving (Eq, Ord, Show, Typeable, Data)
 
 -- | equip a sentence with a name
@@ -197,7 +208,19 @@ makeNamed a s = SenAttr
   , simpAnno = Nothing
   , attrOrigin = Nothing
   , senMark = ""
+  , senOrigin = Nothing
   , sentence = s }
+
+-- | set the origin of a named sentence
+setOrigin :: IRI -> Node -> String -> SenAttr s a -> SenAttr s a
+setOrigin lib node sen nsen = nsen {senOrigin = Just $ SenOrigin lib node sen} 
+
+-- | set the origin of a named sentence, if the sentence does not already have an origin, owise leave unchanged
+setOriginIfLocal :: IRI -> Node -> String -> SenAttr s a -> SenAttr s a
+setOriginIfLocal lib node sen nsen = 
+ case senOrigin nsen of
+  Nothing -> setOrigin lib node sen nsen
+  _ -> nsen
 
 type Named s = SenAttr s String
 

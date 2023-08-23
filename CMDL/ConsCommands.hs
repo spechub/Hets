@@ -1,5 +1,5 @@
 {- |
-Module      :$Header$
+Module      :./CMDL/ConsCommands.hs
 Description : CMDL interface commands
 Copyright   : uni-bremen and DFKI
 License     : GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeSynonymInstances, FlexibleInstances, DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./CSL/AS_BASIC_CSL.hs
 Description :  Abstract syntax for EnCL
 Copyright   :  (c) Dominik Dietrich, Ewaryst Schulz, DFKI Bremen 2010
 License     :  GPLv2 or higher, see LICENSE.txt

@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {- |
-Module      :  $Header$
+Module      :  ./Common/SFKT.hs
 Copyright   :  (c) 2005, Amr Sabry, Chung-chieh Shan, Oleg Kiselyov
                 and Daniel P. Friedman
 License     :  GPLv2 or higher, see LICENSE.txt
@@ -20,6 +20,7 @@ module Common.SFKT
 
 import Control.Applicative
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 import Control.Monad.Trans
 import Common.LogicT
 
@@ -57,6 +58,9 @@ instance Monad m => MonadPlus (SFKT m) where
   mzero = SFKT (\ _ fk -> fk)
   m1 `mplus` m2 = SFKT (\ sk fk -> unSFKT m1 sk (unSFKT m2 sk fk))
 
+instance Fail.MonadFail m => Fail.MonadFail (SFKT m) where
+  fail str = SFKT (\ _ _ -> Fail.fail str)
+
 instance MonadTrans SFKT where
     -- Hinze's promote
     lift m = SFKT (\ sk fk -> m >>= (`sk` fk))
@@ -79,5 +83,5 @@ runM (Just n) m = unSFKT (msplit m) runM' (return [])
     where runM' Nothing _ = return []
           runM' (Just (a, m')) _ = liftM (a :) (runM (Just (n - 1)) m')
 
-observe :: Monad m => SFKT m a -> m a
-observe m = unSFKT m (\ a _fk -> return a) (fail "no answer")
+observe :: Fail.MonadFail m => SFKT m a -> m a
+observe m = unSFKT m (\ a _fk -> return a) (Fail.fail "no answer")

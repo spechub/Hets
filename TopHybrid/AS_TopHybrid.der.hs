@@ -1,7 +1,8 @@
-{-# LANGUAGE ExistentialQuantification, DeriveDataTypeable
-  , OverlappingInstances #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {- |
-Module      :  $Header$
+Module      :  ./TopHybrid/AS_TopHybrid.der.hs
 License     :  GPLv2 or higher, see LICENSE.txt
 
 Maintainer  :  nevrenato@gmail.com
@@ -26,7 +27,7 @@ import Logic.Logic
 import Unsafe.Coerce
 
 import Data.Data
-import Data.Monoid
+import Data.Monoid ()
 
 import Text.XML.Light
 
@@ -105,9 +106,11 @@ instance Show Spc_Wrap where
   show (Spc_Wrap l b a) =
     "Spc_Wrap " ++ show l ++ " (" ++ show b ++ ") " ++ show a
 
+instance Semigroup Spc_Wrap where
+  _ <> _ = error "Not implemented!"
+
 instance Monoid Spc_Wrap where
  mempty = error "Not implemented!"
- mappend _ _ = error "Not implemented!"
 
 -- --- instances
 data Mor = Mor deriving (Show, Eq, Ord, Typeable, Data)

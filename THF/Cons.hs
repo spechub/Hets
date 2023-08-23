@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {- |
-Module      :  $Header$
+Module      :  ./THF/Cons.hs
 Description :  A collection of data-structures, functions and instances for
                 the THF modules.
 Copyright   :  (c) A. Tsogias, DFKI Bremen 2011
