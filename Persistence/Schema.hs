@@ -28,7 +28,6 @@ module Persistence.Schema where
 
 import Database.Persist.Sql
 import Database.Persist.TH
-import Database.Persist.TH (mkDeleteCascade)
 
 import Data.Text (Text)
 
