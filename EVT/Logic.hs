@@ -53,18 +53,27 @@ instance Pretty EVTSymbol where
 
 instance Monoid EVENT where
      mempty = EVENT (stringToId "") [] []
-     mappend (EVENT n1 g1 a1) (EVENT n2 g2 a2) = EVENT (mappend n1 n2) (mappend g1 g2) (mappend a1 a2) 
-
+     mappend (EVENT n1 g1 a1) (EVENT n2 g2 a2) = EVENT n1 (mappend g1 g2) (mappend a1 a2)
+     
+instance Semigroup EVENT where
+    (EVENT n1 g1 a1) <> (EVENT n2 g2 a2) =
+      EVENT n1 (g1 <> g2) (a1 <> a2)      -- just to make it compile
+      
+     
 instance Monoid MACHINE where
      mempty = MACHINE []
      mappend (MACHINE m1) (MACHINE m2) = MACHINE (mappend m1 m2) 
+
+instance Semigroup MACHINE where
+  (MACHINE m1) <> (MACHINE m2) = MACHINE (m1 <> m2)
 
 instance Monoid EVTSign where
      mempty = emptyEVTSign
      mappend (EVTSign e1 g1) (EVTSign e2 g2) = EVTSign (mappend e1 e2) (mappend g1 g2) 
 
-instance Monoid Id
-
+instance Semigroup EVTSign where
+     (EVTSign e1 g1) <> (EVTSign e2 g2) = EVTSign (e1 <> e2) (g1 <> g2) 
+     
 -- | Syntax of EVT
 instance Syntax EVT MACHINE EVTSymbol () () where--EVTMorphism () () where
      parse_basic_spec _ = Just $ evtBasicSpec
