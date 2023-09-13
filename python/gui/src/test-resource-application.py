@@ -5,7 +5,7 @@ from typing import List
 
 import gi
 
-from utils import resource_exist
+from hetsgui.utils import resource_exist
 
 gi.require_version("Gtk", "3.0")
 
@@ -36,10 +36,10 @@ class PreviewWidgetWindow(Gtk.Window):
     def __init__(self, resource: str, **kwargs):
         super().__init__(**kwargs)
         self.set_default_size(400, 400)
-        import widgets
+        import hetsgui.widgets
         
         widget_name = resource.split("/")[-1]
-        widget_class = widgets.__dict__[widget_name]
+        widget_class = hetsgui.widgets.__dict__[widget_name]
         widget = widget_class()
         self.add(widget)
 
@@ -109,7 +109,7 @@ class PreviewApplication(Gtk.Application):
         super().__init__(**kwargs)
         self.window = None
 
-        pgk_dir = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), ""))
+        pgk_dir = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "hetsgui"))
         resource_file = os.path.join(pgk_dir, "hetsgui.gresource")
         resource: Gio.Resource = Gio.resource_load(resource_file)
         Gio.resources_register(resource)
@@ -118,7 +118,7 @@ class PreviewApplication(Gtk.Application):
         self.connect("handle-local-options", self.on_handle_local_options)
 
         # noinspection PyUnresolvedReferences
-        import widgets
+        import hetsgui.widgets
 
     def on_handle_local_options(self, application, options: GLib.VariantDict):
         log_value = options.lookup_value("log")

@@ -34,7 +34,7 @@ module HetsAPI.Commands (
    , HPC.getUsableConsistencyCheckers
    , HPC.proveNode
    , HPC.checkConsistency
-   , HPC.checkConservativityNode 
+   , HPC.checkConservativityEdge
 
    -- Hets.InfoCommands
    , HIC.getGraphForLibrary

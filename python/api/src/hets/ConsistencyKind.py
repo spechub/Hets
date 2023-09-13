@@ -31,7 +31,7 @@ class ConsistencyKind(Enum):
     The theory is monomorphic
     """
 
-    DEFINED = 5
+    DEFINITIONAL = 5
     """
     The theory is definitional
     """
@@ -57,7 +57,8 @@ class ConsistencyKind(Enum):
             ConsistencyKind.PCONS: "PCons",
             ConsistencyKind.CONS: "Consistent",
             ConsistencyKind.MONO: "Mono",
-            ConsistencyKind.DEFINED: "Defined",
+            ConsistencyKind.DEFINITIONAL: "Defined",
             ConsistencyKind.ERROR: "Errored",
             ConsistencyKind.TIMED_OUT: "Timed out"
         }[self]
+    

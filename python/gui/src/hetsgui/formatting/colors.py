@@ -32,7 +32,7 @@ CONSISTENCY_KIND_BG_COLORS = {
     ConsistencyKind.PCONS: "darkgreen",
     ConsistencyKind.CONS: "green",
     ConsistencyKind.MONO: "violet",
-    ConsistencyKind.DEFINED: "darkseagreen",
+    ConsistencyKind.DEFINITIONAL: "darkseagreen",
     ConsistencyKind.TIMED_OUT: "blue",
     ConsistencyKind.ERROR: "darkred",
 }

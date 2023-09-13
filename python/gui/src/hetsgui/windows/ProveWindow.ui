@@ -40,12 +40,7 @@
                 <property name="tab-pos">left</property>
                 <child>
                     <object class="GridWithToolComorphismSelector" id="_prover_comorphism_selector">
-<!--                    <object class="GtkGrid">-->
                         <property name="border-width">10</property>
-<!--                        <property name="visible">True</property>-->
-<!--                        <property name="can-focus">False</property>-->
-<!--                        <property name="row-spacing">4</property>-->
-<!--                        <property name="column-spacing">14</property>-->
                         <child>
                             <object class="GtkLabel">
                                 <property name="visible">True</property>

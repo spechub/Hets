@@ -7,6 +7,7 @@
             <item>
                 <attribute name="label" translatable="yes">Open</attribute>
                 <attribute name="action">win.open_file</attribute>
+                <attribute name="accel">&lt;Ctrl&gt;O</attribute>
             </item>
         </submenu>
         <submenu>

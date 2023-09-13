@@ -3,6 +3,8 @@
   <gresource prefix="/eu/hets/hetsgui">
     <file>resources/icon.png</file>
 
+    <file preprocess="xml-stripblanks">windows/ConservativityCheckWindow.ui</file>
+    <file>windows/ConservativityCheckWindow.css</file>
     <file preprocess="xml-stripblanks">windows/ConsistencyCheckWindow.ui</file>
     <file>windows/ConsistencyCheckWindow.css</file>
     <file preprocess="xml-stripblanks">windows/MainWindow.ui</file>

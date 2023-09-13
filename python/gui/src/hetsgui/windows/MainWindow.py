@@ -17,6 +17,7 @@ from ..windows.LibrarySettingsWindow import LibrarySettingsWindow
 
 from ..windows.ProveWindow import ProveWindow
 from ..windows.ConsistencyCheckWindow import ConsistencyCheckWindow
+from ..windows.ConservativityCheckWindow import ConservativityCheckWindow
 
 T = typing.TypeVar("T")
 
@@ -60,8 +61,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_actions.append(self._action("node.prove", self._on_prove_node, "s"))
         self._library_actions.append(self._action("node.check_consistency", self._on_check_consistency_node, "s"))
         self._library_actions.append(self._action("node.show_info", self._on_show_node_info, "s"))
-        self._library_actions.append(self._action("edge.check_conservativity", self._on_check_conservativity_edge, "(ss)"))
-        self._library_actions.append(self._action("edge.show_info", self._on_show_edge_info, "(ss)"))
+        self._library_actions.append(self._action("edge.check_conservativity", self._on_check_conservativity_edge, "av"))
+        self._library_actions.append(self._action("edge.show_info", self._on_show_edge_info, "av"))
 
         self._library_actions.append(self._action_toggle("toggle_show_names", self._on_toggle_show_names))
         self._library_actions.append(self._action_toggle("toggle_show_edges", self._on_toggle_show_edges))
@@ -224,10 +225,11 @@ class MainWindow(Gtk.ApplicationWindow):
             edge = [e for e in self._loaded_library.development_graph().edges() if
                     str(e.origin()) == origin_id and str(e.target()) == target_id][0]
 
-            dialog = Gtk.MessageDialog(title="Not implemented", message_type=Gtk.MessageType.INFO)
-            dialog.format_secondary_text("This functionality is not yet implemented.")
-            dialog.run()
-            dialog.destroy()
+            check_conservativity_window = ConservativityCheckWindow(edge, transient_for=self)
+            check_conservativity_window.show_all()
+            check_conservativity_window.present()
+
+            check_conservativity_window.connect("destroy", lambda _: self._ui_graph.render())
         else:
             self._logger.warning(f'Action: Show info for edge {origin_id}->{target_id}. But no library is loaded!')
 

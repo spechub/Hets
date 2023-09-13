@@ -5,7 +5,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 """
 
 from typing import Any, TypeVar, Generic
-from .haskell import Result, resultToMaybe, fromJust, Just, show
+from .haskell import resultToMaybe, fromJust, Just, show
 
 T = TypeVar("T")
 

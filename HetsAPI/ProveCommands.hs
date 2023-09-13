@@ -8,6 +8,7 @@ module HetsAPI.ProveCommands (
     , getAvailableComorphisms
     , getUsableProvers
     , getUsableConsistencyCheckers
+    , Interfaces.Utils.getUsableConservativityCheckers
 
     , proveNode
     , recordProofResult
@@ -17,7 +18,9 @@ module HetsAPI.ProveCommands (
     , recordConsistencyResult
     , checkConsistencyAndRecord
 
-    , checkConservativityNode
+    , checkConservativityEdge
+    , recordConservativityResult
+    , checkConservativityEdgeAndRecord
 
     , ProofOptions(..)
     , defaultProofOptions
@@ -32,25 +35,27 @@ import HetsAPI.DataTypes
 
 import Data.Functor ()
 import qualified Data.Map as Map
+import Data.Maybe (fromJust)
 import Data.Graph.Inductive (LNode, LEdge)
 
 import Control.Monad.Trans ( MonadTrans(lift) )
 
+import Common.Consistency (Conservativity)
 import Common.Id (nullRange)
 import Common.LibName (LibName)
 import qualified Common.OrderedMap as OMap
 import Common.Result (Result(maybeResult, Result), maybeToResult)
-import Common.ResultT (ResultT, liftR)
+import Common.ResultT (ResultT (..), liftR)
 
 import Comorphisms.LogicGraph (logicGraph)
 
-import qualified Interfaces.Utils (checkConservativityNode, checkConservativityEdge)
+import qualified Interfaces.Utils (checkConservativityNode, getUsableConservativityCheckers, checkConservativityEdgeWith, recordConservativityResult)
 
 import Logic.Comorphism (AnyComorphism)
 import Logic.Grothendieck (findComorphismPaths)
 import Logic.Prover (ProofStatus (goalName), ProverKind (..))
 
-import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, G_cons_checker (..), getProverName, getConsCheckers, getCcName, makeTheoryForSentences)
+import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, G_cons_checker (..), G_conservativity_checker (..), getProverName, getConsCheckers, getCcName, makeTheoryForSentences)
 import qualified Proofs.AbstractState as PAS
 import Proofs.ConsistencyCheck (ConsistencyStatus, SType(..), consistencyCheck, sType)
 import Proofs.BatchProcessing (genericProveBatch)
@@ -59,7 +64,6 @@ import Static.ComputeTheory(updateLabelTheory, recomputeNodeLabel)
 import Static.DevGraph (LibEnv, DGraph, DGNodeLab, DGLinkLab, ProofHistory, DGChange(..), globalTheory, markNodeInconsistent, markNodeConsistent)
 import Static.GTheory (G_theory (..), sublogicOfTh, coerceThSens)
 import Static.History (changeDGH)
-import Data.Maybe (fromJust)
 
 data ProofOptions = ProofOptions {
     proofOptsProver :: Maybe G_prover -- ^ The prover to use. If not set, it is selected automatically
@@ -97,6 +101,8 @@ defaultConsCheckingOptions = ConsCheckingOptions {
 
 type ProofResult = (G_theory -- The new theory
     , [ProofStatus G_proof_tree]) -- ProofStatus of each goal
+
+type ConservativityResult = (Conservativity, [String], [String])
 
 
 getTheoryForSelection :: [String] -> [String] -> [String] -> G_theory -> G_theory
@@ -193,13 +199,17 @@ checkConsistencyAndRecord p opts = do
     let env = recordConsistencyResult p r
     return (r, env)
 
-checkConservativityNode ::LNode DGNodeLab -> LibEnv -> LibName
-  -> IO (String, LibEnv, ProofHistory)
-checkConservativityNode = Interfaces.Utils.checkConservativityNode False
+checkConservativityEdge :: LinkPointer -> G_conservativity_checker -> IO (Result ConservativityResult)
+checkConservativityEdge (name, env, edge) = Interfaces.Utils.checkConservativityEdgeWith edge env name
 
-checkConservativityEdge :: LEdge DGLinkLab -> LibEnv -> LibName 
-    -> IO (String, LibEnv, LEdge DGLinkLab, ProofHistory)
-checkConservativityEdge = Interfaces.Utils.checkConservativityEdge False
+recordConservativityResult :: LinkPointer -> ConservativityResult -> LibEnv
+recordConservativityResult (name, env, edge) = Interfaces.Utils.recordConservativityResult edge env name
+
+checkConservativityEdgeAndRecord :: LinkPointer -> G_conservativity_checker -> IO (Result (ConservativityResult, LibEnv))
+checkConservativityEdgeAndRecord linkPtr cc = runResultT $ do
+    r <- ResultT $ checkConservativityEdge linkPtr cc
+    let env = recordConservativityResult linkPtr r
+    return (r, env)
 
 recomputeNode :: TheoryPointer -> LibEnv
 recomputeNode (name, env, graph, node@(i, label)) =

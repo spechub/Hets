@@ -3,6 +3,7 @@ from typing import Any
 
 from gi.repository import GLib, Gio
 
+
 def get_variant(data: Any) -> GLib.Variant:
     # Source: https://gitlab.gnome.org/GNOME/gnome-browser-connector/-/blob/master/gnome_browser_connector/helpers.py
     # Licenced under GPL-3.0-or-later

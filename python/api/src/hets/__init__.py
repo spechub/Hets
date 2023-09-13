@@ -7,6 +7,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 from .BasicProof import BasicProof
 from .Comorphism import Comorphism
 from .ConsistencyChecker import ConsistencyChecker
+from .ConservativityChecker import ConservativityChecker
 from .ConsistencyKind import ConsistencyKind
 from .ConsistencyStatus import ConsistencyStatus
 from .DevelopmentGraph import DevelopmentGraph
@@ -29,6 +30,7 @@ __all__ = [
     "BasicProof",
     "Comorphism",
     "ConsistencyChecker",
+    "ConservativityChecker",
     "ConsistencyStatus",
     "DevelopmentGraph",
     "DevGraphEdge",

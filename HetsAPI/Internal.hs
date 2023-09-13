@@ -6,7 +6,7 @@ License     :  GPLv2 or higher, see LICENSE.txt
 
 module HetsAPI.Internal (
     fromJust
-    , Result, resultToMaybe, Diagnosis
+    , Result(..), resultToMaybe, Diagnosis
     , HetcatsOpts(..), defaultHetcatsOpts
     , DGraph, DGNodeLab, DGLinkLab()
     , DGNodeType, nodeTypeIsProven, nodeTypeIsProvenConsistent, nodeTypeIsReference
@@ -130,7 +130,7 @@ import Common.GlobalAnnotations
 import Common.Id
 import Common.IRI
 import Common.LibName (LibName(..), getFilePath)
-import Common.Result (Result, resultToMaybe, Diagnosis)
+import Common.Result (Result(..), resultToMaybe, Diagnosis)
 import Driver.Options (HetcatsOpts(..), defaultHetcatsOpts)
 import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), DGNodeInfo(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType, isDGRef, dgn_libname)
 import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName, DGNodeType(..), DGEdgeType(..), DGEdgeTypeModInc(..), Scope(..), ThmTypes(..), FreeOrCofree(..), ConsStatus(..), getEdgeNum)

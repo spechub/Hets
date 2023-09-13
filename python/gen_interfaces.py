@@ -82,7 +82,7 @@ class PythonStub:
         self._generic_id = 0
         self._imports = []
         self._members_to_ignore = []
-        
+
         self._hs_module_name = hs_module_name
 
     def add_haskell_declaration(self, line: str) -> None:
@@ -206,7 +206,7 @@ class PythonStub:
         if not self._member_ok(class_name, "class"):
             return
 
-        if params is not None:
+        if params is not None and params != "":
             params = params.strip().split(" ")
 
             gen_params = [self._generic_var(p.strip()) for p in params]
@@ -295,6 +295,8 @@ class PythonStub:
         self._functions[fn_name] = RE_FUNCTION.sub(sub_fn, line)
 
     def _to_type(self, term: str) -> str:
+        assert term != ""
+                
         if parts := self._parse_tuple(term):
             if len(parts) == 1:
                 return self._to_type(parts[0])
@@ -358,225 +360,53 @@ def main():
             "imports": args.modules_to_import}
             for m in args.modulenames]
 
+    print("Generating stubs for modules: " +
+          ", ".join(c["name"] for c in config))
+
     with GHCI() as ghci:
-        for module in config:
-            ghci.command(f":l {module['name']}")
-            content = ghci.command(f":browse! {module['name']}")
-            text = content.replace("\n  ", " ")
-            lines = text.splitlines()
-            lines = [line.strip()
-                     for line in lines if not line.strip().startswith("--")]
+        for i, module in enumerate(config):
+            print(f"Module {module['name']}:")
+            print("  loading ...", end="")
+            try:
+                ghci.command(f":l {module['name']}")
+            except Exception as e:
+                print(" failed")
+                raise e
+            print(" done")
 
-            stub = PythonStub(module["name"])
-            stub.ignore_members(module.get("ignore", []))
-            for line in lines:
-                if line.strip() == "":
-                    continue
-                stub.add_haskell_declaration(line)
+            print("  generating stubs ...", end="")
+            try:
+                content = ghci.command(f":browse! {module['name']}")
 
-            for import_module in module.get("imports", []):
-                stub.add_import(import_module)
+                text = re.sub(r"\n\s+", " ", content, flags=re.MULTILINE)
+                lines = text.splitlines()
+                lines = [line.strip()
+                         for line in lines if not line.strip().startswith("--")]
 
-            filename = os.path.join(
-                args.output_directory, module['name'].split(".")[-1])
+                stub = PythonStub(module["name"])
+                stub.ignore_members(module.get("ignore", []))
+                for line in lines:
+                    if line.strip() == "":
+                        continue
+                    stub.add_haskell_declaration(line)
 
-            with open(f"{filename}.pyi", "w") as f:
-                f.write(stub.to_pyi())
+                for import_module in module.get("imports", []):
+                    stub.add_import(import_module)
 
-            with open(f"{filename}.py", "w") as f:
-                f.write(stub.to_py())
+                filename = os.path.join(
+                    args.output_directory, module['name'].split(".")[-1])
 
+                with open(f"{filename}.pyi", "w") as f:
+                    f.write(stub.to_pyi())
 
-a = """-- defined locally
-fstOf3 :: (a, b, c) -> a
-sndOf3 :: (a, b, c) -> b
-thd :: (a, b, c) -> c
-data PyTheory = ...
-data PyProver = ...
-data PyConsChecker = ...
-data PyComorphism = ...
-data PyProofTree = ...
-data PyGMorphism = ...
-data PyBasicProof = ...
-PyBasicProof :: BasicProof -> PyBasicProof
-PyBasicProofGuessed :: PyBasicProof
-PyBasicProofConjectured :: PyBasicProof
-PyBasicProofHandwritten :: PyBasicProof
-type PyTheorySentence =
-  SenAttr Sentence (ThmStatus (PyComorphism, PyBasicProof))
-type PyTheorySentenceByName = OMap.OMap String PyTheorySentence
-pyProofStatusOfPyBasicProof ::
-  PyBasicProof -> Maybe (ProofStatus PyProofTree)
-data PyProofOptions = ...
-PyProofOptions ::
-  Maybe PyProver
-  -> Maybe PyComorphism
-  -> Bool
-  -> [String]
-  -> [String]
-  -> Int
-  -> PyProofOptions
-proofOptsProver :: PyProofOptions -> Maybe PyProver
-proofOptsComorphism :: PyProofOptions -> Maybe PyComorphism
-proofOptsUseTheorems :: PyProofOptions -> Bool
-proofOptsGoalsToProve :: PyProofOptions -> [String]
-proofOptsAxiomsToInclude :: PyProofOptions -> [String]
-proofOptsTimeout :: PyProofOptions -> Int
-mkPyProofOptions ::
-  Maybe PyProver
-  -> Maybe PyComorphism
-  -> Bool
-  -> [String]
-  -> [String]
-  -> Int
-  -> PyProofOptions
-data PyConsCheckingOptions = ...
-PyConsCheckingOptions ::
-  Maybe PyConsChecker
-  -> Maybe PyComorphism -> Bool -> Int -> PyConsCheckingOptions
-consOptsConsChecker :: PyConsCheckingOptions -> Maybe PyConsChecker
-consOptsComorphism :: PyConsCheckingOptions -> Maybe PyComorphism
-consOptsIncludeTheorems :: PyConsCheckingOptions -> Bool
-consOptsTimeout :: PyConsCheckingOptions -> Int
-defaultProofOptions :: PyProofOptions
-defaultConsCheckingOptions :: PyConsCheckingOptions
-proverName :: PyProver -> String
-comorphismName :: PyComorphism -> String
-targetLogicName :: PyComorphism -> String
-targetLogicDescriptionName :: PyComorphism -> String
-sourceLogicName :: PyComorphism -> String
-sourceLogicDescriptionName :: PyComorphism -> String
-consCheckerName :: PyConsChecker -> String
-theoryOfNode :: DGNodeLab -> PyTheory
-sublogicOfPyTheory :: PyTheory -> String
-getTheoryForSelection ::
-  [String] -> [String] -> [String] -> PyTheory -> PyTheory
-getUsableProvers :: PyTheory -> IO [(PyProver, PyComorphism)]
-proveNode ::
-  HDT.TheoryPointer
-  -> PyProofOptions
-  -> IO (Result (PyTheory, [ProofStatus PyProofTree]))
-recordProofResult ::
-  HDT.TheoryPointer
-  -> (PyTheory, [ProofStatus PyProofTree]) -> LibEnv
-proveNodeAndRecord ::
-  HDT.TheoryPointer
-  -> PyProofOptions
-  -> IO (Result ((PyTheory, [ProofStatus PyProofTree]), LibEnv))
-translateTheory :: PyComorphism -> PyTheory -> Result PyTheory
-getAvailableComorphisms :: PyTheory -> [PyComorphism]
-getUsableConsistencyCheckers ::
-  PyTheory -> IO [(PyConsChecker, PyComorphism)]
-checkConsistency ::
-  HDT.TheoryPointer -> PyConsCheckingOptions -> IO ConsistencyStatus
-checkConsistencyAndRecord ::
-  HDT.TheoryPointer
-  -> PyConsCheckingOptions -> IO (ConsistencyStatus, LibEnv)
-getAllSentences :: PyTheory -> PyTheorySentenceByName
-getAllAxioms :: PyTheory -> PyTheorySentenceByName
-getAllGoals :: PyTheory -> PyTheorySentenceByName
-getProvenGoals :: PyTheory -> PyTheorySentenceByName
-getUnprovenGoals :: PyTheory -> PyTheorySentenceByName
-theorySentenceBestProof :: PyTheorySentence -> Maybe PyBasicProof
-prettySentence :: PyTheory -> Sentence -> String
-signatureOfTheory ::
-  PyTheory -> ExtSign HDT.SignatureJSON HDT.SymbolJSON
-logicNameOfTheory :: PyTheory -> String
-logicDescriptionOfTheory :: PyTheory -> String
-getDGNodeById :: DGraph -> Int -> Maybe DGNodeLab
-globalTheory :: DGNodeLab -> Maybe PyTheory
-gmorphismOfEdge :: DGLinkLab -> PyGMorphism
-comorphismOfGMorphism :: PyGMorphism -> PyComorphism
-signatureOfGMorphism ::
-  PyGMorphism -> ExtSign HDT.SignatureJSON HDT.SymbolJSON
-comorphismNameOfGMorphism :: PyGMorphism -> String
-comorphismDescriptionOfGMorphism :: PyGMorphism -> String
-domainOfGMorphism :: PyGMorphism -> HDT.GenericTransportType
-codomainOfGMorphism :: PyGMorphism -> HDT.GenericTransportType
-isGMorphismInclusion :: PyGMorphism -> Bool
-gMorphismToTransportType :: PyGMorphism -> HDT.GenericTransportType
--- imported via HC
-HC.automatic :: LibName -> LibEnv -> LibEnv
-HC.automaticHideTheoremShift :: LibName -> LibEnv -> LibEnv
-HC.compositionProveEdges :: LibName -> LibEnv -> LibEnv
-HC.computeColimit :: LibName -> LibEnv -> Result LibEnv
-HC.conservativity :: LibName -> LibEnv -> LibEnv
-HC.freeness :: LibName -> LibEnv -> Result LibEnv
-HC.globalDecomposition :: LibName -> LibEnv -> LibEnv
-HC.globalSubsume :: LibName -> LibEnv -> LibEnv
-HC.libFlatDUnions :: LibName -> LibEnv -> Result LibEnv
-HC.libFlatHeterogen :: LibName -> LibEnv -> Result LibEnv
-HC.libFlatHiding :: LibName -> LibEnv -> Result LibEnv
-HC.libFlatImports :: LibName -> LibEnv -> Result LibEnv
-HC.libFlatRenamings :: LibName -> LibEnv -> Result LibEnv
-HC.loadLibrary ::
-  FilePath
-  -> Driver.Options.HetcatsOpts -> IO (Result (LibName, LibEnv))
-HC.localDecomposition :: LibName -> LibEnv -> LibEnv
-HC.localInference :: LibName -> LibEnv -> LibEnv
-HC.normalForm :: LibName -> LibEnv -> Result LibEnv
-HC.qualifyLibEnv :: LibName -> LibEnv -> Result LibEnv
-HC.showTheory :: G_theory -> String
-HC.theoremHideShift :: LibName -> LibEnv -> Result LibEnv
-HC.triangleCons :: LibName -> LibEnv -> Result LibEnv
--- imported via HDT
-type HDT.SignatureJSON = HDT.GenericTransportType
-type HDT.SymbolJSON = HDT.GenericTransportType
-type HDT.TheoryPointer = (LibName, LibEnv, DGraph, LNode DGNodeLab)
--- imported via HI
-HI.getDevelopmentGraphNodeType ::
-  DGNodeLab -> Static.DgUtils.DGNodeType
-HI.getEdgesFromDevelopmentGraph :: DGraph -> [DGLinkLab]
-HI.getLEdgesFromDevelopmentGraph ::
-  DGraph -> [Data.Graph.Inductive.Graph.LEdge DGLinkLab]
-HI.theorySentenceContent :: SenAttr a (ThmStatus tStatus) -> a
-HI.theorySentenceGetTheoremStatus ::
-  SenAttr a (ThmStatus tStatus) -> [tStatus]
-HI.theorySentenceIsAxiom :: SenAttr a (ThmStatus tStatus) -> Bool
-HI.theorySentenceIsDefined :: SenAttr a (ThmStatus tStatus) -> Bool
-HI.theorySentencePriority ::
-  SenAttr a (ThmStatus tStatus) -> Maybe String
-HI.theorySentenceWasTheorem ::
-  SenAttr a (ThmStatus tStatus) -> Bool
--- imported via HI, HC
-HI.getGraphForLibrary :: LibName -> LibEnv -> DGraph
-HI.getLNodesFromDevelopmentGraph :: DGraph -> [LNode DGNodeLab]
-HI.getNodesFromDevelopmentGraph :: DGraph -> [DGNodeLab]
--- imported via HP
-HP.genericProveBatch ::
-  (Show sentence, Ord sentence, Ord proof_tree) =>
-  Bool
-  -> Int
-  -> [String]
-  -> Bool
-  -> Bool
-  -> (Int
-      -> Common.AS_Annotation.Named sentence
-      -> Maybe (Common.AS_Annotation.Named sentence)
-      -> (Interfaces.GenericATPState.ATPRetval,
-          Interfaces.GenericATPState.GenericConfig proof_tree)
-      -> IO Bool)
-  -> (pst -> Common.AS_Annotation.Named sentence -> pst)
-  -> Interfaces.GenericATPState.RunProver sentence proof_tree pst
-  -> String
-  -> String
-  -> Interfaces.GenericATPState.GenericState sentence proof_tree pst
-  -> Maybe (GHC.MVar.MVar (Result [ProofStatus proof_tree]))
-  -> IO [ProofStatus proof_tree]
-HP.recomputeNode :: HDT.TheoryPointer -> LibEnv
--- imported via HP, HC
-HP.checkConservativityNode ::
-  LNode DGNodeLab
-  -> LibEnv
-  -> LibName
-  -> IO (String, LibEnv, Static.DevGraph.ProofHistory)
--- imported via HetsAPI.DataTypes, HDT
-type Sentence = HDT.GenericTransportType
-type TheorySentence =
-  SenAttr Sentence (ThmStatus (AnyComorphism, BasicProof))
-type TheorySentenceByName = OMap.OMap String TheorySentence
+                with open(f"{filename}.py", "w") as f:
+                    f.write(stub.to_py())
 
-"""
+            except Exception as e:
+                print(" failed")
+                raise e
+            print(" done")
+
 
 if __name__ == "__main__":
     main()

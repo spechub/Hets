@@ -53,8 +53,7 @@ translated sentence of the source. -}
 data ConservativityChecker sign sentence morphism = ConservativityChecker
     { checkerId :: String
     , checkerUsable :: IO (Maybe String)
-    , checkConservativity
-        :: (sign, [Named sentence])
-        -> morphism
-        -> [Named sentence]
-        -> IO (Result (Conservativity, [sentence])) }
+    , checkConservativity :: (sign, [Named sentence]) -- source or initial signature and sentences
+        -> morphism                                   -- morphism between specs
+        -> [Named sentence]                           -- target sentences of extended spec
+        -> IO (Result (Conservativity, [sentence])) } -- conservativity with obligations of the extensions

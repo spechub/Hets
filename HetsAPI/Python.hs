@@ -11,6 +11,7 @@ module HetsAPI.Python (
     , PyProofOptions(..)
     , PyProofTree
     , PyConsChecker
+    , PyConservativityChecker
     , PyConsCheckingOptions(..)
     , PyGMorphism
     , PyBasicProof(..)
@@ -26,8 +27,11 @@ module HetsAPI.Python (
     , translateTheory
     , getAvailableComorphisms
     , getUsableConsistencyCheckers
+    , getUsableConservativityCheckers
     , checkConsistency
     , checkConsistencyAndRecord
+    , checkConservativityEdge
+    , checkConservativityEdgeAndRecord
     , proveNode
     , recordProofResult
     , proveNodeAndRecord
@@ -37,6 +41,8 @@ module HetsAPI.Python (
     , getProvenGoals
     , getUnprovenGoals
     , consCheckerName
+    , conservativityCheckerName
+    , conservativityCheckerUsable
     , comorphismName
     , proverName
     , prettySentence
@@ -64,8 +70,8 @@ module HetsAPI.Python (
     , theorySentenceBestProof
 
     -- Unchanged re-export from Hets.ProveCommands
-    , HP.checkConservativityNode
     , HP.recomputeNode
+    , HP.recordConservativityResult
 
     -- Unchanged re-export from Hets.Commands
     , HC.automatic
@@ -113,6 +119,7 @@ module HetsAPI.Python (
     , HDT.TheorySentence
     , HDT.TheorySentenceByName
     , HDT.TheoryPointer
+    , HDT.LinkPointer
     , HDT.SignatureJSON
     , HDT.SymbolJSON
 )
@@ -137,7 +144,7 @@ import Common.ResultT (ResultT (runResultT))
 import Data.Aeson(encode, object, (.=))
 import Data.Bifunctor (bimap)
 import Data.Functor
-import Data.Graph.Inductive (LNode, lab)
+import Data.Graph.Inductive (LNode, lab, LEdge)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -148,14 +155,15 @@ import Logic.Grothendieck (GMorphism(..))
 import Logic.Logic (sym_of, language_name, description, dom, cod, isInclusion, symmap_of)
 import Logic.Prover (ProofStatus(..), ThmStatus(..))
 
-import Static.DevGraph (DGNodeLab (dgn_theory), DGLinkLab(dgl_morphism), LibEnv, DGraph, dgBody)
+import Static.DevGraph (DGNodeLab (dgn_theory), DGLinkLab(dgl_morphism), LibEnv, DGraph, dgBody, ProofHistory)
 import qualified Static.DevGraph (DGNodeLab(globalTheory))
 import qualified Static.GTheory as GT
 import Static.GTheory (G_theory, BasicProof(..), sublogicOfTh)
 
 import qualified Proofs.AbstractState
-import Proofs.AbstractState (G_prover, ProofState, G_proof_tree(..), G_cons_checker)
+import Proofs.AbstractState (G_prover, ProofState, G_proof_tree(..), G_cons_checker, G_conservativity_checker, conservativityCheckerId)
 import Proofs.ConsistencyCheck (ConsistencyStatus)
+import Common.Consistency (Conservativity)
 
 
 fstOf3 :: (a,b,c) -> a
@@ -172,6 +180,7 @@ thd (_, _, x) = x;
 data PyTheory = PyTheory GT.G_theory
 data PyProver = PyProver G_prover
 data PyConsChecker = PyConsChecker G_cons_checker
+data PyConservativityChecker = PyConservativityChecker G_conservativity_checker
 data PyComorphism = PyComorphism AnyComorphism
 data PyProofTree = PyProofTree G_proof_tree
 
@@ -312,6 +321,12 @@ sourceLogicDescriptionName (PyComorphism (Comorphism cid)) = description $ sourc
 consCheckerName :: PyConsChecker -> String
 consCheckerName (PyConsChecker cc) = Proofs.AbstractState.getCcName cc
 
+conservativityCheckerName :: PyConservativityChecker -> String
+conservativityCheckerName (PyConservativityChecker cc) = conservativityCheckerId cc
+
+conservativityCheckerUsable :: PyConservativityChecker -> IO (Maybe String)
+conservativityCheckerUsable (PyConservativityChecker cc) = Proofs.AbstractState.conservativityCheckerUsable cc
+
 theoryOfNode :: DGNodeLab -> PyTheory
 theoryOfNode = PyTheory . dgn_theory
 
@@ -361,6 +376,17 @@ checkConsistency ptr = HP.checkConsistency ptr . toConsCheckingOptions
 
 checkConsistencyAndRecord :: HDT.TheoryPointer -> PyConsCheckingOptions -> IO (ConsistencyStatus, LibEnv)
 checkConsistencyAndRecord ptr = HP.checkConsistencyAndRecord ptr . toConsCheckingOptions
+
+getUsableConservativityCheckers :: LEdge DGLinkLab -> LibEnv -> LibName -> IO [PyConservativityChecker]
+getUsableConservativityCheckers edge env = fmap (fmap PyConservativityChecker) . HP.getUsableConservativityCheckers edge env
+
+checkConservativityEdge :: PyConservativityChecker -> HDT.LinkPointer
+  -> IO (Result (Conservativity, [String], [String]))
+checkConservativityEdge (PyConservativityChecker cc) linkPtr = HP.checkConservativityEdge linkPtr cc
+
+checkConservativityEdgeAndRecord :: PyConservativityChecker -> HDT.LinkPointer
+  -> IO (Result ((Conservativity, [String], [String]), LibEnv))
+checkConservativityEdgeAndRecord (PyConservativityChecker cc) linkPtr = HP.checkConservativityEdgeAndRecord linkPtr cc
 
 
 getAllSentences :: PyTheory -> PyTheorySentenceByName

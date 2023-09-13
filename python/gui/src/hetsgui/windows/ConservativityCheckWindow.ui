@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+    <requires lib="gtk+" version="3.24"/>
+
+    <object class="GtkListStore" id="_checker_model">
+        <columns>
+            <column type="gchararray"/>
+            <column type="gchararray"/>
+            <column type="gint"/>
+        </columns>
+    </object>
+    <template class="ConservativityCheckWindow" parent="GtkWindow">
+        <property name="can-focus">False</property>
+        <property name="default-width">500</property>
+        <property name="default-height">50</property>
+        <property name="border-width">10</property>
+        <child>
+            <object class="GtkGrid">
+                <property name="visible">True</property>
+                <property name="orientation">vertical</property>
+                <property name="row-spacing">4</property>
+                <property name="column-spacing">14</property>
+                <child>
+                    <object class="GtkLabel">
+                        <property name="label">&lt;b&gt;Status:&lt;/b&gt;</property>
+                        <property name="use-markup">True</property>
+                        <property name="halign">GTK_ALIGN_START</property>
+                    </object>
+                    <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">0</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkLabel" id="_lbl_status">
+                        <property name="use-markup">True</property>
+                        <property name="halign">GTK_ALIGN_FILL</property>
+                        <property name="hexpand">True</property>
+                    </object>
+                    <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">0</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkLabel" id="label">
+                        <property name="visible">True</property>
+                        <property name="label" translatable="yes">Conservativity checker:</property>
+                    </object>
+
+                    <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">1</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkComboBox" id="_combo_checker">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="hexpand">True</property>
+                        <property name="active">0</property>
+                        <property name="model">_checker_model</property>
+                        <signal name="changed" handler="update_comorphisms"/>
+                        <child>
+                            <object class="GtkCellRendererText" id="_tool_name_renderer">
+                                <property name="width-chars">-1</property>
+                                <property name="ellipsize">PANGO_ELLIPSIZE_END</property>
+                            </object>
+                            <attributes>
+                                <attribute name="text">1</attribute>
+                            </attributes>
+                        </child>
+                    </object>
+                    <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">1</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkLabel">
+                        <property name="label">Consistency check output:</property>
+                        <property name="halign">GTK_ALIGN_START</property>
+                    </object>
+                    <packing>
+                        <property name="left-attach">0</property>
+                        <property name="width">2</property>
+                        <property name="top-attach">2</property>
+                    </packing>
+                </child>
+                <child>
+                    <object class="GtkScrolledWindow">
+                        <property name="vexpand">True</property>
+                        <child>
+                            <object class="GtkLabel" id="_lbl_output">
+                                <property name="halign">GTK_ALIGN_CENTER</property>
+                                <property name="valign">GTK_ALIGN_START</property>
+                                <property name="label">&lt;i&gt;No output&lt;/i&gt;</property>
+                                <property name="use-markup">True</property>
+                                <property name="selectable">True</property>
+                            </object>
+                        </child>
+                        <style>
+                            <class name="cc-output"/>
+                        </style>
+                    </object>
+                    <packing>
+                        <property name="left-attach">0</property>
+                        <property name="width">2</property>
+                        <property name="top-attach">3</property>
+                    </packing>
+                </child>
+            </object>
+        </child>
+
+        <child type="titlebar">
+            <object class="GtkHeaderBar">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="show-close-button">True</property>
+                <property name="title" translatable="yes">Check conservativity</property>
+                <child>
+                    <object class="GtkButton" id="_btn_check">
+                        <property name="label" translatable="yes">Check</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                        <signal name="clicked" handler="on_check_clicked" swapped="no"/>
+                    </object>
+                </child>
+            </object>
+        </child>
+    </template>
+</interface>

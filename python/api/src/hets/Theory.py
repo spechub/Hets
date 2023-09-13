@@ -124,6 +124,9 @@ class Theory(HsHierarchyElement):
         comorphisms = getAvailableComorphisms(self._hs_theory)
         return [Comorphism(x) for x in comorphisms]
 
+    def sentence_by_name(self, name: str) -> Optional[Sentence]:
+        return next((s for s in self.sentences() if s.name() == name), None)
+
     def sentences(self) -> List[Sentence]:
         if self._sentences is None:
             sentences = getAllSentences(self._hs_theory)
