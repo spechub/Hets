@@ -380,13 +380,22 @@ checkConsistencyAndRecord ptr = HP.checkConsistencyAndRecord ptr . toConsCheckin
 getUsableConservativityCheckers :: LEdge DGLinkLab -> LibEnv -> LibName -> IO [PyConservativityChecker]
 getUsableConservativityCheckers edge env = fmap (fmap PyConservativityChecker) . HP.getUsableConservativityCheckers edge env
 
+
 checkConservativityEdge :: PyConservativityChecker -> HDT.LinkPointer
-  -> IO (Result (Conservativity, [String], [String]))
-checkConservativityEdge (PyConservativityChecker cc) linkPtr = HP.checkConservativityEdge linkPtr cc
+  -> IO (Result (Conservativity, [HDT.GenericTransportType], [HDT.GenericTransportType]))
+checkConservativityEdge (PyConservativityChecker cc) linkPtr = do
+    res <- HP.checkConservativityEdge linkPtr cc
+    return $ do
+        (consv, expl, obl) <- res
+        return (consv, encode <$> expl, encode <$> obl)
 
 checkConservativityEdgeAndRecord :: PyConservativityChecker -> HDT.LinkPointer
-  -> IO (Result ((Conservativity, [String], [String]), LibEnv))
-checkConservativityEdgeAndRecord (PyConservativityChecker cc) linkPtr = HP.checkConservativityEdgeAndRecord linkPtr cc
+  -> IO (Result ((Conservativity, [HDT.GenericTransportType], [HDT.GenericTransportType]), LibEnv))
+checkConservativityEdgeAndRecord (PyConservativityChecker cc) linkPtr = do
+    res <- HP.checkConservativityEdgeAndRecord linkPtr cc
+    return $ do
+        ((consv, expl, obl), env) <- res
+        return ((consv, encode <$> expl, encode <$> obl), env)
 
 
 getAllSentences :: PyTheory -> PyTheorySentenceByName

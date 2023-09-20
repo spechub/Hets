@@ -32,6 +32,7 @@ module HetsAPI.Internal (
     , linkStatus
     , Conservativity(..)
     , getNodeConsStatus
+    , getEdgeConsStatus
     , getConsOfStatus
     , isProvenConsStatusLink
     , showConsistencyStatus
@@ -132,7 +133,7 @@ import Common.IRI
 import Common.LibName (LibName(..), getFilePath)
 import Common.Result (Result(..), resultToMaybe, Diagnosis)
 import Driver.Options (HetcatsOpts(..), defaultHetcatsOpts)
-import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), DGNodeInfo(..), getNodeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType, isDGRef, dgn_libname)
+import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), DGNodeInfo(..), getNodeConsStatus, getEdgeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType, isDGRef, dgn_libname)
 import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName, DGNodeType(..), DGEdgeType(..), DGEdgeTypeModInc(..), Scope(..), ThmTypes(..), FreeOrCofree(..), ConsStatus(..), getEdgeNum)
 import Logic.Prover (ProofStatus(..), GoalStatus(..), TacticScript(..))
 import Proofs.AbstractState (ProofState)
