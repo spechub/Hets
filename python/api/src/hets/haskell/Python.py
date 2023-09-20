@@ -103,6 +103,7 @@ from hs.HetsAPI.Python import (
     getGraphForLibrary,
     getLEdgesFromDevelopmentGraph,
     getLNodesFromDevelopmentGraph,
+    getLibraryDependencies,
     getNodesFromDevelopmentGraph,
     globalDecomposition,
     globalSubsume,

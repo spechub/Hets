@@ -27,6 +27,7 @@ module HetsAPI.InfoCommands (
    , theorySentencePriority
    , theorySentenceContent
    , theorySentenceBestProof
+   , getLibraryDependencies
 ) where
 
 import Data.Aeson (encode, eitherDecode, Result(..), ToJSON)
@@ -36,6 +37,7 @@ import Data.Graph.Inductive (LNode, LEdge)
 import Common.AS_Annotation (SenAttr (..))
 import Common.DocUtils (pretty)
 import Common.LibName (LibName)
+import qualified Common.Lib.Rel as Rel
 import qualified Common.OrderedMap as OMap
 
 import Logic.Logic(Logic)
@@ -44,7 +46,7 @@ import Logic.Comorphism(AnyComorphism(..))
 
 import HetsAPI.DataTypes (TheoryPointer, TheorySentenceByName, TheorySentence, Sentence)
 
-import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, labEdgesDG, DGraph, DGNodeLab, DGLinkLab, getDGNodeName, getRealDGNodeType)
+import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, labEdgesDG, DGraph, DGNodeLab, DGLinkLab, getDGNodeName, getRealDGNodeType, getLibDepRel)
 import Static.DgUtils (DGNodeType)
 import Static.GTheory (G_theory (..), isProvenSenStatus, BasicProof(..))
 
@@ -135,3 +137,6 @@ prettySentenceOfTheory (G_theory lid _ _ _ _ _) = prettySentence lid
 getDevelopmentGraphNodeType :: DGNodeLab -> DGNodeType
 getDevelopmentGraphNodeType = getRealDGNodeType
 
+getLibraryDependencies :: LibEnv -> [(LibName, LibName)]
+getLibraryDependencies =
+  Rel.toList . Rel.intransKernel . getLibDepRel

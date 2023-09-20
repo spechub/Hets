@@ -29,9 +29,10 @@ module Interfaces.Utils
          , recordConservativityResult
          , getUsableConservativityCheckers
          , updateNodeProof
+         , AnySentence(..)
          ) where
 
-import Interfaces.Command
+import Interfaces.Command ( Command(CommentCmd) )
 import Interfaces.DataTypes
 import Interfaces.GenericATPState
 import qualified Interfaces.Command as IC

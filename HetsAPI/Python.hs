@@ -15,7 +15,7 @@ module HetsAPI.Python (
     , PyConsCheckingOptions(..)
     , PyGMorphism
     , PyBasicProof(..)
-    , PyTheorySentence(..)
+    , PyTheorySentence
     , PyTheorySentenceByName
     , mkPyProofOptions
     -- Wrapped with Py*
@@ -108,6 +108,7 @@ module HetsAPI.Python (
     , HI.theorySentenceGetTheoremStatus
     , HI.theorySentencePriority
     , HI.theorySentenceContent
+    , HI.getLibraryDependencies
 
     , fstOf3
     , sndOf3
@@ -131,9 +132,10 @@ import qualified HetsAPI.Commands as HC
 import qualified HetsAPI.ProveCommands as HP
 import qualified HetsAPI.InfoCommands as HI
 import qualified HetsAPI.DataTypes as HDT
-import HetsAPI.DataTypes (TheorySentenceByName, TheorySentence, Sentence)
+import HetsAPI.DataTypes (TheorySentence, Sentence)
 
 import Common.AS_Annotation (SenAttr(..))
+import Common.Consistency (Conservativity)
 import Common.DocUtils (pretty)
 import Common.ExtSign (ExtSign(..))
 import Common.LibName (LibName)
@@ -144,26 +146,24 @@ import Common.ResultT (ResultT (runResultT))
 import Data.Aeson(encode, object, (.=))
 import Data.Bifunctor (bimap)
 import Data.Functor
-import Data.Graph.Inductive (LNode, lab, LEdge)
-import qualified Data.Map as Map
+import Data.Graph.Inductive (lab, LEdge)
 import qualified Data.Set as Set
 
-import Common.XPath (BasicType(String))
+import Interfaces.Utils (AnySentence(..))
 
 import Logic.Comorphism (AnyComorphism(..), targetLogic, sourceLogic)
 import Logic.Grothendieck (GMorphism(..))
-import Logic.Logic (sym_of, language_name, description, dom, cod, isInclusion, symmap_of)
+import Logic.Logic (sym_of, language_name, description, dom, cod, isInclusion)
 import Logic.Prover (ProofStatus(..), ThmStatus(..))
 
-import Static.DevGraph (DGNodeLab (dgn_theory), DGLinkLab(dgl_morphism), LibEnv, DGraph, dgBody, ProofHistory)
+import Static.DevGraph (DGNodeLab (dgn_theory), DGLinkLab(dgl_morphism), LibEnv, DGraph, dgBody)
 import qualified Static.DevGraph (DGNodeLab(globalTheory))
 import qualified Static.GTheory as GT
-import Static.GTheory (G_theory, BasicProof(..), sublogicOfTh)
+import Static.GTheory (BasicProof(..), sublogicOfTh)
 
 import qualified Proofs.AbstractState
-import Proofs.AbstractState (G_prover, ProofState, G_proof_tree(..), G_cons_checker, G_conservativity_checker, conservativityCheckerId)
+import Proofs.AbstractState (G_prover, G_proof_tree(..), G_cons_checker, G_conservativity_checker, conservativityCheckerId)
 import Proofs.ConsistencyCheck (ConsistencyStatus)
-import Common.Consistency (Conservativity)
 
 
 fstOf3 :: (a,b,c) -> a
@@ -381,13 +381,16 @@ getUsableConservativityCheckers :: LEdge DGLinkLab -> LibEnv -> LibName -> IO [P
 getUsableConservativityCheckers edge env = fmap (fmap PyConservativityChecker) . HP.getUsableConservativityCheckers edge env
 
 
+encodeAnySentence :: AnySentence -> HDT.GenericTransportType
+encodeAnySentence (AnySentence _ sen ) = encode sen
+
 checkConservativityEdge :: PyConservativityChecker -> HDT.LinkPointer
   -> IO (Result (Conservativity, [HDT.GenericTransportType], [HDT.GenericTransportType]))
 checkConservativityEdge (PyConservativityChecker cc) linkPtr = do
     res <- HP.checkConservativityEdge linkPtr cc
     return $ do
         (consv, expl, obl) <- res
-        return (consv, encode <$> expl, encode <$> obl)
+        return (consv, encodeAnySentence <$> expl, encodeAnySentence <$> obl)
 
 checkConservativityEdgeAndRecord :: PyConservativityChecker -> HDT.LinkPointer
   -> IO (Result ((Conservativity, [HDT.GenericTransportType], [HDT.GenericTransportType]), LibEnv))
@@ -395,7 +398,7 @@ checkConservativityEdgeAndRecord (PyConservativityChecker cc) linkPtr = do
     res <- HP.checkConservativityEdgeAndRecord linkPtr cc
     return $ do
         ((consv, expl, obl), env) <- res
-        return ((consv, encode <$> expl, encode <$> obl), env)
+        return ((consv, encodeAnySentence <$> expl, encodeAnySentence <$> obl), env)
 
 
 getAllSentences :: PyTheory -> PyTheorySentenceByName

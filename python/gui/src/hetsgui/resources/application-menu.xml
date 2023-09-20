@@ -12,28 +12,37 @@
         </submenu>
         <submenu>
             <attribute name="label" translatable="yes">View</attribute>
-            <item>
-                <attribute name="label" translatable="yes">Show internal names</attribute>
-                <attribute name="action">win.toggle_show_names</attribute>
-            </item>
-            <item>
-                <attribute name="label" translatable="yes">Show newly added proven edges</attribute>
-                <attribute name="action">win.toggle_show_edges</attribute>
-            </item>
-            <submenu>
-                <attribute name="label" translatable="yes">Graph rendering</attribute>
+            <section>
+                <item>
+                    <attribute name="label" translatable="yes">Library Graph</attribute>
+                    <attribute name="action">win.open_library_window</attribute>
+                </item>
 
+            </section>
+            <section>
                 <item>
-                    <attribute name="label" translatable="yes">Vertical</attribute>
-                    <attribute name="target">vertical</attribute>
-                    <attribute name="action">win.change_graph_layout</attribute>
+                    <attribute name="label" translatable="yes">Show internal names</attribute>
+                    <attribute name="action">win.toggle_show_names</attribute>
                 </item>
                 <item>
-                    <attribute name="label" translatable="yes">Horizontal</attribute>
-                    <attribute name="target">horizontal</attribute>
-                    <attribute name="action">win.change_graph_layout</attribute>
+                    <attribute name="label" translatable="yes">Show newly added proven edges</attribute>
+                    <attribute name="action">win.toggle_show_edges</attribute>
                 </item>
-            </submenu>
+                <submenu>
+                    <attribute name="label" translatable="yes">Graph rendering</attribute>
+
+                    <item>
+                        <attribute name="label" translatable="yes">Vertical</attribute>
+                        <attribute name="target">vertical</attribute>
+                        <attribute name="action">win.change_graph_layout</attribute>
+                    </item>
+                    <item>
+                        <attribute name="label" translatable="yes">Horizontal</attribute>
+                        <attribute name="target">horizontal</attribute>
+                        <attribute name="action">win.change_graph_layout</attribute>
+                    </item>
+                </submenu>
+            </section>
         </submenu>
         <submenu>
             <attribute name="label" translatable="yes">Proofs</attribute>

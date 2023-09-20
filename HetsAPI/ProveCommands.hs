@@ -49,7 +49,7 @@ import Common.ResultT (ResultT (..), liftR)
 
 import Comorphisms.LogicGraph (logicGraph)
 
-import qualified Interfaces.Utils (checkConservativityNode, getUsableConservativityCheckers, checkConservativityEdgeWith, recordConservativityResult)
+import qualified Interfaces.Utils (checkConservativityNode, getUsableConservativityCheckers, checkConservativityEdgeWith, recordConservativityResult, AnySentence)
 
 import Logic.Comorphism (AnyComorphism)
 import Logic.Grothendieck (findComorphismPaths)
@@ -102,7 +102,7 @@ defaultConsCheckingOptions = ConsCheckingOptions {
 type ProofResult = (G_theory -- The new theory
     , [ProofStatus G_proof_tree]) -- ProofStatus of each goal
 
-type ConservativityResult = (Conservativity, [String], [String])
+type ConservativityResult = (Conservativity, [Interfaces.Utils.AnySentence], [Interfaces.Utils.AnySentence])
 
 
 getTheoryForSelection :: [String] -> [String] -> [String] -> G_theory -> G_theory

@@ -2,42 +2,14 @@ import logging
 import threading
 from typing import Optional, Tuple
 
-import xdot.ui.elements
 from gi.repository import Gtk, Gio, GLib, GObject
 from graphviz import Digraph
-from xdot import DotWidget
 
+from ..formatting.colors import COLOR_MAP
 from ..formatting.colors import color_to_hex
 from hets import DevelopmentGraph, DevGraphNode, DevGraphEdge, TheoremDevGraphEdge, EdgeKind, ConsistencyKind
 from ..utils import get_variant
 from .ExtendedDotWidget import ExtendedDotWidget
-
-# KEY: (colorname, variant, light)
-COLOR_MAP = {
-    ("black", False, False): "gray0"
-    , ("black", False, True): "gray30"
-    , ("blue", False, False): "RoyalBlue3"
-    , ("blue", False, True): "RoyalBlue1"
-    , ("blue", True, False): "SteelBlue3"
-    , ("blue", True, True): "SteelBlue1"
-    , ("coral", False, False): "coral3"
-    , ("coral", False, True): "coral1"
-    , ("coral", True, False): "LightSalmon2"
-    , ("coral", True, True): "LightSalmon"
-    , ("green", False, False): "MediumSeaGreen"
-    , ("green", False, True): "PaleGreen3"
-    , ("green", True, False): "limegreen"
-    , ("green", True, True): "LightGreen"
-    , ("purple", False, False): "purple2"
-    , ("yellow", False, False): "gold"
-    , ("yellow", False, True): "yellow"
-    , ("yellow", True, False): "LightGoldenrod3"
-    , ("yellow", True, True): "LightGoldenrod"
-    , ("fuchsia", False, False): "fuchsia"
-    , ("fuchsia", False, True): "fuchsia"
-    , ("fuchsia", True, False): "fuchsia"
-    , ("fuchsia", True, True): "fuchsia"
-}
 
 
 def node_shape(node: DevGraphNode) -> str:
@@ -175,6 +147,12 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         settings.connect("notify::gtk-theme-name", lambda w, p: self.render())
         settings.connect("notify::gtk-application-prefer-dark-theme", lambda w, p: self.render())
 
+    def do_node_right_click(self, node: str, event):
+        self._on_node_clicked(node, event)
+
+    def do_edge_right_click(self, src: str, dest: str, event):
+        self._on_edge_clicked(src, dest, event)
+
     def load_graph(self, graph: DevelopmentGraph):
         self._logger.debug("Loading graph")
         self.development_graph = graph
@@ -203,7 +181,11 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         self.render()
 
     def _render(self, keep_zoom, color) -> None:
+        if not self.development_graph:
+            return
+
         self._logger.debug("Render graph; keep zoom: %s, direction: %s", keep_zoom, self.graph_direction)
+
         GLib.idle_add(lambda: self.emit("render-start"))
         g = Digraph("G")
 
@@ -230,11 +212,7 @@ class GraphvizGraphWidget(ExtendedDotWidget):
                    style=edge_style(edge),
                    color=edge_color(edge),
                    label=edge_label(edge),
-                   fontcolor="grey",
-                   taillabel=edge_label(edge),
-                   labeldistance="1",
-                   labelangle="0",
-                   labelfontcolor="grey")
+                   fontcolor="grey")
 
         zoom_ration, x, y = self.zoom_ratio, self.x, self.y
         dot_code = g.source
@@ -265,9 +243,10 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         menu = Gio.Menu()
 
         node = self.development_graph.node_by_id(int(node_id))
-        if node is not None:
+        if node is None:
             self._logger.warning(
                 f"Trying to open a menu for node {node_id} but the node was not found in the development graph")
+            return menu
 
         menu_item_prove = Gio.MenuItem()
         menu_item_prove.set_label("Prove")
@@ -282,7 +261,8 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         if node.is_reference_node():
             menu_item_open_ref = Gio.MenuItem()
             menu_item_open_ref.set_label("Open " + node.name())
-            menu_item_open_ref.set_action_and_target_value("win.open_win_for_lib", GLib.Variant.new_int32(node.id()))
+            menu_item_open_ref.set_action_and_target_value("win.open_win_for_lib_by_node",
+                                                           GLib.Variant.new_int32(node.id()))
             menu.append_item(menu_item_open_ref)
         else:
             menu_item_consistency = Gio.MenuItem()
@@ -301,10 +281,6 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         menu_item_info.set_action_and_target_value("win.edge.show_info", get_variant((src_id, dst_id)))
         menu.append_item(menu_item_info)
 
-        edge = [e for e in self.development_graph.edges() if
-                str(e.origin()) == src_id and str(e.target()) == dst_id][0]
-
-        # if isinstance(edge, TheoremDevGraphEdge):
         menu_item_consistency = Gio.MenuItem()
         menu_item_consistency.set_label("Check conservativity")
         menu_item_consistency.set_action_and_target_value("win.edge.check_conservativity",
@@ -313,34 +289,19 @@ class GraphvizGraphWidget(ExtendedDotWidget):
 
         return Gtk.Menu.new_from_model(menu)
 
-    def on_click(self, element, event):
-        if element is None:
-            jump = self.get_jump(event.x, event.y)
-            element = jump.item if jump is not None else None
+    def _on_node_clicked(self, node_id: str, event):
+        menu = self._menu_for_node(node_id)
+        menu.attach_to_widget(self)
+        menu.show_all()
+        menu.popup(None, None, None, None, event.button, event.time)
 
-        if element is None:
-            return True
+        print(event)
 
-        if event.button == 3:  # on right click
-            self._logger.debug("Right click on %s", element)
-            menu = None
-            if isinstance(element, xdot.ui.elements.Node):
-                node_id = element.id.decode("utf-8")
-
-                menu = self._menu_for_node(node_id)
-            elif isinstance(element, xdot.ui.elements.Edge):
-                src_id, dst_id = element.src.id.decode("utf-8"), element.dst.id.decode("utf-8")
-
-                menu = self._menu_for_edge(src_id, dst_id)
-
-            if menu:
-                menu.attach_to_widget(self)
-                # menu.add(menuItem2)
-                menu.show_all()
-                menu.popup(None, None, None, None, event.button, event.time)
-
-        return True
-        # return super().on_click(element, event)
+    def _on_edge_clicked(self, src_id: str, dst_id: str, event):
+        menu = self._menu_for_edge(src_id, dst_id)
+        menu.attach_to_widget(self)
+        menu.show_all()
+        menu.popup(None, None, None, None, event.button, event.time)
 
     def on_area_motion_notify(self, area, event):
         return super().on_area_motion_notify(area, event)

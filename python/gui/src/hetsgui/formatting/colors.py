@@ -49,3 +49,31 @@ def color_to_hex(color: Gdk.RGBA) -> str:
     green = int(color.green * 255)
     blue = int(color.blue * 255)
     return f"#{red:02x}{green:02x}{blue:02x}"
+
+
+# KEY: (colorname, variant, light)
+COLOR_MAP = {
+    ("black", False, False): "gray0"
+    , ("black", False, True): "gray30"
+    , ("blue", False, False): "RoyalBlue3"
+    , ("blue", False, True): "RoyalBlue1"
+    , ("blue", True, False): "SteelBlue3"
+    , ("blue", True, True): "SteelBlue1"
+    , ("coral", False, False): "coral3"
+    , ("coral", False, True): "coral1"
+    , ("coral", True, False): "LightSalmon2"
+    , ("coral", True, True): "LightSalmon"
+    , ("green", False, False): "MediumSeaGreen"
+    , ("green", False, True): "PaleGreen3"
+    , ("green", True, False): "limegreen"
+    , ("green", True, True): "LightGreen"
+    , ("purple", False, False): "purple2"
+    , ("yellow", False, False): "gold"
+    , ("yellow", False, True): "yellow"
+    , ("yellow", True, False): "LightGoldenrod3"
+    , ("yellow", True, True): "LightGoldenrod"
+    , ("fuchsia", False, False): "fuchsia"
+    , ("fuchsia", False, True): "fuchsia"
+    , ("fuchsia", True, False): "fuchsia"
+    , ("fuchsia", True, True): "fuchsia"
+}

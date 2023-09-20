@@ -35,7 +35,7 @@ class HetsApplication(Gtk.Application):
         self.add_main_option("log", ord('l'), GLib.OptionFlags.NONE, GLib.OptionArg.STRING, "Log level", "<debug|info|warning|error>")
         self.connect("handle-local-options", self.on_handle_local_options)
 
-        action = Gio.SimpleAction.new("app.open_win_for_lib", GLib.VariantType("s"))
+        action = Gio.SimpleAction.new("app.open_win_for_lib_by_node", GLib.VariantType("s"))
         self.add_action(action)
 
     def on_handle_local_options(self, application, options: GLib.VariantDict):

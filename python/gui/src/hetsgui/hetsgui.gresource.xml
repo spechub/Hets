@@ -7,6 +7,7 @@
     <file>windows/ConservativityCheckWindow.css</file>
     <file preprocess="xml-stripblanks">windows/ConsistencyCheckWindow.ui</file>
     <file>windows/ConsistencyCheckWindow.css</file>
+    <file preprocess="xml-stripblanks">windows/LibraryWindow.ui</file>
     <file preprocess="xml-stripblanks">windows/MainWindow.ui</file>
     <file>windows/MainWindow.css</file>
     <file preprocess="xml-stripblanks">windows/StartUpWindow.ui</file>
@@ -19,5 +20,6 @@
     <file preprocess="xml-stripblanks">widgets/EditableListView.ui</file>
     <file preprocess="xml-stripblanks">widgets/GridWithToolComorphismSelector.ui</file>
     <file preprocess="xml-stripblanks">resources/application-menu.xml</file>
+
   </gresource>
 </gresources>

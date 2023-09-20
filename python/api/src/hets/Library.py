@@ -17,7 +17,7 @@ from .haskell import loadLibrary as loadHsLibrary, fst, snd, getGraphForLibrary,
     computeColimit as computeColimitHs, normalForm as normalFormHs, triangleCons as triangleConsHs, \
     freeness as freenessHs, libFlatImports as libFlatImportsHs, libFlatDUnions as libFlatDUnionsHs, \
     libFlatRenamings as libFlatRenamingsHs, libFlatHiding as libFlatHidingHs, libFlatHeterogen as libFlatHeterogenHs, \
-    qualifyLibEnv as qualifyLibEnvHs, LibName as HsLibName
+    qualifyLibEnv as qualifyLibEnvHs, getLibraryDependencies
 from .result import result_or_raise
 from .LibName import LibName
 
@@ -64,9 +64,14 @@ class Library(HsHierarchyElement):
         return self._dgraph
 
     def environment(self) -> List[Tuple[LibName, DevelopmentGraph]]:
-        hs_dict: List[Tuple[Any, Any]] = self._env.toList()
+        hs_dict: List[Tuple[Any, Any]] = [(fst(x), snd(x)) for x in self._env.toList()]
 
-        return [(LibName(n), DevelopmentGraph(g, self)) for n,g in hs_dict]
+        return [(LibName(n), DevelopmentGraph(g, self)) for n, g in hs_dict]
+
+    def dependencies(self) -> List[Tuple[LibName, LibName]]:
+        hs_dep = getLibraryDependencies(self._env)
+
+        return [(LibName(fst(x)), LibName(snd(x))) for x in hs_dep]
 
     def automatic(self):
         new_env = automaticHs(self._name, self._env)

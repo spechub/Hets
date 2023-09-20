@@ -8,7 +8,7 @@ from typing import List, Callable, Any, Optional
 
 from gi.repository import GLib, Gtk, Gio
 
-from hets import Library, ReferenceDevGraphNode
+from hets import Library, ReferenceDevGraphNode, LibName
 from ..GtkSmartTemplate import GtkSmartTemplate
 from ..utils import get_variant
 from ..widgets.EdgeInfoDialog import EdgeInfoDialog
@@ -19,6 +19,7 @@ from ..windows.LibrarySettingsWindow import LibrarySettingsWindow
 from ..windows.ProveWindow import ProveWindow
 from ..windows.ConsistencyCheckWindow import ConsistencyCheckWindow
 from ..windows.ConservativityCheckWindow import ConservativityCheckWindow
+from ..windows.LibraryWindow import LibraryWindow
 
 T = typing.TypeVar("T")
 
@@ -95,7 +96,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_actions.append(self._action("proofs.lib_flat_heterogen", self.on_lib_flat_heterogen))
         self._library_actions.append(self._action("proofs.qualify_lib_env", self.on_qualify_lib_env))
 
-        self._action("open_win_for_lib", self._on_open_win_for_lib, "i")
+        self._library_actions.append(self._action("open_win_for_lib_by_node", self._on_open_win_for_lib_by_node, "i"))
+        self._library_actions.append(self._action("open_win_for_lib", self._on_open_win_for_lib, "s", self.get_application()))
 
         self._action("open_library_settings", self.on_open_library_settings)
 
@@ -106,10 +108,15 @@ class MainWindow(Gtk.ApplicationWindow):
             action.set_enabled(enabled)
 
     def _action(self, name: str, cb: Callable[[Gio.SimpleAction, T], Any],
-                param_type_str: Optional[str] = None) -> Gio.SimpleAction:
+                param_type_str: Optional[str] = None, target: Optional[Gio.ActionMap] = None) -> Gio.SimpleAction:
         action = Gio.SimpleAction.new(name, GLib.VariantType(param_type_str) if param_type_str else None)
+        print(f"name: {name}, action: {action.__repr__()}")
         action.connect("activate", cb)
-        self.add_action(action)
+
+        if target is None:
+            self.add_action(action)
+        else:
+            target.add_action(action)
         return action
 
     def _action_toggle(self, name: str, cb: Callable[[Gio.SimpleAction, GLib.Variant], Any],
@@ -163,7 +170,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def _on_open_library_window(self, action: Gio.SimpleAction, parameter: str):
         if self._loaded_library:
-            window = LibraryWindow()
+            window = LibraryWindow(self._loaded_library, application=self.get_application())
+            window.show_all()
+            window.present()
 
     def _on_menu_open_file(self, action: Gio.SimpleAction, parameter: str):
         dialog = Gtk.FileChooserDialog(
@@ -373,7 +382,19 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_settings_window.close()
         self._library_settings_window = None
 
-    def _on_open_win_for_lib(self, action: Gio.SimpleAction, parameter: GLib.Variant):
+    def _open_win_for_lib(self, lib_name: LibName):
+        if self._loaded_library is None:
+            return
+
+        library = self._loaded_library.referenced_library(lib_name)
+
+        window = MainWindow(application=self.get_application())
+        window.use_library(library)
+
+        window.show_all()
+        window.present()
+
+    def _on_open_win_for_lib_by_node(self, action: Gio.SimpleAction, parameter: GLib.Variant):
         if self._loaded_library is None:
             return
 
@@ -391,14 +412,8 @@ class MainWindow(Gtk.ApplicationWindow):
             dialog.destroy()
 
         if isinstance(node, ReferenceDevGraphNode):
-            name = node.referenced_libname()
-            library = self._loaded_library.referenced_library(name)
-
-            window = MainWindow(application=self.get_application())
-            window.use_library(library)
-
-            window.show_all()
-            window.present()
+            lib_name = node.referenced_libname()
+            self._open_win_for_lib(lib_name)
 
         else:
             self._logger.error(
@@ -410,3 +425,24 @@ class MainWindow(Gtk.ApplicationWindow):
                 f"The node of the referenced library is not a reference node. Please contact the developers.")
             dialog.run()
             dialog.destroy()
+
+    def _on_open_win_for_lib(self, action: Gio.SimpleAction, parameter: GLib.Variant):
+        if self._loaded_library is None:
+            return
+
+        lib_id = parameter.get_string()
+        lib_name = next((n for n, _ in self._loaded_library.environment() if str(n) == lib_id), None)
+
+        if lib_name is None:
+            self._logger.error(
+                f"Attempted to load referenced library {lib_id} but the library could not be found in the environment.")
+
+            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR,
+                                       buttons=Gtk.ButtonsType.CLOSE, text=f"Failed to referenced library!")
+            dialog.format_secondary_text(
+                f"The referenced library was not found in the environment. Please contact the developers.")
+            dialog.run()
+            dialog.destroy()
+
+        else:
+            self._open_win_for_lib(lib_name)
