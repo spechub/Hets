@@ -7,7 +7,7 @@
             <item>
                 <attribute name="label" translatable="yes">Open</attribute>
                 <attribute name="action">win.open_file</attribute>
-                <attribute name="accel">&lt;Ctrl&gt;O</attribute>
+                <attribute name="accel">&lt;Ctrl&gt;o</attribute>
             </item>
         </submenu>
         <submenu>
@@ -20,6 +20,20 @@
                 <attribute name="label" translatable="yes">Show newly added proven edges</attribute>
                 <attribute name="action">win.toggle_show_edges</attribute>
             </item>
+            <submenu>
+                <attribute name="label" translatable="yes">Graph rendering</attribute>
+
+                <item>
+                    <attribute name="label" translatable="yes">Vertical</attribute>
+                    <attribute name="target">vertical</attribute>
+                    <attribute name="action">win.change_graph_layout</attribute>
+                </item>
+                <item>
+                    <attribute name="label" translatable="yes">Horizontal</attribute>
+                    <attribute name="target">horizontal</attribute>
+                    <attribute name="action">win.change_graph_layout</attribute>
+                </item>
+            </submenu>
         </submenu>
         <submenu>
             <attribute name="label" translatable="yes">Proofs</attribute>

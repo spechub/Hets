@@ -8,7 +8,7 @@ from graphviz import Digraph
 from xdot import DotWidget
 
 from ..formatting.colors import color_to_hex
-from hets import DevelopmentGraph, DevGraphNode, DevGraphEdge, TheoremDevGraphEdge, EdgeKind
+from hets import DevelopmentGraph, DevGraphNode, DevGraphEdge, TheoremDevGraphEdge, EdgeKind, ConsistencyKind
 from ..utils import get_variant
 from .ExtendedDotWidget import ExtendedDotWidget
 
@@ -112,6 +112,19 @@ def edge_color(edge: DevGraphEdge) -> str:
         return f"{final_color}:invis:{final_color}"
 
 
+def edge_label(edge: DevGraphEdge) -> str:
+    status = edge.conservativity_status()
+    cons_required = status.required()
+    cons_proven = status.proven()
+    if cons_required == cons_proven == ConsistencyKind.NONE or cons_required == ConsistencyKind.NONE and not status.is_proven_link():
+        return ""
+
+    if status.is_proven_link():
+        return cons_proven.short_name()
+    else:
+        return cons_required.short_name() + "?"
+
+
 def edge_style(edge: DevGraphEdge):
     # Note: Double lines are created with a color list. See edge_color
     if isinstance(edge, TheoremDevGraphEdge) and edge.kind() == EdgeKind.LOCAL:
@@ -139,11 +152,22 @@ class GraphvizGraphWidget(ExtendedDotWidget):
     _show_internal_node_names: bool = False
     _show_newly_added_proven_edges: bool = False
 
+    def set_graph_direction(self, value: str):
+        self._render_graph_vertical = value
+        if self.graph:
+            self.render(False)
+
+    def get_graph_direction(self) -> str:
+        return self._render_graph_vertical
+
+    graph_direction = property(fset=set_graph_direction, fget=get_graph_direction)
+
     def __init__(self):
         super().__init__()
         self._render_thread = None
         self.g = None
         self.development_graph = None
+        self.graph_direction = "vertical"
 
         self._dot_code = None
 
@@ -179,12 +203,14 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         self.render()
 
     def _render(self, keep_zoom, color) -> None:
-        self._logger.debug("Render graph; keep zoom: %s", keep_zoom)
+        self._logger.debug("Render graph; keep zoom: %s, direction: %s", keep_zoom, self.graph_direction)
         GLib.idle_add(lambda: self.emit("render-start"))
         g = Digraph("G")
 
         if color:
             g.graph_attr["bgcolor"] = color
+
+        g.graph_attr["rankdir"] = "LR" if self.graph_direction == "horizontal" else "TB"
 
         for node in self.development_graph.nodes():
             g.node(str(node.id()),
@@ -203,7 +229,12 @@ class GraphvizGraphWidget(ExtendedDotWidget):
             g.edge(str(edge.origin()), str(edge.target()),
                    style=edge_style(edge),
                    color=edge_color(edge),
-                   label=edge.name())
+                   label=edge_label(edge),
+                   fontcolor="grey",
+                   taillabel=edge_label(edge),
+                   labeldistance="1",
+                   labelangle="0",
+                   labelfontcolor="grey")
 
         zoom_ration, x, y = self.zoom_ratio, self.x, self.y
         dot_code = g.source
@@ -235,7 +266,8 @@ class GraphvizGraphWidget(ExtendedDotWidget):
 
         node = self.development_graph.node_by_id(int(node_id))
         if node is not None:
-            self._logger.warning(f"Trying to open a menu for node {node_id} but the node was not found in the development graph")
+            self._logger.warning(
+                f"Trying to open a menu for node {node_id} but the node was not found in the development graph")
 
         menu_item_prove = Gio.MenuItem()
         menu_item_prove.set_label("Prove")
@@ -269,9 +301,14 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         menu_item_info.set_action_and_target_value("win.edge.show_info", get_variant((src_id, dst_id)))
         menu.append_item(menu_item_info)
 
+        edge = [e for e in self.development_graph.edges() if
+                str(e.origin()) == src_id and str(e.target()) == dst_id][0]
+
+        # if isinstance(edge, TheoremDevGraphEdge):
         menu_item_consistency = Gio.MenuItem()
         menu_item_consistency.set_label("Check conservativity")
-        menu_item_consistency.set_action_and_target_value("win.edge.check_conservativity", get_variant((src_id, dst_id)))
+        menu_item_consistency.set_action_and_target_value("win.edge.check_conservativity",
+                                                          get_variant((src_id, dst_id)))
         menu.append_item(menu_item_consistency)
 
         return Gtk.Menu.new_from_model(menu)

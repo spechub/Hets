@@ -366,7 +366,7 @@ def main():
     with GHCI() as ghci:
         for i, module in enumerate(config):
             print(f"Module {module['name']}:")
-            print("  loading ...", end="")
+            print("  loading ...", end="", flush=True)
             try:
                 ghci.command(f":l {module['name']}")
             except Exception as e:
@@ -374,7 +374,7 @@ def main():
                 raise e
             print(" done")
 
-            print("  generating stubs ...", end="")
+            print("  generating stubs ...", end="", flush=True)
             try:
                 content = ghci.command(f":browse! {module['name']}")
 

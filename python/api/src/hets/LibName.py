@@ -1,6 +1,6 @@
 from typing import Optional
 
-from .haskell import LibName as HsLibName, libVersion, getLibId, mimeType, getFilePath
+from .haskell import LibName as HsLibName, libVersion, getLibId, mimeType, getFilePath, show
 
 from .maybe import maybe_to_optional
 from .Pretty import Pretty
@@ -52,3 +52,6 @@ class LibName:
 
     def __hash__(self):
         return hash(self.id())
+
+    def __str__(self):
+        return show(self._hs_libname)

@@ -30,7 +30,7 @@ class ConservativityCheckWindow(Gtk.Window):
         return cc
 
     def __init__(self, edge: DevGraphEdge, **kwargs):
-        super().__init__(title=f"Check conservativity of {edge.name()}", **kwargs)
+        super().__init__(title=f"Check conservativity of {edge.title()}", **kwargs)
 
         self.checking_thread = None
         self._edge = edge
@@ -70,7 +70,8 @@ class ConservativityCheckWindow(Gtk.Window):
     def _check_consistency(self):
         edge = self._edge
         if not isinstance(edge, TheoremDevGraphEdge):
-            self._logger.warning(f"Edge '{edge.name()}' is not a theorem edge. Conservativity cannot be computed.")
+            self._logger.warning(
+                f"Edge '{edge.title()}' is not a theorem edge. Conservativity cannot be computed.")
 
             return
 
@@ -79,31 +80,35 @@ class ConservativityCheckWindow(Gtk.Window):
         try:
             conservativity_checker = self.selected_conservativity_checker
 
-            self._logger.info("Checking conservativity on %s, checker: %s", self._edge.name(),
+            self._logger.info("Checking conservativity on %s, checker: %s", edge.title(),
                               conservativity_checker.name())
 
-            status, explanations, obligations = edge.check_conservativity(conservativity_checker)
+            status, explanations, obligations, diagnosis = edge.check_conservativity(conservativity_checker)
 
-            self._logger.info("Conservativity check result for %s: %s", self._edge.name(), status)
-            self._logger.debug("Conservativity check explained by sentences: %s", self._edge.name(), ", ".join(explanations))
-            self._logger.debug("Conservativity check has open proof obligations: %s", self._edge.name(), ", ".join(obligations))
+            self._logger.info("Conservativity check result for %s: %s", edge.title(), status)
 
-            message = f"The link is {status.to_str()}"
-            if obligations:
-                message += " provided that the following obligations hold in an imported theory:\n"
-                message += ", ".join(str(s) for s in obligations)
-            elif explanations:
-                message += " because of the following axioms:\n"
-                message += ", ".join(str(s) for s in explanations)
+            if status is None:
+                status = ConsistencyKind.UNKNOWN
+                message = "\n".join(diagnosis)
+            else:
+                if explanations:
+                    self._logger.debug("Conservativity check explained by sentences: %s", edge.title(),
+                                       ", ".join(str(s) for s in explanations))
+                if obligations:
+                    self._logger.debug("Conservativity check has open proof obligations: %s", edge.title(),
+                                       ", ".join(str(s) for s in obligations))
 
-        except Exception as e:
-            self._logger.warning("Conservativity check for %s failed: %s", self._edge.name(), traceback.format_exc())
+                message = f"The link is {status.to_str()}"
+                if obligations:
+                    message += " provided that the following obligations hold in an imported theory:\n"
+                    message += ", ".join(str(s) for s in obligations)
+                elif explanations:
+                    message += " because of the following axioms:\n"
+                    message += ", ".join(str(s) for s in explanations)
 
-            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR,
-                                       buttons=Gtk.ButtonsType.CLOSE, text=f"Check failed!")
-            dialog.format_secondary_text(f"Check the console for more details.\nError message: {str(e)}")
-            dialog.run()
-            dialog.destroy()
+                message += "\n" + "\n".join(diagnosis)
+        except BaseException as e:
+            self._logger.warning("Conservativity check for %s failed: %s", edge.title(), traceback.format_exc())
 
             status = ConsistencyKind.ERROR
             message = str(e)

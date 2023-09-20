@@ -10,6 +10,7 @@ from gi.repository import GLib, Gtk, Gio
 
 from hets import Library, ReferenceDevGraphNode
 from ..GtkSmartTemplate import GtkSmartTemplate
+from ..utils import get_variant
 from ..widgets.EdgeInfoDialog import EdgeInfoDialog
 from ..widgets.GraphvizGraphWidget import GraphvizGraphWidget
 from ..widgets.NodeInfoDialog import NodeInfoDialog
@@ -47,8 +48,11 @@ class MainWindow(Gtk.ApplicationWindow):
         self._opened_file = None
         self._loaded_library = None
 
-        self._ui_graph.connect("render-start", lambda _: self._status_bar.push(self._status_bar.get_context_id("render"), "Rendering graph ..."))
-        self._ui_graph.connect("render-end", lambda _: self._status_bar.push(self._status_bar.get_context_id("render"), "Graph rendered!"))
+        self._ui_graph.connect("render-start",
+                               lambda _: self._status_bar.push(self._status_bar.get_context_id("render"),
+                                                               "Rendering graph ..."))
+        self._ui_graph.connect("render-end", lambda _: self._status_bar.push(self._status_bar.get_context_id("render"),
+                                                                             "Graph rendered!"))
 
         self.set_auto_startup_notification(True)
         icon = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../resources/icon.png"))
@@ -58,10 +62,13 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_actions: typing.List[Gio.SimpleAction] = []
 
         self._action("open_file", self._on_menu_open_file)
+        self._library_actions.append(self._action("open_library_window", self._on_open_library_window))
+        self._action_state("change_graph_layout", self._on_change_graph_layout, "vertical")
         self._library_actions.append(self._action("node.prove", self._on_prove_node, "s"))
         self._library_actions.append(self._action("node.check_consistency", self._on_check_consistency_node, "s"))
         self._library_actions.append(self._action("node.show_info", self._on_show_node_info, "s"))
-        self._library_actions.append(self._action("edge.check_conservativity", self._on_check_conservativity_edge, "av"))
+        self._library_actions.append(
+            self._action("edge.check_conservativity", self._on_check_conservativity_edge, "av"))
         self._library_actions.append(self._action("edge.show_info", self._on_show_edge_info, "av"))
 
         self._library_actions.append(self._action_toggle("toggle_show_names", self._on_toggle_show_names))
@@ -74,7 +81,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_actions.append(self._action("proofs.local_decomposition", self.on_local_decomposition))
         self._library_actions.append(self._action("proofs.composition_prove_edges", self.on_composition_prove_edges))
         self._library_actions.append(self._action("proofs.conservativity", self.on_conservativity))
-        self._library_actions.append(self._action("proofs.automatic_hide_theorem_shift", self.on_automatic_hide_theorem_shift))
+        self._library_actions.append(
+            self._action("proofs.automatic_hide_theorem_shift", self.on_automatic_hide_theorem_shift))
         self._library_actions.append(self._action("proofs.theorem_hide_shift", self.on_theorem_hide_shift))
         self._library_actions.append(self._action("proofs.compute_colimit", self.on_compute_colimit))
         self._library_actions.append(self._action("proofs.normal_form", self.on_normal_form))
@@ -104,9 +112,17 @@ class MainWindow(Gtk.ApplicationWindow):
         self.add_action(action)
         return action
 
-    def _action_toggle(self, name: str, cb: Callable[[Gio.SimpleAction, bool], Any],
+    def _action_toggle(self, name: str, cb: Callable[[Gio.SimpleAction, GLib.Variant], Any],
                        default: bool = False) -> Gio.SimpleAction:
-        action = Gio.SimpleAction.new_stateful(name, None, GLib.Variant.new_boolean(default))
+        return self._action_state(name, cb, default)
+
+    def _action_state(self, name: str, cb: Callable[[Gio.SimpleAction, GLib.Variant], Any], default: Optional[T] = None,
+                      param_type_str: Optional[str] = None):
+
+        default_variant = get_variant(default)
+        param_type_str = GLib.VariantType(param_type_str) if param_type_str else default_variant.get_type()
+
+        action = Gio.SimpleAction.new_stateful(name, param_type_str, default_variant)
         action.connect("change-state", cb)
         self.add_action(action)
         return action
@@ -130,10 +146,24 @@ class MainWindow(Gtk.ApplicationWindow):
             self._set_library_actions_enabled(False)
             self._logger.error(f"Failed to load file '{file}': %s", e)
 
-            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.CLOSE, text=f"Failed to load {file}!")
+            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR,
+                                       buttons=Gtk.ButtonsType.CLOSE, text=f"Failed to load {file}!")
             dialog.format_secondary_text(f"Check the console for more details.\nError message: {str(e)}")
             dialog.run()
             dialog.destroy()
+
+    def _on_change_graph_layout(self, action: Gio.SimpleAction, parameter: GLib.Variant):
+        action.set_state(parameter)
+
+        direction = parameter.get_string()
+
+        self._logger.debug(f"Changing graph layout to {direction}")
+
+        self._ui_graph.graph_direction = direction
+
+    def _on_open_library_window(self, action: Gio.SimpleAction, parameter: str):
+        if self._loaded_library:
+            window = LibraryWindow()
 
     def _on_menu_open_file(self, action: Gio.SimpleAction, parameter: str):
         dialog = Gtk.FileChooserDialog(
@@ -350,10 +380,13 @@ class MainWindow(Gtk.ApplicationWindow):
         node_id = parameter.get_int32()
         node = self._loaded_library.development_graph().node_by_id(node_id)
         if node is None:
-            self._logger.error(f"Attempted to load referenced library for node {node_id} but the node could not be found in the development graph.")
+            self._logger.error(
+                f"Attempted to load referenced library for node {node_id} but the node could not be found in the development graph.")
 
-            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.CLOSE, text=f"Failed to referenced library!")
-            dialog.format_secondary_text(f"The node of the referenced library was not found in the development graph. Please contact the developers.")
+            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR,
+                                       buttons=Gtk.ButtonsType.CLOSE, text=f"Failed to referenced library!")
+            dialog.format_secondary_text(
+                f"The node of the referenced library was not found in the development graph. Please contact the developers.")
             dialog.run()
             dialog.destroy()
 
@@ -368,10 +401,12 @@ class MainWindow(Gtk.ApplicationWindow):
             window.present()
 
         else:
-            self._logger.error(f"Attempted to load referenced library for node {node_id} but the node is not a reference node!")
+            self._logger.error(
+                f"Attempted to load referenced library for node {node_id} but the node is not a reference node!")
 
-            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.CLOSE, text=f"Failed to referenced library!")
-            dialog.format_secondary_text(f"The node of the referenced library is not a reference node. Please contact the developers.")
+            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR,
+                                       buttons=Gtk.ButtonsType.CLOSE, text=f"Failed to referenced library!")
+            dialog.format_secondary_text(
+                f"The node of the referenced library is not a reference node. Please contact the developers.")
             dialog.run()
             dialog.destroy()
-

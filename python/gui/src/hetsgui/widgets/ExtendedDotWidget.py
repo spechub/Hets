@@ -1,7 +1,7 @@
 import gi
 from gi.repository import Gtk, GObject, Gdk
 
-from xdot import DotWidget
+from xdot.ui import DotWidget
 
 
 class ExtendedDotWidget(DotWidget):

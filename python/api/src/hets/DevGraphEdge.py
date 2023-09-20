@@ -6,16 +6,17 @@ License     :  GPLv2 or higher, see LICENSE.txt
 import typing
 from typing import Tuple, Optional, List
 
-from . import ConsistencyKind
+from .ConsistencyStatus import ConsistencyStatus
+from .ConsistencyKind import ConsistencyKind
 from .haskell import DGLinkLab, fstOf3, sndOf3, thd, gmorphismOfEdge, developmentGraphEdgeLabelName, \
     developmentGraphEdgeLabelId, getDevGraphLinkType, DevGraphLinkType, LinkKindGlobal, LinkKindLocal, LinkKindHiding, \
     LinkKindFree, LinkKindCofree, TheoremLink, showDoc, getUsableConservativityCheckers, \
-    checkConservativityEdgeAndRecord, fst, snd, Conservativity
+    checkConservativityEdgeAndRecord, fst, snd, getEdgeConsStatus, diags, show, linkTypeKind
 from .ConservativityChecker import ConservativityChecker
 from .Sentence import Sentence
 from .HsWrapper import HsHierarchyElement
 from .GMorphism import GMorphism
-from .result import result_or_raise
+from .result import result_or_raise, result_to_optional
 from .conversions import hs_conservativity_to_consistency_kind
 from enum import Enum
 
@@ -61,12 +62,15 @@ class DevGraphEdge(HsHierarchyElement):
     def name(self) -> str:
         return developmentGraphEdgeLabelName(self._label())
 
+    def title(self) -> str:
+        return f"{self.id()} {self.name()}({self.origin()} --> {self.target()})"
+
     def id(self) -> int:
         return developmentGraphEdgeLabelId(self._label())
 
     def kind(self) -> EdgeKind:
         t = self._type()
-        k = t.linkTypeKind()
+        k = linkTypeKind(t)
 
         if isinstance(k, LinkKindGlobal):
             return EdgeKind.GLOBAL
@@ -102,6 +106,11 @@ class DevGraphEdge(HsHierarchyElement):
     def conservativity(self) -> ConsistencyKind:
         return ConsistencyKind.UNKNOWN
 
+    def conservativity_status(self) -> ConsistencyStatus:
+        edge_lab = self._label()
+        hs_cons_status = getEdgeConsStatus(edge_lab)
+        return ConsistencyStatus(hs_cons_status)
+
 
 class DefinitionDevGraphEdge(DevGraphEdge):
     def conservativity(self) -> ConsistencyKind:
@@ -121,7 +130,7 @@ class TheoremDevGraphEdge(DevGraphEdge):
     def is_pending(self) -> bool:
         return self._type().linkTypeIsPending()
 
-    def check_conservativity(self, checker: ConservativityChecker) -> Tuple[ConsistencyKind, List[Sentence], List[Sentence]]:
+    def check_conservativity(self, checker: ConservativityChecker) -> Tuple[Optional[ConsistencyKind], Optional[List[Sentence]], Optional[List[Sentence]], List[str]]:
         """
         Checks the conservativity of this edge
 
@@ -130,7 +139,11 @@ class TheoremDevGraphEdge(DevGraphEdge):
         """
         check_result = checkConservativityEdgeAndRecord(checker._hs_cons_checker, self._pointer()).act()
 
-        result = result_or_raise(check_result)
+        result = result_to_optional(check_result)
+        diagnosis = [show(d) for d in diags(check_result)]
+
+        if result is None:
+            return None, None, None, diagnosis
 
         conservativity_result = fst(result)
         new_env = snd(result)
@@ -148,10 +161,10 @@ class TheoremDevGraphEdge(DevGraphEdge):
 
         self.root().hs_update(new_env)
 
-        return hs_conservativity_to_consistency_kind(conservativity), explanations, obligations
+        return hs_conservativity_to_consistency_kind(conservativity), explanations, obligations, diagnosis
 
     def conservativity(self) -> ConsistencyKind:
         if self.is_conservativ():
-            return ConsistencyKind.PCONS
+            return ConsistencyKind.PROOF_THEORETICALLY_CONSERVATIVE
 
         return ConsistencyKind.UNKNOWN

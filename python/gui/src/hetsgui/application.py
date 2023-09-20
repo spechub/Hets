@@ -40,7 +40,7 @@ class HetsApplication(Gtk.Application):
 
     def on_handle_local_options(self, application, options: GLib.VariantDict):
         log_value = options.lookup_value("log")
-        log_level_int = logging.WARN
+        log_level_int = logging.DEBUG
         if log_value is not None:
             log_level = log_value.get_string().upper()
             log_level_int = getattr(logging, log_level.upper(), None)

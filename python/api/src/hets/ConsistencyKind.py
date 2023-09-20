@@ -16,17 +16,17 @@ class ConsistencyKind(Enum):
     The consistency of the theory is not known
     """
 
-    PCONS = 2
+    PROOF_THEORETICALLY_CONSERVATIVE = 2
     """
     The theory is proof-theoretically conservative
     """
 
-    CONS = 3
+    CONSERVATIVE = 3
     """
     The theory is conservative
     """
 
-    MONO = 4
+    MONOMORPHIC = 4
     """
     The theory is monomorphic
     """
@@ -38,12 +38,17 @@ class ConsistencyKind(Enum):
 
     ERROR = 6
     """
-    An error occurred while checking the consistency of a theory
+    An error occurred
     """
 
     TIMED_OUT = 7
     """
     The consistency checker timed out
+    """
+
+    NONE = 8
+    """
+    There is no consistency
     """
 
     def to_str(self) -> str:
@@ -54,11 +59,28 @@ class ConsistencyKind(Enum):
         return {
             ConsistencyKind.INCONSISTENT: "Inconsistent",
             ConsistencyKind.UNKNOWN: "Unknown",
-            ConsistencyKind.PCONS: "PCons",
-            ConsistencyKind.CONS: "Consistent",
-            ConsistencyKind.MONO: "Mono",
-            ConsistencyKind.DEFINITIONAL: "Defined",
+            ConsistencyKind.PROOF_THEORETICALLY_CONSERVATIVE: "Proof-theoretically conservative",
+            ConsistencyKind.CONSERVATIVE: "Conservative",
+            ConsistencyKind.MONOMORPHIC: "Monomorphic",
+            ConsistencyKind.DEFINITIONAL: "Definitional",
             ConsistencyKind.ERROR: "Errored",
-            ConsistencyKind.TIMED_OUT: "Timed out"
+            ConsistencyKind.TIMED_OUT: "Timed out",
+            ConsistencyKind.NONE: "None"
         }[self]
-    
+
+    def short_name(self) -> str:
+        """
+        Returns an abbreviated form of the kinds name
+        """
+
+        return {
+            ConsistencyKind.INCONSISTENT: "NotCons",
+            ConsistencyKind.UNKNOWN: "Unknown",
+            ConsistencyKind.PROOF_THEORETICALLY_CONSERVATIVE: "PCons",
+            ConsistencyKind.CONSERVATIVE: "Cons",
+            ConsistencyKind.MONOMORPHIC: "Mono",
+            ConsistencyKind.DEFINITIONAL: "Def",
+            ConsistencyKind.ERROR: "Err",
+            ConsistencyKind.TIMED_OUT: "TimeOut",
+            ConsistencyKind.NONE: ""
+        }[self]

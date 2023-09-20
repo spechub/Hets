@@ -8,12 +8,12 @@ def hs_conservativity_to_consistency_kind(hs_cons: Conservativity) -> Consistenc
     elif isinstance(hs_cons, Unknown):
         return ConsistencyKind.UNKNOWN
     elif isinstance(hs_cons, PCons):
-        return ConsistencyKind.PCONS
+        return ConsistencyKind.PROOF_THEORETICALLY_CONSERVATIVE
     elif isinstance(hs_cons, Cons):
-        return ConsistencyKind.CONS
+        return ConsistencyKind.CONSERVATIVE
     elif isinstance(hs_cons, Mono):
-        return ConsistencyKind.MONO
+        return ConsistencyKind.MONOMORPHIC
     elif isinstance(hs_cons, Def):
         return ConsistencyKind.DEFINITIONAL
     else:
-        return ConsistencyKind.UNKNOWN
+        return ConsistencyKind.NONE

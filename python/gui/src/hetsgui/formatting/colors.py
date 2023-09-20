@@ -29,9 +29,9 @@ PROOF_KIND_FG_COLORS = {
 CONSISTENCY_KIND_BG_COLORS = {
     ConsistencyKind.INCONSISTENT: "red",
     ConsistencyKind.UNKNOWN: "black",
-    ConsistencyKind.PCONS: "darkgreen",
-    ConsistencyKind.CONS: "green",
-    ConsistencyKind.MONO: "violet",
+    ConsistencyKind.PROOF_THEORETICALLY_CONSERVATIVE: "darkgreen",
+    ConsistencyKind.CONSERVATIVE: "green",
+    ConsistencyKind.MONOMORPHIC: "violet",
     ConsistencyKind.DEFINITIONAL: "darkseagreen",
     ConsistencyKind.TIMED_OUT: "blue",
     ConsistencyKind.ERROR: "darkred",

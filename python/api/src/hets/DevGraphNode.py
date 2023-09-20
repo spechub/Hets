@@ -133,7 +133,7 @@ class DevGraphNode(HsHierarchyElement):
         elif isinstance(status_type, CSInconsistent):
             return ConsistencyKind.INCONSISTENT, status_message
         elif isinstance(status_type, CSConsistent):
-            return ConsistencyKind.PCONS, status_message
+            return ConsistencyKind.PROOF_THEORETICALLY_CONSERVATIVE, status_message
         else:
             return ConsistencyKind.UNKNOWN, status_message
 

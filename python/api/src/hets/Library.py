@@ -4,7 +4,7 @@ Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 """
 
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple, List
 
 from .DevelopmentGraph import DevelopmentGraph
 from .HsWrapper import HsHierarchyElement
@@ -62,6 +62,11 @@ class Library(HsHierarchyElement):
             self._dgraph = DevelopmentGraph(getGraphForLibrary(self._name, self._env), self)
 
         return self._dgraph
+
+    def environment(self) -> List[Tuple[LibName, DevelopmentGraph]]:
+        hs_dict: List[Tuple[Any, Any]] = self._env.toList()
+
+        return [(LibName(n), DevelopmentGraph(g, self)) for n,g in hs_dict]
 
     def automatic(self):
         new_env = automaticHs(self._name, self._env)
