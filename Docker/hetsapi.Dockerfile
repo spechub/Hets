@@ -1,6 +1,6 @@
+# syntax=docker/dockerfile:1
 
-
-FROM spechub2/hyphen:22.04
+FROM spechub2/hyphen:22.04 as base
 
 ENV TZ=Europe/Berlin
 ENV LANG en_US.UTF-8
@@ -33,24 +33,25 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
       libghc-hexpat-dev\
       libghc-aterm-dev\
       libghc-xeno-dev\
-      libghc-heap-dev && \
-# Install provers and Hets-lib
-   apt-get install -y cvc-47 darwin eprover fact++ maude minisat pellet spass vampire yices z3 zchaff && \
-   git clone https://github.com/spechub/Hets-lib.git ${HETS_LIB} && \
+      libghc-heap-dev
+
+
+FROM base as build-lib
+
+RUN apt-get -y install git
 # Get source
-   git clone --branch 2109_python_gui https://github.com/spechub/Hets.git /opt/hets && \
-## Alternatively copy local files. Careful! Creates two additional layers
-#    true
-# COPY ./ /opt/hets
-# RUN true && \
-   cd /opt/hets/ && \
+# RUN git clone --branch 2109_python_gui https://github.com/spechub/Hets.git /opt/hets
+## Alternatively copy local files.
+COPY ./ /opt/hets
+WORKDIR /opt/hets/
 # Build and install haskell library
-   make derived && \
-   runhaskell Setup.hs configure \
+RUN make derived
+RUN runhaskell Setup.hs configure \
       --ghc --prefix=/ \
       --disable-executable-stripping \
       --disable-benchmarks \
       --libdir=/lib/haskell-packages/ghc/lib/x86_64-linux-ghc-8.6.5 \
+      --dynlibdir=/lib/haskell-packages/ghc/lib/x86_64-linux-ghc-8.6.5 \
       --libsubdir=hets-api-0.100.0 \
       --datadir=share \
       --datasubdir=hets-api \
@@ -58,12 +59,40 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
       --docdir=share/doc/hets-api-doc \
       --package-db=/var/lib/ghc/package.conf.d \
       --disable-profiling \
-      lib:Hets && \
-   runhaskell Setup.hs build -j$(nproc) lib:Hets && \
-   runhaskell Setup.hs install && \
+      lib:Hets
+RUN runhaskell Setup.hs build -j$(nproc) lib:Hets
+RUN runhaskell Setup.hs copy --destdir=/tmp/hets-pkg
+RUN runhaskell Setup.hs register --gen-script
+RUN mv register.sh /tmp/install-hets.sh
+RUN tar -czf /tmp/hets.tar.gz -C /tmp/hets-pkg/ .
+
+FROM build-lib AS debug
+WORKDIR /opt/hets
+RUN runhaskell Setup.hs install
+RUN \
+   apt-get install -y cvc-47 darwin eprover fact++ maude minisat pellet spass vampire yices z3 zchaff && \
+   git clone https://github.com/spechub/Hets-lib.git ${HETS_LIB}
+
+ENV PYTHONPATH=/opt/hets/python/api/src
+
+
+FROM base
+COPY --from=build-lib /tmp/hets.tar.gz /tmp/hets.tar.gz
+COPY --from=build-lib /tmp/install-hets.sh /tmp/install-hets.sh
+# RUN tar -tzf /tmp/hets.tar.gz && ls -l /bin /bin/sh && false
+RUN tar -xzkpom -C / -f /tmp/hets.tar.gz
+RUN /tmp/install-hets.sh
+
+# Install provers and Hets-lib
+RUN \
+   apt-get install -y cvc-47 darwin eprover fact++ maude minisat pellet spass vampire yices z3 zchaff && \
+   git clone https://github.com/spechub/Hets-lib.git ${HETS_LIB}
 # Install python library
-   python3 -m pip install /opt/hets/python/api && \
+
+COPY --from=build-lib /opt/hets/python/api /opt/hets/python/api
+RUN   python3 -m pip install /opt/hets/python/api
 # Add non-root user and cleanup
+RUN \
    useradd -ms /bin/bash -u 921 hets && \
    rm -rf /opt/hets
 
