@@ -69,11 +69,6 @@ class ConservativityCheckWindow(Gtk.Window):
 
     def _check_consistency(self):
         edge = self._edge
-        if not isinstance(edge, TheoremDevGraphEdge):
-            self._logger.warning(
-                f"Edge '{edge.title()}' is not a theorem edge. Conservativity cannot be computed.")
-
-            return
 
         GLib.idle_add(self._init_checking_progress)
 
@@ -93,18 +88,18 @@ class ConservativityCheckWindow(Gtk.Window):
             else:
                 if explanations:
                     self._logger.debug("Conservativity check explained by sentences: %s", edge.title(),
-                                       ", ".join(str(s) for s in explanations))
+                                       ", ".join(explanations))
                 if obligations:
                     self._logger.debug("Conservativity check has open proof obligations: %s", edge.title(),
-                                       ", ".join(str(s) for s in obligations))
+                                       ", ".join(obligations))
 
                 message = f"The link is {status.to_str()}"
                 if obligations:
                     message += " provided that the following obligations hold in an imported theory:\n"
-                    message += ", ".join(str(s) for s in obligations)
+                    message += ", ".join(obligations)
                 elif explanations:
                     message += " because of the following axioms:\n"
-                    message += ", ".join(str(s) for s in explanations)
+                    message += ", ".join(explanations)
 
                 message += "\n" + "\n".join(diagnosis)
         except BaseException as e:

@@ -4,20 +4,27 @@ import os.path
 import sys
 import threading
 import logging
+from typing import Optional
 
 import gi
+from gi.repository.GObject import Object
+
+from hetsgui.utils import get_variant
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk, Gio
 
 
 class HetsApplication(Gtk.Application):
-    logger = logging.getLogger(__name__)
+    _logger = logging.getLogger(__name__)
+
+    _reopen_libraries_menu_section: Optional[Gio.Menu]
 
     def __init__(self):
         super().__init__(
             application_id="eu.hets.gui",
             flags=Gio.ApplicationFlags.HANDLES_OPEN)
+        self._reopen_libraries_menu_section = None
         GLib.set_application_name("Hets")
         self.set_option_context_parameter_string("FILE")
 
@@ -28,17 +35,17 @@ class HetsApplication(Gtk.Application):
 
         pgk_dir = os.path.dirname(os.path.realpath(__file__))
         resource_file = os.path.join(pgk_dir, "hetsgui.gresource")
-        self.logger.debug("Loading resources from %s", resource_file)
+        self._logger.debug("Loading resources from %s", resource_file)
         resource: Gio.Resource = Gio.resource_load(resource_file)
         Gio.resources_register(resource)
 
         self.add_main_option("log", ord('l'), GLib.OptionFlags.NONE, GLib.OptionArg.STRING, "Log level", "<debug|info|warning|error>")
-        self.connect("handle-local-options", self.on_handle_local_options)
+        self.connect("handle-local-options", self._on_handle_local_options)
 
         action = Gio.SimpleAction.new("app.open_win_for_lib_by_node", GLib.VariantType("s"))
         self.add_action(action)
 
-    def on_handle_local_options(self, application, options: GLib.VariantDict):
+    def _on_handle_local_options(self, application, options: GLib.VariantDict):
         log_value = options.lookup_value("log")
         log_level_int = logging.DEBUG
         if log_value is not None:
@@ -60,6 +67,7 @@ class HetsApplication(Gtk.Application):
         Gtk.Application.do_startup(self)
         builder = Gtk.Builder.new_from_resource("/eu/hets/hetsgui/resources/application-menu.xml")
         menubar = builder.get_object("app-menu")
+        self._reopen_libraries_menu_section = builder.get_object("reopen-section")
 
         self.set_menubar(menubar)
 
@@ -85,22 +93,29 @@ class HetsApplication(Gtk.Application):
             self.window = startup_window
 
             def start_up_done():
-                from .windows.MainWindow import MainWindow
+                from .LibraryManager import LibraryManager
+                from hets import Options
 
-                self.window = MainWindow(application=self)
+                self._library_manager = LibraryManager(self)
+                self._library_manager.connect("new-library", self._on_add_open_library)
+
                 startup_window.close()
 
                 if self.file:
-                    self.window.open_file(self.file)
+                    default_options = Options(libdirs=[os.environ["HETS_LIB"]] if "HETS_LIB" in os.environ else [])
+                    self._library_manager.load_file(self.file, default_options)
+                else:
+                    self._library_manager.show_default_window()
 
                 self.window.show_all()
                 self.window.present()
+                self.set_action_group()
 
             # noinspection PyUnresolvedReferences
             def start_up():
-                self.logger.info("Loading python libraries")
+                self._logger.info("Loading python libraries")
                 import hets
-                self.logger.info("Loading python libraries done")
+                self._logger.info("Loading python libraries done")
 
                 GLib.idle_add(start_up_done)
 
@@ -109,3 +124,11 @@ class HetsApplication(Gtk.Application):
 
         self.window.show_all()
         self.window.present()
+
+    def _on_add_open_library(self, sender, library_id: str):
+        if self._reopen_libraries_menu_section:
+            item = Gio.MenuItem()
+            item.set_label(library_id)
+            item.set_action_and_target_value("app.open_win_for_lib", get_variant(library_id))
+
+            self._reopen_libraries_menu_section.append_item(item)

@@ -3,8 +3,11 @@ import logging
 import gi
 import xdot
 from gi.repository import Gtk, GObject, Gdk
+from graphviz import Digraph
 
 from xdot.ui import DotWidget
+
+from hetsgui.formatting import color_to_hex
 
 
 class ExtendedDotWidget(DotWidget):
@@ -23,6 +26,24 @@ class ExtendedDotWidget(DotWidget):
         super().__init__()
 
         self.connect("notify::dotcode", self.on_dotcode_changed)
+
+        settings: Gtk.Settings = Gtk.Settings.get_for_screen(self.get_screen())
+        settings.connect("notify::gtk-theme-name", lambda w, p: self.render())
+        settings.connect("notify::gtk-application-prefer-dark-theme", lambda w, p: self.render())
+
+    def render(self):
+        pass
+
+    def get_themed_graph(self):
+        g = Digraph("G")
+
+        success, color = self.get_style_context().lookup_color("theme_bg_color")
+        color = color_to_hex(color)
+
+        if color:
+            g.graph_attr["bgcolor"] = color
+
+        return g
 
     def on_dotcode_changed(self, widget, param):
         dotcode = self.dotcode.encode("utf8")

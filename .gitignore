@@ -200,3 +200,4 @@ NeSyPatterns/ATC_NeSyPatterns.der.hs
 NeSyPatterns/ATC_NeSyPatterns.hs
 OWL2/scripts/runTest
 *.gresource
+python/api/docs/_build

@@ -12,18 +12,6 @@ from ..utils import get_variant
 from ..widgets import ExtendedDotWidget
 
 
-def library_to_dot_graph(library: hets.Library):
-    g = Digraph("G")
-    for name, _ in library.environment():
-        g.node(str(name), label=str(name),
-               fillcolor=COLOR_MAP[("green", True, True)],
-               style="filled",
-               shape="rectangle")
-
-    for source, target in library.dependencies():
-        g.edge(str(source), str(target))
-
-    return g.source
 
 
 @GtkSmartTemplate
@@ -38,14 +26,25 @@ class LibraryWindow(Gtk.Window):
         super().__init__(**kwargs)
         self._library = library
 
-        self._ui_graph.set_dotcode(library_to_dot_graph(library).encode("utf-8"))
+        self._ui_graph.set_dotcode(self.get_graph().encode("utf-8"))
 
         self._ui_graph.connect("node-right-click", self._on_node_right_clicked)
 
+    def get_graph(self,):
+        g = self._ui_graph.get_themed_graph()
+        for name, _ in self._library.environment():
+            g.node(name.id(), label=str(name),
+                   fillcolor=COLOR_MAP[("green", True, True)],
+                   style="filled",
+                   shape="rectangle")
+
+        for source, target in self._library.dependencies():
+            g.edge(source.id(), target.id())
+
+        return g.source
+
     def _on_node_right_clicked(self, widget, node_id: str, event):
         model = Gio.Menu()
-
-        print(get_variant(node_id).__repr__())
 
         menu_item_open_ref = Gio.MenuItem()
         menu_item_open_ref.set_label("Open library")

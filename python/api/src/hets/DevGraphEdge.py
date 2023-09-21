@@ -111,26 +111,7 @@ class DevGraphEdge(HsHierarchyElement):
         hs_cons_status = getEdgeConsStatus(edge_lab)
         return ConsistencyStatus(hs_cons_status)
 
-
-class DefinitionDevGraphEdge(DevGraphEdge):
-    def conservativity(self) -> ConsistencyKind:
-        return ConsistencyKind.DEFINITIONAL
-
-
-class TheoremDevGraphEdge(DevGraphEdge):
-    def _type(self) -> TheoremLink:
-        return super()._type()
-
-    def is_proven(self) -> bool:
-        return self._type().linkTypeIsProven()
-
-    def is_conservativ(self) -> bool:
-        return self._type().linkTypeIsConservativ()
-
-    def is_pending(self) -> bool:
-        return self._type().linkTypeIsPending()
-
-    def check_conservativity(self, checker: ConservativityChecker) -> Tuple[Optional[ConsistencyKind], Optional[List[Sentence]], Optional[List[Sentence]], List[str]]:
+    def check_conservativity(self, checker: ConservativityChecker) -> Tuple[Optional[ConsistencyKind], Optional[List[str]], Optional[List[str]], List[str]]:
         """
         Checks the conservativity of this edge
 
@@ -156,12 +137,31 @@ class TheoremDevGraphEdge(DevGraphEdge):
         target = graph.node_by_id(self.target())
         target_theory = target.global_theory()
 
-        explanations = [target_theory.sentence_by_name(s) for s in explanations_names]
-        obligations = [target_theory.sentence_by_name(s) for s in obligations_names]
+        explanations = [target_theory._hs_pretty_sentence(s) for s in explanations_names]
+        obligations = [target_theory._hs_pretty_sentence(s) for s in obligations_names]
 
         self.root().hs_update(new_env)
 
         return hs_conservativity_to_consistency_kind(conservativity), explanations, obligations, diagnosis
+
+
+class DefinitionDevGraphEdge(DevGraphEdge):
+    def conservativity(self) -> ConsistencyKind:
+        return ConsistencyKind.DEFINITIONAL
+
+
+class TheoremDevGraphEdge(DevGraphEdge):
+    def _type(self) -> TheoremLink:
+        return super()._type()
+
+    def is_proven(self) -> bool:
+        return self._type().linkTypeIsProven()
+
+    def is_conservativ(self) -> bool:
+        return self._type().linkTypeIsConservativ()
+
+    def is_pending(self) -> bool:
+        return self._type().linkTypeIsPending()
 
     def conservativity(self) -> ConsistencyKind:
         if self.is_conservativ():

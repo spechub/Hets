@@ -7,8 +7,10 @@
             <item>
                 <attribute name="label" translatable="yes">Open</attribute>
                 <attribute name="action">win.open_file</attribute>
-                <attribute name="accel">&lt;Ctrl&gt;o</attribute>
             </item>
+            <submenu id="reopen-section">
+                <attribute name="label" translatable="yes">Open loaded library</attribute>
+            </submenu>
         </submenu>
         <submenu>
             <attribute name="label" translatable="yes">View</attribute>

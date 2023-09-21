@@ -19,14 +19,14 @@ class LibName:
 
         return maybe_to_optional(libVersion(self._hs_libname))
 
-    def id(self) -> Pretty[object]:
+    def id(self) -> str:
         """
         Returns a unique identifier of the library.
 
         :return: Unique identifier of the library
         """
 
-        return Pretty(getLibId(self._hs_libname))
+        return Pretty(getLibId(self._hs_libname)).to_str()
 
     def location(self) -> Optional[str]:
         """

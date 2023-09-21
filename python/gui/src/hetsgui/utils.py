@@ -1,7 +1,21 @@
 import re
+import typing
 from typing import Any
 
 from gi.repository import GLib, Gio
+
+
+def get_variant_type(t: type):
+    if t == str:
+        return GLib.VariantType.new("s")
+    if t == int:
+        return GLib.VariantType("i")
+    if t == dict:
+        return GLib.VariantType("a{sv}")
+    if t in [list, tuple, set]:
+        return GLib.VariantType("av")
+
+    raise Exception(f"Unknown data type: {t}")
 
 
 def get_variant(data: Any) -> GLib.Variant:
@@ -50,6 +64,3 @@ def resource_exist(resource_path: str) -> bool:
             return False
         path += segment
     return True
-
-
-

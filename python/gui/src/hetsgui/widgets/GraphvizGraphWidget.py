@@ -143,10 +143,6 @@ class GraphvizGraphWidget(ExtendedDotWidget):
 
         self._dot_code = None
 
-        settings: Gtk.Settings = Gtk.Settings.get_for_screen(self.get_screen())
-        settings.connect("notify::gtk-theme-name", lambda w, p: self.render())
-        settings.connect("notify::gtk-application-prefer-dark-theme", lambda w, p: self.render())
-
     def do_node_right_click(self, node: str, event):
         self._on_node_clicked(node, event)
 
@@ -180,17 +176,15 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         self._show_newly_added_proven_edges = False
         self.render()
 
-    def _render(self, keep_zoom, color) -> None:
+    def _render(self, keep_zoom) -> None:
         if not self.development_graph:
             return
 
         self._logger.debug("Render graph; keep zoom: %s, direction: %s", keep_zoom, self.graph_direction)
 
         GLib.idle_add(lambda: self.emit("render-start"))
-        g = Digraph("G")
 
-        if color:
-            g.graph_attr["bgcolor"] = color
+        g = self.get_themed_graph()
 
         g.graph_attr["rankdir"] = "LR" if self.graph_direction == "horizontal" else "TB"
 
@@ -233,10 +227,7 @@ class GraphvizGraphWidget(ExtendedDotWidget):
             self._logger.debug("Already rendering. Waiting for previous render to finish")
             self._render_thread.join()
 
-        success, color = self.get_style_context().lookup_color("theme_bg_color")
-        color = color_to_hex(color)
-
-        self._render_thread = threading.Thread(target=self._render, args=[keep_zoom, color])
+        self._render_thread = threading.Thread(target=self._render, args=[keep_zoom])
         self._render_thread.start()
 
     def _menu_for_node(self, node_id: str) -> Gtk.Menu:
