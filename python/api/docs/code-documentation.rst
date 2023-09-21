@@ -31,6 +31,7 @@ Classes
     BasicProof
     Comorphism
     ConsistencyChecker
+    ConservativityChecker
     ConsistencyStatus
     DevelopmentGraph
     DevGraphEdge
@@ -38,9 +39,12 @@ Classes
     TheoremDevGraphEdge
     EdgeKind
     DevGraphNode
+    ReferenceDevGraphNode
+    LocalDevGraphNode
     GMorphism
     GlobalAnnotations
     Library
+    load_library
     Logic
     ProofState
     ProofDetails
