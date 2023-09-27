@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
-  <gresource prefix="/eu/hets/hetsgui">
+  <gresource prefix="/eu/hets/gui">
     <file>resources/icon.png</file>
+    <file alias="gtk/menus.ui">resources/menus.ui</file>
 
     <file preprocess="xml-stripblanks">windows/ConservativityCheckWindow.ui</file>
     <file>windows/ConservativityCheckWindow.css</file>
@@ -19,7 +20,6 @@
     <file>widgets/ProofDetail.css</file>
     <file preprocess="xml-stripblanks">widgets/EditableListView.ui</file>
     <file preprocess="xml-stripblanks">widgets/GridWithToolComorphismSelector.ui</file>
-    <file preprocess="xml-stripblanks">resources/application-menu.xml</file>
 
   </gresource>
 </gresources>

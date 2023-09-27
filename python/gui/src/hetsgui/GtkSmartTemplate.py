@@ -8,8 +8,10 @@ from .utils import resource_exist
 def GtkSmartTemplate(original_class):
     _logger = logging.getLogger(__name__)
 
-    resource_name = original_class.__module__.replace(".", "/")
-    style_resource_name = f"/eu/hets/{resource_name}.css"
+    # The module name follows the format `hetsgui.path.to.file`.
+    # The resources are organized under `/eu/hets/gui/path/to/file`.
+    resource_name = "/".join(original_class.__module__.split(".")[1:])
+    style_resource_name = f"/eu/hets/gui/{resource_name}.css"
 
     original_init = original_class.__init__
 
@@ -26,4 +28,4 @@ def GtkSmartTemplate(original_class):
 
     original_class.__init__ = new_init
 
-    return Gtk.Template(resource_path=f"/eu/hets/{resource_name}.ui")(original_class)
+    return Gtk.Template(resource_path=f"/eu/hets/gui/{resource_name}.ui")(original_class)

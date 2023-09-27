@@ -101,8 +101,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_actions.append(self._action("proofs.qualify_lib_env", self.on_qualify_lib_env))
 
         self._library_actions.append(self._action("open_win_for_lib_by_node", self._on_open_win_for_lib_by_node, "i"))
-        self._library_actions.append(
-            self._action("open_win_for_lib", self._on_open_win_for_lib, "s", self.get_application()))
 
         self._action("open_library_settings", self.on_open_library_settings)
 
@@ -400,6 +398,3 @@ class MainWindow(Gtk.ApplicationWindow):
                 f"The node of the referenced library is not a reference node. Please contact the developers.")
             dialog.run()
             dialog.destroy()
-
-    def _on_open_win_for_lib(self, action: Gio.SimpleAction, parameter: GLib.Variant):
-        self.emit("show-library", parameter.get_string())

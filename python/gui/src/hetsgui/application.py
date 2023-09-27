@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os.path
 import sys
 import threading
@@ -7,7 +5,6 @@ import logging
 from typing import Optional
 
 import gi
-from gi.repository.GObject import Object
 
 from hetsgui.utils import get_variant
 
@@ -24,6 +21,7 @@ class HetsApplication(Gtk.Application):
         super().__init__(
             application_id="eu.hets.gui",
             flags=Gio.ApplicationFlags.HANDLES_OPEN)
+        self._library_manager = None
         self._reopen_libraries_menu_section = None
         GLib.set_application_name("Hets")
         self.set_option_context_parameter_string("FILE")
@@ -39,11 +37,17 @@ class HetsApplication(Gtk.Application):
         resource: Gio.Resource = Gio.resource_load(resource_file)
         Gio.resources_register(resource)
 
-        self.add_main_option("log", ord('l'), GLib.OptionFlags.NONE, GLib.OptionArg.STRING, "Log level", "<debug|info|warning|error>")
+        self.add_main_option("log", ord('l'), GLib.OptionFlags.NONE, GLib.OptionArg.STRING, "Log level",
+                             "<debug|info|warning|error>")
         self.connect("handle-local-options", self._on_handle_local_options)
 
-        action = Gio.SimpleAction.new("app.open_win_for_lib_by_node", GLib.VariantType("s"))
-        self.add_action(action)
+        action_show_library = Gio.SimpleAction.new("open_win_for_lib", GLib.VariantType("s"))
+        action_show_library.connect("activate", self._on_open_win_for_lib)
+        self.add_action(action_show_library)
+
+    def _on_open_win_for_lib(self, action: Gio.SimpleAction, parameter: GLib.Variant):
+        if self._library_manager is not None:
+            self._library_manager.show_library(parameter.get_string())
 
     def _on_handle_local_options(self, application, options: GLib.VariantDict):
         log_value = options.lookup_value("log")
@@ -54,22 +58,18 @@ class HetsApplication(Gtk.Application):
             if not isinstance(log_level_int, int):
                 print('Invalid log level: %s' % log_level, file=sys.stderr)
                 return 1
-        
+
         logging.basicConfig(
             level=log_level_int,
             format='[%(asctime)s.%(msecs)03d] [ %(levelname)-7s ] [%(name)s] %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S',
-            )
+        )
 
         return -1
 
     def do_startup(self):
         Gtk.Application.do_startup(self)
-        builder = Gtk.Builder.new_from_resource("/eu/hets/hetsgui/resources/application-menu.xml")
-        menubar = builder.get_object("app-menu")
-        self._reopen_libraries_menu_section = builder.get_object("reopen-section")
-
-        self.set_menubar(menubar)
+        self._reopen_libraries_menu_section = self.get_menu_by_id("reopen-section")
 
     def do_command_line(self, command_line):
         self.activate()
