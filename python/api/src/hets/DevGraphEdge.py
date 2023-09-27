@@ -6,12 +6,14 @@ License     :  GPLv2 or higher, see LICENSE.txt
 import typing
 from typing import Tuple, Optional, List
 
+from .Theory import Theory
 from .ConsistencyStatus import ConsistencyStatus
 from .ConsistencyKind import ConsistencyKind
 from .haskell import DGLinkLab, fstOf3, sndOf3, thd, gmorphismOfEdge, developmentGraphEdgeLabelName, \
     developmentGraphEdgeLabelId, getDevGraphLinkType, DevGraphLinkType, LinkKindGlobal, LinkKindLocal, LinkKindHiding, \
     LinkKindFree, LinkKindCofree, TheoremLink, showDoc, getUsableConservativityCheckers, \
-    checkConservativityEdgeAndRecord, fst, snd, getEdgeConsStatus, diags, show, linkTypeKind
+    checkConservativityEdgeAndRecord, fst, snd, getEdgeConsStatus, diags, show, linkTypeKind, PyTheory, Conservativity, \
+    LibEnv
 from .ConservativityChecker import ConservativityChecker
 from .Sentence import Sentence
 from .HsWrapper import HsHierarchyElement
@@ -120,7 +122,7 @@ class DevGraphEdge(HsHierarchyElement):
         """
         check_result = checkConservativityEdgeAndRecord(checker._hs_cons_checker, self._pointer()).act()
 
-        result = result_to_optional(check_result)
+        result: Optional[Tuple[Tuple[Conservativity, PyTheory, PyTheory], LibEnv]] = result_to_optional(check_result)
         diagnosis = [show(d) for d in diags(check_result)]
 
         if result is None:
@@ -130,15 +132,11 @@ class DevGraphEdge(HsHierarchyElement):
         new_env = snd(result)
 
         conservativity = fstOf3(conservativity_result)
-        explanations_names = sndOf3(conservativity_result)
-        obligations_names = thd(conservativity_result)
+        explanationsTheory = Theory(sndOf3(conservativity_result), None)
+        obligationsTheory = Theory(thd(conservativity_result), None)
 
-        graph = self.parent()
-        target = graph.node_by_id(self.target())
-        target_theory = target.global_theory()
-
-        explanations = [target_theory._hs_pretty_sentence(s) for s in explanations_names]
-        obligations = [target_theory._hs_pretty_sentence(s) for s in obligations_names]
+        explanations = [str(s) for s in explanationsTheory.sentences()]
+        obligations = [str(s) for s in obligationsTheory.sentences()]
 
         self.root().hs_update(new_env)
 

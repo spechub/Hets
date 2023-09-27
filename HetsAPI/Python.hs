@@ -149,8 +149,6 @@ import Data.Functor
 import Data.Graph.Inductive (lab, LEdge)
 import qualified Data.Set as Set
 
-import Interfaces.Utils (AnySentence(..))
-
 import Logic.Comorphism (AnyComorphism(..), targetLogic, sourceLogic)
 import Logic.Grothendieck (GMorphism(..))
 import Logic.Logic (sym_of, language_name, description, dom, cod, isInclusion)
@@ -380,25 +378,21 @@ checkConsistencyAndRecord ptr = HP.checkConsistencyAndRecord ptr . toConsCheckin
 getUsableConservativityCheckers :: LEdge DGLinkLab -> LibEnv -> LibName -> IO [PyConservativityChecker]
 getUsableConservativityCheckers edge env = fmap (fmap PyConservativityChecker) . HP.getUsableConservativityCheckers edge env
 
-
-encodeAnySentence :: AnySentence -> HDT.GenericTransportType
-encodeAnySentence (AnySentence _ sen ) = encode sen
-
 checkConservativityEdge :: PyConservativityChecker -> HDT.LinkPointer
-  -> IO (Result (Conservativity, [HDT.GenericTransportType], [HDT.GenericTransportType]))
+  -> IO (Result (Conservativity, PyTheory, PyTheory))
 checkConservativityEdge (PyConservativityChecker cc) linkPtr = do
     res <- HP.checkConservativityEdge linkPtr cc
     return $ do
         (consv, expl, obl) <- res
-        return (consv, encodeAnySentence <$> expl, encodeAnySentence <$> obl)
+        return (consv, PyTheory expl, PyTheory obl)
 
 checkConservativityEdgeAndRecord :: PyConservativityChecker -> HDT.LinkPointer
-  -> IO (Result ((Conservativity, [HDT.GenericTransportType], [HDT.GenericTransportType]), LibEnv))
+  -> IO (Result ((Conservativity, PyTheory, PyTheory), LibEnv))
 checkConservativityEdgeAndRecord (PyConservativityChecker cc) linkPtr = do
     res <- HP.checkConservativityEdgeAndRecord linkPtr cc
     return $ do
         ((consv, expl, obl), env) <- res
-        return ((consv, encodeAnySentence <$> expl, encodeAnySentence <$> obl), env)
+        return ((consv, PyTheory expl, PyTheory obl), env)
 
 
 getAllSentences :: PyTheory -> PyTheorySentenceByName
@@ -447,32 +441,32 @@ gmorphismOfEdge = PyGMorphism . Static.DevGraph.dgl_morphism
 GMorphism Wrapper
 -------------------------------------------------------------------------------}
 comorphismOfGMorphism :: PyGMorphism -> PyComorphism
-comorphismOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = PyComorphism (Comorphism cid)
+comorphismOfGMorphism (PyGMorphism GMorphism {gMorphismComor = cid}) = PyComorphism (Comorphism cid)
 
 signatureOfGMorphism :: PyGMorphism -> ExtSign HDT.SignatureJSON HDT.SymbolJSON
-signatureOfGMorphism (PyGMorphism (GMorphism {gMorphismSign = sig})) = ExtSign {
+signatureOfGMorphism (PyGMorphism GMorphism {gMorphismSign = sig}) = ExtSign {
         plainSign = encode (plainSign sig),
         nonImportedSymbols = Set.map encode $ nonImportedSymbols sig
     }
 
 comorphismNameOfGMorphism :: PyGMorphism -> String
-comorphismNameOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = language_name cid
+comorphismNameOfGMorphism (PyGMorphism GMorphism {gMorphismComor = cid}) = language_name cid
 
 comorphismDescriptionOfGMorphism :: PyGMorphism -> String
-comorphismDescriptionOfGMorphism (PyGMorphism (GMorphism {gMorphismComor = cid})) = description cid
+comorphismDescriptionOfGMorphism (PyGMorphism GMorphism {gMorphismComor = cid}) = description cid
 
 domainOfGMorphism :: PyGMorphism -> HDT.GenericTransportType
-domainOfGMorphism (PyGMorphism (GMorphism {gMorphismMor = m})) = encode $ dom m
+domainOfGMorphism (PyGMorphism GMorphism {gMorphismMor = m}) = encode $ dom m
 
 codomainOfGMorphism :: PyGMorphism -> HDT.GenericTransportType
-codomainOfGMorphism (PyGMorphism (GMorphism {gMorphismMor = m})) = encode $ cod m
+codomainOfGMorphism (PyGMorphism GMorphism {gMorphismMor = m}) = encode $ cod m
 
 isGMorphismInclusion :: PyGMorphism -> Bool
 isGMorphismInclusion (PyGMorphism m) = isInclusion m
 
 
 gMorphismToTransportType :: PyGMorphism -> HDT.GenericTransportType
-gMorphismToTransportType (PyGMorphism (GMorphism {gMorphismComor = cid, gMorphismSign = sig, gMorphismMor = mor})) =
+gMorphismToTransportType (PyGMorphism GMorphism {gMorphismComor = cid, gMorphismSign = sig, gMorphismMor = mor}) =
     encode $ object ["nameOfComorphism" .= show cid, "signature" .= sig, "morphism" .= mor]
 
 -- symbolMapOfGMorphism :: PyGMorphism -> Map.Map HDT.SymbolJSON HDT.SymbolJSON

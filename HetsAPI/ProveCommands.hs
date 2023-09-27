@@ -49,7 +49,7 @@ import Common.ResultT (ResultT (..), liftR)
 
 import Comorphisms.LogicGraph (logicGraph)
 
-import qualified Interfaces.Utils (checkConservativityNode, getUsableConservativityCheckers, checkConservativityEdgeWith, recordConservativityResult, AnySentence)
+import qualified Interfaces.Utils (checkConservativityNode, getUsableConservativityCheckers, checkConservativityEdgeWith, recordConservativityResult)
 
 import Logic.Comorphism (AnyComorphism)
 import Logic.Grothendieck (findComorphismPaths)
@@ -102,7 +102,7 @@ defaultConsCheckingOptions = ConsCheckingOptions {
 type ProofResult = (G_theory -- The new theory
     , [ProofStatus G_proof_tree]) -- ProofStatus of each goal
 
-type ConservativityResult = (Conservativity, [Interfaces.Utils.AnySentence], [Interfaces.Utils.AnySentence])
+type ConservativityResult = (Conservativity, G_theory, G_theory)
 
 
 getTheoryForSelection :: [String] -> [String] -> [String] -> G_theory -> G_theory
@@ -174,12 +174,12 @@ checkConsistency (libName, libEnv, dgraph, lnode) (ConsCheckingOptions ccM comor
             (Just cc, Just comorphism) -> return (cc, comorphism)
             (Just cc, Nothing) -> do
                 let ccName = getCcName cc
-                comorphism <-  (snd . head . filter ((== ccName) . getCcName . fst) <$> getUsableConsistencyCheckers theory)
+                comorphism <-  snd . head . filter ((== ccName) . getCcName . fst) <$> getUsableConsistencyCheckers theory
                 return (cc, comorphism)
             (Nothing, Just comorphism) -> do
-                cc <- (fst . head . filter ((== comorphism) . snd) <$> getUsableConsistencyCheckers theory)
+                cc <- fst . head . filter ((== comorphism) . snd) <$> getUsableConsistencyCheckers theory
                 return (cc, comorphism)
-            (Nothing, Nothing) -> head <$> (getUsableConsistencyCheckers theory)
+            (Nothing, Nothing) -> head <$> getUsableConsistencyCheckers theory
 
         consistencyCheck b cc comorphism libName libEnv dgraph lnode timeout
 
