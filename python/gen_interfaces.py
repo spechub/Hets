@@ -61,7 +61,8 @@ RE_CONSTRUCTOR = re.compile(
     r"^(?:[A-Z]\w+\.)*([A-Z]\w+) :: (?:.* => )?((?:.*? -> )*.*?)$")
 RE_FUNCTION = re.compile(
     r"^(?:[A-Z]\w+\.)*([a-z]\w+) :: (?:.* => )?((?:.*? -> )*.*?)$")
-RE_CLASS = re.compile(r"^data (\w+)\s+((?:\w+ )*)= ...$")
+RE_CLASS = re.compile(r"^(?:data|newtype) (\w+)\s+((?:\w+ )*)= ...$")
+RE_NEW_TYPE = re.compile(r"^ (\w+)\s+((?:\w+ )*)= ...$")
 
 HS_TO_PY_TYPE_MAP = {"Bool": "bool", "Int": "int", "String": "str"}
 

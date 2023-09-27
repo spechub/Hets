@@ -43,3 +43,5 @@ BasicProof = typing.Any
 G_theory = typing.Any
 
 ProofHistory = typing.Any
+
+Node = int

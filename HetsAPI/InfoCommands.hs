@@ -28,15 +28,20 @@ module HetsAPI.InfoCommands (
    , theorySentenceContent
    , theorySentenceBestProof
    , getLibraryDependencies
+   , getRefinementTree
+   , getAvailableSpecificationsForRefinement
 ) where
 
 import Data.Aeson (encode, eitherDecode, Result(..), ToJSON)
 import Data.Dynamic
-import Data.Graph.Inductive (LNode, LEdge)
+import Data.Graph.Inductive (LNode, LEdge, mkGraph, labNodes, subgraph, suc)
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import Common.AS_Annotation (SenAttr (..))
 import Common.DocUtils (pretty)
 import Common.LibName (LibName)
+import qualified Common.Lib.Graph as Graph
 import qualified Common.Lib.Rel as Rel
 import qualified Common.OrderedMap as OMap
 
@@ -45,8 +50,9 @@ import Logic.Prover(ThmStatus(..))
 import Logic.Comorphism(AnyComorphism(..))
 
 import HetsAPI.DataTypes (TheoryPointer, TheorySentenceByName, TheorySentence, Sentence)
+import qualified HetsAPI.Refinement as Refinement
 
-import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, labEdgesDG, DGraph, DGNodeLab, DGLinkLab, getDGNodeName, getRealDGNodeType, getLibDepRel)
+import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, labEdgesDG, DGraph, DGNodeLab, DGLinkLab, getDGNodeName, getRealDGNodeType, getLibDepRel, RTNodeLab, RTLinkLab, refTree, specRoots)
 import Static.DgUtils (DGNodeType)
 import Static.GTheory (G_theory (..), isProvenSenStatus, BasicProof(..))
 
@@ -140,3 +146,11 @@ getDevelopmentGraphNodeType = getRealDGNodeType
 getLibraryDependencies :: LibEnv -> [(LibName, LibName)]
 getLibraryDependencies =
   Rel.toList . Rel.intransKernel . getLibDepRel
+
+
+getRefinementTree :: String -> DGraph -> Maybe (Graph.Gr Refinement.RefinementTreeNode Refinement.RefinementTreeLink)
+getRefinementTree = Refinement.getRefinementTree
+
+getAvailableSpecificationsForRefinement :: DGraph -> [String]
+getAvailableSpecificationsForRefinement = Refinement.getAvailableSpecificationsForRefinement
+

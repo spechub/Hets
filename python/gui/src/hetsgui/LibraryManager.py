@@ -1,5 +1,6 @@
 import logging
 import os.path
+import typing
 from typing import Dict, Optional
 
 from gi.repository import Gtk, Gio, GObject
@@ -7,11 +8,13 @@ from gi.repository import Gtk, Gio, GObject
 from hets import Library, load_library, Options
 from .windows.LibraryWindow import LibraryWindow
 from .windows.MainWindow import MainWindow
+from .windows.RefinementTreeWindow import RefinementTreeWindow
 
 
 class LibraryManager(GObject.GObject):
     __gsignals__ = {
-        "new-library": (GObject.SIGNAL_RUN_FIRST, None, (str,))
+        "new-library": (GObject.SIGNAL_RUN_FIRST, None, (str,)),
+        "new-refinement-tree-spec": (GObject.SIGNAL_RUN_FIRST, None, (str, str))
     }
 
     _logger = logging.getLogger(__name__)
@@ -19,6 +22,7 @@ class LibraryManager(GObject.GObject):
     _loaded_library_paths: Dict[str, str]
     _loaded_libraries: Dict[str, Library]
     _open_windows: Dict[str, MainWindow]
+    _open_refinement_tree_windows: Dict[str, RefinementTreeWindow]
 
     _default_window: Optional[MainWindow]
     _library_graph_window: Optional[LibraryWindow]
@@ -29,6 +33,7 @@ class LibraryManager(GObject.GObject):
         self._loaded_libraries = {}
         self._known_libnames = {}
         self._open_windows = {}
+        self._open_refinement_tree_windows = {}
         self._loaded_library_paths = {}
         self._default_window = None
 
@@ -80,6 +85,9 @@ class LibraryManager(GObject.GObject):
 
             self._loaded_library_paths[file] = library_id
 
+            for spec in self._loaded_libraries[library_id].specifications():
+                self.emit("new-refinement-tree-spec", library_id, spec)
+
             self.show_library(library_id)
         except Exception as e:
             # self._set_library_actions_enabled(False)
@@ -125,3 +133,26 @@ class LibraryManager(GObject.GObject):
 
         self._library_graph_window.show_all()
         self._library_graph_window.present()
+
+    def on_show_refinement_tree(self, sender, library_and_spec: typing.Tuple[str, str]):
+        library_id, spec_name = library_and_spec
+        self.show_refinement_tree(library_id, spec_name)
+
+    def show_refinement_tree(self, library_id: str, spec_name: str):
+        if library_id not in self._loaded_libraries:
+            self._logger.error(
+                f"Tried to open refinement tree for spec '{spec_name}' of an unloaded library with id {library_id}!")
+
+        spec_id = f"{library_id}/{spec_name}"
+        if spec_id not in self._open_refinement_tree_windows:
+            self._open_refinement_tree_windows[spec_id] = RefinementTreeWindow(self._loaded_libraries[library_id],
+                                                                               spec_name,
+                                                                               application=self._application)
+
+            def on_destroy(_):
+                del self._open_refinement_tree_windows[spec_id]
+
+            self._open_refinement_tree_windows[spec_id].connect("destroy", on_destroy)
+
+        self._open_refinement_tree_windows[spec_id].show_all()
+        self._open_refinement_tree_windows[spec_id].present()

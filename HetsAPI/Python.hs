@@ -109,6 +109,8 @@ module HetsAPI.Python (
     , HI.theorySentencePriority
     , HI.theorySentenceContent
     , HI.getLibraryDependencies
+    , HI.getRefinementTree
+    , HI.getAvailableSpecificationsForRefinement
 
     , fstOf3
     , sndOf3
@@ -123,6 +125,10 @@ module HetsAPI.Python (
     , HDT.LinkPointer
     , HDT.SignatureJSON
     , HDT.SymbolJSON
+
+    , Refinement.RefinementTreeNode(..)
+    , Refinement.RefinementTreeLink(..)
+    , Refinement.RefinementTreeLinkType(..)
 )
 
 where
@@ -162,6 +168,8 @@ import Static.GTheory (BasicProof(..), sublogicOfTh)
 import qualified Proofs.AbstractState
 import Proofs.AbstractState (G_prover, G_proof_tree(..), G_cons_checker, G_conservativity_checker, conservativityCheckerId)
 import Proofs.ConsistencyCheck (ConsistencyStatus)
+
+import qualified HetsAPI.Refinement as Refinement
 
 
 fstOf3 :: (a,b,c) -> a

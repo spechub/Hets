@@ -4,11 +4,12 @@ Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 """
 
-from typing import Optional, Dict, Any, Tuple, List
+from typing import Optional, Any, Tuple, List
 
 from .DevelopmentGraph import DevelopmentGraph
 from .HsWrapper import HsHierarchyElement
 from .Options import Options
+from .RefinementTree import RefinementTree
 from .haskell import loadLibrary as loadHsLibrary, fst, snd, getGraphForLibrary, Result, resultToMaybe, Just, fromJust, \
     automatic as automaticHs, globalSubsume as globalSubsumeHs, globalDecomposition as globalDecompositionHs, \
     localInference as localInferenceHs, localDecomposition as localDecompositionHs, \
@@ -17,7 +18,8 @@ from .haskell import loadLibrary as loadHsLibrary, fst, snd, getGraphForLibrary,
     computeColimit as computeColimitHs, normalForm as normalFormHs, triangleCons as triangleConsHs, \
     freeness as freenessHs, libFlatImports as libFlatImportsHs, libFlatDUnions as libFlatDUnionsHs, \
     libFlatRenamings as libFlatRenamingsHs, libFlatHiding as libFlatHidingHs, libFlatHeterogen as libFlatHeterogenHs, \
-    qualifyLibEnv as qualifyLibEnvHs, getLibraryDependencies
+    qualifyLibEnv as qualifyLibEnvHs, getLibraryDependencies, getAvailableSpecificationsForRefinement, getRefinementTree
+from .maybe import maybe_to_optional
 from .result import result_or_raise
 from .LibName import LibName
 
@@ -154,6 +156,18 @@ class Library(HsHierarchyElement):
         if isinstance(new_env_m, Just):
             self.hs_update(fromJust(new_env_m))
 
+    def specifications(self) -> List[str]:
+        return getAvailableSpecificationsForRefinement(self.development_graph()._hs_development_graph)
+
+    def get_refinement_tree(self, spec_name) -> Optional[RefinementTree]:
+        hs_ref_tree_m = getRefinementTree(spec_name, self.development_graph()._hs_development_graph)
+
+        hs_ref_tree = maybe_to_optional(hs_ref_tree_m)
+        if hs_ref_tree is None:
+            return None
+
+        return RefinementTree(hs_ref_tree)
+    
 
 def load_library(path: str, options: Optional[Options] = None) -> Library:
     if options is None:

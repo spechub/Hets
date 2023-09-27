@@ -67,8 +67,11 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_actions: typing.List[Gio.SimpleAction] = []
 
         self._action("open_file", self._on_menu_open_file)
+
         self._library_actions.append(self._action("open_library_window", self._on_open_library_window))
+
         self._action_state("change_graph_layout", self._on_change_graph_layout, "vertical")
+
         self._library_actions.append(self._action("node.prove", self._on_prove_node, "s"))
         self._library_actions.append(self._action("node.check_consistency", self._on_check_consistency_node, "s"))
         self._library_actions.append(self._action("node.show_info", self._on_show_node_info, "s"))
@@ -142,7 +145,7 @@ class MainWindow(Gtk.ApplicationWindow):
         if self._ui_graph:
             self._ui_graph.load_graph(self._loaded_library.development_graph())
 
-        self.set_title(f"{library.name().location()} - Heterogeneous Toolset")
+        self.set_title(f"{library.name().id()} - Heterogeneous Toolset")
 
         self._set_library_actions_enabled(True)
 

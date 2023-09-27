@@ -19,6 +19,9 @@
                     <attribute name="label" translatable="yes">Library Graph</attribute>
                     <attribute name="action">win.open_library_window</attribute>
                 </item>
+                <submenu id="refinement-trees">
+                    <attribute name="label" translatable="yes">Refinement Tree</attribute>
+                </submenu>
 
             </section>
             <section>

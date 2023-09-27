@@ -4,6 +4,8 @@ from .base import *
 
 from hs.HetsAPI.Internal import (
     # type imports
+    LEdge,
+    LNode,
     LibEnv,
 
     # class imports
@@ -35,6 +37,7 @@ from hs.HetsAPI.Internal import (
     ExtSign,
     GlobalAnnos,
     GoalStatus,
+    Gr,
     HcOpt,
     HetcatsOpts,
     IRI,
@@ -48,6 +51,9 @@ from hs.HetsAPI.Internal import (
     ProofState,
     ProofStatus,
     Proved,
+    RTLink,
+    RTLinkLab,
+    RTNodeLab,
     Result,
     SType,
     TacticScript,
@@ -171,6 +177,8 @@ from hs.HetsAPI.Internal import (
     ioEncoding,
     isInternalNode,
     isProvenConsStatusLink,
+    labEdges,
+    labNodes,
     libVersion,
     libdirs,
     linkStatus,
@@ -195,6 +203,10 @@ from hs.HetsAPI.Internal import (
     recurse,
     requiredConservativity,
     resultToMaybe,
+    rtl_type,
+    rtn_diag,
+    rtn_name,
+    rtn_type,
     runMMT,
     serve,
     showConsistencyStatus,

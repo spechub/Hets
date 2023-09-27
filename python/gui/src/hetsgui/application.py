@@ -2,6 +2,7 @@ import os.path
 import sys
 import threading
 import logging
+import typing
 from typing import Optional
 
 import gi
@@ -16,12 +17,14 @@ class HetsApplication(Gtk.Application):
     _logger = logging.getLogger(__name__)
 
     _reopen_libraries_menu_section: Optional[Gio.Menu]
+    _refinement_trees_menu_section: Optional[Gio.Menu]
 
     def __init__(self):
         super().__init__(
             application_id="eu.hets.gui",
             flags=Gio.ApplicationFlags.HANDLES_OPEN)
         self._library_manager = None
+        self._refinement_trees_menu_section = None
         self._reopen_libraries_menu_section = None
         GLib.set_application_name("Hets")
         self.set_option_context_parameter_string("FILE")
@@ -45,9 +48,19 @@ class HetsApplication(Gtk.Application):
         action_show_library.connect("activate", self._on_open_win_for_lib)
         self.add_action(action_show_library)
 
+        action_show_refinement_tree = Gio.SimpleAction.new("open_refinement_tree", GLib.VariantType("av"))
+        action_show_refinement_tree.connect("activate", self._on_open_refinement_tree)
+        self.add_action(action_show_refinement_tree)
+
     def _on_open_win_for_lib(self, action: Gio.SimpleAction, parameter: GLib.Variant):
         if self._library_manager is not None:
             self._library_manager.show_library(parameter.get_string())
+
+    def _on_open_refinement_tree(self, action: Gio.SimpleAction, parameter: GLib.Variant):
+        if self._library_manager is not None:
+            library_id, spec_name = parameter.unpack()
+
+            self._library_manager.show_refinement_tree(library_id, spec_name)
 
     def _on_handle_local_options(self, application, options: GLib.VariantDict):
         log_value = options.lookup_value("log")
@@ -70,6 +83,7 @@ class HetsApplication(Gtk.Application):
     def do_startup(self):
         Gtk.Application.do_startup(self)
         self._reopen_libraries_menu_section = self.get_menu_by_id("reopen-section")
+        self._refinement_trees_menu_section = self.get_menu_by_id("refinement-trees")
 
     def do_command_line(self, command_line):
         self.activate()
@@ -97,7 +111,8 @@ class HetsApplication(Gtk.Application):
                 from hets import Options
 
                 self._library_manager = LibraryManager(self)
-                self._library_manager.connect("new-library", self._on_add_open_library)
+                self._library_manager.connect("new-library", self._on_new_library)
+                self._library_manager.connect("new-refinement-tree-spec", self._on_new_refinement_tree_spec)
 
                 startup_window.close()
 
@@ -125,10 +140,20 @@ class HetsApplication(Gtk.Application):
         self.window.show_all()
         self.window.present()
 
-    def _on_add_open_library(self, sender, library_id: str):
+    def _on_new_library(self, sender, library_id: str):
         if self._reopen_libraries_menu_section:
             item = Gio.MenuItem()
             item.set_label(library_id)
             item.set_action_and_target_value("app.open_win_for_lib", get_variant(library_id))
 
             self._reopen_libraries_menu_section.append_item(item)
+
+    def _on_new_refinement_tree_spec(self, sender, library_id: str, spec_name: str):
+        if self._refinement_trees_menu_section:
+            item = Gio.MenuItem()
+            item.set_label(f"{library_id}: {spec_name}")
+            item.set_action_and_target_value("app.open_refinement_tree", get_variant((library_id, spec_name)))
+
+            self._refinement_trees_menu_section.append_item(item)
+
+
