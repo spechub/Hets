@@ -15,7 +15,7 @@ plus owl, xsd, rdf and rdfs reserved keywords. All identifiers are mixed case
 
 module OWL2.Keywords where
 
-import Common.Keywords
+import Common.Keywords hiding (languageS)
 
 keywords :: [String]
 keywords =
