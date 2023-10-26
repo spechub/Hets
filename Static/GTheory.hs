@@ -345,6 +345,17 @@ propagateProofs locTh@(G_theory lid1 syn sig ind lsens _)
 -- | Grothendieck diagrams
 type GDiagram = Gr G_theory (Int, GMorphism)
 
+-- | Morphisms between networks
+
+data DistributedMorphism = 
+   DistributedMorphism {
+    sourceNetwork :: GDiagram,
+    targetNetwork :: GDiagram,
+    graphMorphism :: Map.Map (Node, Node) GMorphism
+   }
+
+-- static analysis should check naturality condition
+
 -- | checks whether a connected GDiagram is homogeneous
 
 isHomogeneousGDiagram :: GDiagram -> Bool
