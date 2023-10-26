@@ -136,6 +136,7 @@ instance StaticAnalysis CommonLogic
       morphism_union CommonLogic = ()
 -}
       signature_colimit CommonLogic = signColimit
+      convertTheory CommonLogic = Just convertBasicTheory
 
 
 -- | Sublogics
