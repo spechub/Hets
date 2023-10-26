@@ -5,7 +5,7 @@ import qualified Data.Set as S
 
 import Common.Doc
 import Common.DocUtils
-import Common.Keywords
+import Common.Keywords hiding (reflexiveS, transitiveS, symmetricS)
 import Common.IRI
 import Common.GlobalAnnotations as GA (PrefixMap)
 

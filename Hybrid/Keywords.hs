@@ -17,8 +17,8 @@ String constants for keywords to be used for parsing and printing
 
 module Hybrid.Keywords where
 
-nominalS :: String
-nominalS = "nominal"
+--nominalS :: String
+--nominalS = "nominal"
 
-nominalsS :: String
-nominalsS = "nominals"
+--nominalsS :: String
+--nominalsS = "nominals"

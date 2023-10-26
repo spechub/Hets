@@ -40,6 +40,7 @@ import qualified Data.Map as Map
 import Logic.Logic
 import Logic.Grothendieck
 import CASL.Logic_CASL  -- also serves as default logic
+import RigidCASL.Logic_RigidCASL
 import HasCASL.Logic_HasCASL
 import Propositional.Logic_Propositional
 import QBF.Logic_QBF
@@ -91,6 +92,7 @@ import NeSyPatterns.Logic_NeSyPatterns
 logicList :: [AnyLogic]
 logicList =
   [ Logic CASL
+  , Logic RigidCASL
   , Logic HasCASL
   , Logic HolLight
   , Logic Isabelle

@@ -50,6 +50,9 @@ import qualified Data.Map as Map
 import qualified Control.Monad.Fail as Fail
 import Data.Maybe (fromMaybe)
 
+import Comorphisms.DynComorphismList
+import Comorphisms.DynLogicList
+
 import Common.Result
 import Common.IRI (nullIRI, parseIRI)
 import Logic.Logic
@@ -88,6 +91,7 @@ import Comorphisms.QVTR2CASL
 
 import Comorphisms.CASL2Hybrid
 import Comorphisms.Hybrid2CASL
+import Comorphisms.HPAR2CASL
 
 
 #ifdef CASLEXTENSIONS
@@ -120,6 +124,8 @@ import Comorphisms.CommonLogicModuleElimination
 import Comorphisms.Prop2CommonLogic
 import Comorphisms.SoftFOL2CommonLogic
 import Comorphisms.Adl2CASL
+import Comorphisms.Rigid2HPAR
+import Comorphisms.Rigid2CASL
 #endif
 #ifndef NOOWLLOGIC
 import OWL2.DMU2OWL2
@@ -207,6 +213,9 @@ comorphismList =
     , Comorphism Prop2CommonLogic
     , Comorphism SoftFOL2CommonLogic
     , Comorphism Adl2CASL
+    , Comorphism Rigid2HPAR
+    , Comorphism Rigid2CASL
+    , Comorphism HPAR2CASL
 #endif
 #ifndef NOOWLLOGIC
     , Comorphism OWL22CASL
@@ -244,7 +253,7 @@ comorphismList =
     , Comorphism QBF2Prop
     , Comorphism Prop2QBF
     , Comorphism CSMOF2CASL
-    , Comorphism QVTR2CASL ]
+    , Comorphism QVTR2CASL ] ++ dynComorphismList
 
 inclusionList :: [AnyComorphism]
 inclusionList =
@@ -287,6 +296,7 @@ logicGraph = emptyLogicGraph
         ++ concatMap (\ (Comorphism cid) ->
              [Logic $ sourceLogic cid, Logic $ targetLogic cid])
            comorphismList)
+    , knownHybLogics = Map.fromList dynHLogicList
     , comorphisms = Map.fromList $ map addComorphismName comorphismList
     , inclusions = addCompsN $ Map.fromList
         $ map addInclusionNames inclusionList

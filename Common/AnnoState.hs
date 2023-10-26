@@ -214,6 +214,9 @@ equalT :: AParser st Token
 equalT = wrapAnnos $ pToken $ reserved [exEqual]
          (choice (map (keySign . string) [exEqual, equalS]) <?> show equalS)
 
+doubleColonT :: AParser st Token
+doubleColonT = asKey "::"
+
 colonT :: AParser st Token
 colonT = asKey colonS
 

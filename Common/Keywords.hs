@@ -260,6 +260,64 @@ ren_proc_openS = "[["
 ren_proc_closeS :: String
 ren_proc_closeS = "]]"
 
+-- * definitions of hybrid logics
+
+newhlogicS :: String
+newhlogicS = "newhlogic"
+
+baselogicS :: String
+baselogicS = "base"
+
+hlogicS :: String
+hlogicS = "hlogic"
+
+quantS :: String
+quantS = "quant"
+
+constrS :: String
+constrS = "constr"
+
+reflexiveS :: String
+reflexiveS = "Reflexive"
+
+transitiveS :: String
+transitiveS = "Transitive"
+
+symmetricS :: String
+symmetricS = "Symmetric"
+
+serialS :: String
+serialS = "Serial"
+
+euclideanS :: String
+euclideanS = "Euclidean"
+
+functionalConstrS :: String
+functionalConstrS = "Functional"
+
+linearS :: String
+linearS = "Linear"
+
+totalS :: String
+totalS = "Total"
+   
+sameInterpretationS :: String
+sameInterpretationS = "SameInterpretation"
+
+sameDomainS :: String
+sameDomainS = "SameDomain"
+
+-- * definition of hybridizations of comorphisms
+
+hcomS :: String
+hcomS = "newhcomorphism"
+
+basecomS :: String
+basecomS = "basecomorphism"
+
+sourceHLogicS :: String
+sourceHLogicS = "sourcehlogic"
+
 -- * logic definition symbols
 
 newlogicS :: String
@@ -663,3 +721,21 @@ withS = "with"
 
 withinS :: String
 withinS = "within"
+
+hybrid_keywords :: [String]
+hybrid_keywords = [
+        rigidS,
+        modalityS,
+        modalitiesS,
+        nominalS,
+        nominalsS
+        ]
+
+nominalS, nominalsS :: String
+nominalS = "nominal"
+nominalsS = "nominals"
+
+hExistsS, hForallS :: String
+hExistsS = "existsH"
+hForallS = "forallH"
+

@@ -1374,12 +1374,11 @@ compareLinks l1 l2 = if eqDGLinkLabContent l1 { dgl_id = defaultEdgeId } l2
 {- | tries to insert a labeled edge into a given DG, but if this edge
      already exists, then does nothing. -}
 insLEdgeNubDG :: LEdge DGLinkLab -> DGraph -> DGraph
-insLEdgeNubDG (v, w, l) g =
+insLEdgeNubDG (v, w, l) g = 
   let oldEdgeId = getNewEdgeId g
       (ng, change) = Tree.insLEdge False compareLinks
         (v, w, l { dgl_id = oldEdgeId }) $ dgBody g
-  in
-     g { getNewEdgeId = if change then incEdgeId oldEdgeId else oldEdgeId
+  in g { getNewEdgeId = if change then incEdgeId oldEdgeId else oldEdgeId
        , dgBody = ng }
 
 {- | inserts a new edge into the DGraph using it's own edgeId.

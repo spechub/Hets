@@ -161,6 +161,11 @@ import Data.Ord
 import Data.Typeable
 import Control.Monad (unless)
 import qualified Control.Monad.Fail as Fail
+import Logic.SemConstr
+
+import CASL.AS_Basic_CASL
+
+import qualified GenHyb.GenTypes as GTypes
 
 import Data.Aeson (FromJSON, ToJSON)
 
@@ -196,7 +201,7 @@ class Show lid => Language lid where
 -- short description = first line of description
 short_description :: Language lid => lid -> String
 short_description l = head ((lines $ description l) ++ [""])
-      
+
 {- | Categories are given as usual: objects, morphisms, identities,
      domain, codomain and composition. The type id is the name, or
      the identity of the category. It is an argument to all functions
@@ -358,6 +363,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       print_named :: lid -> Named sentence -> Doc
       print_named _ = printAnnoted (addBullet . pretty) . fromLabelledSen
 
+      is_nominal_sen :: lid -> Set.Set Id -> sentence -> (Bool, Maybe Id)
+      is_nominal_sen _ _ _ = (False, Nothing)
+
       -- --------------------- symbols ---------------------------
 
       -- | dependency ordered list of symbol sets for a signature
@@ -390,6 +398,9 @@ class (Language lid, Category sign morphism, Ord sentence,
       -- | a logic dependent kind of a symbol
       symKind :: lid -> symbol -> String
       symKind _ _ = "defaultKind"
+      -- | extended kind of symbol, to allow consts in CASL
+      extSymKind :: lid -> symbol -> String
+      extSymKind = symKind
       -- | the symbols occuring in a sentence (any order)
       symsOfSen :: lid -> sign -> sentence -> [symbol]
       symsOfSen _ _ _ = []
@@ -467,9 +478,12 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
            -> Maybe ((basic_spec, sign, GlobalAnnos)
              -> Result (basic_spec, ExtSign sign symbol, [Named sentence]))
          basic_analysis _ = Nothing
-         -- | Analysis of just sentences
+         {- | Analysis of just sentences
+            the result is a pair because in CASL logics we want to use both
+            representations of the formula - for display and for translation
+          -}
          sen_analysis :: lid
-           -> Maybe ((basic_spec, sign, sentence) -> Result sentence)
+           -> Maybe ((basic_spec, sign, sentence) -> Result (sentence, sentence))
          sen_analysis _ = Nothing
          -- | a basic analysis with additional arguments
          extBasicAnalysis :: lid -> IRI -> LibName
@@ -534,6 +548,10 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
             in the CASL RefMan p. 192. -}
          symbol_to_raw :: lid -> symbol -> raw_symbol
          symbol_to_raw l _ = statError l "symbol_to_raw"
+         {- | convert a raw symbol to symbol, when possible
+         -}
+         raw_to_symbol :: lid -> raw_symbol -> Maybe symbol
+         raw_to_symbol _ _ = Nothing
          {- | Construe an identifier, like f, as a raw symbol.
             See CASL RefMan p. 192, function IDAsSym -}
          id_to_raw :: lid -> Id -> raw_symbol
@@ -542,14 +560,20 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
             example, f:s->t matches f. See CASL RefMan p. 192 -}
          matches :: lid -> symbol -> raw_symbol -> Bool
          matches _ _ _ = True
+         {- | convert a raw symbol to a CASL variable -}
+         raw_to_var :: lid -> raw_symbol -> Maybe (Token, Id)
+         raw_to_var _ _ = Nothing
 
          -- ------------- operations on signatures and morphisms -----------
 
          -- | the empty (initial) signature, see CASL RefMan p. 193
          empty_signature :: lid -> sign
-         -- | adds a symbol to a given signature
+         -- TODO: remove this! adds a symbol to a given signature
          add_symb_to_sign :: lid -> sign -> symbol -> Result sign
          add_symb_to_sign l _ _ = statFail l "add_symb_to_sign"
+         -- | extend the signature with nominals
+         add_noms_to_sign :: lid -> sign -> Set.Set Id -> Result sign
+         add_noms_to_sign _ s _ = return s
          -- | union of signatures, see CASL RefMan p. 193
          signature_union :: lid -> sign -> sign -> Result sign
          signature_union l _ _ = statFail l "signature_union"
@@ -639,9 +663,9 @@ class ( Syntax lid basic_spec symbol symb_items symb_map_items
 printTheory :: StaticAnalysis lid basic_spec sentence symb_items symb_map_items
                sign morphism symbol raw_symbol
   => Maybe IRI -> lid -> (sign, [Named sentence]) -> Doc
-printTheory sm lid th@(s, l) = case
+printTheory sm lid (s, l) = case
            (convertTheory lid, basicSpecPrinter sm lid) of
-             (Just c, Just p) -> p (c th)
+             -- TODO: for now (Just c, Just p) -> p (c (s,l))
              _ -> print_sign lid s $++$ vsep (map (print_named lid) l)
 
 -- | guarded inclusion
@@ -745,6 +769,60 @@ class (StaticAnalysis lid
          -- Parser of sentence (Added for Hybridized logics)
          parse_basic_sen :: lid -> Maybe (basic_spec -> AParser st sentence)
          parse_basic_sen _ = Nothing
+
+         -- formula parser, no extra argument of type basic_spec
+
+         parse_formula :: lid -> Maybe (AParser st sentence)
+         parse_formula _  = Nothing
+
+         -- prim formula parser, for hybridization
+
+         parse_prim_formula :: lid -> Maybe (PrefixMap -> AParser st sentence)
+         parse_prim_formula _ = Nothing
+
+         {-
+        case data_logic hlid of
+         Just (Logic baseLid) -> do
+          f <- parseQFormula eng hasQNominalsBase
+                  (not $ null kVarsBase) baseLid (q, p)
+        gives a type mismatch,
+        although the required Logic instance has the same baseLid and
+        the types should be determined by the functional dependency
+        to fix this, we record in parse_q_formula
+        the method (parseQFormula baseLid) for each logic
+        and we call it for hlid
+        UGLY solution!
+         -}
+
+         parse_q_formula :: lid ->
+                            Maybe (Bool -> Bool -> Bool ->
+                                   (GTypes.HQUANT, Token) ->
+                                   PrefixMap -> 
+                                   AParser st sentence)
+         parse_q_formula _ = Nothing
+
+         -- semantic constraints, that will determine sentences when
+         -- translating from a hybrid logic to FOL
+
+         sem_constr :: lid -> [SemanticConstraint]
+         sem_constr _ = []
+
+         -- for each hybrid logic, store the kinds allowed in quantifications
+         -- and if it allows quantification on nominals, to be able to set
+         -- the right parameters for the analysis in recursive calls,
+         -- for double hybridization
+
+         hyb_params :: lid -> Maybe (Bool, [String])
+         hyb_params _ = Nothing
+
+         -- logic dependent translation of constraints to CASL formulas
+
+         constr_to_sens :: lid -> sign -> String -> SemanticConstraint ->
+                           Result ([Named CASLFORMULA])
+         constr_to_sens lid _ _ _ =
+           fail $
+            "translation of constraints to CASL formulas " ++
+            "not implemented for logic " ++ show lid
 
          -- | stability of the implementation
          stability :: lid -> Stability
@@ -861,11 +939,36 @@ class (StaticAnalysis lid
                           -> Result (sign, [Named sentence])
          -- no logic should throw an error here
          addOmdocToTheory _ _ t _ = return t
+         -- helpers for hybridization
+           -- for each type, its name and the file where it is defined
+           -- ("","") for default ()
+         sublogicsTypeName :: lid -> (String, String)
+         sublogicsTypeName _ = ("","")
+         basicSpecTypeName :: lid -> (String, String)
+         basicSpecTypeName _ = ("","")
+         sentenceTypeName :: lid -> (String, String)
+         sentenceTypeName _ = ("","")
+         symbItemsTypeName :: lid -> (String, String)
+         symbItemsTypeName _ = ("","")
+         symbMapItemsTypeName :: lid -> (String, String)
+         symbMapItemsTypeName _ = ("","")
+         signTypeName :: lid -> (String, String)
+         signTypeName _ = ("","")
+         morphismTypeName :: lid -> (String, String)
+         morphismTypeName _ = ("","")
+         symbolTypeName :: lid -> (String, String)
+         symbolTypeName _ = ("","")
+         rawSymbolTypeName :: lid -> (String, String)
+         rawSymbolTypeName _ = ("","")
+         proofTreeTypeName :: lid -> (String, String)
+         proofTreeTypeName _ = ("","")
 
          -- | sublogic of a theory
          sublogicOfTheo :: lid -> (sign, [sentence]) -> sublogics
          sublogicOfTheo _ (sig, axs) = 
             foldl lub (minSublogic sig) $ map minSublogic axs
+
+
 
 
 
