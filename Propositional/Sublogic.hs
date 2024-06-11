@@ -68,8 +68,11 @@ datatypes                                                                 --
 ----------------------------------------------------------------------------- -}
 
 -- | types of propositional formulae
-data PropFormulae = PlainFormula      -- Formula without structural constraints
-                  | HornClause        -- Horn Clause Formulae
+data PropFormulae = PlainFormula            -- Formula without structural constraints
+                  | NegationNormalForm      -- Formula in Negation Normal Form
+                  | DisjunctiveNormalForm   -- Formula in Disjunctive Normal Form
+                  | ConjunctiveNormalForm   -- Formula in Conjunctive Normal Form
+                  | HornClause              -- Horn Clause Formulae
                   deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | sublogics for propositional logic
@@ -81,8 +84,18 @@ data PropSL = PropSL
 isProp :: PropSL -> Bool
 isProp sl = format sl == PlainFormula
 
+isNNF :: PropSL -> Bool
+isNNF sl = format sl == NegationNormalForm
+
+isDNF :: PropSL -> Bool
+isDNF sl = format sl == DisjunctiveNormalForm
+
+isCNF :: PropSL -> Bool
+isCNF sl = format sl == ConjunctiveNormalForm
+
 isHC :: PropSL -> Bool
 isHC sl = format sl == HornClause
+
 
 -- | comparison of sublogics
 compareLE :: PropSL -> PropSL -> Bool
@@ -120,7 +133,19 @@ sublogics_join pfF a b = PropSL
                          }
 
 joinType :: PropFormulae -> PropFormulae -> PropFormulae
+joinType PlainFormula _ = PlainFormula
+joinType _ PlainFormula = PlainFormula
 joinType HornClause HornClause = HornClause
+joinType ConjunctiveNormalForm ConjunctiveNormalForm = ConjunctiveNormalForm
+joinType DisjunctiveNormalForm DisjunctiveNormalForm = DisjunctiveNormalForm
+joinType _ NegationNormalForm = NegationNormalForm
+joinType NegationNormalForm _ = NegationNormalForm
+joinType HornClause ConjunctiveNormalForm = ConjunctiveNormalForm
+joinType ConjunctiveNormalForm HornClause = ConjunctiveNormalForm
+joinType ConjunctiveNormalForm DisjunctiveNormalForm = NegationNormalForm
+joinType DisjunctiveNormalForm ConjunctiveNormalForm = NegationNormalForm
+joinType HornClause DisjunctiveNormalForm = NegationNormalForm
+joinType DisjunctiveNormalForm HornClause = NegationNormalForm
 joinType _ _ = PlainFormula
 
 sublogics_max :: PropSL -> PropSL -> PropSL
@@ -262,6 +287,18 @@ sublogics_all =
      {
        format = HornClause
      }
+     , PropSL
+     {
+       format = ConjunctiveNormalForm
+     }
+     , PropSL
+     {
+       format = DisjunctiveNormalForm
+     }
+     , PropSL
+     {
+       format = NegationNormalForm
+     }
     , PropSL
      {
        format = PlainFormula
@@ -275,6 +312,9 @@ Conversion functions to String                                            --
 sublogics_name :: PropSL -> String
 sublogics_name f = case format f of
       HornClause -> "HornClause"
+      ConjunctiveNormalForm -> "CNF"
+      DisjunctiveNormalForm -> "DNF"
+      NegationNormalForm -> "NNF"
       PlainFormula -> "Prop"
 
 {- -----------------------------------------------------------------------------
