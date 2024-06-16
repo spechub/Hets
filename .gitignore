@@ -9,6 +9,7 @@
 .hets*
 *.bin
 ./hets
+hets
 hets_server
 hets.cgi
 rev.txt
