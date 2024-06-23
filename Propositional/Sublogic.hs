@@ -48,7 +48,11 @@ module Propositional.Sublogic
     , prFormulaM                    -- projections of formulae
     , prBasicSpec                   -- projections of basic specs
     , isProp
+    , isNNF
+    , isCNF
+    , isDNF
     , isHC
+    , analyzeFormula
     )
     where
 
@@ -123,7 +127,7 @@ top :: PropSL
 top = PropSL empty
 
 bottom :: PropSL
-bottom = PropSL $ fromList [HornClause]
+bottom = PropSL $ fromList [HornClause, ConjunctiveNormalForm, DisjunctiveNormalForm, NegationNormalForm]
 
 need_PF :: PropSL
 need_PF = bottom { format = empty }
