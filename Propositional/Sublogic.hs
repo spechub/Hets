@@ -377,6 +377,22 @@ prBasicSpec pSL (AS_BASIC.Basic_spec bS) =
                  , AS_Anno.r_annos = AS_Anno.r_annos aBI
                  }
 
+
+-- check if a formula is in a certain sublogic
+
+analyzeFormula :: AS_BASIC.FORMULA -> PropSL
+analyzeFormula formula = PropSL {
+  format = fromList
+    $ Prelude.map (\case
+          checkNNF -> NegationNormalForm
+          checkDNF -> DisjunctiveNormalForm
+          checkCNF -> ConjunctiveNormalForm
+          checkHorn -> HornClause)
+      $ Prelude.filter (`apply` formula) [checkNNF, checkCNF, checkDNF, checkHorn]
+}
+  where
+    apply f x = f x
+
 checkNNF :: AS_BASIC.FORMULA -> Bool
 checkNNF formula =
   case formula of
