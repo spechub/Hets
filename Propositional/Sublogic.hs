@@ -377,6 +377,44 @@ prBasicSpec pSL (AS_BASIC.Basic_spec bS) =
                  , AS_Anno.r_annos = AS_Anno.r_annos aBI
                  }
 
+checkNNF :: AS_BASIC.FORMULA -> Bool
+checkNNF formula =
+  case formula of
+      AS_BASIC.Conjunction conjs _ -> all (\case
+                                        AS_BASIC.Disjunction form _ -> all checkNNF form
+                                        AS_BASIC.Conjunction form _ -> all checkNNF form
+                                        conj -> isLiteral conj) conjs
+      AS_BASIC.Disjunction disjs _ -> all (\case
+                                        AS_BASIC.Disjunction form _ -> all checkNNF form
+                                        AS_BASIC.Conjunction form _ -> all checkNNF form
+                                        disj -> isLiteral disj) disjs
+      form -> isLiteral form
+
+checkDNF :: AS_BASIC.FORMULA -> Bool
+checkDNF formula =
+  case formula of
+      AS_BASIC.Disjunction disjs _ -> all (\case
+                                        AS_BASIC.Conjunction form _ -> all isLiteral form
+                                        disj -> isLiteral disj) disjs
+      form -> isLiteral form
+
+checkCNF :: AS_BASIC.FORMULA -> Bool
+checkCNF formula =
+  case formula of
+      AS_BASIC.Conjunction conjs _ -> all (\case
+                                        AS_BASIC.Disjunction form _ -> all isLiteral form
+                                        conj -> isLiteral conj) conjs
+      form -> isLiteral form
+
+checkHorn :: AS_BASIC.FORMULA -> Bool
+checkHorn formula =
+  case formula of
+    AS_BASIC.Conjunction conjs _ -> all (\case
+                                      AS_BASIC.Disjunction disjs _ -> length (Prelude.filter isPosLiteral disjs) <= 1
+                                      AS_BASIC.Implication lhs rhs _ -> checkCNF lhs && isLiteral rhs
+                                      conj -> isLiteral conj) conjs
+    form -> isLiteral form
+
 checkHornPos :: AS_BASIC.FORMULA -> AS_BASIC.FORMULA -> Bool
 checkHornPos fc fl =
     case fc of
