@@ -113,7 +113,7 @@ compareLE p1 p2 =
   let f1 = format p1
       f2 = format p2
   in
-    size f1 <= size f2
+    f2 `isSubsetOf` f1
 
 {- ----------------------------------------------------------------------------
 Special elements in the Lattice of logics                                --
@@ -287,7 +287,7 @@ Conversion functions to String                                            --
 ----------------------------------------------------------------------------- -}
 
 sublogics_name :: PropSL -> String
-sublogics_name f = DL.intercalate ", " $ Prelude.map (\case
+sublogics_name f = DL.intercalate "_" $ Prelude.map (\case
                                 HornClause -> "HornClause"
                                 ConjunctiveNormalForm -> "CNF"
                                 DisjunctiveNormalForm -> "DNF"
