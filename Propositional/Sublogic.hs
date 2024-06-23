@@ -71,8 +71,7 @@ datatypes                                                                 --
 ----------------------------------------------------------------------------- -}
 
 -- | types of propositional formulae
-data PropFormulae = PlainFormula            -- Formula without structural constraints
-                  | NegationNormalForm      -- Formula in Negation Normal Form
+data PropFormulae = NegationNormalForm      -- Formula in Negation Normal Form
                   | DisjunctiveNormalForm   -- Formula in Disjunctive Normal Form
                   | ConjunctiveNormalForm   -- Formula in Conjunctive Normal Form
                   | HornClause              -- Horn Clause Formulae
@@ -87,12 +86,13 @@ data PropSL = PropSL
        - Obviously `PlainFormula` can be part of every format because
        - it does not add any requirements. By convention, the set should
        - contain all restrictions that are applicable. E.g., instead of
-       - {CNF} it should only be {CNF, NNF, PlainFormula}
+       - {CNF} it should only be {CNF, NNF}. A Formula without any restrictions
+       - is represented as an empty set, i.e., {}.
        -}
     } deriving (Show, Eq, Ord, Typeable, Data)
 
 isProp :: PropSL -> Bool
-isProp sl = PlainFormula `elem` format sl
+isProp sl = True
 
 isNNF :: PropSL -> Bool
 isNNF sl = NegationNormalForm `elem` format sl
@@ -120,13 +120,13 @@ Special elements in the Lattice of logics                                --
 ---------------------------------------------------------------------------- -}
 
 top :: PropSL
-top = PropSL $ fromList [PlainFormula]
+top = PropSL empty
 
 bottom :: PropSL
 bottom = PropSL $ fromList [HornClause]
 
 need_PF :: PropSL
-need_PF = bottom { format = fromList [PlainFormula] }
+need_PF = bottom { format = empty }
 
 {- -----------------------------------------------------------------------------
 join and max                                                              --
@@ -275,24 +275,26 @@ sublogics_all :: [PropSL]
 sublogics_all =
   Prelude.map (\x -> PropSL{ format = x }) $
     Prelude.filter isIllegalConfig $
-    toList $ powerSet $ fromList [PlainFormula, NegationNormalForm, DisjunctiveNormalForm, ConjunctiveNormalForm, HornClause]
+    toList $ powerSet $ fromList [NegationNormalForm, DisjunctiveNormalForm, ConjunctiveNormalForm, HornClause]
       where
         isIllegalConfig :: Set PropFormulae -> Bool
-        isIllegalConfig restrictions | Data.Set.null restrictions = False
-                                     | PlainFormula `notElem` restrictions = False
-                                     | otherwise = True
+        isIllegalConfig restr | HornClause `elem` restr && ConjunctiveNormalForm `notElem` restr = False
+                              | ConjunctiveNormalForm `elem` restr && NegationNormalForm `notElem` restr = False
+                              | DisjunctiveNormalForm `elem` restr && NegationNormalForm `notElem` restr = False
+                              | otherwise = True
 
 {- -----------------------------------------------------------------------------
 Conversion functions to String                                            --
 ----------------------------------------------------------------------------- -}
 
 sublogics_name :: PropSL -> String
-sublogics_name f = DL.intercalate "_" $ Prelude.map (\case
+sublogics_name f = if Prelude.null listOfSLs then "PlainFormula" else DL.intercalate "_" listOfSLs
+  where
+    listOfSLs = Prelude.map (\case
                                 HornClause -> "HornClause"
                                 ConjunctiveNormalForm -> "CNF"
                                 DisjunctiveNormalForm -> "DNF"
-                                NegationNormalForm -> "NNF"
-                                PlainFormula -> "Prop") $ toList $ format f
+                                NegationNormalForm -> "NNF") $ toList $ format f
 
 {- -----------------------------------------------------------------------------
 Projections to sublogics                                                  --
