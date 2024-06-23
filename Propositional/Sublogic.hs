@@ -132,31 +132,14 @@ need_PF = bottom { format = fromList [PlainFormula] }
 join and max                                                              --
 ----------------------------------------------------------------------------- -}
 
-sublogics_join :: (PropFormulae -> PropFormulae -> PropFormulae)
-                  -> PropSL -> PropSL -> PropSL
-sublogics_join pfF a b = PropSL
+sublogics_join :: PropSL -> PropSL -> PropSL
+sublogics_join a b = PropSL
                          {
                            format = intersection (format a) (format b)
                          }
 
-joinType :: PropFormulae -> PropFormulae -> PropFormulae
-joinType PlainFormula _ = PlainFormula
-joinType _ PlainFormula = PlainFormula
-joinType HornClause HornClause = HornClause
-joinType ConjunctiveNormalForm ConjunctiveNormalForm = ConjunctiveNormalForm
-joinType DisjunctiveNormalForm DisjunctiveNormalForm = DisjunctiveNormalForm
-joinType _ NegationNormalForm = NegationNormalForm
-joinType NegationNormalForm _ = NegationNormalForm
-joinType HornClause ConjunctiveNormalForm = ConjunctiveNormalForm
-joinType ConjunctiveNormalForm HornClause = ConjunctiveNormalForm
-joinType ConjunctiveNormalForm DisjunctiveNormalForm = NegationNormalForm
-joinType DisjunctiveNormalForm ConjunctiveNormalForm = NegationNormalForm
-joinType HornClause DisjunctiveNormalForm = NegationNormalForm
-joinType DisjunctiveNormalForm HornClause = NegationNormalForm
-joinType _ _ = PlainFormula
-
 sublogics_max :: PropSL -> PropSL -> PropSL
-sublogics_max = sublogics_join joinType
+sublogics_max = sublogics_join
 
 {- -----------------------------------------------------------------------------
 Helpers                                                                   --
