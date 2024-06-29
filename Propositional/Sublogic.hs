@@ -34,6 +34,7 @@ module Propositional.Sublogic
     , bottom                        -- Horn
     , sublogics_all                 -- all sublogics
     , sublogics_name                -- name of sublogics
+    , compareLE
     , sl_sig                        -- sublogic for a signature
     , sl_form                       -- sublogic for a formula
     , sl_sym                        -- sublogic for symbols
@@ -47,12 +48,10 @@ module Propositional.Sublogic
     , prSymM                        -- projections of SYMB_ITEMS
     , prFormulaM                    -- projections of formulae
     , prBasicSpec                   -- projections of basic specs
-    , isProp
     , isNNF
     , isCNF
     , isDNF
     , isHC
-    , analyzeFormula
     )
     where
 
@@ -94,9 +93,6 @@ data PropSL = PropSL
        - is represented as an empty set, i.e., {}.
        -}
     } deriving (Show, Eq, Ord, Typeable, Data)
-
-isProp :: PropSL -> Bool
-isProp sl = True
 
 isNNF :: PropSL -> Bool
 isNNF sl = NegationNormalForm `elem` format sl
@@ -181,59 +177,7 @@ sl_sym ps _ = ps
 
 -- | determines sublogic for formula
 sl_form :: PropSL -> AS_BASIC.FORMULA -> PropSL
-sl_form ps f = sl_fl_form ps $ Tools.flatten f
-
--- | determines sublogic for flattened formula
-sl_fl_form :: PropSL -> [AS_BASIC.FORMULA] -> PropSL
-sl_fl_form ps f = Prelude.foldl sublogics_max ps
-  $ Prelude.map (\ x -> State.evalState (ana_form ps x) 0) f
-
--- analysis of single "clauses"
-ana_form :: PropSL -> AS_BASIC.FORMULA -> State.State Int PropSL
-ana_form ps f =
-    case f of
-      AS_BASIC.Conjunction l _ ->
-          do
-            st <- State.get
-            return $ sublogics_max need_PF $ comp_list $ Prelude.map
-              (\ x -> State.evalState (ana_form ps x) (st + 1)) l
-      AS_BASIC.Implication l m _ ->
-          do
-             st <- State.get
-             let analyze = sublogics_max need_PF $ sublogics_max
-                   ((\ x -> State.evalState (ana_form ps x) (st + 1)) l)
-                   ((\ x -> State.evalState (ana_form ps x) (st + 1)) m)
-             return $
-                    if st < 1 && HornClause `elem` format ps && checkHornPos l m
-                    then ps else analyze
-      AS_BASIC.Equivalence l m _ ->
-           do
-             st <- State.get
-             return $ sublogics_max need_PF $ sublogics_max
-               ((\ x -> State.evalState (ana_form ps x) (st + 1)) l)
-               ((\ x -> State.evalState (ana_form ps x) (st + 1)) m)
-      AS_BASIC.Negation l _ ->
-          if isLiteral l
-          then return ps
-          else
-              do
-                st <- State.get
-                return $ (\ x -> State.evalState (ana_form ps x) (st + 1)) l
-      AS_BASIC.Disjunction l _ ->
-                    let lprime = concatMap Tools.flattenDis l in
-                    if all isLiteral lprime
-                    then return $
-                          if moreThanNLit lprime 1
-                          then sublogics_max need_PF ps else ps
-                    else
-                        do
-                          st <- State.get
-                          return $ sublogics_max need_PF $ comp_list $ Prelude.map
-                            (\ x -> State.evalState (ana_form ps x) (st + 1))
-                                      lprime
-      AS_BASIC.True_atom _ -> return ps
-      AS_BASIC.False_atom _ -> return ps
-      AS_BASIC.Predication _ -> return ps
+sl_form ps f = sublogics_max ps $ analyzeFormula f
 
 moreThanNLit :: [AS_BASIC.FORMULA] -> Int -> Bool
 moreThanNLit form n = Prelude.foldl (\ y x -> if x then y + 1 else y) 0
@@ -413,17 +357,13 @@ checkCNF formula =
 
 checkHorn :: AS_BASIC.FORMULA -> Bool
 checkHorn formula =
+  let
+    flatCNF (AS_BASIC.Conjunction conjs _) = all isLiteral conjs
+    flatCNF _ = False
+  in
   case formula of
     AS_BASIC.Conjunction conjs _ -> all (\case
                                       AS_BASIC.Disjunction disjs _ -> length (Prelude.filter isPosLiteral disjs) <= 1
-                                      AS_BASIC.Implication lhs rhs _ -> checkCNF lhs && isLiteral rhs
+                                      AS_BASIC.Implication lhs rhs _ -> flatCNF lhs && isLiteral rhs
                                       conj -> isLiteral conj) conjs
     form -> isLiteral form
-
-checkHornPos :: AS_BASIC.FORMULA -> AS_BASIC.FORMULA -> Bool
-checkHornPos fc fl =
-    case fc of
-      AS_BASIC.Conjunction _ _ -> all isPosLiteral $ Tools.flatten fc
-      _ -> False
-    &&
-    isPosLiteral fl
