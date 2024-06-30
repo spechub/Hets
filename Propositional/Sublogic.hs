@@ -59,14 +59,12 @@ import Data.Data
 import Data.Set
 import qualified Data.List as DL
 
-import qualified Propositional.Tools as Tools
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 
 import qualified Propositional.Sign as Sign
 import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Morphism as Morphism
 
-import qualified Common.Lib.State as State
 import qualified Common.AS_Annotation as AS_Anno
 
 {- -----------------------------------------------------------------------------
@@ -316,15 +314,17 @@ prBasicSpec pSL (AS_BASIC.Basic_spec bS) =
 analyzeFormula :: AS_BASIC.FORMULA -> PropSL
 analyzeFormula formula = PropSL {
   format = fromList
-    $ Prelude.map (\case
-          checkNNF -> NegationNormalForm
-          checkDNF -> DisjunctiveNormalForm
-          checkCNF -> ConjunctiveNormalForm
-          checkHorn -> HornClause)
-      $ Prelude.filter (`apply` formula) [checkNNF, checkCNF, checkDNF, checkHorn]
+    $ Prelude.map ((\case
+          "checkNNF" -> NegationNormalForm
+          "checkDNF" -> DisjunctiveNormalForm
+          "checkCNF" -> ConjunctiveNormalForm
+          "checkHorn" -> HornClause
+          _ -> error "Unexhaustive Pattern Match") . snd)
+    $ Prelude.filter (`apply` formula)
+        [(checkNNF, "checkNNF"), (checkCNF, "checkCNF"), (checkDNF, "checkDNF"), (checkHorn, "checkHorn")]
 }
   where
-    apply f x = f x
+    apply f x = fst f x
 
 checkNNF :: AS_BASIC.FORMULA -> Bool
 checkNNF formula =
@@ -345,6 +345,7 @@ checkDNF formula =
       AS_BASIC.Disjunction disjs _ -> all (\case
                                         AS_BASIC.Conjunction form _ -> all isLiteral form
                                         disj -> isLiteral disj) disjs
+      AS_BASIC.Conjunction form _ -> all isLiteral form
       form -> isLiteral form
 
 checkCNF :: AS_BASIC.FORMULA -> Bool
@@ -353,17 +354,19 @@ checkCNF formula =
       AS_BASIC.Conjunction conjs _ -> all (\case
                                         AS_BASIC.Disjunction form _ -> all isLiteral form
                                         conj -> isLiteral conj) conjs
+      AS_BASIC.Disjunction form _ -> all isLiteral form
       form -> isLiteral form
 
 checkHorn :: AS_BASIC.FORMULA -> Bool
 checkHorn formula =
   let
     flatCNF (AS_BASIC.Conjunction conjs _) = all isLiteral conjs
-    flatCNF _ = False
+    flatCNF f = isLiteral f
   in
   case formula of
     AS_BASIC.Conjunction conjs _ -> all (\case
                                       AS_BASIC.Disjunction disjs _ -> length (Prelude.filter isPosLiteral disjs) <= 1
                                       AS_BASIC.Implication lhs rhs _ -> flatCNF lhs && isLiteral rhs
                                       conj -> isLiteral conj) conjs
+    AS_BASIC.Implication lhs rhs _ -> flatCNF lhs && isLiteral rhs
     form -> isLiteral form
