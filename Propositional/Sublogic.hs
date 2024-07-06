@@ -360,13 +360,14 @@ checkCNF formula =
 checkHorn :: AS_BASIC.FORMULA -> Bool
 checkHorn formula =
   let
-    flatCNF (AS_BASIC.Conjunction conjs _) = all isLiteral conjs
-    flatCNF f = isLiteral f
+    flatCNF (AS_BASIC.Conjunction conjs _) = all isPosLiteral conjs
+    flatCNF f = isPosLiteral f
   in
   case formula of
     AS_BASIC.Conjunction conjs _ -> all (\case
                                       AS_BASIC.Disjunction disjs _ -> length (Prelude.filter isPosLiteral disjs) <= 1
-                                      AS_BASIC.Implication lhs rhs _ -> flatCNF lhs && isLiteral rhs
+                                      AS_BASIC.Implication lhs rhs _ -> flatCNF lhs && isPosLiteral rhs
                                       conj -> isLiteral conj) conjs
-    AS_BASIC.Implication lhs rhs _ -> flatCNF lhs && isLiteral rhs
+    AS_BASIC.Disjunction disjs _ -> all isLiteral disjs && length (Prelude.filter isPosLiteral disjs) <= 1
+    AS_BASIC.Implication lhs rhs _ -> flatCNF lhs && isPosLiteral rhs
     form -> isLiteral form
