@@ -14,7 +14,7 @@ import Debug.Trace
 
 main :: IO ()
 main = do
-    let tests = [testPlain, testNNF, testCNF, testDNF, testCnfDnf, testHorn]
+    let tests = [testPlain, testNNF, testCNF, testDNF, testCnfDnf, testHornF, testHornC]
     let testSuccess = and tests
     unless testSuccess exitFailure
 
@@ -196,45 +196,84 @@ testCnfDnf = testPos && testNeg
         notCnfDnf = [f11, f12, f13, f14, f15]
         notCnfDnfDesc = [f11', f12', f13', f14', f15']
 
-testHorn :: Bool
-testHorn = testPos && testNeg
+testHornC :: Bool
+testHornC = testPos && testNeg
     where
         testPos = all (\x -> printIfFailed (snd x) (fst x)) $ zip hornDesc $ map (isHC . sl_form bottom) hornFormulas
         testNeg = all (\x -> printIfFailed (snd x) (fst x)) $ zip notHornDesc $ map (not . isHC . sl_form bottom) notHornFormulas
 
+        f1 = True_atom r
+        f1' = "HornC_f1: True"
+        f2 = Negation (Predication t) r
+        f2' = "HornC_f2: ¬A"
+        f3 = Conjunction [Disjunction [Negation (Predication t) r, Predication t] r] r
+        f3' = "HornC_f3: ∧(¬A ∨ B)"
+        f4 = Conjunction [Disjunction [Negation (Predication t) r, Negation (Predication t) r] r] r
+        f4' = "HornC_f4: ∧(¬A ∨ ¬B)"
+        f5 = Conjunction [Disjunction [Negation (Predication t) r, Negation (Predication t) r, Negation (Predication t) r, Negation (Predication t) r, Predication t] r, Disjunction [Negation (Predication t) r, Predication t] r, f1] r
+        f5' = "HornC_f5: (¬A ∨ ¬B ∨ ¬C ∨ ¬D ∨ E) ∧ (¬F ∨ G) ∧ (H -> I)"
+        f6 = Disjunction [Negation (Predication t) r, Negation (Predication t) r, Negation (Predication t) r, Negation (Predication t) r, Predication t] r
+        f6' = "HornC_f6: ¬A ∨ ¬B ∨ ¬C ∨ ¬D ∨ E"
+
+        f11 = Implication (Predication t) (Predication t) r
+        f11' = "HornC_f11: A -> B"
+        f12 = Implication (Conjunction [Predication t, Predication t, Predication t, True_atom r] r) (Predication t) r
+        f12' = "HornC_f12: (A ∧ B ∧ C ∧ True) -> D"
+        f13 = Disjunction [True_atom r, False_atom  r] r
+        f13' = "HornC_f13: True ∨ False"
+        f14 = Conjunction [f11, f2] r
+        f14' = "HornC_f14: ((A ∨ G) -> B) ∧ ((C ∧ D ∧ E ∧ True) -> F)"
+        f15 = Conjunction [Disjunction [Predication t, Predication t] r] r
+        f15' = "HornC_f15: ∧(A ∨ B)"
+        f16 = Conjunction [Disjunction [Predication t, Predication t, Negation (Predication t) r, Negation (Predication t) r, Predication t] r, Disjunction [Negation (Predication t) r, Predication t] r, f1] r
+        f16' = "HornC_f16: (A ∨ B ∨ ¬C ∨ ¬D ∨ E) ∧ (¬F ∨ G) ∧ (H -> I)"
+        f17 = Disjunction [Negation (Predication t) r, Negation (Predication t) r, Negation (Predication t) r, Predication t, Predication t] r
+        f17' = "HornC_f17: ¬A ∨ ¬B ∨ ¬C ∨ D ∨ E"
+
+        hornFormulas = [f1, f2, f3, f4, f5, f6]
+        hornDesc = [f1', f2', f3', f4', f5', f6']
+        notHornFormulas = [f11, f12, f13, f14, f15, f16, f17]
+        notHornDesc = [f11', f12', f13', f14', f15', f16', f17']
+
+testHornF :: Bool
+testHornF = testPos && testNeg
+    where
+        testPos = all (\x -> printIfFailed (snd x) (fst x)) $ zip hornDesc $ map (isHF . sl_form bottom) hornFormulas
+        testNeg = all (\x -> printIfFailed (snd x) (fst x)) $ zip notHornDesc $ map (not . isHF . sl_form bottom) notHornFormulas
+
         f1 = Implication (Predication t) (Predication t) r
-        f1' = "Horn_f1: A -> B"
+        f1' = "HornF_f1: A -> B"
         f2 = Implication (Conjunction [Predication t, Predication t, Predication t, True_atom r] r) (Predication t) r
-        f2' = "Horn_f2: (A ∧ B ∧ C ∧ True) -> D"
+        f2' = "HornF_f2: (A ∧ B ∧ C ∧ True) -> D"
         f3 = True_atom r
-        f3' = "Horn_f3: True"
+        f3' = "HornF_f3: True"
         f4 = Negation (Predication t) r
-        f4' = "Horn_f4: ¬A"
+        f4' = "HornF_f4: ¬A"
         f5 = Conjunction [f1, f2] r
-        f5' = "Horn_f5: (A -> B) ∧ ((C ∧ D ∧ E ∧ True) -> F)"
+        f5' = "HornF_f5: (A -> B) ∧ ((C ∧ D ∧ E ∧ True) -> F)"
         f6 = Conjunction [Disjunction [Negation (Predication t) r, Predication t] r] r
-        f6' = "Horn_f6: ∧(¬A ∨ B)"
+        f6' = "HornF_f6: ∧(¬A ∨ B)"
         f7 = Conjunction [Disjunction [Negation (Predication t) r, Negation (Predication t) r] r] r
-        f7' = "Horn_f7: ∧(¬A ∨ ¬B)"
+        f7' = "HornF_f7: ∧(¬A ∨ ¬B)"
         f8 = Conjunction [Disjunction [Negation (Predication t) r, Negation (Predication t) r, Negation (Predication t) r, Negation (Predication t) r, Predication t] r, Disjunction [Negation (Predication t) r, Predication t] r, f1] r
-        f8' = "Horn_f8: (¬A ∨ ¬B ∨ ¬C ∨ ¬D ∨ E) ∧ (¬F ∨ G) ∧ (H -> I)"
+        f8' = "HornF_f8: (¬A ∨ ¬B ∨ ¬C ∨ ¬D ∨ E) ∧ (¬F ∨ G) ∧ (H -> I)"
         f9 = Disjunction [Negation (Predication t) r, Negation (Predication t) r, Negation (Predication t) r, Negation (Predication t) r, Predication t] r
-        f9' = "Horn_f9: ¬A ∨ ¬B ∨ ¬C ∨ ¬D ∨ E"
+        f9' = "HornF_f9: ¬A ∨ ¬B ∨ ¬C ∨ ¬D ∨ E"
 
         f11 = Implication (Disjunction [Predication t, Predication t] r) (Predication t) r
-        f11' = "Horn_f11: (A ∨ B) -> C"
+        f11' = "HornF_f11: (A ∨ B) -> C"
         f12 = Implication (Conjunction [Predication t, Negation (Predication t) r, Predication t, True_atom r] r) (Predication t) r
-        f12' = "Horn_f12: (A ∧ ¬B ∧ C ∧ True) -> D"
+        f12' = "HornF_f12: (A ∧ ¬B ∧ C ∧ True) -> D"
         f13 = Disjunction [True_atom r, False_atom  r] r
-        f13' = "Horn_f13: True ∨ False"
+        f13' = "HornF_f13: True ∨ False"
         f14 = Conjunction [f11, f2] r
-        f14' = "Horn_f14: ((A ∨ G) -> B) ∧ ((C ∧ D ∧ E ∧ True) -> F)"
+        f14' = "HornF_f14: ((A ∨ G) -> B) ∧ ((C ∧ D ∧ E ∧ True) -> F)"
         f15 = Conjunction [Disjunction [Predication t, Predication t] r] r
-        f15' = "Horn_f15: ∧(A ∨ B)"
+        f15' = "HornF_f15: ∧(A ∨ B)"
         f16 = Conjunction [Disjunction [Predication t, Predication t, Negation (Predication t) r, Negation (Predication t) r, Predication t] r, Disjunction [Negation (Predication t) r, Predication t] r, f1] r
-        f16' = "Horn_f16: (A ∨ B ∨ ¬C ∨ ¬D ∨ E) ∧ (¬F ∨ G) ∧ (H -> I)"
+        f16' = "HornF_f16: (A ∨ B ∨ ¬C ∨ ¬D ∨ E) ∧ (¬F ∨ G) ∧ (H -> I)"
         f17 = Disjunction [Negation (Predication t) r, Negation (Predication t) r, Negation (Predication t) r, Predication t, Predication t] r
-        f17' = "Horn_f17: ¬A ∨ ¬B ∨ ¬C ∨ D ∨ E"
+        f17' = "HornF_f17: ¬A ∨ ¬B ∨ ¬C ∨ D ∨ E"
 
         hornFormulas = [f1, f2, f3, f4, f5, f6, f7, f8, f9]
         hornDesc = [f1', f2', f3', f4', f5', f6', f7', f8', f9']

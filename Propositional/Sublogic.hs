@@ -52,6 +52,7 @@ module Propositional.Sublogic
     , isCNF
     , isDNF
     , isHC
+    , isHF
     )
     where
 
@@ -72,10 +73,11 @@ datatypes                                                                 --
 ----------------------------------------------------------------------------- -}
 
 -- | types of propositional formulae
-data PropFormulae = NegationNormalForm      -- Formula in Negation Normal Form
+data PropFormulae = HornFormula             -- Formual that after conversion to CNF yields a Horn Clause
+                  | NegationNormalForm      -- Formula in Negation Normal Form
                   | DisjunctiveNormalForm   -- Formula in Disjunctive Normal Form
                   | ConjunctiveNormalForm   -- Formula in Conjunctive Normal Form
-                  | HornClause              -- Horn Clause Formulae
+                  | HornClause              -- Horn Clauses, i.e., a Horn Formula that is also in CNF
                   deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | sublogics for propositional logic
@@ -104,6 +106,9 @@ isCNF sl = ConjunctiveNormalForm `elem` format sl
 isHC :: PropSL -> Bool
 isHC sl = HornClause `elem` format sl
 
+isHF :: PropSL -> Bool
+isHF sl = HornFormula `elem` format sl
+
 
 -- | comparison of sublogics
 compareLE :: PropSL -> PropSL -> Bool
@@ -121,7 +126,7 @@ top :: PropSL
 top = PropSL empty
 
 bottom :: PropSL
-bottom = PropSL $ fromList [HornClause, ConjunctiveNormalForm, DisjunctiveNormalForm, NegationNormalForm]
+bottom = PropSL $ fromList [HornClause, ConjunctiveNormalForm, DisjunctiveNormalForm, NegationNormalForm, HornFormula]
 
 need_PF :: PropSL
 need_PF = bottom { format = empty }
@@ -237,6 +242,7 @@ sublogics_name :: PropSL -> String
 sublogics_name f = if Prelude.null listOfSLs then "PlainFormula" else DL.intercalate "_" listOfSLs
   where
     listOfSLs = Prelude.map (\case
+                                HornFormula -> "HornFormula"
                                 HornClause -> "HornClause"
                                 ConjunctiveNormalForm -> "CNF"
                                 DisjunctiveNormalForm -> "DNF"
@@ -318,10 +324,11 @@ analyzeFormula formula = PropSL {
           "checkNNF" -> NegationNormalForm
           "checkDNF" -> DisjunctiveNormalForm
           "checkCNF" -> ConjunctiveNormalForm
-          "checkHorn" -> HornClause
+          "checkHornC" -> HornClause
+          "checkHornF" -> HornFormula
           _ -> error "Unexhaustive Pattern Match") . snd)
     $ Prelude.filter (`apply` formula)
-        [(checkNNF, "checkNNF"), (checkCNF, "checkCNF"), (checkDNF, "checkDNF"), (checkHorn, "checkHorn")]
+        [(checkNNF, "checkNNF"), (checkCNF, "checkCNF"), (checkDNF, "checkDNF"), (checkHC, "checkHornC"), (checkHF, "checkHornF")]
 }
   where
     apply f x = fst f x
@@ -357,8 +364,11 @@ checkCNF formula =
       AS_BASIC.Disjunction form _ -> all isLiteral form
       form -> isLiteral form
 
-checkHorn :: AS_BASIC.FORMULA -> Bool
-checkHorn formula =
+checkHC :: AS_BASIC.FORMULA -> Bool
+checkHC formula = checkHF formula && checkCNF formula
+
+checkHF :: AS_BASIC.FORMULA -> Bool
+checkHF formula =
   let
     flatCNF (AS_BASIC.Conjunction conjs _) = all isPosLiteral conjs
     flatCNF f = isPosLiteral f
