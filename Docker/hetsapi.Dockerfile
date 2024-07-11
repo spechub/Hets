@@ -1,12 +1,10 @@
-# syntax=docker/dockerfile:1
-
 FROM spechub2/hyphen:22.04 as base
 
-ENV TZ=Europe/Berlin
+ENV TZ Europe/Berlin
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
-ENV HETS_LIB=/opt/Hets-lib
+ENV HETS_LIB /opt/Hets-lib
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
    apt-get update && apt-get -y install locales && locale-gen en_US.UTF-8 && \
@@ -18,7 +16,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
       ksh perl-base tar xz-utils zip\
       libmysqlclient-dev\
       ghc-haddock libghc-missingh-dev\
-      ghc>=7.10.3 happy\
+      ghc>=7.10.3 happy haskell-stack\
       libghc-mutable-containers-dev\
       libghc-haxml-dev libghc-tar-dev libghc-random-dev libghc-parsec3-dev\
       libghc-fgl-dev libghc-xml-dev\
@@ -70,6 +68,7 @@ FROM build-lib AS debug
 WORKDIR /opt/hets
 RUN runhaskell Setup.hs install
 RUN \
+   apt-get update && \
    apt-get install -y cvc-47 darwin eprover fact++ maude minisat pellet spass vampire yices z3 zchaff && \
    git clone https://github.com/spechub/Hets-lib.git ${HETS_LIB}
 

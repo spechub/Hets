@@ -1,7 +1,6 @@
 .github/**
 .gitignore
 .travis.yml
-LICENSE.txt
 LIZENZ.txt
 README*
 _parameters
@@ -10,13 +9,9 @@ doc/**
 ideas
 pretty/**
 sample-ghci-script
-stack.yaml
 todo*
 **.tex
 **.pdf
-utils/**
-!utils/gha-helper.sh
-!utils/check*
 Docker/**
 GMP/CoLoSS/data/GMP.tar.gz
 GMP/papers/**
