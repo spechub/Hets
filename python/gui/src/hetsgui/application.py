@@ -124,7 +124,7 @@ class HetsApplication(Gtk.Application):
 
                 self.window.show_all()
                 self.window.present()
-                self.set_action_group()
+                # self.set_action_group()
 
             # noinspection PyUnresolvedReferences
             def start_up():

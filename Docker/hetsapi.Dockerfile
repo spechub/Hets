@@ -84,6 +84,7 @@ RUN /tmp/install-hets.sh
 
 # Install provers and Hets-lib
 RUN \
+   apt-get update && \
    apt-get install -y cvc-47 darwin eprover fact++ maude minisat pellet spass vampire yices z3 zchaff && \
    git clone https://github.com/spechub/Hets-lib.git ${HETS_LIB}
 # Install python library

@@ -1,9 +1,10 @@
+import enum
 import typing
 from typing import List
 
 from .haskell import RefinementTreeNode as HsRefinementTreeNode, RefinementTreeLink as HsRefinementTreeLink, Gr, \
-    labNodes, labEdges, LNode, LEdge, fst, snd, sndOf3, thd, fstOf3, isRootNode, rtNodeLab, rtn_name
-
+    labNodes, labEdges, LNode, LEdge, fst, snd, sndOf3, thd, fstOf3, isRootNode, rtNodeLab, rtn_name, rtl_type, \
+    RTRefine, RTComp
 
 
 class RefinementTreeNode:
@@ -23,6 +24,12 @@ class RefinementTreeNode:
         return fst(self._hs_node)
 
 
+class RefinementTreeLinkKind(enum.Enum):
+    UNKNOWN = -1
+    COMPONENT = 1
+    SIMPLE = 2
+
+
 class RefinementTreeLink:
     def __init__(self, hs_edge: typing.Tuple[int, int, HsRefinementTreeLink]):
         self._hs_edge = hs_edge
@@ -38,6 +45,16 @@ class RefinementTreeLink:
 
     def target_id(self) -> int:
         return sndOf3(self._hs_edge)
+
+    def kind(self) -> RefinementTreeLinkKind:
+        typ = rtl_type(self._label())
+        if isinstance(typ, RTRefine):
+            return RefinementTreeLinkKind.SIMPLE
+        elif isinstance(typ, RTComp):
+            return RefinementTreeLinkKind.COMPONENT
+        else:
+            return RefinementTreeLinkKind.UNKNOWN
+
 
 
 class RefinementTree:

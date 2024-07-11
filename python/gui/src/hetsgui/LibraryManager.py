@@ -60,6 +60,9 @@ class LibraryManager(GObject.GObject):
     def show_default_window(self):
         if self._default_window is None:
             self._default_window = self._new_window()
+            
+        self._default_window.show_all()
+        self._default_window.present()
 
     def on_show_library(self, sender, library_id: str):
         self.show_library(library_id)

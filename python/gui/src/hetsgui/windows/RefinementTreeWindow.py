@@ -1,14 +1,13 @@
 import logging
 
-from graphviz import Digraph
 
 import hets
 
-from gi.repository import Gtk, Gio, GLib
+from gi.repository import Gtk
 
+from hets.RefinementTree import RefinementTreeLinkKind
 from ..GtkSmartTemplate import GtkSmartTemplate
 from ..formatting import COLOR_MAP
-from ..utils import get_variant
 from ..widgets import ExtendedDotWidget
 
 
@@ -42,7 +41,15 @@ class RefinementTreeWindow(Gtk.Window):
                    style="filled")
 
         for edge in self._refinement_tree.edges():
-            g.edge(str(edge.source_id()), str(edge.target_id()))
+            black = COLOR_MAP[("black", False, False)]
+            coral = COLOR_MAP[("coral", False, False)]
+            color = {
+                RefinementTreeLinkKind.SIMPLE: f"{black}:invis:{black}",
+                RefinementTreeLinkKind.COMPONENT: black,
+                RefinementTreeLinkKind.UNKNOWN: black,
+            }[edge.kind()]
+
+            g.edge(str(edge.source_id()), str(edge.target_id()), color=color)
 
         return g.source
 

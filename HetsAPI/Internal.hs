@@ -68,6 +68,7 @@ module HetsAPI.Internal (
 
     , RTNodeLab (..)
     , RTLinkLab (..)
+    , RTLinkType(..)
 
 
     , showGlobalDoc
@@ -145,7 +146,7 @@ import Common.Lib.Graph (Gr(..))
 import Common.Result (Result(..), resultToMaybe, Diagnosis)
 import Data.Graph.Inductive (labNodes, labEdges, LNode, LEdge)
 import Driver.Options (HetcatsOpts(..), defaultHetcatsOpts)
-import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), DGNodeInfo(..), getNodeConsStatus, getEdgeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType, isDGRef, dgn_libname, RTNodeLab(..), RTLinkLab(..))
+import Static.DevGraph (DGraph, DGNodeLab(..), DGLinkLab(..), DGNodeInfo(..), getNodeConsStatus, getEdgeConsStatus, getNodeCons, getDGNodeName, globalAnnos, LibEnv, isInternalNode, getRealDGLinkType, isDGRef, dgn_libname, RTNodeLab(..), RTLinkLab(..), RTLinkType(..))
 import Static.DgUtils (ConsStatus(..), getConsOfStatus, isProvenConsStatusLink, NodeName, DGNodeType(..), DGEdgeType(..), DGEdgeTypeModInc(..), Scope(..), ThmTypes(..), FreeOrCofree(..), ConsStatus(..), getEdgeNum)
 import Logic.Prover (ProofStatus(..), GoalStatus(..), TacticScript(..))
 import Proofs.AbstractState (ProofState)

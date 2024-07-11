@@ -1,7 +1,6 @@
 module HetsAPI.Refinement (
     RefinementTreeNode(..),
     RefinementTreeLink(..),
-    RefinementTreeLinkType(..),
     getRefinementTree,
     getAvailableSpecificationsForRefinement
 )
@@ -16,29 +15,19 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 data RefinementTreeNode = RefinementTreeNode {
-        isRootNode :: Bool,
-        rtNodeLab :: RTNodeLab
+        isRootNode :: !Bool,
+        rtNodeLab :: !RTNodeLab
     }
 
 getRefinementTreeNode :: Graph.Gr RTNodeLab RTLinkLab -> LNode RTNodeLab -> LNode RefinementTreeNode
 getRefinementTreeNode graph (x, lab) = (x, RefinementTreeNode (isRoot x graph) lab)
 
+type RefinementTreeLink = RTLinkLab
 
-data RefinementTreeLinkType = RefinementTreeEdgeType0 | RefinementTreeEdgeType1 | RefinementTreeEdgeType2
-
-data RefinementTreeLink = RefinementTreeLink {
-        linkType :: RefinementTreeLinkType,
-        rtLinkLab :: RTLinkLab
-    }
-
-getRefinementTreeEdge :: RefinementTreeLinkType -> LEdge RTLinkLab -> LEdge RefinementTreeLink
-getRefinementTreeEdge typ (s, t, lab) = (s, t, RefinementTreeLink typ lab)
-
-getRefinementTreeEdge' :: RefinementTreeLinkType
-    -> (RTLinkLab -> Bool)
+getRefinementTreeEdge' :: (RTLinkLab -> Bool)
     -> [LEdge RTLinkLab]
     -> [LEdge RefinementTreeLink]
-getRefinementTreeEdge' typ fn = map (getRefinementTreeEdge typ) . filter (\ (_, _, e) -> fn e)
+getRefinementTreeEdge' fn = filter (\ (_, _, e) -> fn e)
 
 roots :: String -> DGraph -> Maybe (Set.Set Node)
 roots rspName = fmap Set.fromList . Map.lookup rspName . specRoots
@@ -70,11 +59,10 @@ getRefinementTree rspName dg = do
         rTree = subgraph ccomp' (refTree dg)
         vertices = labNodes rTree
         arcs = labEdges rTree
-        edges' = arcList0 ++ arcList1 ++ arcList2
+        edges' = arcListR ++ arcListC
         edges = [( nodeAliases Map.! s, nodeAliases Map.! t, l) | (s, t, l) <- edges']
-        arcList0 = getRefinementTreeEdge' RefinementTreeEdgeType0 ((==) RTComp . rtl_type) arcs
-        arcList1 = getRefinementTreeEdge' RefinementTreeEdgeType1 (const False) arcs -- TODO: it was easier
-        arcList2 = getRefinementTreeEdge' RefinementTreeEdgeType2 ((==) RTRefine . rtl_type) arcs
+        arcListR = getRefinementTreeEdge' ((==) RTComp . rtl_type) arcs
+        arcListC = getRefinementTreeEdge' ((==) RTRefine . rtl_type) arcs
     return $ mkGraph nods edges
 
 getAvailableSpecificationsForRefinement :: DGraph -> [String]

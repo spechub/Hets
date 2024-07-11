@@ -128,7 +128,6 @@ module HetsAPI.Python (
 
     , Refinement.RefinementTreeNode(..)
     , Refinement.RefinementTreeLink(..)
-    , Refinement.RefinementTreeLinkType(..)
 )
 
 where
