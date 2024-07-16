@@ -8,6 +8,6 @@ BD=${SD%/*/*}
 
 . ${BD}/Common/test/checkFunctions.sh
 
-${BD}/TestSublogic || addErr
+${BD}/Propositional/test/TestSublogic || addErr
 
 (( ! ERR ))
