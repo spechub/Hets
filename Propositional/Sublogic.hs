@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE LambdaCase #-}
 {- |
 Module      :  ./Propositional/Sublogic.hs
 Description :  Sublogics for propositional logic
@@ -33,6 +34,7 @@ module Propositional.Sublogic
     , bottom                        -- Horn
     , sublogics_all                 -- all sublogics
     , sublogics_name                -- name of sublogics
+    , compareLE
     , sl_sig                        -- sublogic for a signature
     , sl_form                       -- sublogic for a formula
     , sl_sym                        -- sublogic for symbols
@@ -46,21 +48,24 @@ module Propositional.Sublogic
     , prSymM                        -- projections of SYMB_ITEMS
     , prFormulaM                    -- projections of formulae
     , prBasicSpec                   -- projections of basic specs
-    , isProp
+    , isNNF
+    , isCNF
+    , isDNF
     , isHC
+    , isHF
     )
     where
 
 import Data.Data
+import Data.Set
+import qualified Data.List as DL
 
-import qualified Propositional.Tools as Tools
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 
 import qualified Propositional.Sign as Sign
 import qualified Propositional.Symbol as Symbol
 import qualified Propositional.Morphism as Morphism
 
-import qualified Common.Lib.State as State
 import qualified Common.AS_Annotation as AS_Anno
 
 {- -----------------------------------------------------------------------------
@@ -68,63 +73,76 @@ datatypes                                                                 --
 ----------------------------------------------------------------------------- -}
 
 -- | types of propositional formulae
-data PropFormulae = PlainFormula      -- Formula without structural constraints
-                  | HornClause        -- Horn Clause Formulae
+data PropFormulae = HornFormula             -- Formual that after conversion to CNF yields a Horn Clause
+                  | NegationNormalForm      -- Formula in Negation Normal Form
+                  | DisjunctiveNormalForm   -- Formula in Disjunctive Normal Form
+                  | ConjunctiveNormalForm   -- Formula in Conjunctive Normal Form
+                  | HornClause              -- Horn Clauses, i.e., a Horn Formula that is also in CNF
                   deriving (Show, Eq, Ord, Typeable, Data)
 
 -- | sublogics for propositional logic
 data PropSL = PropSL
     {
-      format :: PropFormulae     -- Structural restrictions
+      format :: Set PropFormulae     -- Structural restrictions
+      {-
+       - Each restriction should be an element of the set.
+       - Obviously `PlainFormula` can be part of every format because
+       - it does not add any requirements. By convention, the set should
+       - contain all restrictions that are applicable. E.g., instead of
+       - {CNF} it should only be {CNF, NNF}. A Formula without any restrictions
+       - is represented as an empty set, i.e., {}.
+       -}
     } deriving (Show, Eq, Ord, Typeable, Data)
 
-isProp :: PropSL -> Bool
-isProp sl = format sl == PlainFormula
+isNNF :: PropSL -> Bool
+isNNF sl = NegationNormalForm `elem` format sl
+
+isDNF :: PropSL -> Bool
+isDNF sl = DisjunctiveNormalForm `elem` format sl
+
+isCNF :: PropSL -> Bool
+isCNF sl = ConjunctiveNormalForm `elem` format sl
 
 isHC :: PropSL -> Bool
-isHC sl = format sl == HornClause
+isHC sl = HornClause `elem` format sl
+
+isHF :: PropSL -> Bool
+isHF sl = HornFormula `elem` format sl
+
 
 -- | comparison of sublogics
 compareLE :: PropSL -> PropSL -> Bool
 compareLE p1 p2 =
-    let f1 = format p1
-        f2 = format p2
-    in
-      case (f1, f2) of
-        (_, PlainFormula) -> True
-        (HornClause, HornClause) -> True
-        (_, HornClause) -> False
+  let f1 = format p1
+      f2 = format p2
+  in
+    f2 `isSubsetOf` f1
 
 {- ----------------------------------------------------------------------------
 Special elements in the Lattice of logics                                --
 ---------------------------------------------------------------------------- -}
 
 top :: PropSL
-top = PropSL PlainFormula
+top = PropSL empty
 
 bottom :: PropSL
-bottom = PropSL HornClause
+bottom = PropSL $ fromList [HornClause, ConjunctiveNormalForm, DisjunctiveNormalForm, NegationNormalForm, HornFormula]
 
 need_PF :: PropSL
-need_PF = bottom { format = PlainFormula }
+need_PF = bottom { format = empty }
 
 {- -----------------------------------------------------------------------------
 join and max                                                              --
 ----------------------------------------------------------------------------- -}
 
-sublogics_join :: (PropFormulae -> PropFormulae -> PropFormulae)
-                  -> PropSL -> PropSL -> PropSL
-sublogics_join pfF a b = PropSL
+sublogics_join :: PropSL -> PropSL -> PropSL
+sublogics_join a b = PropSL
                          {
-                           format = pfF (format a) (format b)
+                           format = intersection (format a) (format b)
                          }
 
-joinType :: PropFormulae -> PropFormulae -> PropFormulae
-joinType HornClause HornClause = HornClause
-joinType _ _ = PlainFormula
-
 sublogics_max :: PropSL -> PropSL -> PropSL
-sublogics_max = sublogics_join joinType
+sublogics_max = sublogics_join
 
 {- -----------------------------------------------------------------------------
 Helpers                                                                   --
@@ -133,7 +151,7 @@ Helpers                                                                   --
 -- compute sublogics from a list of sublogics
 --
 comp_list :: [PropSL] -> PropSL
-comp_list = foldl sublogics_max bottom
+comp_list = Prelude.foldl sublogics_max bottom
 
 {- ----------------------------------------------------------------------------
 Functions to compute minimal sublogic for a given element, these work    --
@@ -162,63 +180,11 @@ sl_sym ps _ = ps
 
 -- | determines sublogic for formula
 sl_form :: PropSL -> AS_BASIC.FORMULA -> PropSL
-sl_form ps f = sl_fl_form ps $ Tools.flatten f
-
--- | determines sublogic for flattened formula
-sl_fl_form :: PropSL -> [AS_BASIC.FORMULA] -> PropSL
-sl_fl_form ps f = foldl sublogics_max ps
-  $ map (\ x -> State.evalState (ana_form ps x) 0) f
-
--- analysis of single "clauses"
-ana_form :: PropSL -> AS_BASIC.FORMULA -> State.State Int PropSL
-ana_form ps f =
-    case f of
-      AS_BASIC.Conjunction l _ ->
-          do
-            st <- State.get
-            return $ sublogics_max need_PF $ comp_list $ map
-              (\ x -> State.evalState (ana_form ps x) (st + 1)) l
-      AS_BASIC.Implication l m _ ->
-          do
-             st <- State.get
-             let analyze = sublogics_max need_PF $ sublogics_max
-                   ((\ x -> State.evalState (ana_form ps x) (st + 1)) l)
-                   ((\ x -> State.evalState (ana_form ps x) (st + 1)) m)
-             return $
-                    if st < 1 && format ps == HornClause && checkHornPos l m
-                    then ps else analyze
-      AS_BASIC.Equivalence l m _ ->
-           do
-             st <- State.get
-             return $ sublogics_max need_PF $ sublogics_max
-               ((\ x -> State.evalState (ana_form ps x) (st + 1)) l)
-               ((\ x -> State.evalState (ana_form ps x) (st + 1)) m)
-      AS_BASIC.Negation l _ ->
-          if isLiteral l
-          then return ps
-          else
-              do
-                st <- State.get
-                return $ (\ x -> State.evalState (ana_form ps x) (st + 1)) l
-      AS_BASIC.Disjunction l _ ->
-                    let lprime = concatMap Tools.flattenDis l in
-                    if all isLiteral lprime
-                    then return $
-                          if moreThanNLit lprime 1
-                          then sublogics_max need_PF ps else ps
-                    else
-                        do
-                          st <- State.get
-                          return $ sublogics_max need_PF $ comp_list $ map
-                            (\ x -> State.evalState (ana_form ps x) (st + 1))
-                                      lprime
-      AS_BASIC.True_atom _ -> return ps
-      AS_BASIC.False_atom _ -> return ps
-      AS_BASIC.Predication _ -> return ps
+sl_form ps f = sublogics_max ps $ analyzeFormula f
 
 moreThanNLit :: [AS_BASIC.FORMULA] -> Int -> Bool
-moreThanNLit form n = foldl (\ y x -> if x then y + 1 else y) 0
-  (map isPosLiteral form) > n
+moreThanNLit form n = Prelude.foldl (\ y x -> if x then y + 1 else y) 0
+  (Prelude.map isPosLiteral form) > n
 
 -- determines wheter a Formula is a literal
 isLiteral :: AS_BASIC.FORMULA -> Bool
@@ -248,34 +214,39 @@ sl_basic_items :: PropSL -> AS_BASIC.BASIC_ITEMS -> PropSL
 sl_basic_items ps bi =
     case bi of
       AS_BASIC.Pred_decl _ -> ps
-      AS_BASIC.Axiom_items xs -> comp_list $ map (sl_form ps . AS_Anno.item) xs
+      AS_BASIC.Axiom_items xs -> comp_list $ Prelude.map (sl_form ps . AS_Anno.item) xs
 
 -- | determines sublogic for basic spec
 sl_basic_spec :: PropSL -> AS_BASIC.BASIC_SPEC -> PropSL
 sl_basic_spec ps (AS_BASIC.Basic_spec spec) =
-    comp_list $ map (sl_basic_items ps . AS_Anno.item) spec
+    comp_list $ Prelude.map (sl_basic_items ps . AS_Anno.item) spec
 
 -- | all sublogics
 sublogics_all :: [PropSL]
 sublogics_all =
-    [PropSL
-     {
-       format = HornClause
-     }
-    , PropSL
-     {
-       format = PlainFormula
-     }
-    ]
+  Prelude.map (\x -> PropSL{ format = x }) $
+    Prelude.filter isIllegalConfig $
+    toList $ powerSet $ fromList [NegationNormalForm, DisjunctiveNormalForm, ConjunctiveNormalForm, HornClause]
+      where
+        isIllegalConfig :: Set PropFormulae -> Bool
+        isIllegalConfig restr | HornClause `elem` restr && ConjunctiveNormalForm `notElem` restr = False
+                              | ConjunctiveNormalForm `elem` restr && NegationNormalForm `notElem` restr = False
+                              | DisjunctiveNormalForm `elem` restr && NegationNormalForm `notElem` restr = False
+                              | otherwise = True
 
 {- -----------------------------------------------------------------------------
 Conversion functions to String                                            --
 ----------------------------------------------------------------------------- -}
 
 sublogics_name :: PropSL -> String
-sublogics_name f = case format f of
-      HornClause -> "HornClause"
-      PlainFormula -> "Prop"
+sublogics_name f = if Prelude.null listOfSLs then "PlainFormula" else DL.intercalate "_" listOfSLs
+  where
+    listOfSLs = Prelude.map (\case
+                                HornFormula -> "HornFormula"
+                                HornClause -> "HornClause"
+                                ConjunctiveNormalForm -> "CNF"
+                                DisjunctiveNormalForm -> "DNF"
+                                NegationNormalForm -> "NNF") $ toList $ format f
 
 {- -----------------------------------------------------------------------------
 Projections to sublogics                                                  --
@@ -331,7 +302,7 @@ prBASIC_items pSL bI =
 
 prBasicSpec :: PropSL -> AS_BASIC.BASIC_SPEC -> AS_BASIC.BASIC_SPEC
 prBasicSpec pSL (AS_BASIC.Basic_spec bS) =
-    AS_BASIC.Basic_spec $ map mapH bS
+    AS_BASIC.Basic_spec $ Prelude.map mapH bS
     where
       mapH :: AS_Anno.Annoted AS_BASIC.BASIC_ITEMS
            -> AS_Anno.Annoted AS_BASIC.BASIC_ITEMS
@@ -343,10 +314,70 @@ prBasicSpec pSL (AS_BASIC.Basic_spec bS) =
                  , AS_Anno.r_annos = AS_Anno.r_annos aBI
                  }
 
-checkHornPos :: AS_BASIC.FORMULA -> AS_BASIC.FORMULA -> Bool
-checkHornPos fc fl =
-    case fc of
-      AS_BASIC.Conjunction _ _ -> all isPosLiteral $ Tools.flatten fc
-      _ -> False
-    &&
-    isPosLiteral fl
+
+-- check if a formula is in a certain sublogic
+
+analyzeFormula :: AS_BASIC.FORMULA -> PropSL
+analyzeFormula formula = PropSL {
+  format = fromList
+    $ Prelude.map ((\case
+          "checkNNF" -> NegationNormalForm
+          "checkDNF" -> DisjunctiveNormalForm
+          "checkCNF" -> ConjunctiveNormalForm
+          "checkHornC" -> HornClause
+          "checkHornF" -> HornFormula
+          _ -> error "Unexhaustive Pattern Match") . snd)
+    $ Prelude.filter (`apply` formula)
+        [(checkNNF, "checkNNF"), (checkCNF, "checkCNF"), (checkDNF, "checkDNF"), (checkHC, "checkHornC"), (checkHF, "checkHornF")]
+}
+  where
+    apply f x = fst f x
+
+checkNNF :: AS_BASIC.FORMULA -> Bool
+checkNNF formula =
+  case formula of
+      AS_BASIC.Conjunction conjs _ -> all (\case
+                                        AS_BASIC.Disjunction form _ -> all checkNNF form
+                                        AS_BASIC.Conjunction form _ -> all checkNNF form
+                                        conj -> isLiteral conj) conjs
+      AS_BASIC.Disjunction disjs _ -> all (\case
+                                        AS_BASIC.Disjunction form _ -> all checkNNF form
+                                        AS_BASIC.Conjunction form _ -> all checkNNF form
+                                        disj -> isLiteral disj) disjs
+      form -> isLiteral form
+
+checkDNF :: AS_BASIC.FORMULA -> Bool
+checkDNF formula =
+  case formula of
+      AS_BASIC.Disjunction disjs _ -> all (\case
+                                        AS_BASIC.Conjunction form _ -> all isLiteral form
+                                        disj -> isLiteral disj) disjs
+      AS_BASIC.Conjunction form _ -> all isLiteral form
+      form -> isLiteral form
+
+checkCNF :: AS_BASIC.FORMULA -> Bool
+checkCNF formula =
+  case formula of
+      AS_BASIC.Conjunction conjs _ -> all (\case
+                                        AS_BASIC.Disjunction form _ -> all isLiteral form
+                                        conj -> isLiteral conj) conjs
+      AS_BASIC.Disjunction form _ -> all isLiteral form
+      form -> isLiteral form
+
+checkHC :: AS_BASIC.FORMULA -> Bool
+checkHC formula = checkHF formula && checkCNF formula
+
+checkHF :: AS_BASIC.FORMULA -> Bool
+checkHF formula =
+  let
+    flatCNF (AS_BASIC.Conjunction conjs _) = all isPosLiteral conjs
+    flatCNF f = isPosLiteral f
+  in
+  case formula of
+    AS_BASIC.Conjunction conjs _ -> all (\case
+                                      AS_BASIC.Disjunction disjs _ -> length (Prelude.filter isPosLiteral disjs) <= 1
+                                      AS_BASIC.Implication lhs rhs _ -> flatCNF lhs && isPosLiteral rhs
+                                      conj -> isLiteral conj) conjs
+    AS_BASIC.Disjunction disjs _ -> all isLiteral disjs && length (Prelude.filter isPosLiteral disjs) <= 1
+    AS_BASIC.Implication lhs rhs _ -> flatCNF lhs && isPosLiteral rhs
+    form -> isLiteral form

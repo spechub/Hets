@@ -9,6 +9,7 @@
 .hets*
 *.bin
 ./hets
+hets
 hets_server
 hets.cgi
 rev.txt
@@ -199,3 +200,14 @@ NeSyPatterns/AS.hs
 NeSyPatterns/ATC_NeSyPatterns.der.hs
 NeSyPatterns/ATC_NeSyPatterns.hs
 OWL2/scripts/runTest
+
+*.th
+*.pp.dol
+capa
+annos
+testxmldiff
+testxpath
+testxupdate
+showKP
+hacapa
+TestSublogics
