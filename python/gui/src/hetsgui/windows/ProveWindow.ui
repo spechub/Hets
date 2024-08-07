@@ -318,6 +318,15 @@
                         <signal name="clicked" handler="on_prove_clicked" />
                     </object>
                 </child>
+                <child>
+                    <object class="GtkButton" id="btn_cancel">
+                        <property name="label" translatable="yes">Abort</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                        <signal name="clicked" handler="on_cancel_clicked" />
+                    </object>
+                </child>
             </object>
         </child>
     </template>

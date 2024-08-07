@@ -17,6 +17,7 @@ class ConsistencyCheckWindow(Gtk.Window):
 
     _consistency_checker_comorphism_selector: GridWithToolComorphismSelector = Gtk.Template.Child()
     _btn_check: Gtk.Button = Gtk.Template.Child()
+    _btn_cancel: Gtk.Button = Gtk.Template.Child()
 
     _switch_include_proven_theorems: Gtk.Switch = Gtk.Template.Child()
     _txt_timeout: Gtk.SpinButton = Gtk.Template.Child()
@@ -40,11 +41,17 @@ class ConsistencyCheckWindow(Gtk.Window):
 
         self._update_status(node.consistency_status().proven())
 
+        self._btn_cancel.set_sensitive(False)
+
     @Gtk.Template.Callback()
     def on_check_clicked(self, *args):
         self.checking_thread = threading.Thread(target=self._check_consistency)
         # self.proving_thread.daemon = True
         self.checking_thread.start()
+
+    @Gtk.Template.Callback()
+    def on_cancel_clicked(self, _):
+        self._logger.debug("Proving shall be canceled")
 
     def _update_status(self, status: typing.Union[ConsistencyKind, str]):
         style_context = self._lbl_status.get_style_context()
@@ -96,6 +103,7 @@ class ConsistencyCheckWindow(Gtk.Window):
 
     def _finish_checking_progress(self, status: ConsistencyKind, message: str):
         self._btn_check.set_sensitive(True)
+        self._btn_cancel.set_sensitive(False)
         self._update_status(status)
 
         message = message.strip()
@@ -110,4 +118,5 @@ class ConsistencyCheckWindow(Gtk.Window):
 
     def _init_checking_progress(self):
         self._btn_check.set_sensitive(False)
+        self._btn_cancel.set_sensitive(True)
         self._update_status("<i>Checking</i>")

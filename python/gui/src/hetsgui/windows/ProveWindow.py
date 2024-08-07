@@ -24,6 +24,7 @@ class ProveWindow(Gtk.Window):
 
     notebook: Gtk.Notebook = Gtk.Template.Child()
     btn_prove: Gtk.Button = Gtk.Template.Child()
+    btn_cancel: Gtk.Button = Gtk.Template.Child()
     txt_extra_options: Gtk.Entry = Gtk.Template.Child()
     txt_timeout: Gtk.SpinButton = Gtk.Template.Child()
     switch_include_proven_theorems: Gtk.Switch = Gtk.Template.Child()
@@ -51,6 +52,7 @@ class ProveWindow(Gtk.Window):
         self.update_sublogic()
 
     def _init_view(self):
+        self.btn_cancel.set_sensitive(False)
 
         # Add goals to goals model for display in tree view
         for goal in self.node.global_theory().goals():
@@ -86,6 +88,10 @@ class ProveWindow(Gtk.Window):
         self._proving_thread.start()
 
     @Gtk.Template.Callback()
+    def on_cancel_clicked(self, _):
+        self._logger.debug("Proving shall be canceled")
+
+    @Gtk.Template.Callback()
     def on_proof_details_clicked(self, widget, path):
         goal_name = self.goals_model[path][0]
         goal = next(iter(g for g in self.node.global_theory().goals()
@@ -107,6 +113,7 @@ class ProveWindow(Gtk.Window):
 
     def _init_prove_progress(self):
         self.btn_prove.set_sensitive(False)
+        self.btn_cancel.set_sensitive(True)
         self.notebook.set_current_page(1)
 
         for goal in self.goals_model:
@@ -132,6 +139,7 @@ class ProveWindow(Gtk.Window):
 
     def _finish_prove_progress(self):
         self.btn_prove.set_sensitive(True)
+        self.btn_cancel.set_sensitive(False)
         self.notebook.set_current_page(1)
 
     def _prove(self):
