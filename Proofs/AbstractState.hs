@@ -53,6 +53,8 @@ module Proofs.AbstractState
     , getAllConsCheckers
     , lookupKnownProver
     , lookupKnownConsChecker
+    , startAutoProofAtNode
+    , getResultOfAutoProofAtNode
     , autoProofAtNode
     , usableCC
     ) where
@@ -88,6 +90,7 @@ import Comorphisms.KnownProvers
 import Comorphisms.LogicGraph (logicGraph)
 
 import Static.GTheory
+import Control.Concurrent (ThreadId)
 
 -- import Interfaces.DataTypes (IntState)
 
@@ -565,6 +568,61 @@ markProvedGoalMap c lid status th = case th of
       in G_theory lid1 syn sig si (foldl (flip upd) thSens status)
         startThId
 
+startAutoProofAtNode ::
+  Bool
+  -> Int
+  -> [String]
+  -> [String]
+  -> G_theory
+  -> (G_prover, AnyComorphism)
+  -> ResultT IO (ThreadId, MVar (), MVar (Result [ProofStatus proof_tree]) , ProofState)
+startAutoProofAtNode useTh timeout goals axioms g_th p_cm = do
+  let knpr = propagateErrors "autoProofAtNode"
+        $ knownProversWithKind ProveCMDLautomatic
+      pf_st = initialState "" g_th knpr
+      sg_st = if null goals then pf_st else pf_st
+        { selectedGoals = filter (`elem` goals) $ selectedGoals pf_st }
+      sa_st = if null axioms then sg_st else sg_st
+        { includedAxioms = filter (`elem` axioms) $ includedAxioms sg_st }
+      st = recalculateSublogicAndSelectedTheory sa_st
+  -- try to prepare the theory
+  if null $ selectedGoals st then Fail.fail "autoProofAtNode: no goals selected"
+    else do
+      (G_theory_with_prover lid1 th p) <- liftR $ prepareForProving st p_cm
+      case proveCMDLautomaticBatch p of
+        Nothing ->
+          Fail.fail "autoProofAtNode: failed to init CMDLautomaticBatch"
+        Just fn -> lift $ do
+          answ <- newMVar (return [])
+          -- mVar to poll the prover for results
+          (tId, mV) <- fn useTh False answ (theoryName st)
+                                  (TacticScript $ show timeout) th []
+          return (tId, mV, answ, st)
+
+getResultOfAutoProofAtNode ::
+  MVar ()
+  -> MVar (Result [ProofStatus proof_tree])
+  -> ProofState
+  -> (G_prover, AnyComorphism)
+  -> ResultT IO
+      ((G_theory, [(String, String, String)]),
+        (ProofState, [ProofStatus G_proof_tree]))
+getResultOfAutoProofAtNode mV answ st p_cm = do
+  (G_theory_with_prover lid1 th p) <- liftR $ prepareForProving st p_cm
+  let encapsulate_pt ps =
+        ps {proofTree = G_proof_tree lid1 $ proofTree ps}
+  d <- lift $ do
+    takeMVar mV
+    takeMVar answ
+  case maybeResult d of
+    Nothing -> Fail.fail "autoProofAtNode: proving failed"
+    Just d' ->
+      return (( currentTheory $ markProved (snd p_cm) lid1 d' st
+              , map (\ ps -> ( goalName ps
+                            , show $ goalStatus ps
+                            , show $ proofTree ps)) d')
+              , (st, map encapsulate_pt d'))
+
 autoProofAtNode ::
                    -- use theorems is subsequent proofs
                   Bool
@@ -582,36 +640,5 @@ autoProofAtNode ::
                   -> ResultT IO ((G_theory, [(String, String, String)]),
                                  (ProofState, [ProofStatus G_proof_tree]))
 autoProofAtNode useTh timeout goals axioms g_th p_cm = do
-      let knpr = propagateErrors "autoProofAtNode"
-            $ knownProversWithKind ProveCMDLautomatic
-          pf_st = initialState "" g_th knpr
-          sg_st = if null goals then pf_st else pf_st
-            { selectedGoals = filter (`elem` goals) $ selectedGoals pf_st }
-          sa_st = if null axioms then sg_st else sg_st
-            { includedAxioms = filter (`elem` axioms) $ includedAxioms sg_st }
-          st = recalculateSublogicAndSelectedTheory sa_st
-      -- try to prepare the theory
-      if null $ selectedGoals st then Fail.fail "autoProofAtNode: no goals selected"
-        else do
-          (G_theory_with_prover lid1 th p) <- liftR $ prepareForProving st p_cm
-          case proveCMDLautomaticBatch p of
-            Nothing ->
-              Fail.fail "autoProofAtNode: failed to init CMDLautomaticBatch"
-            Just fn -> do
-              let encapsulate_pt ps =
-                   ps {proofTree = G_proof_tree lid1 $ proofTree ps}
-              d <- lift $ do
-                -- mVar to poll the prover for results
-                answ <- newMVar (return [])
-                (_, mV) <- fn useTh False answ (theoryName st)
-                                       (TacticScript $ show timeout) th []
-                takeMVar mV
-                takeMVar answ
-              case maybeResult d of
-                Nothing -> Fail.fail "autoProofAtNode: proving failed"
-                Just d' ->
-                 return (( currentTheory $ markProved (snd p_cm) lid1 d' st
-                         , map (\ ps -> ( goalName ps
-                                        , show $ goalStatus ps
-                                        , show $ proofTree ps)) d')
-                         , (st, map encapsulate_pt d'))
+  (tId, mV, answ, st) <- startAutoProofAtNode useTh timeout goals axioms g_th p_cm
+  getResultOfAutoProofAtNode mV answ st p_cm
