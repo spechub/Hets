@@ -4,10 +4,15 @@ Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 -}
 module HetsAPI.ProveCommands (
-    getAvailableComorphisms
+    getTheoryForSelection
+    , getAvailableComorphisms
     , getUsableProvers
     , getUsableConsistencyCheckers
+    , Interfaces.Utils.getUsableConservativityCheckers
 
+    , asyncProveNode
+    , resultProveNode
+    , abortAsyncProof
     , proveNode
     , recordProofResult
     , proveNodeAndRecord
@@ -16,42 +21,57 @@ module HetsAPI.ProveCommands (
     , recordConsistencyResult
     , checkConsistencyAndRecord
 
-    , checkConservativityNode
+    , checkConservativityEdge
+    , recordConservativityResult
+    , checkConservativityEdgeAndRecord
 
     , ProofOptions(..)
     , defaultProofOptions
     , ConsCheckingOptions(..)
     , defaultConsCheckingOptions
     , recomputeNode
+
+    , genericProveBatch
 ) where
 
 import HetsAPI.DataTypes
 
 import Data.Functor ()
 import qualified Data.Map as Map
-import Data.Graph.Inductive (LNode)
+import Data.Maybe (fromJust)
+import Data.Graph.Inductive (LNode, LEdge)
 
 import Control.Monad.Trans ( MonadTrans(lift) )
 
+import Common.Consistency (Conservativity)
+import Common.Id (nullRange)
 import Common.LibName (LibName)
-import Common.ResultT (ResultT)
+import qualified Common.OrderedMap as OMap
+import Common.Result (Result(maybeResult, Result), maybeToResult)
+import Common.ResultT (ResultT (..), liftR)
 
 import Comorphisms.LogicGraph (logicGraph)
 
-import qualified Interfaces.Utils (checkConservativityNode)
+import qualified Interfaces.Utils (checkConservativityNode, getUsableConservativityCheckers, checkConservativityEdgeWith, recordConservativityResult)
 
 import Logic.Comorphism (AnyComorphism)
 import Logic.Grothendieck (findComorphismPaths)
-import Logic.Prover (ProofStatus, ProverKind (..))
+import Logic.Prover (ProofStatus (goalName), ProverKind (..))
 
-import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, G_cons_checker (..), getProverName, getConsCheckers, getCcName)
+import Proofs.AbstractState (G_prover, ProofState, G_proof_tree, autoProofAtNode, G_cons_checker (..), G_conservativity_checker (..), getProverName, getConsCheckers, getCcName, makeTheoryForSentences)
 import qualified Proofs.AbstractState as PAS
 import Proofs.ConsistencyCheck (ConsistencyStatus, SType(..), consistencyCheck, sType)
+import Proofs.BatchProcessing (genericProveBatch)
 
 import Static.ComputeTheory(updateLabelTheory, recomputeNodeLabel)
-import Static.DevGraph (LibEnv, DGraph, DGNodeLab, ProofHistory, DGChange(..), dgn_theory, markNodeInconsistent, markNodeConsistent)
-import Static.GTheory (G_theory (..), sublogicOfTh)
+import Static.DevGraph (LibEnv, DGraph, DGNodeLab, DGLinkLab, ProofHistory, DGChange(..), globalTheory, markNodeInconsistent, markNodeConsistent)
+import Static.GTheory (G_theory (..), sublogicOfTh, coerceThSens)
 import Static.History (changeDGH)
+import Control.Concurrent (putMVar)
+import Control.Concurrent.MVar
+import GHC.Conc
+import qualified Control.Monad.Fail as Fail
+import GHC.Base ( join )
 
 data ProofOptions = ProofOptions {
     proofOptsProver :: Maybe G_prover -- ^ The prover to use. If not set, it is selected automatically
@@ -90,7 +110,11 @@ defaultConsCheckingOptions = ConsCheckingOptions {
 type ProofResult = (G_theory -- The new theory
     , [ProofStatus G_proof_tree]) -- ProofStatus of each goal
 
+type ConservativityResult = (Conservativity, G_theory, G_theory)
 
+
+getTheoryForSelection :: [String] -> [String] -> [String] -> G_theory -> G_theory
+getTheoryForSelection = makeTheoryForSentences
 
 -- | @getAvailableComorphisms theory@ yields all available comorphisms for @theory@
 getAvailableComorphisms :: G_theory -> [AnyComorphism]
@@ -108,8 +132,9 @@ getUsableProvers th = PAS.getUsableProvers ProveCMDLautomatic (sublogicOfTh th) 
 -- | @proveNode theory prover comorphism@ proves all goals in @theory@ using all
 --   all axioms in @theory@. If @prover@ or @comorphism@ is @Nothing@ the first
 --   usable prover or comorphism, respectively, is used. 
-proveNode :: G_theory -> ProofOptions -> ResultT IO ProofResult
-proveNode theory (ProofOptions proverM comorphismM useTh goals axioms timeout) = do
+proveNode :: TheoryPointer -> ProofOptions -> ResultT IO ProofResult
+proveNode (_, _, _, node) (ProofOptions proverM comorphismM useTh goals axioms timeout) = do
+    theory <- liftR . maybeToResult nullRange "No global theory!" . globalTheory . snd $ node
     (prover, comorphism) <- case (proverM, comorphismM) of
         (Just prover, Just comorphism) -> return (prover, comorphism)
         (Just prover, Nothing) -> do
@@ -126,36 +151,65 @@ proveNode theory (ProofOptions proverM comorphismM useTh goals axioms timeout) =
     ((th, sens), (state, steps)) <- autoProofAtNode useTh timeout goals axioms theory (prover, comorphism)
     return (th, steps)
 
+asyncProveNode :: TheoryPointer -> ProofOptions -> IO (MVar ThreadId, MVar (ResultT IO ProofResult))
+asyncProveNode tp po = do
+    tId <- newEmptyMVar
+    retVal <- newEmptyMVar
+    threadId <- forkIO $ do
+        let result = proveNode tp po
+        putMVar retVal result
+    putMVar tId threadId
+    return (tId, retVal)
+
+resultProveNode :: MVar (ResultT IO ProofResult) -> ResultT IO ProofResult
+resultProveNode resultContainer = do
+    join $ lift $ takeMVar resultContainer
+
+abortAsyncProof :: MVar ThreadId -> IO ()
+abortAsyncProof tId = takeMVar tId >>= killThread
+
 recordProofResult :: TheoryPointer -> ProofResult -> LibEnv
-recordProofResult (name, env, graph, node) (theory, statuses) = 
+recordProofResult (name, env, graph, node) (theory, statuses) =
     if null statuses
     then env
-    else Map.insert name ( updateLabelTheory env name graph node theory) env
+    else case new_theory of
+        Just th -> Map.insert name ( updateLabelTheory env name graph node th) env
+        Nothing -> env
+    where new_theory = do
+            original_theory <- globalTheory . snd $ node
+            recordProofResult' original_theory theory statuses
+
+recordProofResult' :: G_theory -> G_theory -> [ProofStatus G_proof_tree] -> Maybe G_theory
+recordProofResult' (G_theory lid1 _ _ _ original_sens _) (G_theory lid2 syn sign signIdx result_sens sensIdx) statuses = do
+    original_sens' <- coerceThSens lid1 lid2 "String" original_sens
+    let new_sens = foldr (\status sens -> OMap.insert (goalName status) (fromJust . OMap.lookup (goalName status) $ result_sens) sens) original_sens' statuses
+    return $ G_theory lid2 syn sign signIdx new_sens sensIdx
 
 proveNodeAndRecord :: TheoryPointer -> ProofOptions -> ResultT IO (ProofResult, LibEnv)
 proveNodeAndRecord p@(_, _, _, node) opts = do
-    r <- proveNode (dgn_theory . snd $ node) opts
+    r <- proveNode p opts
     let env = recordProofResult p r
     return (r, env)
 
 checkConsistency :: TheoryPointer -> ConsCheckingOptions -> IO ConsistencyStatus
-checkConsistency (libName, libEnv, dgraph, lnode) (ConsCheckingOptions ccM comorphismM b timeout)  =  do
-    let theory = dgn_theory . snd $ lnode
-    (cc, comorphism) <- case (ccM, comorphismM) of
-        (Just cc, Just comorphism) -> return (cc, comorphism)
-        (Just cc, Nothing) -> do
-            let ccName = getCcName cc
-            comorphism <-  (snd . head . filter ((== ccName) . getCcName . fst) <$> getUsableConsistencyCheckers theory)
-            return (cc, comorphism)
-        (Nothing, Just comorphism) -> do
-            cc <- (fst . head . filter ((== comorphism) . snd) <$> getUsableConsistencyCheckers theory)
-            return (cc, comorphism)
-        (Nothing, Nothing) -> head <$> (getUsableConsistencyCheckers theory)
+checkConsistency (libName, libEnv, dgraph, lnode) (ConsCheckingOptions ccM comorphismM b timeout)  = case globalTheory . snd $ lnode of
+    Nothing -> fail "No global theory!"
+    Just theory -> do
+        (cc, comorphism) <- case (ccM, comorphismM) of
+            (Just cc, Just comorphism) -> return (cc, comorphism)
+            (Just cc, Nothing) -> do
+                let ccName = getCcName cc
+                comorphism <-  snd . head . filter ((== ccName) . getCcName . fst) <$> getUsableConsistencyCheckers theory
+                return (cc, comorphism)
+            (Nothing, Just comorphism) -> do
+                cc <- fst . head . filter ((== comorphism) . snd) <$> getUsableConsistencyCheckers theory
+                return (cc, comorphism)
+            (Nothing, Nothing) -> head <$> getUsableConsistencyCheckers theory
 
-    consistencyCheck b cc comorphism libName libEnv dgraph lnode timeout
+        consistencyCheck b cc comorphism libName libEnv dgraph lnode timeout
 
 recordConsistencyResult :: TheoryPointer -> ConsistencyStatus -> LibEnv
-recordConsistencyResult (name, env, graph, node@(i, label)) consStatus = 
+recordConsistencyResult (name, env, graph, node@(i, label)) consStatus =
     if sType consStatus == CSUnchecked
     then env
     else Map.insert name (changeDGH graph $ SetNodeLab label
@@ -170,11 +224,19 @@ checkConsistencyAndRecord p opts = do
     let env = recordConsistencyResult p r
     return (r, env)
 
-checkConservativityNode ::LNode DGNodeLab -> LibEnv -> LibName
-  -> IO (String, LibEnv, ProofHistory)
-checkConservativityNode = Interfaces.Utils.checkConservativityNode False
+checkConservativityEdge :: LinkPointer -> G_conservativity_checker -> IO (Result ConservativityResult)
+checkConservativityEdge (name, env, edge) = Interfaces.Utils.checkConservativityEdgeWith edge env name
+
+recordConservativityResult :: LinkPointer -> ConservativityResult -> LibEnv
+recordConservativityResult (name, env, edge) = Interfaces.Utils.recordConservativityResult edge env name
+
+checkConservativityEdgeAndRecord :: LinkPointer -> G_conservativity_checker -> IO (Result (ConservativityResult, LibEnv))
+checkConservativityEdgeAndRecord linkPtr cc = runResultT $ do
+    r <- ResultT $ checkConservativityEdge linkPtr cc
+    let env = recordConservativityResult linkPtr r
+    return (r, env)
 
 recomputeNode :: TheoryPointer -> LibEnv
 recomputeNode (name, env, graph, node@(i, label)) =
-    Map.insert name (changeDGH graph $ SetNodeLab label 
+    Map.insert name (changeDGH graph $ SetNodeLab label
         (i, recomputeNodeLabel env name graph node)) env

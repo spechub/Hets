@@ -694,6 +694,7 @@ Library
         HasCASL.TypeRel
         HasCASL.Unify
         HasCASL.VarDecl
+        HetsAPI.Refinement
         HolLight.ATC_HolLight
         HolLight.Helper
         HolLight.HolLight2DG

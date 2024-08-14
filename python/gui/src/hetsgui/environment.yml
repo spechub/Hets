@@ -1,0 +1,16 @@
+name: hetsgui
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.8.10
+  - gtk3
+  - pygobject
+  - pip
+  - pip:
+      - xdot
+      - numpy
+      - graphviz
+
+  - graphviz
+  - python-graphviz

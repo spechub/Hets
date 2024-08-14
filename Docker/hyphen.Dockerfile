@@ -1,5 +1,5 @@
 
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 RUN apt-get update && \
     apt-get upgrade -y && \
@@ -22,5 +22,7 @@ packages = [ "hyphen" ]\n\
 [tool.setuptools.package-data]\n\
 "*" = [ "hslowlevel.*" ]\n' > /hyphen/pyproject.toml
 
-RUN pip3 install /hyphen
+RUN python3 -m pip install --upgrade pip setuptools
+
+RUN python3 -m pip install /hyphen
 

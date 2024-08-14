@@ -33,8 +33,11 @@ module HetsAPI.Commands (
    , HPC.getUsableProvers
    , HPC.getUsableConsistencyCheckers
    , HPC.proveNode
+   , HPC.asyncProveNode
+   , HPC.resultProveNode
+   , HPC.abortAsyncProof
    , HPC.checkConsistency
-   , HPC.checkConservativityNode 
+   , HPC.checkConservativityEdge
 
    -- Hets.InfoCommands
    , HIC.getGraphForLibrary
