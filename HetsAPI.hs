@@ -31,6 +31,9 @@ module HetsAPI (
    , getLNodesFromDevelopmentGraph
    , getUsableProvers
    , proveNode 
+   , asyncProveNode
+   , resultProveNode
+   , abortAsyncProof
 ) where
 
 import HetsAPI.Commands

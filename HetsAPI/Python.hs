@@ -33,6 +33,9 @@ module HetsAPI.Python (
     , checkConservativityEdge
     , checkConservativityEdgeAndRecord
     , proveNode
+    , asyncProveNode
+    , resultProveNode
+    , abortAsyncProof
     , recordProofResult
     , proveNodeAndRecord
     , getAllSentences
@@ -169,6 +172,8 @@ import Proofs.AbstractState (G_prover, G_proof_tree(..), G_cons_checker, G_conse
 import Proofs.ConsistencyCheck (ConsistencyStatus)
 
 import qualified HetsAPI.Refinement as Refinement
+import Control.Concurrent.MVar (MVar)
+import GHC.Conc
 
 
 fstOf3 :: (a,b,c) -> a
@@ -188,6 +193,8 @@ data PyConsChecker = PyConsChecker G_cons_checker
 data PyConservativityChecker = PyConservativityChecker G_conservativity_checker
 data PyComorphism = PyComorphism AnyComorphism
 data PyProofTree = PyProofTree G_proof_tree
+
+-- data PyMVar a = PyMVar (MVar a)
 
 toPyProofTree :: G_proof_tree -> PyProofTree
 toPyProofTree = PyProofTree
@@ -353,6 +360,18 @@ toPyProofStatus status = status { proofTree = toPyProofTree (proofTree status) }
 
 fromPyProofStatus :: ProofStatus PyProofTree -> ProofStatus G_proof_tree
 fromPyProofStatus status  = status {proofTree = fromPyProofTree (proofTree status)}
+
+asyncProveNode :: HDT.TheoryPointer -> PyProofOptions -> IO (MVar ThreadId, MVar (ResultT IO (GT.G_theory, [ProofStatus G_proof_tree])))
+asyncProveNode ptr opts =
+    HP.asyncProveNode ptr (toProofOptions opts)
+
+resultProveNode :: MVar (ResultT IO (GT.G_theory, [ProofStatus G_proof_tree])) -> IO (Result (PyTheory, [ProofStatus PyProofTree]))
+resultProveNode answ = runResultT $ do
+    res <- HP.resultProveNode answ
+    return $ bimap PyTheory (map toPyProofStatus) res
+
+abortAsyncProof :: MVar ThreadId -> IO ()
+abortAsyncProof = HP.abortAsyncProof
 
 proveNode :: HDT.TheoryPointer -> PyProofOptions -> IO (Result (PyTheory, [ProofStatus PyProofTree]))
 proveNode ptr opts =

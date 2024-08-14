@@ -10,6 +10,9 @@ module HetsAPI.ProveCommands (
     , getUsableConsistencyCheckers
     , Interfaces.Utils.getUsableConservativityCheckers
 
+    , asyncProveNode
+    , resultProveNode
+    , abortAsyncProof
     , proveNode
     , recordProofResult
     , proveNodeAndRecord
@@ -64,6 +67,11 @@ import Static.ComputeTheory(updateLabelTheory, recomputeNodeLabel)
 import Static.DevGraph (LibEnv, DGraph, DGNodeLab, DGLinkLab, ProofHistory, DGChange(..), globalTheory, markNodeInconsistent, markNodeConsistent)
 import Static.GTheory (G_theory (..), sublogicOfTh, coerceThSens)
 import Static.History (changeDGH)
+import Control.Concurrent (putMVar)
+import Control.Concurrent.MVar
+import GHC.Conc
+import qualified Control.Monad.Fail as Fail
+import GHC.Base ( join )
 
 data ProofOptions = ProofOptions {
     proofOptsProver :: Maybe G_prover -- ^ The prover to use. If not set, it is selected automatically
@@ -142,6 +150,23 @@ proveNode (_, _, _, node) (ProofOptions proverM comorphismM useTh goals axioms t
 
     ((th, sens), (state, steps)) <- autoProofAtNode useTh timeout goals axioms theory (prover, comorphism)
     return (th, steps)
+
+asyncProveNode :: TheoryPointer -> ProofOptions -> IO (MVar ThreadId, MVar (ResultT IO ProofResult))
+asyncProveNode tp po = do
+    tId <- newEmptyMVar
+    retVal <- newEmptyMVar
+    threadId <- forkIO $ do
+        let result = proveNode tp po
+        putMVar retVal result
+    putMVar tId threadId
+    return (tId, retVal)
+
+resultProveNode :: MVar (ResultT IO ProofResult) -> ResultT IO ProofResult
+resultProveNode resultContainer = do
+    join $ lift $ takeMVar resultContainer
+
+abortAsyncProof :: MVar ThreadId -> IO ()
+abortAsyncProof tId = takeMVar tId >>= killThread
 
 recordProofResult :: TheoryPointer -> ProofResult -> LibEnv
 recordProofResult (name, env, graph, node) (theory, statuses) =
