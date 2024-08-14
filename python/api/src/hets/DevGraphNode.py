@@ -16,7 +16,7 @@ from .ProofDetails import ProofDetails
 from .Prover import Prover
 from .HsWrapper import HsHierarchyElement
 from .haskell import snd, theoryOfNode, DGNodeLab, fst, Just, Nothing, PyProver, PyComorphism, defaultProofOptions, \
-    mkPyProofOptions, proveNode, recordProofResult, ConsistencyStatus as HsConsistencyStatus, PyConsChecker, \
+    mkPyProofOptions, asyncProveNode, resultProveNode, abortAsyncProof, recordProofResult, ConsistencyStatus as HsConsistencyStatus, PyConsChecker, \
     defaultConsCheckingOptions, \
     PyConsCheckingOptions, checkConsistencyAndRecord, TheoryPointer, globalTheory, recomputeNode, fromJust, \
     developmentGraphNodeLabelName, getDevelopmentGraphNodeType, nodeTypeIsReference, nodeTypeIsProven, \
@@ -37,6 +37,8 @@ class DevGraphNode(HsHierarchyElement):
         self._hs_node = hs_node
 
         self._theory: Optional[Theory] = None
+
+        self._tId = []
 
     def hs_obj(self):
         return self._hs_node
@@ -85,7 +87,11 @@ class DevGraphNode(HsHierarchyElement):
             timeout if timeout is not None else default_opts.proofOptsTimeout(),
         )
 
-        prove_result = proveNode(self._theory_pointer(), opts).act()
+        apnR = asyncProveNode(self._theory_pointer(), opts).act()
+        threadId = apnR[0]
+        resultMVar = apnR[1]
+        self._tId.append(threadId)
+        prove_result = resultProveNode(resultMVar).act()
         result = result_or_raise(prove_result)
 
         self._prove_lock.acquire()
@@ -97,6 +103,11 @@ class DevGraphNode(HsHierarchyElement):
         goal_statuses = snd(result)
 
         return list(ProofDetails(x) for x in goal_statuses)
+
+    def cancel_proof():
+        for tId in self._tId:
+            abortAsyncProof(tId).act()
+        self._tId = []
 
     def check_consistency(self,
                           cons_checker: Optional[ConsistencyChecker] = None,

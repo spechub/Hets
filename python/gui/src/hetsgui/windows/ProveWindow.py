@@ -90,6 +90,7 @@ class ProveWindow(Gtk.Window):
     @Gtk.Template.Callback()
     def on_cancel_clicked(self, _):
         self._logger.debug("Proving shall be canceled")
+        
 
     @Gtk.Template.Callback()
     def on_proof_details_clicked(self, widget, path):
