@@ -46,6 +46,7 @@ module HetsAPI.Python (
     , comorphismName
     , proverName
     , prettySentence
+    , prettyTheory
     , defaultProofOptions
     , defaultConsCheckingOptions
     , globalTheory
@@ -422,6 +423,9 @@ theorySentenceBestProof = HI.theorySentenceBestProof
 
 prettySentence :: PyTheory -> Sentence -> String
 prettySentence (PyTheory theory) = HI.prettySentenceOfTheory theory
+
+prettyTheory :: PyTheory -> String
+prettyTheory (PyTheory theory) = HI.prettyTheory theory
 
 signatureOfTheory :: PyTheory -> ExtSign HDT.SignatureJSON HDT.SymbolJSON
 signatureOfTheory (PyTheory GT.G_theory { GT.gTheorySign = sig }) = ExtSign {

@@ -15,7 +15,7 @@ from .Sentence import Sentence
 from .Signature import Signature
 from .haskell import (fst, PyTheory, getUsableProvers, getUsableConsistencyCheckers,
                       getAvailableComorphisms, getAllSentences, getAllGoals, getAllAxioms, getProvenGoals,
-                      prettySentence,
+                      prettySentence, prettyTheory,
                       getUnprovenGoals, OMap, snd,
                       logicNameOfTheory,
                       logicDescriptionOfTheory, signatureOfTheory, sublogicOfPyTheory, getTheoryForSelection)
@@ -188,3 +188,6 @@ class Theory(HsHierarchyElement):
         theory = getTheoryForSelection(axioms, goals, theorems, self._hs_theory)
 
         return Theory(theory, self.parent())
+
+    def __str__(self) -> str:
+        return prettyTheory(self._hs_theory)

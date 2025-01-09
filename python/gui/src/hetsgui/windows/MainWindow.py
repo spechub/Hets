@@ -14,6 +14,7 @@ from ..utils import get_variant
 from ..widgets.EdgeInfoDialog import EdgeInfoDialog
 from ..widgets.GraphvizGraphWidget import GraphvizGraphWidget
 from ..widgets.NodeInfoDialog import NodeInfoDialog
+from ..widgets.TheoryInfoDialog import TheoryInfoDialog
 from ..windows.LibrarySettingsWindow import LibrarySettingsWindow
 
 from ..windows.ProveWindow import ProveWindow
@@ -75,6 +76,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_actions.append(self._action("node.prove", self._on_prove_node, "s"))
         self._library_actions.append(self._action("node.check_consistency", self._on_check_consistency_node, "s"))
         self._library_actions.append(self._action("node.show_info", self._on_show_node_info, "s"))
+        self._library_actions.append(self._action("node.show_theory", self._on_show_theory, "s"))
         self._library_actions.append(
             self._action("edge.check_conservativity", self._on_check_conservativity_edge, "av"))
         self._library_actions.append(self._action("edge.show_info", self._on_show_edge_info, "av"))
@@ -228,6 +230,16 @@ class MainWindow(Gtk.ApplicationWindow):
             node = [n for n in self._loaded_library.development_graph().nodes() if str(n.id()) == node_id][0]
 
             info_dialog = NodeInfoDialog(node)
+            info_dialog.run()
+        else:
+            self._logger.warning(f'Action: Show info for node {node_id}. But no library is loaded!')
+
+    def _on_show_theory(self, action, parameter: GLib.Variant):
+        node_id = parameter.get_string()
+        if self._loaded_library:
+            node = [n for n in self._loaded_library.development_graph().nodes() if str(n.id()) == node_id][0]
+
+            info_dialog = TheoryInfoDialog(node)
             info_dialog.run()
         else:
             self._logger.warning(f'Action: Show info for node {node_id}. But no library is loaded!')

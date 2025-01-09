@@ -71,6 +71,7 @@ from hs.HetsAPI.Python import (
     logicNameOfTheory,
     mkPyProofOptions,
     prettySentence,
+    prettyTheory,
     proofOptsAxiomsToInclude,
     proofOptsComorphism,
     proofOptsGoalsToProve,

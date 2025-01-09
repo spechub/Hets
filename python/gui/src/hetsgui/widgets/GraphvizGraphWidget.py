@@ -249,6 +249,11 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         menu_item_info.set_action_and_target_value("win.node.show_info", GLib.Variant.new_string(node_id))
         menu.append_item(menu_item_info)
 
+        menu_item_show_theory = Gio.MenuItem()
+        menu_item_show_theory.set_label("Show theory")
+        menu_item_show_theory.set_action_and_target_value("win.node.show_theory", GLib.Variant.new_string(node_id))
+        menu.append_item(menu_item_show_theory)
+
         if node.is_reference_node():
             menu_item_open_ref = Gio.MenuItem()
             menu_item_open_ref.set_label("Open " + node.name())

@@ -19,6 +19,7 @@ module HetsAPI.InfoCommands (
    , getUnprovenGoals
    , prettySentence
    , prettySentenceOfTheory
+   , prettyTheory
    , getDevelopmentGraphNodeType
    , theorySentenceIsAxiom
    , theorySentenceWasTheorem
@@ -39,7 +40,7 @@ import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 import Common.AS_Annotation (SenAttr (..))
-import Common.DocUtils (pretty)
+import Common.DocUtils (pretty, showDoc)
 import Common.LibName (LibName)
 import qualified Common.Lib.Graph as Graph
 import qualified Common.Lib.Rel as Rel
@@ -136,6 +137,9 @@ prettySentence' (x::sentence) _ sen = case (eitherDecode sen :: Either String se
 prettySentence :: Logic lid sublogics basic_spec sentence symb_items symb_map_items sign morphism symbol raw_symbol proof_tree =>
     lid -> Sentence -> String
 prettySentence = prettySentence' (undefined :: sentence)
+
+prettyTheory :: G_theory -> String
+prettyTheory th = showDoc th "\n"
 
 prettySentenceOfTheory :: G_theory -> Sentence -> String
 prettySentenceOfTheory (G_theory lid _ _ _ _ _) = prettySentence lid
