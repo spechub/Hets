@@ -77,6 +77,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self._library_actions.append(self._action("node.check_consistency", self._on_check_consistency_node, "s"))
         self._library_actions.append(self._action("node.show_info", self._on_show_node_info, "s"))
         self._library_actions.append(self._action("node.show_theory", self._on_show_theory, "s"))
+        self._library_actions.append(self._action("node.translate", self._on_translate_node, "av"))
         self._library_actions.append(
             self._action("edge.check_conservativity", self._on_check_conservativity_edge, "av"))
         self._library_actions.append(self._action("edge.show_info", self._on_show_edge_info, "av"))
@@ -128,15 +129,20 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def _action_toggle(self, name: str, cb: Callable[[Gio.SimpleAction, GLib.Variant], Any],
                        default: bool = False) -> Gio.SimpleAction:
-        return self._action_state(name, cb, default)
+        return self._action_state(name, cb, default, None)
 
     def _action_state(self, name: str, cb: Callable[[Gio.SimpleAction, GLib.Variant], Any], default: Optional[T] = None,
-                      param_type_str: Optional[str] = None):
+                      param_type_str: Optional[str | typing.Literal["infer"]] = "infer") -> Gio.SimpleAction:
 
         default_variant = get_variant(default)
-        param_type_str = GLib.VariantType(param_type_str) if param_type_str else default_variant.get_type()
+        if param_type_str == "infer":
+            param_type = default_variant.get_type()
+        elif param_type_str is not None:
+            param_type = GLib.VariantType(param_type_str)
+        else:
+            param_type = None
 
-        action = Gio.SimpleAction.new_stateful(name, param_type_str, default_variant)
+        action = Gio.SimpleAction.new_stateful(name, param_type, default_variant)
         action.connect("change-state", cb)
         self.add_action(action)
         return action
@@ -231,6 +237,24 @@ class MainWindow(Gtk.ApplicationWindow):
 
             info_dialog = NodeInfoDialog(node)
             info_dialog.run()
+            info_dialog.destroy()
+        else:
+            self._logger.warning(f'Action: Show info for node {node_id}. But no library is loaded!')
+
+    def _on_translate_node(self, action, parameter: GLib.Variant):
+        node_id = parameter.get_child_value(0).get_child_value(0).get_string()
+        comorphism_name = parameter.get_child_value(1).get_child_value(0).get_string()
+        if self._loaded_library:
+            node = [n for n in self._loaded_library.development_graph().nodes() if str(n.id()) == node_id][0]
+            comorphism = next((c for c in node.global_theory().get_available_comorphisms() if c.name() == comorphism_name), None)
+
+            if comorphism is None:
+                self._logger.error("Could not find comorphism")
+            else:
+                translated = node.global_theory().translate(comorphism)
+                info_dialog = TheoryInfoDialog(translated, node.name())
+                info_dialog.run()
+                info_dialog.destroy()
         else:
             self._logger.warning(f'Action: Show info for node {node_id}. But no library is loaded!')
 
@@ -239,8 +263,9 @@ class MainWindow(Gtk.ApplicationWindow):
         if self._loaded_library:
             node = [n for n in self._loaded_library.development_graph().nodes() if str(n.id()) == node_id][0]
 
-            info_dialog = TheoryInfoDialog(node)
+            info_dialog = TheoryInfoDialog(node.global_theory(), node.name())
             info_dialog.run()
+            info_dialog.destroy()
         else:
             self._logger.warning(f'Action: Show info for node {node_id}. But no library is loaded!')
 

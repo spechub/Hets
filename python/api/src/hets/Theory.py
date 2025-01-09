@@ -4,6 +4,8 @@ Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 """
 
+from __future__ import annotations
+
 from typing import List, Optional, Tuple, Dict
 
 from .Comorphism import Comorphism
@@ -15,10 +17,12 @@ from .Sentence import Sentence
 from .Signature import Signature
 from .haskell import (fst, PyTheory, getUsableProvers, getUsableConsistencyCheckers,
                       getAvailableComorphisms, getAllSentences, getAllGoals, getAllAxioms, getProvenGoals,
-                      prettySentence, prettyTheory,
+                      prettySentence, showTheory,
                       getUnprovenGoals, OMap, snd,
                       logicNameOfTheory,
-                      logicDescriptionOfTheory, signatureOfTheory, sublogicOfPyTheory, getTheoryForSelection)
+                      logicDescriptionOfTheory, signatureOfTheory, sublogicOfPyTheory, getTheoryForSelection,
+                      translateTheory)
+from .result import result_or_raise
 
 
 class Theory(HsHierarchyElement):
@@ -189,5 +193,12 @@ class Theory(HsHierarchyElement):
 
         return Theory(theory, self.parent())
 
+    def translate(self, comorphism: Comorphism) -> Theory:
+        translated_result = translateTheory(comorphism._hs_comorphism, self._hs_theory)
+        translatedHs = result_or_raise(translated_result, f"Translation with '{comorphism.name()}' failed")
+        translated = Theory(translatedHs, None)
+
+        return translated
+
     def __str__(self) -> str:
-        return prettyTheory(self._hs_theory)
+        return showTheory(self._hs_theory)

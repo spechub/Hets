@@ -47,6 +47,7 @@ module HetsAPI.Python (
     , proverName
     , prettySentence
     , prettyTheory
+    , showTheory
     , defaultProofOptions
     , defaultConsCheckingOptions
     , globalTheory
@@ -95,7 +96,6 @@ module HetsAPI.Python (
     , HC.libFlatHeterogen
     , HC.qualifyLibEnv
     , HC.loadLibrary
-    , HC.showTheory
 
     , HI.getGraphForLibrary
     , HI.getNodesFromDevelopmentGraph
@@ -432,6 +432,9 @@ signatureOfTheory (PyTheory GT.G_theory { GT.gTheorySign = sig }) = ExtSign {
         plainSign = encode (plainSign sig),
         nonImportedSymbols = Set.map encode $ nonImportedSymbols sig
     }
+
+showTheory :: PyTheory -> String
+showTheory (PyTheory theory) = HC.showTheory theory
 
 logicNameOfTheory :: PyTheory -> String
 logicNameOfTheory (PyTheory GT.G_theory { GT.gTheoryLogic = lid } ) = language_name lid

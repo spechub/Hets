@@ -1,6 +1,7 @@
 import logging
 import threading
-from typing import Optional, Tuple
+from collections import defaultdict
+from typing import Optional, Tuple, DefaultDict
 
 from gi.repository import Gtk, Gio, GLib, GObject
 from graphviz import Digraph
@@ -253,6 +254,27 @@ class GraphvizGraphWidget(ExtendedDotWidget):
         menu_item_show_theory.set_label("Show theory")
         menu_item_show_theory.set_action_and_target_value("win.node.show_theory", GLib.Variant.new_string(node_id))
         menu.append_item(menu_item_show_theory)
+
+        menu_translate = Gio.Menu()
+        menus_by_target = dict()
+        for c in node.global_theory().get_available_comorphisms():
+            menu_item_comorphism = Gio.MenuItem()
+            menu_item_comorphism.set_label(f"{c.target()} ({c.name()})")
+            menu_item_comorphism.set_action_and_target_value("win.node.translate", get_variant((node_id, c.name())))
+
+            menu_comorphism = menus_by_target.setdefault(c.target(), Gio.Menu())
+            menu_comorphism.append_item(menu_item_comorphism)
+
+        for k, v in menus_by_target.items():
+            menu_item_comorphism = Gio.MenuItem()
+            menu_item_comorphism.set_label(k)
+            menu_item_comorphism.set_submenu(v)
+            menu_translate.append_item(menu_item_comorphism)
+
+        menu_item_translate = Gio.MenuItem()
+        menu_item_translate.set_label("Translate theory")
+        menu_item_translate.set_submenu(menu_translate)
+        menu.append_item(menu_item_translate)
 
         if node.is_reference_node():
             menu_item_open_ref = Gio.MenuItem()

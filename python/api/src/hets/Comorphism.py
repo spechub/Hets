@@ -4,7 +4,7 @@ Copyright   :  (c) Otto-von-Guericke University of Magdeburg
 License     :  GPLv2 or higher, see LICENSE.txt
 """
 
-from .haskell import comorphismName, PyComorphism
+from .haskell import comorphismName, PyComorphism, targetLogicName, sourceLogicName
 
 
 class Comorphism:
@@ -38,3 +38,9 @@ class Comorphism:
         """
 
         return len(self.name().split(";"))
+
+    def source(self) -> str:
+        return sourceLogicName(self._hs_comorphism)
+
+    def target(self) -> str:
+        return targetLogicName(self._hs_comorphism)

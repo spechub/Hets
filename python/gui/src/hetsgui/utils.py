@@ -24,6 +24,8 @@ def get_variant(data: Any) -> GLib.Variant:
 
     if isinstance(data, str):
         return GLib.Variant.new_string(data)
+    elif isinstance(data, bool):
+        return GLib.Variant.new_boolean(data)
     elif isinstance(data, int):
         return GLib.Variant.new_int32(data)
     elif isinstance(data, (list, tuple, set)):
