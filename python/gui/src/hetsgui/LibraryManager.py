@@ -96,7 +96,7 @@ class LibraryManager(GObject.GObject):
             # self._set_library_actions_enabled(False)
             self._logger.error(f"Failed to load file '{file}': %s", e)
 
-            dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR,
+            dialog = Gtk.MessageDialog(flags=0, message_type=Gtk.MessageType.ERROR,
                                        buttons=Gtk.ButtonsType.CLOSE, text=f"Failed to load {file}!")
             dialog.format_secondary_text(f"Check the console for more details.\nError message: {str(e)}")
             dialog.run()

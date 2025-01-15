@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <interface>
-    <requires lib="gtk+" version="3.24" />
+    <requires lib="gtk+" version="3.24"/>
     <object class="GtkAdjustment" id="adjustment_prover_timeout">
         <property name="upper">4294967295</property>
         <property name="step-increment">1</property>
         <property name="page-increment">10</property>
     </object>
     <object class="GtkListStore" id="goals_model">
-        <signal name="row-changed" handler="on_goals_changed" />
+        <signal name="row-changed" handler="on_goals_changed"/>
         <columns>
-            <column type="gchararray" />
-            <column type="gboolean" />
-            <column type="gchararray" />
-            <column type="gchararray" />
-            <column type="gchararray" />
-            <column type="GdkRGBA" />
+            <column type="gchararray"/>
+            <column type="gboolean"/>
+            <column type="gchararray"/>
+            <column type="gchararray"/>
+            <column type="gchararray"/>
+            <column type="GdkRGBA"/>
         </columns>
     </object>
     <object class="GtkListStore" id="axioms_model">
-        <signal name="row-changed" handler="on_axioms_changed" />
+        <signal name="row-changed" handler="on_axioms_changed"/>
         <columns>
-            <column type="gchararray" />
-            <column type="gboolean" />
-            <column type="gchararray" />
-            <column type="gchararray" />
+            <column type="gchararray"/>
+            <column type="gboolean"/>
+            <column type="gchararray"/>
+            <column type="gchararray"/>
         </columns>
     </object>
     <template class="ProveWindow" parent="GtkWindow">
@@ -32,276 +32,293 @@
         <property name="default-width">1200</property>
         <property name="default-height">600</property>
         <property name="destroy-with-parent">True</property>
-        <signal name="delete-event" handler="on_close" />
+        <signal name="delete-event" handler="on_close"/>
         <child>
-            <object class="GtkNotebook" id="notebook">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="tab-pos">left</property>
+            <object class="GtkBox">
+                <property name="orientation">vertical</property>
                 <child>
-                    <object class="GridWithToolComorphismSelector" id="_prover_comorphism_selector">
-                        <property name="border-width">10</property>
+                    <object class="GtkNotebook" id="notebook">
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="tab-pos">left</property>
                         <child>
+                            <object class="GtkScrolledWindow">
+                                <property name="border-width">10</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="shadow-type">in</property>
+                                <property name="vexpand">True</property>
+                                <property name="min-content-height">100</property>
+                                <child>
+                                    <object class="SelectableTreeView">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="model">goals_model</property>
+                                        <property name="search-column">4</property>
+                                        <property name="tooltip-column">4</property>
+                                        <property name="selected-column">1</property>
+                                        <child>
+                                            <object class="GtkTreeViewColumn">
+                                                <property name="title">State</property>
+                                                <property name="sort-column-id">2</property>
+                                                <child>
+                                                    <object class="CellRendererLink">
+                                                        <signal name="clicked"
+                                                                handler="on_proof_details_clicked"/>
+                                                    </object>
+                                                    <attributes>
+                                                        <attribute name="markup">2</attribute>
+                                                        <attribute name="background-rgba">5</attribute>
+                                                    </attributes>
+                                                </child>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkTreeViewColumn">
+                                                <property name="title">Name</property>
+                                                <property name="resizable">True</property>
+                                                <property name="sort-column-id">3</property>
+                                                <child>
+                                                    <object class="GtkCellRendererText">
+                                                        <property name="width-chars">20</property>
+                                                        <property name="ellipsize">PANGO_ELLIPSIZE_END</property>
+                                                    </object>
+                                                    <attributes>
+                                                        <attribute name="text">3</attribute>
+                                                    </attributes>
+                                                </child>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkTreeViewColumn">
+                                                <property name="title">Goal</property>
+                                                <property name="sort-column-id">4</property>
+                                                <property name="resizable">True</property>
+                                                <child>
+                                                    <object class="GtkCellRendererText">
+                                                        <property name="width-chars">100</property>
+                                                        <property name="ellipsize">PANGO_ELLIPSIZE_END</property>
+                                                    </object>
+                                                    <attributes>
+                                                        <attribute name="text">4</attribute>
+                                                    </attributes>
+                                                </child>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                            </object>
+                            <packing>
+                                <property name="position">1</property>
+                            </packing>
+                        </child>
+                        <child type="tab">
                             <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="halign">start</property>
-                                <property name="label" translatable="yes">Sublogic of theory:</property>
+                                <property name="label" translatable="yes">Goals</property>
                             </object>
                             <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">2</property>
+                                <property name="position">1</property>
+                                <property name="tab-fill">False</property>
                             </packing>
                         </child>
                         <child>
-                            <object class="GtkLabel" id="_lbl_sublogic">
+                            <object class="GtkScrolledWindow">
+                                <property name="border-width">10</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="shadow-type">in</property>
+                                <property name="vexpand">True</property>
+                                <property name="min-content-height">100</property>
+                                <child>
+                                    <object class="SelectableTreeView">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">True</property>
+                                        <property name="model">axioms_model</property>
+                                        <property name="search-column">3</property>
+                                        <property name="tooltip-column">3</property>
+                                        <property name="selected-column">1</property>
+                                        <child>
+                                            <object class="GtkTreeViewColumn">
+                                                <property name="title">Name</property>
+                                                <property name="resizable">True</property>
+                                                <property name="sort-column-id">2</property>
+                                                <child>
+                                                    <object class="GtkCellRendererText">
+                                                        <property name="width-chars">20</property>
+                                                        <property name="ellipsize">PANGO_ELLIPSIZE_END</property>
+                                                    </object>
+                                                    <attributes>
+                                                        <attribute name="text">2</attribute>
+                                                    </attributes>
+                                                </child>
+                                            </object>
+                                        </child>
+                                        <child>
+                                            <object class="GtkTreeViewColumn">
+                                                <property name="title">Axiom</property>
+                                                <property name="resizable">True</property>
+                                                <property name="sort-column-id">3</property>
+                                                <child>
+                                                    <object class="GtkCellRendererText">
+                                                        <property name="width-chars">100</property>
+                                                        <property name="ellipsize">PANGO_ELLIPSIZE_END</property>
+                                                    </object>
+                                                    <attributes>
+                                                        <attribute name="text">3</attribute>
+                                                    </attributes>
+                                                </child>
+                                            </object>
+                                        </child>
+                                    </object>
+                                </child>
+                            </object>
+                            <packing>
+                                <property name="position">2</property>
+                            </packing>
+                        </child>
+                        <child type="tab">
+                            <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="halign">start</property>
-                                <property name="label" translatable="yes">--no-sublogic--</property>
+                                <property name="label" translatable="yes">Axioms</property>
                             </object>
                             <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">2</property>
+                                <property name="position">2</property>
+                                <property name="tab-fill">False</property>
+                            </packing>
+                        </child>
+                        <child>
+
+                            <object class="GridWithToolComorphismSelector" id="_prover_comorphism_selector">
+                                <property name="border-width">10</property>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                        <property name="label" translatable="yes">Sublogic of theory:</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">2</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_sublogic">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                        <property name="label" translatable="yes">--no-sublogic--</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">2</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="label">Timeout in s:</property>
+                                        <property name="halign">GTK_ALIGN_START</property>
+                                        <property name="hexpand">True</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">3</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkSpinButton" id="txt_timeout">
+                                        <property name="adjustment">adjustment_prover_timeout</property>
+                                        <property name="value">10</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">3</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="label">Extra options:</property>
+                                        <property name="halign">GTK_ALIGN_START</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">4</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkEntry" id="txt_extra_options"/>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">4</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="label">Include proven theorems:</property>
+                                        <property name="halign">GTK_ALIGN_START</property>
+                                        <property name="tooltip-text">Include preceding proven theorems in
+                                            next proof attempt
+                                        </property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">5</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkSwitch" id="switch_include_proven_theorems">
+                                        <property name="halign">GTK_ALIGN_END</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">5</property>
+                                    </packing>
+                                </child>
+                            </object>
+
+
+                            <!--                            <object class="GtkGrid" id="grid">-->
+                            <!--                                <property name="border-width">10</property>-->
+                            <!--                                <property name="row-homogeneous">False</property>-->
+                            <!--                                <property name="column-spacing">14</property>-->
+                            <!--                                <property name="row-spacing">4</property>-->
+                            <!--                                -->
+                            <!--                            </object>-->
+                            <packing>
+                                <property name="position">3</property>
+                            </packing>
+                        </child>
+                        <child type="tab">
+                            <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">Prover settings</property>
+                            </object>
+                            <packing>
+                                <property name="position">3</property>
+                                <property name="tab-fill">False</property>
                             </packing>
                         </child>
                     </object>
                 </child>
-                <child type="tab">
-                    <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Prove</property>
-                    </object>
-                    <packing>
-                        <property name="tab-fill">False</property>
-                    </packing>
-                </child>
                 <child>
-                    <object class="GtkScrolledWindow">
-                        <property name="border-width">10</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="shadow-type">in</property>
-                        <property name="vexpand">True</property>
-                        <property name="min-content-height">100</property>
+                    <object class="GtkBox">
+                        <property name="orientation">horizontal</property>
+                        <property name="halign">end</property>
+                        <property name="margin">10</property>
                         <child>
-                            <object class="SelectableTreeView">
+                            <object class="GtkButton" id="btn_prove">
+                                <property name="label" translatable="yes">Prove</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
-                                <property name="model">goals_model</property>
-                                <property name="search-column">4</property>
-                                <property name="tooltip-column">4</property>
-                                <property name="selected-column">1</property>
-                                <child>
-                                    <object class="GtkTreeViewColumn">
-                                        <property name="title">State</property>
-                                        <property name="sort-column-id">2</property>
-                                        <child>
-                                            <object class="CellRendererLink">
-                                                <signal name="clicked"
-                                                    handler="on_proof_details_clicked" />
-                                            </object>
-                                            <attributes>
-                                                <attribute name="markup">2</attribute>
-                                                <attribute name="background-rgba">5</attribute>
-                                            </attributes>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkTreeViewColumn">
-                                        <property name="title">Name</property>
-                                        <property name="resizable">True</property>
-                                        <property name="sort-column-id">3</property>
-                                        <child>
-                                            <object class="GtkCellRendererText">
-                                                <property name="width-chars">20</property>
-                                                <property name="ellipsize">PANGO_ELLIPSIZE_END</property>
-                                            </object>
-                                            <attributes>
-                                                <attribute name="text">3</attribute>
-                                            </attributes>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkTreeViewColumn">
-                                        <property name="title">Goal</property>
-                                        <property name="sort-column-id">4</property>
-                                        <property name="resizable">True</property>
-                                        <child>
-                                            <object class="GtkCellRendererText">
-                                                <property name="width-chars">100</property>
-                                                <property name="ellipsize">PANGO_ELLIPSIZE_END</property>
-                                            </object>
-                                            <attributes>
-                                                <attribute name="text">4</attribute>
-                                            </attributes>
-                                        </child>
-                                    </object>
-                                </child>
+                                <property name="receives-default">True</property>
+                                <signal name="clicked" handler="on_prove_clicked"/>
                             </object>
                         </child>
                     </object>
-                    <packing>
-                        <property name="position">1</property>
-                    </packing>
-                </child>
-                <child type="tab">
-                    <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Goals</property>
-                    </object>
-                    <packing>
-                        <property name="position">1</property>
-                        <property name="tab-fill">False</property>
-                    </packing>
-                </child>
-                <child>
-                    <object class="GtkScrolledWindow">
-                        <property name="border-width">10</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="shadow-type">in</property>
-                        <property name="vexpand">True</property>
-                        <property name="min-content-height">100</property>
-                        <child>
-                            <object class="SelectableTreeView">
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="model">axioms_model</property>
-                                <property name="search-column">3</property>
-                                <property name="tooltip-column">3</property>
-                                <property name="selected-column">1</property>
-                                <child>
-                                    <object class="GtkTreeViewColumn">
-                                        <property name="title">Name</property>
-                                        <property name="resizable">True</property>
-                                        <property name="sort-column-id">2</property>
-                                        <child>
-                                            <object class="GtkCellRendererText">
-                                                <property name="width-chars">20</property>
-                                                <property name="ellipsize">PANGO_ELLIPSIZE_END</property>
-                                            </object>
-                                            <attributes>
-                                                <attribute name="text">2</attribute>
-                                            </attributes>
-                                        </child>
-                                    </object>
-                                </child>
-                                <child>
-                                    <object class="GtkTreeViewColumn">
-                                        <property name="title">Axiom</property>
-                                        <property name="resizable">True</property>
-                                        <property name="sort-column-id">3</property>
-                                        <child>
-                                            <object class="GtkCellRendererText">
-                                                <property name="width-chars">100</property>
-                                                <property name="ellipsize">PANGO_ELLIPSIZE_END</property>
-                                            </object>
-                                            <attributes>
-                                                <attribute name="text">3</attribute>
-                                            </attributes>
-                                        </child>
-                                    </object>
-                                </child>
-                            </object>
-                        </child>
-                    </object>
-                    <packing>
-                        <property name="position">2</property>
-                    </packing>
-                </child>
-                <child type="tab">
-                    <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Axioms</property>
-                    </object>
-                    <packing>
-                        <property name="position">2</property>
-                        <property name="tab-fill">False</property>
-                    </packing>
-                </child>
-                <child>
-                    <object class="GtkGrid" id="grid">
-                        <property name="border-width">10</property>
-                        <property name="row-homogeneous">False</property>
-                        <property name="column-spacing">14</property>
-                        <property name="row-spacing">4</property>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="label">Timeout in s:</property>
-                                <property name="halign">GTK_ALIGN_START</property>
-                                <property name="hexpand">True</property>
-                            </object>
-                        </child>
-                        <child>
-                            <object class="GtkSpinButton" id="txt_timeout">
-                                <property name="adjustment">adjustment_prover_timeout</property>
-                                <property name="value">10</property>
-                            </object>
-                            <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">0</property>
-                            </packing>
-                        </child>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="label">Extra options:</property>
-                                <property name="halign">GTK_ALIGN_START</property>
-                            </object>
-                            <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">1</property>
-                            </packing>
-                        </child>
-                        <child>
-                            <object class="GtkEntry" id="txt_extra_options" />
-                            <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">1</property>
-                            </packing>
-                        </child>
-                        <child>
-                            <object class="GtkLabel">
-                                <property name="label">Include proven theorems:</property>
-                                <property name="halign">GTK_ALIGN_START</property>
-                                <property name="tooltip-text">Include preceding proven theorems in
-                                    next proof attempt
-                                </property>
-                            </object>
-                            <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">2</property>
-                            </packing>
-                        </child>
-                        <child>
-                            <object class="GtkSwitch" id="switch_include_proven_theorems">
-                                <property name="halign">GTK_ALIGN_END</property>
-                            </object>
-                            <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">2</property>
-                            </packing>
-                        </child>
-                    </object>
-                    <packing>
-                        <property name="position">3</property>
-                    </packing>
-                </child>
-                <child type="tab">
-                    <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Prover settings</property>
-                    </object>
-                    <packing>
-                        <property name="position">3</property>
-                        <property name="tab-fill">False</property>
-                    </packing>
                 </child>
             </object>
         </child>
@@ -309,15 +326,6 @@
             <object class="GtkHeaderBar">
                 <property name="visible">True</property>
                 <property name="show-close-button">True</property>
-                <child>
-                    <object class="GtkButton" id="btn_prove">
-                        <property name="label" translatable="yes">Prove</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="receives-default">True</property>
-                        <signal name="clicked" handler="on_prove_clicked" />
-                    </object>
-                </child>
             </object>
         </child>
     </template>

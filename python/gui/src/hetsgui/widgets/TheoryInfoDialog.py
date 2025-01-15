@@ -31,7 +31,7 @@ class TheoryInfoDialog(Gtk.Dialog):
         text_buffer.set_text(str(self._theory))
 
         button_box = self.get_action_area()
-        button_box.set_property("margin", 4)
+        button_box.set_property("margin", 10)
         self.add_button("Save", INFO_DIALOG_SAVE_RESPONSE)
 
         scrolled_window.add(text_view)

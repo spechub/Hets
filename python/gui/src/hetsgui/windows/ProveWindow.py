@@ -107,7 +107,7 @@ class ProveWindow(Gtk.Window):
 
     def _init_prove_progress(self):
         self.btn_prove.set_sensitive(False)
-        self.notebook.set_current_page(1)
+        self.notebook.set_current_page(0)
 
         for goal in self.goals_model:
             if goal[1]:  # if selected to be proven
@@ -132,7 +132,7 @@ class ProveWindow(Gtk.Window):
 
     def _finish_prove_progress(self):
         self.btn_prove.set_sensitive(True)
-        self.notebook.set_current_page(1)
+        self.notebook.set_current_page(0)
 
     def _prove(self):
         GLib.idle_add(self._init_prove_progress)
