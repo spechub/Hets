@@ -1,13 +1,14 @@
-import os.path
-import sys
-import threading
 import logging
-import typing
+import os.path
+import threading
 from typing import Optional
 
 import gi
+import sys
+from gi.repository.GLib import KeyFileFlags
 
-from hetsgui.utils import get_variant
+from .ApplicationSettings import ApplicationSettings
+from .utils import get_variant
 
 gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, Gtk, Gio
@@ -18,6 +19,8 @@ class HetsApplication(Gtk.Application):
 
     _reopen_libraries_menu_section: Optional[Gio.Menu]
     _refinement_trees_menu_section: Optional[Gio.Menu]
+
+    settings: ApplicationSettings
 
     def __init__(self):
         super().__init__(
@@ -51,6 +54,28 @@ class HetsApplication(Gtk.Application):
         action_show_refinement_tree = Gio.SimpleAction.new("open_refinement_tree", GLib.VariantType("av"))
         action_show_refinement_tree.connect("activate", self._on_open_refinement_tree)
         self.add_action(action_show_refinement_tree)
+
+        self.load_settings()
+        action_save_settings = Gio.SimpleAction.new("save_settings", None)
+        action_save_settings.connect("activate", lambda _1, _2: self.save_settings())
+        self.add_action(action_save_settings)
+
+    def load_settings(self):
+        path = os.path.join(GLib.get_user_config_dir(), "hets", "settings.ini")
+        file = GLib.KeyFile()
+        self.settings = ApplicationSettings(file)
+
+        if os.path.exists(path):
+            file.load_from_file(path, KeyFileFlags.NONE)
+
+    def save_settings(self):
+        self._logger.debug("Saving settings")
+        dir = os.path.join(os.path.join(GLib.get_user_config_dir(), "hets"))
+
+        os.makedirs(dir, exist_ok=True)
+
+        path = os.path.join(dir, "settings.ini")
+        self.settings.keyfile.save_to_file(path)
 
     def _on_open_win_for_lib(self, action: Gio.SimpleAction, parameter: GLib.Variant):
         if self._library_manager is not None:
@@ -155,5 +180,3 @@ class HetsApplication(Gtk.Application):
             item.set_action_and_target_value("app.open_refinement_tree", get_variant((library_id, spec_name)))
 
             self._refinement_trees_menu_section.append_item(item)
-
-

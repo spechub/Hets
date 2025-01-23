@@ -1,26 +1,23 @@
 import logging
 import os
 import typing
-
-import hets
-
 from typing import List, Callable, Any, Optional
 
+import hets
 from gi.repository import GLib, Gtk, Gio, GObject
+from hets import Library, ReferenceDevGraphNode, Options
 
-from hets import Library, ReferenceDevGraphNode, LibName, Options
+from ..ApplicationSettings import ApplicationSettings
 from ..GtkSmartTemplate import GtkSmartTemplate
 from ..utils import get_variant
 from ..widgets.EdgeInfoDialog import EdgeInfoDialog
 from ..widgets.GraphvizGraphWidget import GraphvizGraphWidget
 from ..widgets.NodeInfoDialog import NodeInfoDialog
 from ..widgets.TheoryInfoDialog import TheoryInfoDialog
-from ..windows.LibrarySettingsWindow import LibrarySettingsWindow
-
-from ..windows.ProveWindow import ProveWindow
-from ..windows.ConsistencyCheckWindow import ConsistencyCheckWindow
 from ..windows.ConservativityCheckWindow import ConservativityCheckWindow
-from ..windows.LibraryWindow import LibraryWindow
+from ..windows.ConsistencyCheckWindow import ConsistencyCheckWindow
+from ..windows.LibrarySettingsWindow import LibrarySettingsWindow
+from ..windows.ProveWindow import ProveWindow
 
 T = typing.TypeVar("T")
 
@@ -148,7 +145,34 @@ class MainWindow(Gtk.ApplicationWindow):
         return action
 
     def use_library(self, library: Library):
+
+        settings: ApplicationSettings = self.get_application().settings
+        apply_auto = settings.apply_proof_rules_automatically
+        if apply_auto is None:
+            dialog = Gtk.MessageDialog(message_type=Gtk.MessageType.QUESTION, text="Apply automatic proof rules",
+                                       secondary_text="Do you want to apply automatic proof rules?")
+            dialog.add_buttons("Yes", Gtk.ResponseType.YES,
+                               "No", Gtk.ResponseType.NO,
+                               "Always", 1,
+                               "Never", 2)
+            r = dialog.run()
+            self._logger.debug(f"Result: {r}")
+            if r in (1, 2):
+                apply_auto = bool(2 - r)
+                settings.apply_proof_rules_automatically = apply_auto
+                self.get_application().activate_action("save_settings", None)
+                # self.emit("app.save_settings")
+
+            if r == Gtk.ResponseType.YES:
+                apply_auto = True
+            else:
+                apply_auto = False
+
+            dialog.destroy()
+
         self._loaded_library = library
+        if apply_auto:
+            self._loaded_library.automatic()
 
         if self._ui_graph:
             self._ui_graph.load_graph(self._loaded_library.development_graph())
@@ -246,7 +270,8 @@ class MainWindow(Gtk.ApplicationWindow):
         comorphism_name = parameter.get_child_value(1).get_child_value(0).get_string()
         if self._loaded_library:
             node = [n for n in self._loaded_library.development_graph().nodes() if str(n.id()) == node_id][0]
-            comorphism = next((c for c in node.global_theory().get_available_comorphisms() if c.name() == comorphism_name), None)
+            comorphism = next(
+                (c for c in node.global_theory().get_available_comorphisms() if c.name() == comorphism_name), None)
 
             if comorphism is None:
                 self._logger.error("Could not find comorphism")
