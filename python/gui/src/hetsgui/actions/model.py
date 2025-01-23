@@ -3,6 +3,13 @@ from gi.repository import Gio, GLib, Gtk
 
 
 def toggle_tree_view_header_cell_handler(column: Gtk.TreeViewColumn, index=1):
+    """
+    Handler of the clicked signal of a header cell of a Gtk.TreeViewColumn to toggle the state of all cells in a column.
+    :param column: A Gtk.TreeViewColumn which got clicked
+    :param index: Index of the column which contains the boolean state to toggle
+    :return:
+    """
+
     tree_view: Gtk.TreeView = column.get_tree_view()
     model = tree_view.get_model()
     widget = column.get_widget()
@@ -20,6 +27,14 @@ def toggle_tree_view_header_cell_handler(column: Gtk.TreeViewColumn, index=1):
 
 
 def toggle_tree_view_cell_handler(toggle_column: Gtk.TreeViewColumn, path: str, index=1):
+    """
+    Handler of the toggled signal of a Gtk.TreeViewColumn to adjust the state of the header cell.
+    :param toggle_column: Toggled column
+    :param path: Path of the toggled cell
+    :param index: Index of the column which contains the boolean state
+    :return:
+    """
+
     tree_view: Gtk.TreeView = toggle_column.get_tree_view()
     model = tree_view.get_model()
 

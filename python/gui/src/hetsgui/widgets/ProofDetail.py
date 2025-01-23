@@ -9,6 +9,12 @@ from ..widgets import ExtendedDotWidget
 
 
 class AxiomModel(GObject.GObject):
+    """
+    A model for axioms in the proof detail widget.
+    """
+    sentence: typing.Optional[str]
+    name: str
+
     def __init__(self, name: str, sentence: typing.Optional[str]):
         GObject.GObject.__init__(self)
         self.name = name
@@ -17,12 +23,19 @@ class AxiomModel(GObject.GObject):
 
 @GtkSmartTemplate
 class ProofDetail(Gtk.Bin):
+    """
+    A widget to display details of a proof.
+    """
     __gtype_name__ = "ProofDetail"
 
     proof = GObject.Property(type=object)
+    """ The proof to display. """
     comorphism = GObject.Property(type=object)
+    """ The comorphism used in the proof. """
     theory = GObject.Property(type=object)
+    """ The examined theory. """
 
+    # UI elements
     _lbl_title: Gtk.Label = Gtk.Template.Child()
     _lbl_prover: Gtk.Label = Gtk.Template.Child()
     _lbl_comorphism: Gtk.Label = Gtk.Template.Child()
@@ -41,6 +54,7 @@ class ProofDetail(Gtk.Bin):
 
     _box_axioms: Gtk.FlowBox = Gtk.Template.Child()
 
+    # Model for the axioms
     _model_axioms: Gio.ListStore
 
     def __init__(self, **kwargs):
@@ -48,18 +62,34 @@ class ProofDetail(Gtk.Bin):
 
         self._model_axioms = Gio.ListStore.new(AxiomModel)
 
+        # Connect change handlers
         self.connect("notify::comorphism", self.on_comorphism_changed)
         self.connect("notify::proof", self.on_proof_changed)
         self.connect("notify::theory", self.update_axioms)
 
         self._box_axioms.bind_model(self._model_axioms, self.create_axiom_widget)
 
-    def create_axiom_widget(self, item, *args):
+    def create_axiom_widget(self, item: AxiomModel, *args):
+        """
+        Creates a widget for an axiom.
+
+        :param item: The axiom (model) to create a widget for.
+        :param args:
+        :return:
+        """
         label = Gtk.Label(label=item.name, tooltip_text=str(item.sentence) if item.sentence else item.name)
         label.get_style_context().add_class("axiom")
         return label
 
     def on_proof_changed(self, widget, param):
+        """
+        Updates the widget when the proof changes.
+
+        :param widget: ignored
+        :param param: ignored
+        :return:
+        """
+
         self._lbl_prover.set_label(self.proof.details().used_prover())
         self._lbl_prover.set_tooltip_text(self.proof.details().used_prover())
         self._lbl_status.set_markup(
@@ -77,12 +107,22 @@ class ProofDetail(Gtk.Bin):
         self.update_title()
 
     def on_comorphism_changed(self, widget, param):
+        """
+        Updates the widget when the comorphism changes.
+        :param widget: ignored
+        :param param: ignored
+        :return:
+        """
         self._lbl_comorphism.set_label(self.comorphism.name())
         self._lbl_comorphism.set_tooltip_text(self.comorphism.name())
 
         self.update_title()
 
     def update_title(self):
+        """
+        Updates the title label with the proof kind and the used prover and comorphism.
+        :return:
+        """
         if not (self.comorphism and self.proof):
             return
 
@@ -101,6 +141,11 @@ class ProofDetail(Gtk.Bin):
             self._model_axioms.append(AxiomModel(axiom, sentence))
 
     def update_tactic_script(self):
+        """
+        Updates the tactic script labels.
+        :return:
+        """
+
         ts_regex = [
             re.compile(r"^ATPTacticScript \{tsTimeLimit = (\d+), tsExtraOpts = \[(.*)\]\}$"),
             re.compile(r"^TacticScript \{timeLimit = (\d+), extraOptions = \[(.*)\]\}$")

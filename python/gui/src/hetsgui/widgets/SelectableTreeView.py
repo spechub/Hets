@@ -1,14 +1,30 @@
-import gi
 from gi.repository import Gtk, GObject
+from gi.repository.Gtk import TreeViewColumn, CellRendererToggle, CheckButton
 
 from ..actions.model import toggle_tree_view_cell_handler, toggle_tree_view_header_cell_handler
 
 
 class SelectableTreeView(Gtk.TreeView):
+    """
+    A tree view with a selectable header cell.
+    """
+
+    # UI elements
+    _header_switch: CheckButton
+    _cell_renderer: CellRendererToggle
+    _column: TreeViewColumn
+
+    # Backing field
+    _selected_column: int
+
     __gtype_name__ = "SelectableTreeView"
 
     @GObject.Property(type=int, default=0)
     def selected_column(self) -> int:
+        """
+        The currently selected column.
+        :return: The index of the selected column.
+        """
         return self._selected_column
 
     @selected_column.setter

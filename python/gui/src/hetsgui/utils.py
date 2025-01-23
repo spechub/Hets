@@ -1,3 +1,7 @@
+"""
+Collection of utility and helper functions.
+"""
+
 import re
 import typing
 from typing import Any
@@ -5,7 +9,12 @@ from typing import Any
 from gi.repository import GLib, Gio
 
 
-def get_variant_type(t: type):
+def get_variant_type(t: type) -> GLib.VariantType:
+    """
+    Get the GLib.VariantType for a given data type.
+    :param t: Python type
+    :return: GLib.VariantType
+    """
     if t == str:
         return GLib.VariantType.new("s")
     if t == int:
@@ -19,6 +28,13 @@ def get_variant_type(t: type):
 
 
 def get_variant(data: Any) -> GLib.Variant:
+    """
+    Convert a Python object to a GLib.Variant.
+
+    :param data: Python object
+    :return: GLib.Variant
+    """
+
     # Source: https://gitlab.gnome.org/GNOME/gnome-browser-connector/-/blob/master/gnome_browser_connector/helpers.py
     # Licenced under GPL-3.0-or-later
 
@@ -56,6 +72,13 @@ def get_variant(data: Any) -> GLib.Variant:
 
 
 def resource_exist(resource_path: str) -> bool:
+    """
+    Check if a resource exists.
+
+    :param resource_path: Path to the resource
+    :return: Whether the resource exists
+    """
+
     segments = [s for s in re.split(r"([^/]+/)", resource_path) if s]
     segments.reverse()
     path = segments.pop()

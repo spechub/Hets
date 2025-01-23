@@ -7,6 +7,9 @@ from ..GtkSmartTemplate import GtkSmartTemplate
 
 @GtkSmartTemplate
 class StartUpWindow(Gtk.Window):
+    """
+    A window to be shown during start-up when loading the libraries.
+    """
     __gtype_name__ = "StartUpWindow"
 
     def __init__(self, **kwargs):

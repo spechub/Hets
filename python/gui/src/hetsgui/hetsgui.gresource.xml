@@ -1,4 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+Resource file for the GUI of Hets.
+
+This file is used to bundle all resources of the GUI into a single file.
+
+For the usage with GtkSmartTemplate the UI file of a component must match the name of the component and placed in the same directory.
+-->
+
 <gresources>
   <gresource prefix="/eu/hets/gui">
     <file>resources/icon.png</file>

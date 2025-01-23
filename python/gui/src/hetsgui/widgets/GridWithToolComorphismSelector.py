@@ -2,37 +2,59 @@ import typing
 
 from gi.repository import Gtk, GObject
 
-from ..GtkSmartTemplate import GtkSmartTemplate
 from hets import Comorphism, ConsistencyChecker, Prover, Theory
+from ..GtkSmartTemplate import GtkSmartTemplate
 
 
 @GtkSmartTemplate
 class GridWithToolComorphismSelector(Gtk.Grid):
+    """
+    A grid that contains a combobox for selecting a tool (prover or consistency checker) and a combobox for selecting a comorphism.
+
+    This is a grid to couple the functionality of selecting a tool and a comorphism while allowing other UI elements to be placed in the same grid as well.
+    """
+
     __gtype_name__ = "GridWithToolComorphismSelector"
 
+    # Models for the UI elements
     _tool_model: Gtk.ListStore = Gtk.Template.Child()
     _comorphism_model: Gtk.ListStore = Gtk.Template.Child()
     _comorphism_filtered: Gtk.TreeModelFilter = Gtk.Template.Child()
 
+    # UI elements
     _combo_comorphism: Gtk.ComboBox = Gtk.Template.Child()
     _combo_tool: Gtk.ComboBox = Gtk.Template.Child()
     _lbl_tool: Gtk.Label = Gtk.Template.Child()
     _lbl_comorphism: Gtk.Label = Gtk.Template.Child()
 
     theory: Theory = GObject.Property()
+    """ The theory to use for selecting tools and comorphisms. """
+
     use_consistency_checkers: bool = GObject.Property(type=bool, default=False)
+    """ Whether to use consistency checkers instead of provers. """
+
     start_top: int = GObject.Property(type=int, default=0)
+    """ The top position of the first tool UI element in the grid. """
+
     start_left: int = GObject.Property(type=int, default=0)
+    """ The left position of the first tool UI element in the grid. """
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        # Connect change handlers
         self.connect('notify::theory', self._update)
         self.connect('notify::use-consistency-checkers', self._update)
         self.connect('notify::start-top', self._reorganize_widgets)
         self.connect('notify::start-left', self._reorganize_widgets)
 
     def _reorganize_widgets(self, *args):
+        """
+        Reorganize the widgets in the grid according to the start_top and start_left properties.
+
+        :param args: ignored
+        :return:
+        """
         self.child_set_property(self._lbl_tool, "top-attach", self.start_top)
         self.child_set_property(self._combo_tool, "top-attach", self.start_top)
         self.child_set_property(self._lbl_comorphism, "top-attach", self.start_top + 1)
@@ -44,11 +66,19 @@ class GridWithToolComorphismSelector(Gtk.Grid):
         self.child_set_property(self._combo_comorphism, "left-attach", self.start_left + 1)
 
     def _update(self, *args):
+        """
+        Update the models for the comboboxes when the theory or use_consistency_checkers property changes.
+
+        :param args:
+        :return:
+        """
+
         if self.theory is None:
             return
 
         self._lbl_tool.set_label("Consistency checker:" if self.use_consistency_checkers else "Prover:")
 
+        # Clear previous entries
         self._tool_model.clear()
         self._comorphism_model.clear()
 
@@ -74,6 +104,10 @@ class GridWithToolComorphismSelector(Gtk.Grid):
 
     @GObject.Property()
     def selected_comorphism(self) -> typing.Optional[Comorphism]:
+        """
+        The selected comorphism or None if no comorphism is selected.
+        :return: The comorphism or None
+        """
         comorphism_model = self._combo_comorphism.get_model()
         comorphism_index = self._combo_comorphism.get_active()
         comorphism_name = comorphism_model[comorphism_index][0] if comorphism_index >= 0 else None
@@ -82,7 +116,11 @@ class GridWithToolComorphismSelector(Gtk.Grid):
         return comorphism
 
     @GObject.Property()
-    def selected_prover(self) -> Prover:
+    def selected_prover(self) -> typing.Optional[Prover]:
+        """
+        The selected prover or None if no prover is selected.
+        :return: The prover or None
+        """
         prover_model = self._combo_tool.get_model()
         prover_index = self._combo_tool.get_active()
         prover_name = prover_model[prover_index][0] if prover_index >= 0 else None
@@ -90,7 +128,11 @@ class GridWithToolComorphismSelector(Gtk.Grid):
         return prover
 
     @GObject.Property()
-    def selected_consistency_checker(self) -> ConsistencyChecker:
+    def selected_consistency_checker(self) -> typing.Optional[ConsistencyChecker]:
+        """
+        The selected consistency checker or None if no consistency checker is selected.
+        :return: The consistency checker or None
+        """
         prover_model = self._combo_tool.get_model()
         prover_index = self._combo_tool.get_active()
         cc_name = prover_model[prover_index][0] if prover_index >= 0 else None
@@ -98,6 +140,14 @@ class GridWithToolComorphismSelector(Gtk.Grid):
         return cc
 
     def _comorphism_filter(self, model: Gtk.TreeModelFilter, path: Gtk.TreeIter, data):
+        """
+        Filter function for the comorphism model to only show comorphisms that are applicable to the selected tool.
+
+        :param model: Model of the comorphism combo box
+        :param path: Path in the model
+        :param data: ignored
+        :return:
+        """
         prover_model = self._combo_tool.get_model()
         active_prover_iter = self._combo_tool.get_active_iter()
 
@@ -109,6 +159,12 @@ class GridWithToolComorphismSelector(Gtk.Grid):
 
     @Gtk.Template.Callback()
     def update_comorphisms(self, *args):
+        """
+        Update the comorphism model when the selected tool changes.
+
+        :param args: ignored
+        :return:
+        """
         self._comorphism_filtered.refilter()
         if len(self._comorphism_filtered) > 0:
             self._combo_comorphism.set_active(0)

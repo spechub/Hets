@@ -5,9 +5,14 @@ from gi.repository import Gtk
 from hets import DevGraphNode, Theory
 
 INFO_DIALOG_SAVE_RESPONSE = 0x0001_0001
+""" Magic constant for the response code for saving the theory to a file. """
 
 
 class TheoryInfoDialog(Gtk.Dialog):
+    """
+    Dialog to show a theory and possibly save it to a file.
+    """
+
     _logger = logging.getLogger(__name__)
     _node: DevGraphNode
 
@@ -30,25 +35,28 @@ class TheoryInfoDialog(Gtk.Dialog):
         text_buffer = text_view.get_buffer()
         text_buffer.set_text(str(self._theory))
 
+        # Add save button
         button_box = self.get_action_area()
         button_box.set_property("margin", 10)
         self.add_button("Save", INFO_DIALOG_SAVE_RESPONSE)
 
         scrolled_window.add(text_view)
         box.add(scrolled_window)
-        # box.add(button)
         self.show_all()
 
+        # Connect response signal
         self.connect("response", self._on_response)
 
     def _on_response(self, widget: Gtk.Widget, response: int):
         if response == INFO_DIALOG_SAVE_RESPONSE:
+            # Propagate submission of the signal if the save button was clicked to prevent the window from closing
             self.stop_emission("response")
 
             dialog = Gtk.FileChooserDialog(title="Please choose a file", action=Gtk.FileChooserAction.SAVE)
             dialog.add_buttons("Cancel", Gtk.ResponseType.CANCEL,
                                "Save", Gtk.ResponseType.OK)
 
+            # Theories are exported as .dol files
             dialog.set_current_name(self._name + ".dol")
 
             filter_dol = Gtk.FileFilter()
@@ -71,6 +79,3 @@ class TheoryInfoDialog(Gtk.Dialog):
                     f.write(str(self._theory))
 
             dialog.destroy()
-
-        else:
-            self._logger.debug(f"Got unknown response: {response}")

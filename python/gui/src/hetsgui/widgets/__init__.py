@@ -1,3 +1,7 @@
+"""
+This module contains custom widgets used in the GUI.
+"""
+
 # For debugging purposes don't load hyphen. It takes too long for a short test of the UI
 try:
     import hyphen

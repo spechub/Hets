@@ -1,3 +1,7 @@
+"""
+This module contains color constants and functions for converting between color representations.
+"""
+
 from gi.repository import Gdk
 
 from hets import ProofKind, ConsistencyKind

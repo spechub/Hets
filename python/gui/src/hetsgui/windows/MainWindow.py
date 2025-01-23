@@ -1,12 +1,13 @@
 import logging
 import os
 import typing
-from typing import List, Callable, Any, Optional
+from typing import Callable, Any, Optional
+
+from gi.repository import GLib, Gtk, Gio, GObject
+from gi.repository.Gio import SimpleAction
 
 import hets
-from gi.repository import GLib, Gtk, Gio, GObject
 from hets import Library, ReferenceDevGraphNode, Options
-
 from ..ApplicationSettings import ApplicationSettings
 from ..GtkSmartTemplate import GtkSmartTemplate
 from ..utils import get_variant
@@ -22,27 +23,38 @@ from ..windows.ProveWindow import ProveWindow
 T = typing.TypeVar("T")
 
 
-class defaultview(object):
-    w, h = 10, 10
-    xy: List[int]
-
-
 @GtkSmartTemplate
 class MainWindow(Gtk.ApplicationWindow):
+    """
+    The main window of the application. It contains the graph widget and the status bar.
+    """
     __gtype_name__ = "MainWindow"
     __gsignals__ = {
+        # Emitted when a file should be loaded.
         "load-file": (GObject.SIGNAL_RUN_FIRST, None, (str, object)),
+        # Emitted when a library should be shown
         "show-library": (GObject.SIGNAL_RUN_FIRST, None, (str,)),
+        # Emitted when a library grpah should be shown
         "show-library-graph": (GObject.SIGNAL_RUN_FIRST, None, (str,)),
     }
 
     _logger = logging.getLogger(__name__)
 
+    _library_actions: list[SimpleAction]
+    """ The actions that are available when a library is loaded """
+
     _library_settings_window: Optional[LibrarySettingsWindow]
+    """ The instance of the library settings window or None if no such window is open """
+
     _settings: hets.Options
+    """ The current settings for loading new libraries """
+
+    _loaded_library: Optional[hets.Library]
+    """ The loaded library shown in this window"""
+
+    # UI Elements
     _ui_graph: GraphvizGraphWidget = Gtk.Template.Child()
     _status_bar: Gtk.Statusbar = Gtk.Template.Child()
-    _loaded_library: Optional[hets.Library]
 
     def __init__(self, settings: Optional[Options] = None, **kwargs):
         super().__init__(**kwargs)
@@ -51,24 +63,28 @@ class MainWindow(Gtk.ApplicationWindow):
             libdirs=[os.environ["HETS_LIB"]] if "HETS_LIB" in os.environ else []) if settings is None else settings
         self._loaded_library = None
 
+        # Update the status bar when rendering starts and ends
         self._ui_graph.connect("render-start",
                                lambda _: self._status_bar.push(self._status_bar.get_context_id("render"),
                                                                "Rendering graph ..."))
         self._ui_graph.connect("render-end", lambda _: self._status_bar.push(self._status_bar.get_context_id("render"),
                                                                              "Graph rendered!"))
 
+        # Style the window
         self.set_auto_startup_notification(True)
         icon = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "../resources/icon.png"))
         self.set_default_icon_from_file(icon)
         self.set_icon_from_file(icon)
 
+        # Add actions
+        # Library actions are only available, when a library is loaded and disabled otherwise
         self._library_actions: typing.List[Gio.SimpleAction] = []
 
         self._action("open_file", self._on_menu_open_file)
+        self._action("open_library_settings", self.on_open_library_settings)
+        self._action_state("change_graph_layout", self._on_change_graph_layout, "vertical")
 
         self._library_actions.append(self._action("open_library_window", self._on_open_library_window))
-
-        self._action_state("change_graph_layout", self._on_change_graph_layout, "vertical")
 
         self._library_actions.append(self._action("node.prove", self._on_prove_node, "s"))
         self._library_actions.append(self._action("node.check_consistency", self._on_check_consistency_node, "s"))
@@ -105,16 +121,28 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self._library_actions.append(self._action("open_win_for_lib_by_node", self._on_open_win_for_lib_by_node, "i"))
 
-        self._action("open_library_settings", self.on_open_library_settings)
-
         self._set_library_actions_enabled(False)
 
     def _set_library_actions_enabled(self, enabled: bool):
+        """
+        Enable or disable all library actions.
+        :param enabled: True to enable, False to disable.
+        :return:
+        """
         for action in self._library_actions:
             action.set_enabled(enabled)
 
     def _action(self, name: str, cb: Callable[[Gio.SimpleAction, T], Any],
                 param_type_str: Optional[str] = None, target: Optional[Gio.ActionMap] = None) -> Gio.SimpleAction:
+        """
+        Create a new action with the given name and callback and add it to the window.
+        :param name: The name of the action.
+        :param cb: The callback function.
+        :param param_type_str: The type of the parameter or None if no parameter is required.
+        :param target: The target action map to add the action to or None to add it to the window.
+        :return: The created action.
+        """
+
         action = Gio.SimpleAction.new(name, GLib.VariantType(param_type_str) if param_type_str else None)
         action.connect("activate", cb)
 
@@ -126,10 +154,25 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def _action_toggle(self, name: str, cb: Callable[[Gio.SimpleAction, GLib.Variant], Any],
                        default: bool = False) -> Gio.SimpleAction:
+        """
+        Create a new toggle action with the given name and callback and add it to the window.
+        :param name: The name of the action.
+        :param cb: The callback function.
+        :param default: The default value of the toggle.
+        :return: The created action.
+        """
         return self._action_state(name, cb, default, None)
 
     def _action_state(self, name: str, cb: Callable[[Gio.SimpleAction, GLib.Variant], Any], default: Optional[T] = None,
                       param_type_str: Optional[str | typing.Literal["infer"]] = "infer") -> Gio.SimpleAction:
+        """
+        Create a new stateful action with the given name and callback and add it to the window.
+        :param name: The name of the action.
+        :param cb: The callback function.
+        :param default: The default value of the action.
+        :param param_type_str: The type of the parameter, "infer" to infer the type from the default value, or None if no parameter is required.
+        :return: The created action.
+        """
 
         default_variant = get_variant(default)
         if param_type_str == "infer":
@@ -145,7 +188,14 @@ class MainWindow(Gtk.ApplicationWindow):
         return action
 
     def use_library(self, library: Library):
+        """
+        Use the given library in this window.
 
+        :param library: The library to use.
+        :return:
+        """
+
+        # Check if the user wants to apply automatic proof rules
         settings: ApplicationSettings = self.get_application().settings
         apply_auto = settings.apply_proof_rules_automatically
         if apply_auto is None:
@@ -156,12 +206,11 @@ class MainWindow(Gtk.ApplicationWindow):
                                "Always", 1,
                                "Never", 2)
             r = dialog.run()
-            self._logger.debug(f"Result: {r}")
+            # If the user selected a persistent option, save it
             if r in (1, 2):
-                apply_auto = bool(2 - r)
+                apply_auto = bool(2 - r)  # Map response to true or false
                 settings.apply_proof_rules_automatically = apply_auto
                 self.get_application().activate_action("save_settings", None)
-                # self.emit("app.save_settings")
 
             if r == Gtk.ResponseType.YES:
                 apply_auto = True
@@ -174,6 +223,7 @@ class MainWindow(Gtk.ApplicationWindow):
         if apply_auto:
             self._loaded_library.automatic()
 
+        # Render the graph
         if self._ui_graph:
             self._ui_graph.load_graph(self._loaded_library.development_graph())
 
@@ -182,18 +232,35 @@ class MainWindow(Gtk.ApplicationWindow):
         self._set_library_actions_enabled(True)
 
     def _on_change_graph_layout(self, action: Gio.SimpleAction, parameter: GLib.Variant):
+        """
+        Callback for the change_graph_layout action. Changes the layout of the graph.
+
+        :param action: The action that was activated.
+        :param parameter: The parameter of the action.
+        :return:
+        """
+
+        # Accept the new state
         action.set_state(parameter)
 
         direction = parameter.get_string()
 
         self._logger.debug(f"Changing graph layout to {direction}")
 
+        # Rerender the graph
         self._ui_graph.graph_direction = direction
 
     def _on_open_library_window(self, action: Gio.SimpleAction, parameter: str):
         self.emit("show-library-graph", self._loaded_library.name().id())
 
     def _on_menu_open_file(self, action: Gio.SimpleAction, parameter: str):
+        """
+        Callback for the open_file action. Opens a file dialog to load a new library.
+
+        :param action: ignored
+        :param parameter:  ignored
+        :return:
+        """
         dialog = Gtk.FileChooserDialog(
             title="Please choose a file", parent=self, action=Gtk.FileChooserAction.OPEN
         )
@@ -226,9 +293,17 @@ class MainWindow(Gtk.ApplicationWindow):
         dialog.destroy()
 
         if file:
+            # Ask the application to load the file (to avoid loading the same library multiple times)
             self.emit("load-file", file, self._settings)
 
     def _on_prove_node(self, action, parameter: GLib.Variant):
+        """
+        Callback for the prove node action. Opens a prove window for the selected node.
+
+        :param action: ignored
+        :param parameter: The id of the node to prove.
+        :return:
+        """
         node_id = parameter.get_string()
         if self._loaded_library:
             node = [n for n in self._loaded_library.development_graph().nodes() if str(n.id()) == node_id][0]
@@ -242,6 +317,14 @@ class MainWindow(Gtk.ApplicationWindow):
             self._logger.warning(f'Action: prove node {node_id}. But no library is loaded!')
 
     def _on_check_consistency_node(self, action, parameter: GLib.Variant):
+        """
+        Callback for the check consistency node action. Opens a check consistency window for the selected node.
+
+        :param action: ignored
+        :param parameter: The id of the node to check consistency for.
+        :return:
+        """
+
         node_id = parameter.get_string()
         if self._loaded_library:
             node = [n for n in self._loaded_library.development_graph().nodes() if str(n.id()) == node_id][0]
@@ -255,6 +338,13 @@ class MainWindow(Gtk.ApplicationWindow):
             self._logger.warning(f'Action: check consistency node {node_id}. But no library is loaded!')
 
     def _on_show_node_info(self, action, parameter: GLib.Variant):
+        """
+        Callback for the show node info action. Opens a dialog with information about the selected node.
+        :param action: ignored
+        :param parameter:  The id of the node to show info for.
+        :return:
+        """
+
         node_id = parameter.get_string()
         if self._loaded_library:
             node = [n for n in self._loaded_library.development_graph().nodes() if str(n.id()) == node_id][0]
@@ -266,6 +356,13 @@ class MainWindow(Gtk.ApplicationWindow):
             self._logger.warning(f'Action: Show info for node {node_id}. But no library is loaded!')
 
     def _on_translate_node(self, action, parameter: GLib.Variant):
+        """
+        Callback for the translate node action. Opens a dialog with information about the translated node.
+        :param action: ignored
+        :param parameter:  A tuple of the node id which should be translated and the comorphism name with which it should be translated.
+        :return:
+        """
+
         node_id = parameter.get_child_value(0).get_child_value(0).get_string()
         comorphism_name = parameter.get_child_value(1).get_child_value(0).get_string()
         if self._loaded_library:
@@ -284,6 +381,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self._logger.warning(f'Action: Show info for node {node_id}. But no library is loaded!')
 
     def _on_show_theory(self, action, parameter: GLib.Variant):
+        """
+        Callback for the show theory action. Opens a dialog with information about the theory of the selected node.
+        :param action: ignored
+        :param parameter: The id of the node to show the theory for.
+        :return:
+        """
         node_id = parameter.get_string()
         if self._loaded_library:
             node = [n for n in self._loaded_library.development_graph().nodes() if str(n.id()) == node_id][0]
@@ -295,6 +398,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self._logger.warning(f'Action: Show info for node {node_id}. But no library is loaded!')
 
     def _on_show_edge_info(self, action, parameter: GLib.Variant):
+        """
+        Callback for the show edge info action. Opens a dialog with information about the selected edge.
+        :param action: ignored
+        :param parameter: A tuple of origin and target id of the edge to show info for.
+        :return:
+        """
         origin_id = parameter.get_child_value(0).get_child_value(0).get_string()
         target_id = parameter.get_child_value(1).get_child_value(0).get_string()
         if self._loaded_library:
@@ -307,6 +416,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self._logger.warning(f'Action: Show info for edge {origin_id}->{target_id}. But no library is loaded!')
 
     def _on_check_conservativity_edge(self, action, parameter: GLib.Variant):
+        """
+        Callback for the check conservativity edge action. Opens a dialog to check the conservativity of the selected edge.
+        :param action: ignored
+        :param parameter: A tuple of origin and target id of the edge to check conservativity for.
+        :return:
+        """
         origin_id = parameter.get_child_value(0).get_child_value(0).get_string()
         target_id = parameter.get_child_value(1).get_child_value(0).get_string()
         if self._loaded_library:
@@ -433,6 +548,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self.emit("load-file", self._loaded_library.name().location(), self._settings)
 
     def _on_open_win_for_lib_by_node(self, action: Gio.SimpleAction, parameter: GLib.Variant):
+        """
+        Callback for the open_win_for_lib_by_node action. Opens a new library window for the library of the selected node.
+        :param action: ignored
+        :param parameter: The id of the node to open the library window for.
+        :return:
+        """
         if self._loaded_library is None:
             return
 
@@ -452,7 +573,6 @@ class MainWindow(Gtk.ApplicationWindow):
         if isinstance(node, ReferenceDevGraphNode):
             lib_name = node.referenced_libname()
             self.emit("show-library", lib_name.id())
-
         else:
             self._logger.error(
                 f"Attempted to load referenced library for node {node_id} but the node is not a reference node!")

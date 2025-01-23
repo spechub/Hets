@@ -2,28 +2,40 @@ import logging
 import threading
 import traceback
 import typing
+from threading import Thread
 
 from gi.repository import Gtk, GLib
 
+from hets import DevGraphEdge, ConservativityChecker, ConsistencyKind
 from ..GtkSmartTemplate import GtkSmartTemplate
-from hets import DevGraphEdge, ConsistencyChecker, ConservativityChecker, ConsistencyKind, TheoremDevGraphEdge
-from ..widgets import GridWithToolComorphismSelector
 
 
 @GtkSmartTemplate
 class ConservativityCheckWindow(Gtk.Window):
+    """
+    A window to check the conservativity of a DevGraphEdge.
+    """
+    _edge: DevGraphEdge
+    _checking_thread: typing.Optional[Thread]
+
     __gtype_name__ = 'ConservativityCheckWindow'
     _logger = logging.getLogger(__name__)
 
+    # UI elements
     _btn_check: Gtk.Button = Gtk.Template.Child()
-
-    _checker_model: Gtk.ListStore = Gtk.Template.Child()
     _combo_checker: Gtk.ComboBox = Gtk.Template.Child()
     _lbl_status: Gtk.Label = Gtk.Template.Child()
     _lbl_output: Gtk.Label = Gtk.Template.Child()
 
+    # Models
+    _checker_model: Gtk.ListStore = Gtk.Template.Child()
+
     @property
     def selected_conservativity_checker(self) -> typing.Optional[ConservativityChecker]:
+        """
+        The selected conservativity checker or None if no checker is selected.
+        :return: 
+        """
         active_index = self._combo_checker.get_active()
         cc_name = self._checker_model[active_index][0] if active_index >= 0 else None
         cc = self._edge.get_conservativity_checker_by_name(cc_name) if cc_name else None
@@ -32,11 +44,12 @@ class ConservativityCheckWindow(Gtk.Window):
     def __init__(self, edge: DevGraphEdge, **kwargs):
         super().__init__(title=f"Check conservativity of {edge.title()}", **kwargs)
 
-        self.checking_thread = None
+        self._checking_thread = None
         self._edge = edge
 
         self._update_status(edge.conservativity())
 
+        # Build conservativity checkers model
         ccs = self._edge.get_usable_conservativity_checkers()
         for cc in ccs:
             self._checker_model.append([cc.name(), cc.name(), 0])
@@ -46,11 +59,27 @@ class ConservativityCheckWindow(Gtk.Window):
 
     @Gtk.Template.Callback()
     def on_check_clicked(self, *args):
-        self.checking_thread = threading.Thread(target=self._check_consistency)
-        # self.proving_thread.daemon = True
-        self.checking_thread.start()
+        """
+        Called when the user clicks the check button. Starts the conservativity check in a separate background thread.
+        :param args: ignored
+        :return:
+        """
+
+        if self._checking_thread is not None and self._checking_thread.is_alive():
+            self._logger.warning("Conservativity check is already running. Waiting for it to finish.")
+            self._checking_thread.join()
+
+        self._checking_thread = threading.Thread(target=self._check_consistency)
+        self._checking_thread.start()
 
     def _update_status(self, status: typing.Union[ConsistencyKind, str]):
+        """
+        Update the status label with the given status.
+        :param status: The status to display.
+        :return:
+        """
+
+        # Remove the previous status class
         style_context = self._lbl_status.get_style_context()
         style_context.remove_class("consistency-kind-inconsistent")
         style_context.remove_class("consistency-kind-unknown")
@@ -62,14 +91,23 @@ class ConservativityCheckWindow(Gtk.Window):
         style_context.remove_class("consistency-kind-error")
 
         if isinstance(status, ConsistencyKind):
+            # Add the new status class
             style_context.add_class(f"consistency-kind-{status.name.lower()}")
             self._lbl_status.set_markup(f'<b>{status.to_str()}</b>')
         else:
             self._lbl_status.set_markup(status)
 
     def _check_consistency(self):
+        """
+        Check the conservativity of the edge.
+
+        This function is blocking and is designed to be run in a background thread.
+        :return:
+        """
+
         edge = self._edge
 
+        # Update the UI in the main thread
         GLib.idle_add(self._init_checking_progress)
 
         try:
@@ -93,6 +131,7 @@ class ConservativityCheckWindow(Gtk.Window):
                     self._logger.debug("Conservativity check has open proof obligations: %s", edge.title(),
                                        ", ".join(obligations))
 
+                # Build a message for the user
                 message = f"The link is {status.to_str()}"
                 if obligations:
                     message += " provided that the following obligations hold in an imported theory:\n"
@@ -108,9 +147,17 @@ class ConservativityCheckWindow(Gtk.Window):
             status = ConsistencyKind.ERROR
             message = str(e)
 
+        # Update the UI in the main thread
         GLib.idle_add(self._finish_checking_progress, status, message)
 
     def _finish_checking_progress(self, status: ConsistencyKind, message: str):
+        """
+        Called when the consistency check has finished. Updates the UI accordingly.
+        :param status: The resulting status of the check.
+        :param message: The message to display.
+        :return:
+        """
+
         self._btn_check.set_sensitive(True)
         self._update_status(status)
 
@@ -125,5 +172,10 @@ class ConservativityCheckWindow(Gtk.Window):
             self._lbl_output.set_halign(Gtk.Align.CENTER)
 
     def _init_checking_progress(self):
+        """
+        Called when the consistency check starts. Updates the UI accordingly.
+        :return:
+        """
+
         self._btn_check.set_sensitive(False)
         self._update_status("<i>Checking</i>")

@@ -12,9 +12,16 @@ from ..widgets import GridWithToolComorphismSelector
 
 @GtkSmartTemplate
 class ConsistencyCheckWindow(Gtk.Window):
+    """
+    A window to check the consistency of a DevGraphNode.
+    """
+    _node: DevGraphNode
+    _checking_thread: None
+
     __gtype_name__ = 'ConsistencyCheckWindow'
     _logger = logging.getLogger(__name__)
 
+    # UI elements
     _consistency_checker_comorphism_selector: GridWithToolComorphismSelector = Gtk.Template.Child()
     _btn_check: Gtk.Button = Gtk.Template.Child()
 
@@ -25,16 +32,25 @@ class ConsistencyCheckWindow(Gtk.Window):
 
     @property
     def selected_comorphism(self) -> typing.Optional[Comorphism]:
+        """
+        The selected comorphism or None if no comorphism is selected.
+        :return:
+        """
+
         return self._consistency_checker_comorphism_selector.selected_comorphism
 
     @property
-    def selected_consistency_checker(self) -> ConsistencyChecker:
+    def selected_consistency_checker(self) -> typing.Optional[ConsistencyChecker]:
+        """
+        The selected consistency checker or None if no checker is selected.
+        :return:
+        """
         return self._consistency_checker_comorphism_selector.selected_consistency_checker
 
     def __init__(self, node: DevGraphNode, **kwargs):
         super().__init__(title=f"Check consistency of {node.name()}", **kwargs)
 
-        self.checking_thread = None
+        self._checking_thread = None
         self._consistency_checker_comorphism_selector.theory = node.global_theory()
         self._node = node
 
@@ -42,9 +58,13 @@ class ConsistencyCheckWindow(Gtk.Window):
 
     @Gtk.Template.Callback()
     def on_check_clicked(self, *args):
-        self.checking_thread = threading.Thread(target=self._check_consistency)
-        # self.proving_thread.daemon = True
-        self.checking_thread.start()
+        """
+        Callback for the check button. Starts the consistency check in a separate background thread.
+        :param args: ignored
+        :return:
+        """
+        self._checking_thread = threading.Thread(target=self._check_consistency)
+        self._checking_thread.start()
 
     def _update_status(self, status: typing.Union[ConsistencyKind, str]):
         style_context = self._lbl_status.get_style_context()

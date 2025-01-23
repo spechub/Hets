@@ -13,6 +13,9 @@ from ..widgets import ExtendedDotWidget
 
 @GtkSmartTemplate
 class RefinementTreeWindow(Gtk.Window):
+    """
+    A window to show a refinement tree.
+    """
     __gtype_name__ = "RefinementTreeWindow"
 
     _logger = logging.getLogger(__name__)
@@ -33,6 +36,10 @@ class RefinementTreeWindow(Gtk.Window):
         self._ui_graph.connect("node-right-click", self._on_node_right_clicked)
 
     def get_graph(self, ):
+        """
+        Create a graphviz graph of the refinement tree.
+        :return:
+        """
         g = self._ui_graph.get_themed_graph()
         for node in self._refinement_tree.nodes():
             g.node(str(node.id()),
@@ -42,7 +49,6 @@ class RefinementTreeWindow(Gtk.Window):
 
         for edge in self._refinement_tree.edges():
             black = COLOR_MAP[("black", False, False)]
-            coral = COLOR_MAP[("coral", False, False)]
             color = {
                 RefinementTreeLinkKind.SIMPLE: f"{black}:invis:{black}",
                 RefinementTreeLinkKind.COMPONENT: black,
@@ -52,17 +58,3 @@ class RefinementTreeWindow(Gtk.Window):
             g.edge(str(edge.source_id()), str(edge.target_id()), color=color)
 
         return g.source
-
-    def _on_node_right_clicked(self, widget, node_id: str, event):
-        pass
-        # model = Gio.Menu()
-        #
-        # menu_item_open_ref = Gio.MenuItem()
-        # menu_item_open_ref.set_label("Open library")
-        # menu_item_open_ref.set_action_and_target_value("app.open_win_for_lib", get_variant(node_id))
-        # model.append_item(menu_item_open_ref)
-        #
-        # menu = Gtk.Menu.new_from_model(model)
-        # menu.attach_to_widget(self)
-        # menu.show_all()
-        # menu.popup(None, None, None, None, event.button, event.time)

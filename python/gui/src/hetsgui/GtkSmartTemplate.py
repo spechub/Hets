@@ -6,6 +6,15 @@ from .utils import resource_exist
 
 
 def GtkSmartTemplate(original_class):
+    """
+    An extension to the Gtk.Template decorator that also loads a css file from the resources.
+
+    Uses the name of the module of the class to determine the path to the resources.
+
+    :param original_class: The class to decorate.
+    :return: The decorated class.
+    """
+
     _logger = logging.getLogger(__name__)
 
     # The module name follows the format `hetsgui.path.to.file`.

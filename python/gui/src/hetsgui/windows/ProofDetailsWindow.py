@@ -1,14 +1,21 @@
 from gi.repository import Gtk
 
-from ..GtkSmartTemplate import GtkSmartTemplate
 from hets import Sentence, Theory
+from ..GtkSmartTemplate import GtkSmartTemplate
 from ..widgets import ProofDetail
 
 
 @GtkSmartTemplate
 class ProofDetailsWindow(Gtk.Window):
+    """
+    A window to show the details of a proof.
+    """
     __gtype_name__ = "ProofDetailsWindow"
 
+    theory: Theory
+    goal: Sentence
+
+    # UI elements
     _box_proof_details: Gtk.Box = Gtk.Template.Child()
 
     def __init__(self, goal: Sentence, theory: Theory, **kwargs):

@@ -4,6 +4,9 @@ from hets import DevGraphNode
 
 
 class NodeInfoDialog(Gtk.Dialog):
+    """
+    Dialog to show information about a DevGraphNode.
+    """
     def __init__(self, node: DevGraphNode):
         super().__init__()
 

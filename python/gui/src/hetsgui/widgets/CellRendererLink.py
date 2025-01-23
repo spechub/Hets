@@ -3,6 +3,10 @@ from gi.repository import Gtk, GObject, Gdk
 
 
 class CellRendererLink(Gtk.CellRendererText):
+    """
+    A cell renderer that displays a clickable link.
+    """
+
     __gsignals__ = {"clicked": (GObject.SIGNAL_RUN_FIRST, None, (str,))}
     __gtype_name__ = "CellRendererLink"
 

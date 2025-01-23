@@ -4,6 +4,10 @@ from hets import DevGraphEdge
 
 
 class EdgeInfoDialog(Gtk.Dialog):
+    """
+    Dialog to show information about a DevGraphEdge.
+    """
+
     def __init__(self, edge: DevGraphEdge):
         super().__init__()
 
