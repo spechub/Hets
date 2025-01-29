@@ -4,6 +4,8 @@ Information not contained in this file can usually be found in the
 Hets user guide (doc/UserGuide.pdf), on the Hets web page http://hets.eu/
 or within the source itself.
 
+The Python interface is documented at https://spechub.github.io/Hets.
+
 
 Installation
 ============

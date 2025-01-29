@@ -1,3 +1,8 @@
+{- |
+Description :  HetsAPIs interface for refinment trees.
+Copyright   :  (c) Otto-von-Guericke University of Magdeburg
+License     :  GPLv2 or higher, see LICENSE.txt
+-}
 module HetsAPI.Refinement (
     RefinementTreeNode(..),
     RefinementTreeLink(..),
