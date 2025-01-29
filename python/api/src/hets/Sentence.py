@@ -1,8 +1,3 @@
-"""
-Description :  Represents `Logic.Logic.Sentences`
-Copyright   :  (c) Otto-von-Guericke University of Magdeburg
-License     :  GPLv2 or higher, see LICENSE.txt
-"""
 import json
 from typing import Tuple, Callable, List, Optional
 
@@ -21,6 +16,11 @@ from .HsWrapper import HsHierarchyElement
 
 
 class Sentence(HsHierarchyElement):
+    """
+    Represents a sentence in a theory.
+
+    Represents `Logic.Logic.Sentence` via `HetsAPI.Python.PyTheorySentence`.
+    """
     def __init__(self, hs_sentence_with_name: Tuple[str, PyTheorySentence],
                  hs_pretty_fn: Callable[[PySentence], str],
                  parent: Optional[HsHierarchyElement] = None) -> None:
@@ -39,31 +39,68 @@ class Sentence(HsHierarchyElement):
         self._hs_sentence = snd(new_hs_obj)
 
     def name(self) -> str:
+        """
+        Returns the name of the sentence.
+        :return:
+        """
         return self._name
 
     def as_json(self) -> dict:
+        """
+        Converts the sentence to a JSON object.
+        :return:
+        """
         return as_json(theorySentenceContent(self._hs_sentence))
 
     def is_axiom(self) -> bool:
+        """
+        Returns whether the sentence is an axiom.
+        :return: True if the sentence is an axiom, False otherwise
+        """
         return theorySentenceIsAxiom(self._hs_sentence)
 
     def was_theorem(self) -> bool:
+        """
+        Returns whether the sentence was a goal but was proven and included as axiom in a proof.
+        :return: True if the sentence originally was a goal
+        """
         return theorySentenceWasTheorem(self._hs_sentence)
 
     def is_defined(self) -> bool:
+        """
+        Returns whether the sentence is defined. TODO: Reallly?
+        :return:
+        """
         return theorySentenceIsDefined(self._hs_sentence)
 
     def is_proven(self) -> bool:
+        """
+        Returns whether the sentence is proven.
+        :return:
+        """
         return any(b.kind() == ProofKind.PROVEN for _, b in self.theorem_status())
 
     def theorem_status(self) -> List[Tuple[Comorphism, BasicProof]]:
+        """
+        Returns the theorem status of the sentence.
+        :return:
+        """
         return list((Comorphism(fst(x)), BasicProof(snd(x))) for x in theorySentenceGetTheoremStatus(self._hs_sentence))
 
     def best_proof(self) -> Optional[BasicProof]:
+        """
+        Returns the best proof of the sentence.
+        :return:
+        """
         proof = maybe_to_optional(theorySentenceBestProof(self._hs_sentence))
         return BasicProof(proof) if proof is not None else None
 
     def priority(self) -> Optional[str]:
+        """
+        Returns the priority of the sentence if it has one.
+        :return:
+        """
+
         priority = theorySentencePriority(self._hs_sentence)
         if isinstance(priority, Just):
             return fromJust(priority)

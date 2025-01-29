@@ -1,9 +1,3 @@
-"""
-Description :  Represents `Static.GTheory.G_theory`
-Copyright   :  (c) Otto-von-Guericke University of Magdeburg
-License     :  GPLv2 or higher, see LICENSE.txt
-"""
-
 from __future__ import annotations
 
 from typing import List, Optional, Tuple, Dict
@@ -26,6 +20,12 @@ from .result import result_or_raise
 
 
 class Theory(HsHierarchyElement):
+    """
+    Represents a logical theory.
+
+    Represents `Static.GTheory.G_theory` via `HetsAPI.Python.PyTheory`.
+    """
+
     def __init__(self, hs_theory: PyTheory, parent: Optional[HsHierarchyElement]) -> None:
         super().__init__(parent)
         self._sentences: Optional[List[Sentence]] = None
@@ -79,10 +79,18 @@ class Theory(HsHierarchyElement):
         self._unproven_goals = None
 
     def get_usable_provers(self) -> List[Prover]:
+        """
+        Get all usable provers for the theory.
+        :return: List of usable provers
+        """
         provers = getUsableProvers(self._hs_theory).act()
         return list({Prover(fst(p)) for p in provers})
 
     def get_usable_provers_with_comorphisms(self) -> Dict[Prover, List[Comorphism]]:
+        """
+        Get all usable provers for the theory with their comorphisms.
+        :return: Dictionary with provers as keys and lists of suitable comorphisms as values
+        """
         provers = getUsableProvers(self._hs_theory).act()
         result = dict()
         for prover_and_comorphism in provers:
@@ -93,16 +101,29 @@ class Theory(HsHierarchyElement):
         return result
 
     def get_usable_provers_and_comorphisms(self) -> List[Tuple[Prover, Comorphism]]:
+        """
+        Get all usable provers for the theory with their comorphisms.
+        :return: List of tuples of a prover and a suitable comorphisms
+        """
         provers = getUsableProvers(self._hs_theory).act()
         return list((Prover(fst(p)), Comorphism(snd(p))) for p in provers)
 
     def get_prover_by_name(self, name: str) -> Optional[Prover]:
+        """
+        Get a prover by its name.
+        :param name: Name of the prover
+        :return: The Prover if found, otherwise None
+        """
         matches = list(p for p in self.get_usable_provers() if p.name() == name)
         if len(matches) == 1:
             return matches[0]
         return None
 
     def get_usable_consistency_checkers_with_comorphisms(self) -> Dict[ConsistencyChecker, List[Comorphism]]:
+        """
+        Get all usable consistency checkers for the theory with their comorphisms.
+        :return: Dictionary with consistency checkers as keys and lists of suitable comorphisms as values
+        """
         consistency_checkers = getUsableConsistencyCheckers(self._hs_theory).act()
         result = dict()
         for consistency_checker_and_comorphism in consistency_checkers:
@@ -113,25 +134,52 @@ class Theory(HsHierarchyElement):
         return result
 
     def get_usable_consistency_checkers(self) -> List[ConsistencyChecker]:
+        """
+        Get all usable consistency checkers for the theory.
+        :return:
+        """
         ccs = getUsableConsistencyCheckers(self._hs_theory).act()
         return list({ConsistencyChecker(fst(cc)) for cc in ccs})
 
     def get_usable_consistency_checkers_and_comorphisms(self) -> List[Tuple[ConsistencyChecker, Comorphism]]:
+        """
+        Get all usable consistency checkers for the theory with their comorphisms.
+        :return: List of tuples of a consistency checker and a suitable comorphisms
+        """
         consistency_checkers = getUsableConsistencyCheckers(self._hs_theory).act()
         return list((ConsistencyChecker(fst(cc)), Comorphism(snd(cc))) for cc in consistency_checkers)
 
     def get_consistency_checker_by_name(self, name: str) -> Optional[ConsistencyChecker]:
+        """
+        Get a consistency checker by its name.
+        :param name: Name of the consistency checker
+        :return: The ConsistencyChecker if found, otherwise None
+        """
         checkers = self.get_usable_consistency_checkers()
         return next((cc for cc in checkers if cc.name() == name), None)
 
     def get_available_comorphisms(self) -> List[Comorphism]:
+        """
+        Get all available comorphisms for the theory.
+        :return:
+        """
         comorphisms = getAvailableComorphisms(self._hs_theory)
         return [Comorphism(x) for x in comorphisms]
 
     def sentence_by_name(self, name: str) -> Optional[Sentence]:
+        """
+        Get a sentence by its name.
+
+        :param name: Name of the sentence
+        :return: The Sentence if found, otherwise None
+        """
         return next((s for s in self.sentences() if s.name() == name), None)
 
     def sentences(self) -> List[Sentence]:
+        """
+        Get all sentences in the theory.
+        :return:
+        """
         if self._sentences is None:
             sentences = getAllSentences(self._hs_theory)
             self._sentences = [Sentence(x, self._hs_pretty_sentence, self) for x in OMap.toList(sentences)]
@@ -139,6 +187,10 @@ class Theory(HsHierarchyElement):
         return self._sentences
 
     def axioms(self) -> List[Sentence]:
+        """
+        Get all axioms in the theory.
+        :return:
+        """
         if self._axioms is None:
             axioms = getAllAxioms(self._hs_theory)
             self._axioms = [Sentence(x, self._hs_pretty_sentence, self) for x in OMap.toList(axioms)]
@@ -146,6 +198,10 @@ class Theory(HsHierarchyElement):
         return self._axioms
 
     def goals(self) -> List[Sentence]:
+        """
+        Get all goals in the theory.
+        :return:
+        """
         if self._goals is None:
             self._goals = [Sentence(x, self._hs_pretty_sentence, self) for x in
                            OMap.toList(getAllGoals(self._hs_theory))]
@@ -153,6 +209,10 @@ class Theory(HsHierarchyElement):
         return self._goals
 
     def proven_goals(self) -> List[Sentence]:
+        """
+        Get all proven goals in the theory.
+        :return:
+        """
         if self._proven_goals is None:
             self._proven_goals = [Sentence(x, self._hs_pretty_sentence, self) for x in
                                   OMap.toList(getProvenGoals(self._hs_theory))]
@@ -160,6 +220,10 @@ class Theory(HsHierarchyElement):
         return self._proven_goals
 
     def unproven_goals(self) -> List[Sentence]:
+        """
+        Get all unproven goals in the theory.
+        :return:
+        """
         if self._unproven_goals is None:
             self._unproven_goals = [Sentence(x, self._hs_pretty_sentence, self) for x in
                                     OMap.toList(getUnprovenGoals(self._hs_theory))]
@@ -167,21 +231,46 @@ class Theory(HsHierarchyElement):
         return self._unproven_goals
 
     def logic(self) -> Logic:
+        """
+        Get the logic of the theory.
+        :return:
+        """
         return Logic(logicNameOfTheory(self._hs_theory), logicDescriptionOfTheory(self._hs_theory))
 
     def signature(self) -> Signature:
+        """
+        Get the signature of the theory.
+        :return:
+        """
         return Signature(signatureOfTheory(self._hs_theory))
 
     def sentence_by_name(self, name: str) -> Optional[Sentence]:
+        """
+        Get a sentence by its name.
+        :param name: Name of the sentence
+        :return: The Sentence if found, otherwise None
+        """
         return next(iter(s for s in self.sentences() if s.name() == name), None)
 
     def get_sublogic(self) -> str:
+        """
+        Calculate and return the sublogic of the theory.
+        :return:
+        """
         return sublogicOfPyTheory(self._hs_theory)
 
     def with_selection(self,
                        axioms: Optional[List[str]] = None,
                        goals: Optional[List[str]] = None,
                        theorems: Optional[List[str]] = None):
+        """
+        Create a new theory with a subset of axioms, goals and theorems.
+
+        :param axioms: Selection of axioms for the new theory
+        :param goals: Selection of goals for the new theory
+        :param theorems: Selection of theorems for the new theory
+        :return: New theory with the selected sentences
+        """
         if axioms is None:
             axioms = self.axioms()
         if goals is None:
@@ -194,6 +283,12 @@ class Theory(HsHierarchyElement):
         return Theory(theory, self.parent())
 
     def translate(self, comorphism: Comorphism) -> Theory:
+        """
+        Translate the theory using a comorphism.
+
+        :param comorphism: Comorphism to use for the translation
+        :return: The translated theory
+        """
         translated_result = translateTheory(comorphism._hs_comorphism, self._hs_theory)
         translatedHs = result_or_raise(translated_result, f"Translation with '{comorphism.name()}' failed")
         translated = Theory(translatedHs, None)

@@ -1,8 +1,3 @@
-"""
-Description :  Represents `Static.DevGraph.DGNodeLab`
-Copyright   :  (c) Otto-von-Guericke University of Magdeburg
-License     :  GPLv2 or higher, see LICENSE.txt
-"""
 import threading
 from typing import Tuple, Optional, List
 
@@ -27,7 +22,14 @@ from .Theory import Theory
 
 
 class DevGraphNode(HsHierarchyElement):
+    """
+    Represents a development graph node.
+
+    Represents `Static.DevGraph.DGNodeLab` via `HetsAPI.Internal.DGNodeLab`.
+    """
+
     _prove_lock: threading.Lock
+    """ Lock for acquired by the proof thread when updating the environment """
 
     def __init__(self, hs_node: Tuple[int, DGNodeLab], parent: Optional[HsHierarchyElement]) -> None:
         super().__init__(parent)
@@ -42,18 +44,38 @@ class DevGraphNode(HsHierarchyElement):
         return self._hs_node
 
     def id(self) -> int:
+        """
+        Returns the id of the node.
+        :return:
+        """
         return fst(self._hs_node)
 
     def _label(self) -> DGNodeLab:
+        """
+        Helper function to get the label from the Haskell tuple.
+        :return:
+        """
         return snd(self._hs_node)
 
     def name(self) -> str:
+        """
+        Returns the name of the node.
+        :return:
+        """
         return developmentGraphNodeLabelName(self._label())
 
     def is_internal(self) -> bool:
+        """
+        Returns whether the node is internal.
+        :return:
+        """
         return isInternalNode(self._label())
 
     def _theory_pointer(self) -> TheoryPointer:
+        """
+        Returns a tuple to identify the node in the DevelopmentGraph.
+        :return:
+        """
         node = self.hs_obj()
         graph = self.parent().hs_obj()
         env_name = self.parent().parent().hs_obj()
@@ -71,6 +93,19 @@ class DevGraphNode(HsHierarchyElement):
               axioms_to_include: Optional[List[str]] = None,
               timeout: Optional[int] = None
               ) -> List[ProofDetails]:
+        """
+        Proves selected goals in the theory of the node.
+
+        If possible, proofs are done in parallel.
+
+        :param prover: The prover to use or None to use the default prover
+        :param comorphism: The comorphism to use or None to use the default comorphism
+        :param use_theorems: Whether to include previously proven goals as theorems in subsequent proofs or None to use the default value
+        :param goals_to_prove: List of goals to prove (must be names of goals of the global theory of the node) or None to prove all goals
+        :param axioms_to_include: List of axioms to include (must be names of axioms of the global theory of the node) or None to include all axioms
+        :param timeout: Maximum time in seconds to spend on proving or None to use the default timeout
+        :return: Proof result for each goal
+        """
         prover_maybe = Just(prover._hs_prover) if prover else Nothing().subst(a=PyProver())
         comorphism_maybe = Just(comorphism._hs_comorphism) if comorphism else Nothing().subst(a=PyComorphism())
 
@@ -104,6 +139,16 @@ class DevGraphNode(HsHierarchyElement):
                           include_theorems: Optional[bool] = None,
                           timeout: Optional[int] = None
                           ) -> Tuple[ConsistencyKind, str]:
+        """
+        Checks the consistency of the theory of the node.
+
+        :param cons_checker: The consistency checker to use or None to use the default consistency checker
+        :param comorphism: The comorphism to use or None to use the default comorphism
+        :param include_theorems: Whether to include previously proven goals as theorems in the consistency check or None to use the default value
+        :param timeout: Maximum time in seconds to spend on checking the consistency or None to use the default timeout
+        :return: Consistency status and message
+        """
+
         cc_maybe = Just(cons_checker._hs_cons_checker) if cons_checker else Nothing().subst(a=PyConsChecker())
         comorphism_maybe = Just(comorphism._hs_comorphism) if comorphism else Nothing().subst(a=PyComorphism())
 
@@ -138,6 +183,11 @@ class DevGraphNode(HsHierarchyElement):
             return ConsistencyKind.UNKNOWN, status_message
 
     def global_theory(self) -> Optional[Theory]:
+        """
+        Returns the global theory of the node if applicable.
+        :return: Global theory or None if not applicable
+        """
+        ""
         node_lab = snd(self._hs_node)
 
         py_theory_maybe = globalTheory(node_lab)
@@ -149,6 +199,10 @@ class DevGraphNode(HsHierarchyElement):
         return None
 
     def recompute(self) -> None:
+        """
+        Recomputes the node and forces an update of the development graph.
+        :return:
+        """
         new_lib_env = recomputeNode(self._theory_pointer())
 
         root = self.parent().parent()
@@ -163,26 +217,49 @@ class DevGraphNode(HsHierarchyElement):
             self._theory.hs_update(hs_theory)
         
     def theory(self) -> Theory:
+        """
+        Returns the local theory of the node.
+        :return:
+        """
         if self._theory is None:
             self._theory = Theory(theoryOfNode(snd(self._hs_node)), self)
 
         return self._theory
 
     def is_reference_node(self) -> bool:
+        """
+        Returns whether the node is a reference node.
+        :return:
+        """
         return nodeTypeIsReference(getDevelopmentGraphNodeType(self._label()))
 
     def is_proven_node(self) -> bool:
+        """
+        Returns whether the node has been proven.
+        :return:
+        """
         return nodeTypeIsProven(getDevelopmentGraphNodeType(self._label()))
 
     def is_consistency_proven(self) -> bool:
+        """
+        Returns whether the node has been proven consistent.
+        :return:
+        """
         return nodeTypeIsProvenConsistent(getDevelopmentGraphNodeType(self._label()))
 
     def info(self) -> str:
+        """
+        Calculates a textual representation of the node and its theory.
+        :return:
+        """
         dev_graph = self.parent()
         return showGlobalDoc(dev_graph.global_annotations()._hs_global_annos, self._label(), "")
 
 
 class LocalDevGraphNode(DevGraphNode):
+    """
+    Represents a local development graph node.
+    """
     def consistency_status(self) -> ConsistencyStatus:
         node_lab = snd(self._hs_node)
         hs_cons_status = node_lab.getNodeConsStatus()
@@ -190,11 +267,21 @@ class LocalDevGraphNode(DevGraphNode):
 
 
 class ReferenceDevGraphNode(DevGraphNode):
+    """
+    Represents a reference development graph node.
+    """
     def referenced_libname(self) -> LibName:
         return LibName(referencedNodeLibName(self._label()))
 
 
 def dev_graph_node_from_hs(hs_node: Tuple[int, DGNodeLab], parent: Optional[HsHierarchyElement]) -> DevGraphNode:
+    """
+    Factory function to create a development graph node from a Haskell node.
+
+    :param hs_node: Haskell node
+    :param parent: Parent element
+    :return: Python development graph node
+    """
     label = snd(hs_node)
     if isNodeReferenceNode(label):
         return ReferenceDevGraphNode(hs_node, parent)

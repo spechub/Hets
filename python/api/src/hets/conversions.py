@@ -3,6 +3,11 @@ from hets.haskell import Conservativity, Inconsistent, Unknown, PCons, Cons, Mon
 
 
 def hs_conservativity_to_consistency_kind(hs_cons: Conservativity) -> ConsistencyKind:
+    """
+    Converts a Haskell conservativity to a Python ConsistencyKind.
+    :param hs_cons: Haskell conservativity
+    :return: Python ConsistencyKind
+    """
     if isinstance(hs_cons, Inconsistent):
         return ConsistencyKind.INCONSISTENT
     elif isinstance(hs_cons, Unknown):

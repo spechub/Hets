@@ -7,6 +7,12 @@ from .Pretty import Pretty
 
 
 class LibName:
+    """
+    Represents information about a library.
+
+    Represents `Common.LibName` via `HetsAPI.Internal.LibName`.
+    """
+
     def __init__(self, hs_libname: HsLibName):
         self._hs_libname = hs_libname
 

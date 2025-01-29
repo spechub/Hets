@@ -1,12 +1,13 @@
-"""
-Description :  Represents `Logic.Prover.ConsChecker`
-Copyright   :  (c) Otto-von-Guericke University of Magdeburg
-License     :  GPLv2 or higher, see LICENSE.txt
-"""
 from .haskell import consCheckerName, PyConsChecker
 
 
 class ConsistencyChecker:
+    """
+    A tool to check the consistency of a theory.
+
+    Represents `Proofs.AbstractState.G_cons_checker` via `HetsAPI.Python.PyConsChecker`.
+    """
+
     def __init__(self, hs_cons_checker: PyConsChecker) -> None:
         """
         A tool to check the consistency of a theory.

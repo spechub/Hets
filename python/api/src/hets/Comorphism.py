@@ -1,13 +1,13 @@
-"""
-Description :  Represents `Logic.Comorphism`
-Copyright   :  (c) Otto-von-Guericke University of Magdeburg
-License     :  GPLv2 or higher, see LICENSE.txt
-"""
-
 from .haskell import comorphismName, PyComorphism, targetLogicName, sourceLogicName
 
 
 class Comorphism:
+    """
+    A comorphism from one logic to another.
+
+    Represents `Logic.Comorphism` via `HetsAPI.Python.PyComorphism`.
+    """
+
     def __init__(self, hs_comorphism: PyComorphism) -> None:
         """
         A comorphism from one logic to another.
@@ -40,7 +40,15 @@ class Comorphism:
         return len(self.name().split(";"))
 
     def source(self) -> str:
+        """
+        Get the source logic of the comorphism.
+        :return:
+        """
         return sourceLogicName(self._hs_comorphism)
 
     def target(self) -> str:
+        """
+        Get the target logic of the comorphism.
+        :return:
+        """
         return targetLogicName(self._hs_comorphism)

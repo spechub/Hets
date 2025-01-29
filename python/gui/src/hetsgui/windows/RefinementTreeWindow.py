@@ -5,7 +5,7 @@ import hets
 
 from gi.repository import Gtk
 
-from hets.RefinementTree import RefinementTreeLinkKind
+from hets.RefinementTreeLink import RefinementTreeLinkKind
 from ..GtkSmartTemplate import GtkSmartTemplate
 from ..formatting import COLOR_MAP
 from ..widgets import ExtendedDotWidget

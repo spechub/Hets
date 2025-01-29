@@ -4,6 +4,9 @@ import hets.haskell.Internal as Internal
 
 
 class Option:
+    """
+    A generic wrapper around fields of `Driver.Options.HetcatsOpts`.
+    """
     name: str
     description: str
     typ: typing.Any
@@ -77,6 +80,12 @@ _ALL_OPTIONS_BY_NAME = dict([(x.name, x) for x in _ALL_OPTIONS])
 
 
 class Options:
+    """
+    Options for loading and interaction with the library to be passed to the Hets API. See `Driver.Options.HetcatsOpts`
+    for details about available options.
+
+    Wrapper arround `Driver.Options.HetcatsOpts`.
+    """
     _hs_options: Internal.HetcatsOpts = None
 
     def __init__(self, **kwargs):

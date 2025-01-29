@@ -7,6 +7,11 @@ from .haskell import PyBasicProof, PyBasicProofGuessed, PyBasicProofConjectured,
 
 
 class BasicProof:
+    """
+    Result of proving a theory.
+
+    Represents `Static.GTheory.BasicProof` via `HetsAPI.Python.PyBasicProof`.
+    """
 
     def __init__(self, hs_basic_proof: PyBasicProof):
         """

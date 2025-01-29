@@ -22,7 +22,9 @@ from .ProofDetails import ProofDetails
 from .ProofKind import ProofKind
 from .ProofState import ProofState
 from .Prover import Prover
-from .RefinementTree import RefinementTree, RefinementTreeLink, RefinementTreeNode
+from .RefinementTree import RefinementTree
+from hets.RefinementTreeNode import RefinementTreeNode
+from hets.RefinementTreeLink import RefinementTreeLink
 from .Sentence import Sentence
 from .Signature import Signature
 from .Theory import Theory
@@ -54,8 +56,6 @@ __all__ = [
     "Option",
     "Prover",
     "RefinementTree",
-    "RefinementTreeLink",
-    "RefinementTreeNode",
     "Sentence",
     "Signature",
     "Theory"

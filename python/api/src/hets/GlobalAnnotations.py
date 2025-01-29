@@ -2,6 +2,11 @@ from .haskell import precedenceAnnotations, associativityAnnotations, displayAnn
 
 
 class GlobalAnnotations:
+    """
+    Represents the global annotations of a theory.
+
+    Represents `Common.GlobalAnnotations` via `HetsAPI.Internal.GlobalAnnotations`.
+    """
     def __init__(self, hs_global_annos):
         self._hs_global_annos = hs_global_annos
 

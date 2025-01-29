@@ -1,9 +1,3 @@
-"""
-Description :  Represents `(Common.LibName.LibName, Static.DevGraph.LibEnv)`
-Copyright   :  (c) Otto-von-Guericke University of Magdeburg
-License     :  GPLv2 or higher, see LICENSE.txt
-"""
-
 from typing import Optional, Any, Tuple, List
 
 from .DevelopmentGraph import DevelopmentGraph
@@ -25,12 +19,16 @@ from .LibName import LibName
 
 
 class Library(HsHierarchyElement):
+    """
+    Represents a loaded library.
+
+    Represents the tuple `(Common.LibName.LibName, Static.DevGraph.LibEnv)`
+
+    Library is the root in the hierarchy of library, development graph, nodes, and edges
+    """
+
     def __init__(self, hs_library) -> None:
         super().__init__(None)
-        # if isinstance(hs_library, tuple):
-        #     self._name = hs_library[0]
-        #     self._env = hs_library[1]
-        # else:
         self._name = fst(hs_library)
         self._env = snd(hs_library)
 
@@ -51,35 +49,67 @@ class Library(HsHierarchyElement):
             lib.hs_update(new_env)
 
     def referenced_library(self, name: LibName):
+        """
+        Returns a referenced library.
+
+        :param name: Name of the referenced library
+        :return:
+        """
         if name not in self._referenced_libraries:
             self._referenced_libraries[name] = Library((name._hs_libname, self._env))
 
         return self._referenced_libraries[name]
 
     def name(self) -> LibName:
+        """
+        Returns the name of the library.
+        :return:
+        """
         return LibName(self._name)
 
     def development_graph(self) -> DevelopmentGraph:
+        """
+        Returns the development graph of the library.
+        :return:
+        """
+
         if self._dgraph is None:
             self._dgraph = DevelopmentGraph(getGraphForLibrary(self._name, self._env), self)
 
         return self._dgraph
 
     def environment(self) -> List[Tuple[LibName, DevelopmentGraph]]:
+        """
+        Returns the environment of the library.
+        :return:
+        """
         hs_dict: List[Tuple[Any, Any]] = [(fst(x), snd(x)) for x in self._env.toList()]
 
         return [(LibName(n), DevelopmentGraph(g, self)) for n, g in hs_dict]
 
     def dependencies(self) -> List[Tuple[LibName, LibName]]:
+        """
+        Returns the dependencies of the library.
+        :return:
+        """
         hs_dep = getLibraryDependencies(self._env)
 
         return [(LibName(fst(x)), LibName(snd(x))) for x in hs_dep]
 
     def automatic(self):
+        """
+        Applies automatic proof rules.
+        :return:
+        """
+
         new_env = automaticHs(self._name, self._env)
         self.hs_update(new_env)
 
     def global_subsume(self):
+        """
+
+        :return:
+        """
         new_env = globalSubsumeHs(self._name, self._env)
         self.hs_update(new_env)
 
@@ -157,9 +187,18 @@ class Library(HsHierarchyElement):
             self.hs_update(fromJust(new_env_m))
 
     def specifications(self) -> List[str]:
+        """
+        Returns the available specifications for refinement.
+        :return:
+        """
         return getAvailableSpecificationsForRefinement(self.development_graph()._hs_development_graph)
 
-    def get_refinement_tree(self, spec_name) -> Optional[RefinementTree]:
+    def get_refinement_tree(self, spec_name: str) -> Optional[RefinementTree]:
+        """
+        Returns the refinement tree for a specification.
+        :param spec_name: Name of the specification
+        :return: Refinement tree if available, otherwise None
+        """
         hs_ref_tree_m = getRefinementTree(spec_name, self.development_graph()._hs_development_graph)
 
         hs_ref_tree = maybe_to_optional(hs_ref_tree_m)
@@ -170,6 +209,13 @@ class Library(HsHierarchyElement):
     
 
 def load_library(path: str, options: Optional[Options] = None) -> Library:
+    """
+    Loads a library from a file path.
+
+    :param path: Path to the library
+    :param options: Options for loading and interacting with the library
+    :return:
+    """
     if options is None:
         options = Options()
 

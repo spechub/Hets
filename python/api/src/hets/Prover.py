@@ -1,19 +1,23 @@
-"""
-Description :  Represents `Logic.Prover.Prover`
-Copyright   :  (c) Otto-von-Guericke University of Magdeburg
-License     :  GPLv2 or higher, see LICENSE.txt
-"""
-
 from typing import Optional, List
 
 from .haskell import proverName, PyProver, PyComorphism
 
 
 class Prover:
+    """
+    Represents a prover.
+
+    Represents `Logic.Prover.Prover`
+    """
+
     def __init__(self, hs_prover: PyProver) -> None:
         self._hs_prover = hs_prover
 
     def name(self) -> str:
+        """
+        Returns the name of the prover.
+        :return:
+        """
         return proverName(self._hs_prover)
 
     def __eq__(self, other):

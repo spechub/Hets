@@ -1,14 +1,15 @@
-"""
-Description :  Represents `Static.DgUtils.ConsStatus`
-Copyright   :  (c) Otto-von-Guericke University of Magdeburg
-License     :  GPLv2 or higher, see LICENSE.txt
-"""
 from .ConsistencyKind import ConsistencyKind
 from .conversions import hs_conservativity_to_consistency_kind
 from .haskell import ConsStatus
 
 
 class ConsistencyStatus:
+    """
+    Consistency status of a devgraph node.
+
+    Represents `Static.DgUtils.ConsStatus` via `HetsAPI.Internal.ConsStatus`.
+    """
+
     def __init__(self, hs_cons_status: ConsStatus):
         """
         Consistency status of a node.
@@ -23,12 +24,26 @@ class ConsistencyStatus:
         self._hs_cons_status = hs_cons_status
 
     def required(self) -> ConsistencyKind:
+        """
+        Returns the required consistency of the node.
+
+        :return:
+        """
         hsCons = self._hs_cons_status.requiredConservativity()
         return hs_conservativity_to_consistency_kind(hsCons)
 
     def proven(self) -> ConsistencyKind:
+        """
+        Returns the proven consistency of the node.
+        :return:
+        """
+
         hsCons = self._hs_cons_status.provenConservativity()
         return hs_conservativity_to_consistency_kind(hsCons)
 
     def is_proven_link(self) -> bool:
+        """
+        Returns whether the conservativity is open
+        :return: False if the conservativity is open, True otherwise
+        """
         return self._hs_cons_status.isProvenConsStatusLink()

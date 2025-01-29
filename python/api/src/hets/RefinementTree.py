@@ -1,63 +1,16 @@
-import enum
-import typing
 from typing import List
 
-from .haskell import RefinementTreeNode as HsRefinementTreeNode, RefinementTreeLink as HsRefinementTreeLink, Gr, \
-    labNodes, labEdges, LNode, LEdge, fst, snd, sndOf3, thd, fstOf3, isRootNode, rtNodeLab, rtn_name, rtl_type, \
-    RTRefine, RTComp
+from hets import RefinementTreeLink, RefinementTreeNode
 
-
-class RefinementTreeNode:
-    def __init__(self, hs_node: typing.Tuple[int, HsRefinementTreeNode]):
-        self._hs_node = hs_node
-
-    def _label(self) -> HsRefinementTreeNode:
-        return snd(self._hs_node)
-
-    def is_root(self) -> bool:
-        return isRootNode(self._label())
-
-    def name(self) -> str:
-        return rtn_name(rtNodeLab(self._label()))
-
-    def id(self) -> int:
-        return fst(self._hs_node)
-
-
-class RefinementTreeLinkKind(enum.Enum):
-    UNKNOWN = -1
-    COMPONENT = 1
-    SIMPLE = 2
-
-
-class RefinementTreeLink:
-    def __init__(self, hs_edge: typing.Tuple[int, int, HsRefinementTreeLink]):
-        self._hs_edge = hs_edge
-
-    def _label(self) -> HsRefinementTreeLink:
-        return thd(self._hs_edge)
-
-    def id(self) -> typing.Tuple[int, int]:
-        return self.source_id(), self.target_id()
-
-    def source_id(self) -> int:
-        return fstOf3(self._hs_edge)
-
-    def target_id(self) -> int:
-        return sndOf3(self._hs_edge)
-
-    def kind(self) -> RefinementTreeLinkKind:
-        typ = rtl_type(self._label())
-        if isinstance(typ, RTRefine):
-            return RefinementTreeLinkKind.SIMPLE
-        elif isinstance(typ, RTComp):
-            return RefinementTreeLinkKind.COMPONENT
-        else:
-            return RefinementTreeLinkKind.UNKNOWN
-
+from .haskell import labNodes, labEdges
 
 
 class RefinementTree:
+    """
+    Represents a refinement tree.
+
+    Represents `Graph.Gr RTNodeLab RTLinkLab`.
+    """
     _links: List[RefinementTreeLink]
     _nodes: List[RefinementTreeNode]
 
@@ -66,7 +19,15 @@ class RefinementTree:
         self._links = [RefinementTreeLink(e) for e in labEdges(hs_refinement_tree)]
 
     def nodes(self) -> List[RefinementTreeNode]:
+        """
+        Returns the nodes of the refinement tree.
+        :return:
+        """
         return self._nodes
 
     def edges(self) -> List[RefinementTreeLink]:
+        """
+        Returns the edges of the refinement tree.
+        :return:
+        """
         return self._links
