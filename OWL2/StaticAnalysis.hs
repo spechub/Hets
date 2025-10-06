@@ -803,6 +803,8 @@ corr2theo _aname flag ssig tsig l1 l2 eMap1 eMap2 rref = do
                                 AS.EquivalentClasses [] (AS.Expression . AS.cutIRI <$> [e1', e2'])
                         (AS.ObjectProperty, AS.ObjectProperty) -> AS.ObjectPropertyAxiom $
                             AS.EquivalentObjectProperties [] (AS.ObjectProp . AS.cutIRI <$> [e1', e2'])
+                        (AS.DataProperty, AS.DataProperty) -> AS.DataPropertyAxiom $
+                            AS.EquivalentDataProperties [] (AS.cutIRI <$> [e1', e2'])
                         (AS.NamedIndividual, AS.NamedIndividual) -> AS.Assertion $
                             AS.SameIndividual [] (AS.cutIRI <$> [e1', e2'])
                         _ -> error $ "use subsumption only between"
