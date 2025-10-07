@@ -165,7 +165,7 @@ jobs:
       # copy cached yet.
       - name: Fetch stack cache
         id: stack_cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ${{ env.STACK_ROOT }}
           key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml') }}
@@ -227,7 +227,7 @@ jobs:
 
       - name: Fetch stack cache
         if: startsWith(env.FAKE_URL, 'http') == false
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ${{ env.STACK_ROOT }}
           key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml.orig') }}
@@ -357,7 +357,7 @@ jobs:
 
       - name: Fetch stack cache
         if: startsWith(env.FAKE_URL, 'http') == false
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ${{ env.STACK_ROOT }}
           key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml') }}
@@ -470,7 +470,7 @@ jobs:
           sudo cp -p ksh93 /bin/ksh93
 
       - name: Fetch stack cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ${{ env.STACK_ROOT }}
           key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml.orig') }}
@@ -639,7 +639,7 @@ jobs:
       - name: Fetch stack cache
         if: startsWith(env.FAKE_URL, 'http') == false
           || steps.download.outcome == 'failure'
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ${{ env.STACK_ROOT }}
           key: stack-${{ runner.os }}-${{ hashFiles('stack.yaml') }}
