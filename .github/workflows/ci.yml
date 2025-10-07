@@ -459,7 +459,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Download Hets build dir
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: hets-server
           path: ${{ runner.temp }}
@@ -501,7 +501,7 @@ jobs:
     needs: job_2a
     steps:
       - name: Download Hets build dir
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: hets-server
           path: ${{ runner.temp }}
@@ -539,7 +539,7 @@ jobs:
     needs: job_2a
     steps:
       - name: Download Hets build dir
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: hets-server
           path: ${{ runner.temp }}
@@ -575,7 +575,7 @@ jobs:
     needs: job_2a
     steps:
       - name: Download Hets build dir
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
           name: hets-server
           path: ${{ runner.temp }}
