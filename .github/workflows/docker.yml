@@ -36,7 +36,7 @@ jobs:
     # runner forever (or until it gets kicked by a github cleanup job). See also
     # https://github.com/actions/runner-images/issues/6002
     # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Dump GitHub context
         env:

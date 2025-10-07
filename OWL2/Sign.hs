@@ -101,6 +101,8 @@ addSymbToSign sig ent =
     return sig {objectProperties = Set.insert eIri $ objectProperties sig}
    Entity _ NamedIndividual eIri ->
     return sig {individuals = Set.insert eIri $ individuals sig}
+   Entity _ DataProperty eIri ->
+    return sig {dataProperties = Set.insert eIri $ dataProperties sig}
    _ -> return sig
 
 addSign :: Sign -> Sign -> Sign
