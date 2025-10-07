@@ -1,6 +1,7 @@
 from typing import List
 
-from hets import RefinementTreeLink, RefinementTreeNode
+from .RefinementTreeLink import RefinementTreeLink
+from .RefinementTreeNode import RefinementTreeNode
 
 from .haskell import labNodes, labEdges
 

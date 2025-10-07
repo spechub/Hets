@@ -1,10 +1,10 @@
-FROM spechub2/hyphen:22.04 as base
+FROM spechub2/hyphen:22.04 AS base
 
-ENV TZ Europe/Berlin
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
-ENV HETS_LIB /opt/Hets-lib
+ENV TZ=Europe/Berlin
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
+ENV HETS_LIB=/opt/Hets-lib
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
    apt-get update && apt-get -y install locales && locale-gen en_US.UTF-8 && \
@@ -34,7 +34,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone &
       libghc-heap-dev
 
 
-FROM base as build-lib
+FROM base AS build-lib
 
 RUN apt-get -y install git
 # Get source

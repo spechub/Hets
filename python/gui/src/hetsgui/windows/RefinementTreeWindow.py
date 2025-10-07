@@ -58,3 +58,6 @@ class RefinementTreeWindow(Gtk.Window):
             g.edge(str(edge.source_id()), str(edge.target_id()), color=color)
 
         return g.source
+
+    def _on_node_right_clicked(self, widget, node_id: str, event):
+        pass
