@@ -132,7 +132,7 @@ jobs:
   job_1:
     # Takes ~ 21 min | 35 s.
     name: Build Stack
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     # If the job takes longer than 30 min, something is going wrong and we want
     # GHA to kill the job to save build time. E.g. stack sometimes goes in an
     # endless loop if compilation fails.
@@ -211,7 +211,7 @@ jobs:
     # Takes ~ 18 min | 45 s.
     name: Build Hets Server
     #if: github.event_name == 'pull_request'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: job_1
     steps:
       - name: Checkout
@@ -337,7 +337,7 @@ jobs:
     # Takes ~ 19 min | 45 s.
     name: Build Hets Desktop
     #if: github.event_name == 'pull_request'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: job_1
     steps:
       # The desktop version needs additional GUI packages usually not installed.
@@ -430,7 +430,7 @@ jobs:
     # Takes about 12 min.
     name: Test components
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: job_2a
     steps:
       # ~ 30 s
@@ -497,7 +497,7 @@ jobs:
     # Takes ~ 2 min.
     name: Test Hets-Lib
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: job_2a
     steps:
       - name: Download Hets build dir
@@ -535,7 +535,7 @@ jobs:
     # Takes ~ 14 min.
     name: Test PostgreSQL DB
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: job_2a
     steps:
       - name: Download Hets build dir
@@ -571,7 +571,7 @@ jobs:
     # Takes ~ 5 min.
     name: Test SQLite DB
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: job_2a
     steps:
       - name: Download Hets build dir
@@ -608,7 +608,7 @@ jobs:
   job_4a:
     # Takes ~ 20 min | 18 s.
     name: Build docs
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: job_1
     steps:
       - name: Fake Build
