@@ -19,24 +19,44 @@ module HetsAPI.InfoCommands (
    , getUnprovenGoals
    , prettySentence
    , prettySentenceOfTheory
+   , prettyTheory
+   , getDevelopmentGraphNodeType
+   , theorySentenceIsAxiom
+   , theorySentenceWasTheorem
+   , theorySentenceIsDefined
+   , theorySentenceGetTheoremStatus
+   , theorySentencePriority
+   , theorySentenceContent
+   , theorySentenceBestProof
+   , getLibraryDependencies
+   , getRefinementTree
+   , getAvailableSpecificationsForRefinement
 ) where
 
-import HetsAPI.DataTypes (TheoryPointer)
-
-import Common.LibName (LibName)
-import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, labEdgesDG, DGraph, DGNodeLab, DGLinkLab, getDGNodeName)
-import Data.Graph.Inductive (LNode, LEdge)
-import Static.GTheory (G_theory (..), isProvenSenStatus)
-import qualified Common.OrderedMap as OMap
-import Common.AS_Annotation (sentence, SenAttr (isAxiom))
-import Data.Aeson (encode, eitherDecode, Result(..))
-import Logic.Logic(Logic)
-import Common.DocUtils (pretty)
-
-
+import Data.Aeson (encode, eitherDecode, Result(..), ToJSON)
 import Data.Dynamic
+import Data.Graph.Inductive (LNode, LEdge, mkGraph, labNodes, subgraph, suc)
+import qualified Data.Map as Map
+import qualified Data.Set as Set
 
-import HetsAPI.DataTypes (SentenceByName, Sentence)
+import Common.AS_Annotation (SenAttr (..))
+import Common.DocUtils (pretty, showDoc)
+import Common.LibName (LibName)
+import qualified Common.Lib.Graph as Graph
+import qualified Common.Lib.Rel as Rel
+import qualified Common.OrderedMap as OMap
+
+import Logic.Logic(Logic)
+import Logic.Prover(ThmStatus(..))
+import Logic.Comorphism(AnyComorphism(..))
+
+import HetsAPI.DataTypes (TheoryPointer, TheorySentenceByName, TheorySentence, Sentence)
+import qualified HetsAPI.Refinement as Refinement
+
+import Static.DevGraph (LibEnv, lookupDGraph, labNodesDG, labEdgesDG, DGraph, DGNodeLab, DGLinkLab, getDGNodeName, getRealDGNodeType, getLibDepRel, RTNodeLab, RTLinkLab, refTree, specRoots)
+import Static.DgUtils (DGNodeType)
+import Static.GTheory (G_theory (..), isProvenSenStatus, BasicProof(..))
+
 
 
 -- | @getDevelopmentGraphByName name env@ returns the development graph for the
@@ -62,24 +82,51 @@ getEdgesFromDevelopmentGraph = fmap (\(_, _, x) -> x) . labEdgesDG
 
 -- getGlobalAnnotations :: DGraph -> GlobalAnnos
 
-getAllSentences :: G_theory -> SentenceByName
-getAllSentences (G_theory _ _ _ _ sens _) = OMap.map (encode . sentence) sens
+theorySentenceIsAxiom :: SenAttr a (ThmStatus tStatus) -> Bool
+theorySentenceIsAxiom = isAxiom
 
-getAllAxioms :: G_theory -> SentenceByName
-getAllAxioms (G_theory _ _ _ _ sens _) = OMap.map (encode . sentence)
+theorySentenceWasTheorem :: SenAttr a (ThmStatus tStatus) -> Bool
+theorySentenceWasTheorem = wasTheorem
+
+theorySentenceIsDefined :: SenAttr a (ThmStatus tStatus) -> Bool
+theorySentenceIsDefined = isDef
+
+theorySentenceGetTheoremStatus :: SenAttr a (ThmStatus tStatus) -> [tStatus]
+theorySentenceGetTheoremStatus = getThmStatus . senAttr
+
+theorySentencePriority :: SenAttr a (ThmStatus tStatus) -> Maybe String
+theorySentencePriority = priority
+
+theorySentenceContent :: SenAttr a (ThmStatus tStatus) -> a
+theorySentenceContent = sentence
+
+theorySentenceBestProof :: Ord proof => SenAttr a (ThmStatus (c, proof)) -> Maybe proof
+theorySentenceBestProof sentence =
+    if null ts then Nothing else Just $ maximum $ map snd ts
+    where ts = theorySentenceGetTheoremStatus sentence
+
+
+toTheorySentence :: ToJSON sentence => SenAttr sentence (ThmStatus (AnyComorphism, BasicProof)) -> TheorySentence
+toTheorySentence sen = sen { sentence = encode . sentence $ sen }
+
+getAllSentences :: G_theory -> TheorySentenceByName
+getAllSentences (G_theory _ _ _ _ sens _) = OMap.map toTheorySentence sens
+
+getAllAxioms :: G_theory -> TheorySentenceByName
+getAllAxioms (G_theory _ _ _ _ sens _) = OMap.map toTheorySentence
     $ OMap.filter isAxiom sens
 
-getAllGoals :: G_theory -> SentenceByName
-getAllGoals (G_theory _ _ _ _ sens _) = OMap.map (encode . sentence)
+getAllGoals :: G_theory -> TheorySentenceByName
+getAllGoals (G_theory _ _ _ _ sens _) = OMap.map toTheorySentence
     $ OMap.filter (not . isAxiom) sens
 
-getProvenGoals :: G_theory -> SentenceByName
-getProvenGoals (G_theory _ _ _ _ sens _) = OMap.map (encode . sentence)
+getProvenGoals :: G_theory -> TheorySentenceByName
+getProvenGoals (G_theory _ _ _ _ sens _) = OMap.map toTheorySentence
     $ OMap.filter (\sen -> not (isAxiom sen) && isProvenSenStatus sen) sens
 
-getUnprovenGoals :: G_theory -> SentenceByName
-getUnprovenGoals (G_theory _ _ _ _ sens _) = OMap.map (encode . sentence)
-    $ OMap.filter (\sen -> isAxiom sen && isProvenSenStatus sen) sens
+getUnprovenGoals :: G_theory -> TheorySentenceByName
+getUnprovenGoals (G_theory _ _ _ _ sens _) = OMap.map toTheorySentence
+    $ OMap.filter (\sen -> not (isAxiom sen) && not (isProvenSenStatus sen)) sens
 
 prettySentence' :: Logic lid sublogics basic_spec sentence symb_items symb_map_items sign morphism symbol raw_symbol proof_tree =>
     sentence -> lid -> Sentence -> String
@@ -91,5 +138,23 @@ prettySentence :: Logic lid sublogics basic_spec sentence symb_items symb_map_it
     lid -> Sentence -> String
 prettySentence = prettySentence' (undefined :: sentence)
 
+prettyTheory :: G_theory -> String
+prettyTheory th = showDoc th "\n"
+
 prettySentenceOfTheory :: G_theory -> Sentence -> String
 prettySentenceOfTheory (G_theory lid _ _ _ _ _) = prettySentence lid
+
+getDevelopmentGraphNodeType :: DGNodeLab -> DGNodeType
+getDevelopmentGraphNodeType = getRealDGNodeType
+
+getLibraryDependencies :: LibEnv -> [(LibName, LibName)]
+getLibraryDependencies =
+  Rel.toList . Rel.intransKernel . getLibDepRel
+
+
+getRefinementTree :: String -> DGraph -> Maybe (Graph.Gr Refinement.RefinementTreeNode Refinement.RefinementTreeLink)
+getRefinementTree = Refinement.getRefinementTree
+
+getAvailableSpecificationsForRefinement :: DGraph -> [String]
+getAvailableSpecificationsForRefinement = Refinement.getAvailableSpecificationsForRefinement
+

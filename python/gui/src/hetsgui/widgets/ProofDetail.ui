@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<interface>
+    <requires lib="gtk+" version="3.24"/>
+    <object class="GtkListStore" id="_model_axioms">
+        <columns>
+            <column type="gchararray"/>
+            <column type="gchararray"/>
+        </columns>
+    </object>
+    <template class="ProofDetail" parent="GtkBin">
+        <property name="can-focus">False</property>
+        <child>
+            <object class="GtkExpander">
+                <property name="expanded">False</property>
+                <property name="label-fill">True</property>
+                <child>
+                    <object class="GtkBox">
+                        <property name="can-focus">False</property>
+                        <property name="margin-start">14</property>
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">4</property>
+                        <child>
+                            <!-- n-columns=2 n-rows=8 -->
+                            <object class="GtkGrid" id="details_grid">
+                                <property name="can-focus">False</property>
+                                <property name="row-spacing">4</property>
+                                <property name="column-spacing">14</property>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                        <property name="label">Status:</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">0</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_status">
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                        <!--                    <property name="label" translatable="yes">STATUS</property>-->
+                                        <property name="use-markup">True</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">0</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                        <property name="label">Prover:</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">1</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_prover">
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">1</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                        <property name="label">Comorphism:</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">2</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_comorphism">
+                                        <property name="can-focus">False</property>
+                                        <!--                    <property name="tooltip-text">COMORPHISM_NAME</property>-->
+                                        <property name="halign">start</property>
+                                        <!--                    <property name="label">COMORPHISM_NAME</property>-->
+                                        <property name="ellipsize">middle</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">2</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                        <property name="label">Used axioms:</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">3</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkFlowBox" id="_box_axioms">
+                                        <property name="column-spacing">8</property>
+                                        <property name="row-spacing">4</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">3</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkFlowBox" id="used_axioms_box">
+                                        <property name="can-focus">False</property>
+                                        <property name="column-spacing">8</property>
+                                        <property name="row-spacing">4</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">3</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel">
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                        <property name="label">Time used:</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">4</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_used_time">
+                                        <property name="can-focus">False</property>
+                                        <property name="halign">start</property>
+                                        <!--                    <property name="label">USED_TIME</property>-->
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">4</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_ts_time">
+                                        <property name="can-focus">False</property>
+                                        <property name="no-show-all">True</property>
+                                        <property name="halign">start</property>
+                                        <property name="label" translatable="yes">Time limit:</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">5</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_ts_time_value">
+                                        <property name="can-focus">False</property>
+                                        <property name="no-show-all">True</property>
+                                        <property name="halign">start</property>
+                                        <!--                    <property name="label" translatable="yes">TIME_SECONDSs</property>-->
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">5</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_ts_opts">
+                                        <property name="can-focus">False</property>
+                                        <property name="no-show-all">True</property>
+                                        <property name="halign">start</property>
+                                        <property name="label" translatable="yes">Extra options:</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">6</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_ts_opts_value">
+                                        <property name="can-focus">False</property>
+                                        <property name="no-show-all">True</property>
+                                        <property name="halign">start</property>
+                                        <!--                    <property name="label" translatable="yes">TS_OPTSV</property>-->
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">6</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_ts">
+                                        <property name="can-focus">False</property>
+                                        <property name="no-show-all">True</property>
+                                        <property name="halign">start</property>
+                                        <property name="label" translatable="yes">Tactic script:</property>
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">0</property>
+                                        <property name="top-attach">7</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_ts_value">
+                                        <property name="can-focus">False</property>
+                                        <property name="no-show-all">True</property>
+                                        <property name="halign">start</property>
+                                        <!--                    <property name="label" translatable="yes">TACTIC_SCRIPT</property>-->
+                                    </object>
+                                    <packing>
+                                        <property name="left-attach">1</property>
+                                        <property name="top-attach">7</property>
+                                    </packing>
+                                </child>
+                            </object>
+                            <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <object class="GtkExpander">
+                                <property name="can-focus">False</property>
+                                <property name="hexpand">True</property>
+                                <child type="label">
+                                    <object class="GtkLabel">
+                                        <property name="can-focus">False</property>
+                                        <property name="label">Proof tree:</property>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="ExtendedDotWidget" id="_dot_proof_tree">
+                                        <property name="height-request">800</property>
+                                        <style>
+                                            <class name="proof-tree"/>
+                                        </style>
+                                    </object>
+                                </child>
+                            </object>
+                            <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <object class="GtkExpander">
+                                <property name="can-focus">False</property>
+                                <property name="hexpand">True</property>
+                                <child type="label">
+                                    <object class="GtkLabel">
+                                        <property name="can-focus">False</property>
+                                        <property name="label">Proof lines:</property>
+                                    </object>
+                                </child>
+                                <child>
+                                    <object class="GtkLabel" id="_lbl_proof_lines">
+                                        <property name="halign">GTK_ALIGN_START</property>
+                                        <property name="selectable">True</property>
+                                        <property name="wrap">True</property>
+                                        <style>
+                                            <class name="proof-lines"/>
+                                        </style>
+                                    </object>
+                                </child>
+                            </object>
+                            <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                            </packing>
+                        </child>
+                    </object>
+                </child>
+                <child type="label">
+                    <object class="GtkLabel" id="_lbl_title">
+                        <property name="can-focus">False</property>
+                        <property name="ellipsize">middle</property>
+                        <!--            <property name="label">TITLE</property>-->
+                    </object>
+                </child>
+            </object>
+        </child>
+    </template>
+</interface>

@@ -150,24 +150,18 @@ data Theory sign sen proof_tree =
 data TacticScript = TacticScript String deriving (Eq, Ord, Show, Typeable)
 
 -- | failure reason
-data Reason = Reason [String] deriving Typeable
-
-instance Ord Reason where
-  compare _ _ = EQ
-
-instance Eq Reason where
-  a == b = compare a b == EQ
+type Reason = [String]
 
 -- | enumeration type representing the status of a goal
 data GoalStatus =
-    Open Reason -- ^ failure reason
+    Open { goalStatusOpenReason :: Reason } -- ^ failure reason
   | Disproved
   | Proved Bool -- ^ True means consistent; False inconsistent
     deriving (Eq, Ord, Typeable)
 
 instance Show GoalStatus where
     show gs = case gs of
-        Open (Reason l) -> unlines $ "Open" : l
+        Open reason -> unlines $ "Open" : reason
         Disproved -> "Disproved"
         Proved c -> "Proved" ++ if c then "" else "(inconsistent)"
 
@@ -177,7 +171,7 @@ isOpenGoal gs = case gs of
   _ -> False
 
 openGoalStatus :: GoalStatus
-openGoalStatus = Open $ Reason []
+openGoalStatus = Open []
 
 -- | data type representing the proof status for a goal
 data ProofStatus proof_tree = ProofStatus

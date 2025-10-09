@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Resource file for the GUI of Hets.
+
+This file is used to bundle all resources of the GUI into a single file.
+
+For the usage with GtkSmartTemplate the UI file of a component must match the name of the component and placed in the same directory.
+-->
+
+<gresources>
+  <gresource prefix="/eu/hets/gui">
+    <file>resources/icon.png</file>
+    <file alias="gtk/menus.ui">resources/menus.ui</file>
+
+    <file preprocess="xml-stripblanks">windows/ConservativityCheckWindow.ui</file>
+    <file>windows/ConservativityCheckWindow.css</file>
+    <file preprocess="xml-stripblanks">windows/ConsistencyCheckWindow.ui</file>
+    <file>windows/ConsistencyCheckWindow.css</file>
+    <file preprocess="xml-stripblanks">windows/LibraryWindow.ui</file>
+    <file preprocess="xml-stripblanks">windows/RefinementTreeWindow.ui</file>
+    <file preprocess="xml-stripblanks">windows/MainWindow.ui</file>
+    <file>windows/MainWindow.css</file>
+    <file preprocess="xml-stripblanks">windows/StartUpWindow.ui</file>
+    <file>windows/StartUpWindow.css</file>
+    <file preprocess="xml-stripblanks">windows/ProveWindow.ui</file>
+    <file preprocess="xml-stripblanks">windows/LibrarySettingsWindow.ui</file>
+    <file preprocess="xml-stripblanks">windows/ProofDetailsWindow.ui</file>
+    <file preprocess="xml-stripblanks">windows/ListViewSelectionDialog.ui</file>
+    <file preprocess="xml-stripblanks">widgets/ProofDetail.ui</file>
+    <file>widgets/ProofDetail.css</file>
+    <file preprocess="xml-stripblanks">widgets/EditableListView.ui</file>
+    <file preprocess="xml-stripblanks">widgets/GridWithToolComorphismSelector.ui</file>
+
+  </gresource>
+</gresources>

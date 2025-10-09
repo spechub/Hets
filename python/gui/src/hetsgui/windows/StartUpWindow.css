@@ -1,0 +1,5 @@
+window.startup-window {
+    background-color: blue;
+    background: linear-gradient(45deg, rgba(9,9,121,1) 0%, rgba(0,212,255,1) 100%);
+    color: white;
+}
