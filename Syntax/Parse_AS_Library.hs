@@ -55,7 +55,7 @@ library :: LogicGraph -> AParser st LIB_DEFN
 library lG = do
     (lG1, an1) <- lGAnnos lG
     (ps, ln) <- option (nullRange, iriLibName nullIRI) $ do
-      s1 <- asKey libraryS <|> asKey "distributed-ontology"
+      s1 <- asKey libraryS
       n <- libName lG1
       return (tokPos s1, n)
     (lG2, an2) <- lGAnnos lG1
@@ -120,7 +120,7 @@ networkDefn l = do
 specDefn :: LogicGraph -> AParser st LIB_ITEM
 specDefn l = do
     s <- choice $ map asKey
-      ["specification", specS, ontologyS, "onto", "model", "OMS", patternS]
+      ["specification", specS, ontologyS, "onto", "model", omsS, patternS]
     n <- hetIRI l
     g <- generics l
     e <- equalT
@@ -218,11 +218,15 @@ libItem l = specDefn l
        en <- hetIRI l
        s2 <- colonT
        et <- equivType l
-       s3 <- equalT
-       sp <- fmap MkOms $ aSpec l
+       (ms3, sp) <- option (Nothing, MkOms $ emptyAnno $ EmptySpec nullRange)
+                           (do s3 <- equalT
+                               sp <- fmap MkOms $ aSpec l
+                               return (Just s3, sp))
        ep <- optEnd
        return . Equiv_defn en et sp
-         . catRange $ s1 : s2 : s3 : maybeToList ep
+         . catRange $ s1 : s2 : case ms3 of
+                                  Just s3 -> s3 : maybeToList ep
+                                  Nothing -> maybeToList ep
   <|> -- align defn
     do s1 <- asKey alignmentS
        an <- hetIRI l

@@ -238,7 +238,7 @@ floatingAnno ps = literal2idsAnno ps Float_anno
 
 prefixAnno :: Range -> GenParser Char st Annotation
 prefixAnno ps = do
-    prefixes <- many $ do
+    prefixes <- many $ skipMany (commentLine >> spaces) >> do
         p <- (string colonS >> return "") <|>
              (IRI.ncname << string colonS)
         spaces
