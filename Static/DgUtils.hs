@@ -205,7 +205,7 @@ data Scope = Local | Global deriving (Show, Eq, Ord, Typeable, Data)
 data LinkKind = DefLink | ThmLink ThmLinkStatus
   deriving (Show, Eq, Ord, Typeable, Data)
 
-data FreeOrCofree = Free | Cofree | NPFree | Minimize
+data FreeOrCofree = Free | Cofree | NPFree | Minimize | Maximize
   deriving (Show, Eq, Ord, Enum, Bounded, Read, Typeable, Data)
 
 fcList :: [FreeOrCofree]
@@ -270,6 +270,7 @@ data DGEdgeTypeModInc =
     GlobalDef
   | HetDef
   | HidingDef
+  | ApproxDef
   | LocalDef
   | FreeOrCofreeDef FreeOrCofree
   | ThmType { thmEdgeType :: ThmTypes
