@@ -45,6 +45,7 @@ module ParseLib2
 import Data.Char
 import Control.Applicative
 import Control.Monad
+import qualified Control.Monad.Fail as Fail
 
 infixr 5 +++
 
@@ -82,7 +83,7 @@ instance MonadPlus Parser where
    -- mplus            :: Parser a -> Parser a -> Parser a
    (P p) `mplus` (P q) = P (\ pos inp -> (p pos inp ++ q pos inp))
 
-instance MonadFail Parser where
+instance Fail.MonadFail Parser where
    fail _ = P (\ _ _ -> [])
 
 

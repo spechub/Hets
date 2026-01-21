@@ -24,6 +24,10 @@ module Proofs.AbstractState
     , coerceProver
     , G_cons_checker (..)
     , coerceConsChecker
+    , G_conservativity_checker(..)
+    , conservativityCheckerId
+    , conservativityCheckerUsable
+    , coerceConservativityChecker
     , ProofActions (..)
     , ProofState (..)
     , sublogicOfTheory
@@ -33,6 +37,7 @@ module Proofs.AbstractState
     , toAxioms
     , getAxioms
     , getGoals
+    , makeTheoryForSentences
     , recalculateSublogicAndSelectedTheory
     , markProved
     , G_theory_with_prover (..)
@@ -66,6 +71,7 @@ import qualified Common.OrderedMap as OMap
 import Common.Result as Result
 import Common.ResultT
 import Common.AS_Annotation
+import Common.Consistency
 import Common.ExtSign
 import Common.Utils
 import Common.GraphAlgo (yen)
@@ -143,6 +149,29 @@ getCcBatch (G_cons_checker _ p) = ccBatch p
 
 usableCC :: G_cons_checker -> IO Bool
 usableCC (G_cons_checker _ p) = fmap isNothing $ ccUsable p
+
+data G_conservativity_checker =
+  forall lid sublogics basic_spec sentence symb_items
+    symb_map_items sign morphism symbol raw_symbol proof_tree
+  . Logic lid sublogics basic_spec sentence symb_items
+      symb_map_items sign morphism symbol raw_symbol proof_tree
+  => G_conservativity_checker lid (ConservativityChecker sign sentence morphism)
+
+coerceConservativityChecker ::
+   ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
+           sign1 morphism1 symbol1 raw_symbol1 proof_tree1
+   , Logic lid2 sublogics2 basic_spec2 sentence2 symb_items2 symb_map_items2
+           sign2 morphism2 symbol2 raw_symbol2 proof_tree2
+   , Fail.MonadFail m)
+   => lid1 -> lid2 -> String -> ConservativityChecker sign1 sentence1 morphism1 -> m (ConservativityChecker sign2 sentence2 morphism2)
+coerceConservativityChecker = primCoerce
+
+conservativityCheckerId :: G_conservativity_checker -> String
+conservativityCheckerId (G_conservativity_checker _ cc) = checkerId cc
+
+conservativityCheckerUsable :: G_conservativity_checker -> IO (Maybe String)
+conservativityCheckerUsable (G_conservativity_checker _ cc) = checkerUsable cc
+
 
 coerceConsChecker ::
   ( Logic lid1 sublogics1 basic_spec1 sentence1 symb_items1 symb_map_items1
@@ -340,21 +369,25 @@ prepareForProving st (G_prover lid4 p, co) = do
   p' <- coerceProver lid4 lidT "" p
   return $ G_theory_with_prover lidT th p'
 
+makeTheoryForSentences :: [String] -> [String] -> [String] -> G_theory -> G_theory
+makeTheoryForSentences axioms goals theorems (G_theory lid syn sig si sens _ ) =
+  let (aMap, gMap) = OMap.partition isAxiom sens
+        -- proven goals map
+      pMap = OMap.filter isProvenSenStatus gMap
+  in
+  G_theory lid syn sig si
+      (Map.unions
+        [ filterMapWithList goals gMap
+        , filterMapWithList axioms aMap
+        , markAsAxiom True $ filterMapWithList theorems pMap
+        ]) startThId
+
 -- | creates the currently selected theory
 makeSelectedTheory :: ProofState -> G_theory
-makeSelectedTheory s = case currentTheory s of
-  G_theory lid syn sig si sens _ ->
-    -- axiom map, goal map
-    let (aMap, gMap) = OMap.partition isAxiom sens
-        -- proven goals map
-        pMap = OMap.filter isProvenSenStatus gMap
-    in
-    G_theory lid syn sig si
-      (Map.unions
-        [ filterMapWithList (selectedGoals s) gMap
-        , filterMapWithList (includedAxioms s) aMap
-        , markAsAxiom True $ filterMapWithList (includedTheorems s) pMap
-        ]) startThId
+makeSelectedTheory s = makeTheoryForSentences
+  (includedAxioms s)
+  (selectedGoals s)
+  (includedTheorems s) $ currentTheory s
 
 {- |
   recalculation of sublogic upon (de)selection of goals, axioms and

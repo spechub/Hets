@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hets-gui"
+version = "0.1.0.0"
+description = "Graphical User Interface for hets (http://hets.eu)"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["hets", "heterogeneous specifications"]
+license = {text = "GPLv3"}
+dependencies = ["xdot", "numpy", "graphviz", "hets-api"]
+
+[project.gui-scripts]
+hets = "hetsgui:run"
+
+[tool.setuptools.package-data]
+"*" = [ "*.gresource", "*.png" ]

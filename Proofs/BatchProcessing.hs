@@ -221,8 +221,8 @@ genericProveBatch useStOpt tLimit extraOptions inclProvedThs saveProblem_batch
         let res0 = proofStatus res_cfg
             res = res0 { proofLines = resultOutput res_cfg,
               goalStatus = case goalStatus res0 of
-                Open (Reason l) | err == ATPTLimitExceeded ->
-                  Open (Reason $ "Timeout" : l)
+                Open reason | err == ATPTLimitExceeded ->
+                  Open ("Timeout" : reason)
                 r -> r }
             pst' = addToLP g res pst
             goalsProcessedSoFar' = goalsProcessedSoFar + 1

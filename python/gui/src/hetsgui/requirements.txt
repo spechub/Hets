@@ -1,0 +1,5 @@
+pycairo
+PyGObject
+xdot
+numpy
+graphviz

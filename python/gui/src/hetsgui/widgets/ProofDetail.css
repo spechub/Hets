@@ -1,0 +1,12 @@
+.axiom {
+    background: #00BBFF;
+}
+
+.proof-tree {
+    background: white;
+}
+
+.proof-lines {
+    font-family: monospace;
+    background: @theme_base_color;
+}

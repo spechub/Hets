@@ -22,7 +22,8 @@ import Comorphisms.LogicGraph (logicGraph)
 import Logic.Grothendieck
 #endif
 
-import Proofs.AbstractState (getListOfConsCheckers, usableCC)
+import Proofs.AbstractState (getAllConsCheckers, sublogicOfTheory, getCcName
+                            , getListOfConsCheckers, usableCC)
 
 import System.IO
 

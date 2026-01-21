@@ -1,4 +1,5 @@
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, RecordWildCards #-}
+
 {- |
 Module      :./Interfaces/Utils.hs
 Description : utilitary functions
@@ -24,10 +25,13 @@ module Interfaces.Utils
          , addCommandHistoryToState
          , checkConservativityNode
          , checkConservativityEdge
+         , checkConservativityEdgeWith
+         , recordConservativityResult
+         , getUsableConservativityCheckers
          , updateNodeProof
          ) where
 
-import Interfaces.Command
+import Interfaces.Command ( Command(CommentCmd) )
 import Interfaces.DataTypes
 import Interfaces.GenericATPState
 import qualified Interfaces.Command as IC
@@ -70,7 +74,7 @@ import Common.AS_Annotation (SenAttr (..), makeNamed, mapNamed)
 import qualified Common.Doc as Pretty
 import Common.Utils
 import qualified Control.Monad.Fail as Fail
-
+import Common.ResultT (ResultT(runResultT, ResultT))
 
 #ifdef UNI_PACKAGE
 import GUI.Utils
@@ -268,97 +272,126 @@ checkConservativityNode useGUI (nodeId, nodeLab) libEnv ln = do
                libEnv
          return (str, libEnv', history)
 
-checkConservativityEdge :: Bool -> LEdge DGLinkLab -> LibEnv -> LibName
-  -> IO (String, LibEnv, LEdge DGLinkLab, ProofHistory)
-checkConservativityEdge useGUI link@(source, target, linklab) libEnv ln
- = do
+getUsableConservativityCheckersForLogic :: Logic lid sublogics
+    basic_spec sentence symb_items symb_map_items
+    sign morphism symbol raw_symbol proof_tree
+    => lid -> IO [ConservativityChecker sign sentence morphism]
+getUsableConservativityCheckersForLogic lid = filterM (fmap isNothing . checkerUsable) $ conservativityCheck lid
 
-    Just (G_theory lidT _ sigT _ sensT _) <-
+
+getUsableConservativityCheckers :: LEdge DGLinkLab -> LibEnv -> LibName -> IO [G_conservativity_checker]
+getUsableConservativityCheckers (_, target, _) libEnv ln = do
+  Just (G_theory lidT _ _ _ _ _) <- return $ computeTheory libEnv ln target
+  usableCCs <- getUsableConservativityCheckersForLogic lidT
+  return $ G_conservativity_checker lidT <$> usableCCs
+
+
+checkConservativityEdgeWith ::  LEdge DGLinkLab -> LibEnv -> LibName -> G_conservativity_checker
+  -> IO (Result (Conservativity, G_theory, G_theory)) -- (conservativity, obligations holding in the source theory, obligations required to hold in an imported theory)
+checkConservativityEdgeWith (source, target, linklab) libEnv ln (G_conservativity_checker lidCC cc) = do
+  Just (G_theory lidT _ signT _ sensT _) <-
       return $ computeTheory libEnv ln target
-    GMorphism cid _ _ morphism _ <- return $ dgl_morphism linklab
-    morphism' <- coerceMorphism (targetLogic cid) lidT
-                 "checkconservativityOfEdge" morphism
-    let compMor = case dgn_sigma $ labDG (lookupDGraph ln libEnv) target of
+  Just (G_theory lidS _ signS _ sensS _) <-
+      return $ computeTheory libEnv ln source
+  cc' <- coerceConservativityChecker lidCC lidT "checkconservativityOfEdge0" cc
+  sensS' <- coerceThSens lidS lidT "checkconservativityOfEdge1" sensS
+  GMorphism cid _ _ morphism _ <- return $ dgl_morphism linklab
+  morphism' <- coerceMorphism (targetLogic cid) lidT
+                "checkconservativityOfEdge" morphism
+  let compMor = case dgn_sigma $ labDG (lookupDGraph ln libEnv) target of
           Nothing -> morphism'
           Just (GMorphism cid' _ _ morphism2 _) -> case
             coerceMorphism (targetLogic cid') lidT
-                   "checkconservativityOfEdge" morphism2
-               >>= comp morphism' of
-                 Result _ (Just phi) -> phi
-                 _ -> error "checkconservativityOfEdge: comp"
-    Just (G_theory lidS _ signS _ sensS _) <-
-      return $ computeTheory libEnv ln source
-    case coerceSign lidS lidT "checkconservativityOfEdge.coerceSign" signS of
-     Nothing -> return ( "no implementation for heterogeneous links"
-                       , libEnv, link, SizedList.empty)
-     Just signS' -> do
-      sensS' <- coerceThSens lidS lidT "checkconservativityOfEdge1" sensS
-      let transSensSrc = propagateErrors "checkConservativityEdge2"
-           $ mapThSensValueM (map_sen lidT compMor) sensS'
-      usableCs <- filterM (fmap isNothing . checkerUsable)
-        $ conservativityCheck lidT
-      checkerR <- conservativityChoser useGUI usableCs
-      case maybeResult checkerR of
-        Nothing -> return (concatMap diagString $ diags checkerR,
-                           libEnv, link, SizedList.empty)
-        Just theChecker -> do
-               let inputThSens1 = filter isAxiom $ toNamedList sensT
-                   transSrcSens = Set.fromList
-                      $ map sentence $ toNamedList transSensSrc
-                   inputThSens = filter
-                     ((`Set.notMember` transSrcSens) . sentence)
-                     inputThSens1
-                   showObls = show . Pretty.vsep
-                     . map (\ o -> print_named lidT .
+                  "checkconservativityOfEdge" morphism2
+              >>= comp morphism' of
+                Result _ (Just phi) -> phi
+                _ -> error "checkconservativityOfEdge: comp"
+  let sensTransS = propagateErrors "checkConservativityEdge2"
+        $ mapThSensValueM (map_sen lidT compMor) sensS'
+  let sensTransS' = Set.fromList $ map sentence $ toNamedList sensTransS
+      axiomsT = filter isAxiom $ toNamedList sensT
+      inputSensT = filter ((`Set.notMember` sensTransS') . sentence) axiomsT
+  case coerceSign lidS lidT "checkconservativityOfEdge.coerceSign" signS of
+    Nothing -> fail "no implementation for heterogeneous links"
+    Just signS' -> runResultT $ do
+      (consv, outputSensT) <- ResultT $ checkConservativity cc'
+                (plainSign signS', toNamedList sensS')
+                compMor inputSensT
+      let (explanations, obligations) = partition (`Set.member` sensTransS') outputSensT
+      let theoryForObligations sens = G_theory {
+            gTheoryLogic = lidT
+            , gTheorySyntax = Nothing
+            , gTheorySign = signT
+            , gTheorySignIdx = startSigId
+            , gTheorySens = toThSens $ fmap (\o -> (makeNamed "" o) {isAxiom = False}) sens
+            , gTheorySelfIdx = startThId
+          }
+      return (consv, theoryForObligations explanations, theoryForObligations obligations)
+
+conservativityResultToNewEdge :: LEdge DGLinkLab -> (Conservativity, G_theory, G_theory) -> (LEdge DGLinkLab, Bool)
+conservativityResultToNewEdge (source, target, linklab) (consv, _, G_theory { gTheorySens = obligations }) =
+  let consv' = if Map.null obligations then consv else Unknown "unchecked obligations"
+      (newDglType, edgeChanged) = case dgl_type linklab of
+        ScopedLink sc dl (ConsStatus consv'' cs op) ->
+            let np = if consv' >= consv''
+                      then Proven conservativityRule emptyProofBasis
+                      else LeftOpen
+            in (ScopedLink sc dl $
+                  ConsStatus consv'' (max cs $ max consv'' consv') np, np /= op)
+        t -> (t, False)
+  in ((source, target, linklab { dgl_type = newDglType }), edgeChanged)
+
+recordConservativityResult :: LEdge DGLinkLab -> LibEnv -> LibName -> (Conservativity, G_theory, G_theory) -> LibEnv
+recordConservativityResult edge@(source, target, linklab) libEnv ln checkResult =
+  let dg = lookupDGraph ln libEnv
+      (provenEdge, edgeChanged) = conservativityResultToNewEdge edge checkResult
+      edgeChanges = if edgeChanged then
+                  [ DeleteEdge (source, target, linklab)
+                  , InsertEdge provenEdge ] else []
+      nextDG = changesDGH dg edgeChanges
+  in if not edgeChanged then libEnv else
+    Map.insert ln (groupHistory dg conservativityRule nextDG) libEnv
+
+
+checkConservativityEdge :: Bool -> LEdge DGLinkLab -> LibEnv -> LibName
+  -> IO (String, LibEnv, LEdge DGLinkLab, ProofHistory)
+checkConservativityEdge useGUI link@(_, target, _) libEnv ln = do
+  Just (G_theory lidT _ sigT _ _ _) <-
+    return $ computeTheory libEnv ln target
+  usableCs <- getUsableConservativityCheckersForLogic lidT
+  checkerR <- conservativityChoser useGUI usableCs
+  case maybeResult checkerR of
+    Nothing -> return (concatMap diagString $ diags checkerR,
+                        libEnv, link, SizedList.empty)
+    Just theChecker -> do
+      Result ds res <- checkConservativityEdgeWith link libEnv ln (G_conservativity_checker lidT theChecker)
+      (_, showRes, newLibEnv, provenEdge) <- case res of
+            Just conservativityResult@(consv, G_theory {gTheoryLogic = lidR1, gTheorySens = explanations}, G_theory {gTheoryLogic = lidR2, gTheorySens = obligations}) -> do
+              explanations' <- toNamedList <$> coerceThSens lidR1 lidT "checkConservativityEdge" explanations
+              obligations' <- toNamedList <$> coerceThSens lidR2 lidT "checkConservativityEdge" obligations
+              let showObls = show . Pretty.vsep
+                    . map (print_named lidT .
                                      mapNamed (simplify_sen lidT
-                                        $ plainSign sigT)
-                           $ (makeNamed "" o) {isAxiom = False})
-               Result ds res <-
-                       checkConservativity theChecker
-                          (plainSign signS', toNamedList sensS')
-                          compMor inputThSens
-               let (cs', showRes) = case res of
-                     Just (cst, obs) ->
-                       let (exSens, resObls) = partition
-                              (`Set.member` transSrcSens) obs
-                       in (if null resObls then cst
-                           else Unknown "unchecked obligations"
-                       , "The link is " ++ showConsistencyStatus cst
-                         ++ case resObls of
-                              [] -> case exSens of
-                                [] -> ""
-                                _ -> " because of the following axioms:\n"
-                                  ++ showObls exSens
-                              _ -> " provided that the following obligations\n"
-                                ++ "hold in an imported theory:\n"
-                                ++ showObls resObls)
-                     Nothing -> (Unknown "Unknown"
-                       , "Could not determine whether link is conservative")
-                   consNew csv = if cs' >= csv
-                              then Proven conservativityRule emptyProofBasis
-                              else LeftOpen
-                   (newDglType, edgeChange) = case dgl_type linklab of
-                     ScopedLink sc dl (ConsStatus consv cs op) ->
-                       let np = consNew consv in
-                       (ScopedLink sc dl $
-                        ConsStatus consv (max cs $ max consv cs') np, np /= op)
-                     t -> (t, False)
-                   provenEdge = ( source
-                                , target
-                                , linklab { dgl_type = newDglType }
-                                )
-                   dg = lookupDGraph ln libEnv
-               let edgeChanges = if edgeChange then
-                            [ DeleteEdge (source, target, linklab)
-                            , InsertEdge provenEdge ] else []
-                   nextGr = changesDGH dg edgeChanges
-                   newLibEnv = if edgeChange then Map.insert ln
-                     (groupHistory dg conservativityRule nextGr) libEnv
-                     else libEnv
-                   history = snd $ splitHistory dg nextGr
-                   myDiags = showRelDiags 4 ds
-               return ( showRes ++ "\n" ++ myDiags
-                      , newLibEnv, provenEdge, history)
+                                        $ plainSign sigT))
+              let libEnv' = recordConservativityResult link libEnv ln conservativityResult
+              let (provenEdge', _) = conservativityResultToNewEdge link conservativityResult
+              return (if null obligations' then consv
+                else Unknown "unchecked obligations"
+                , "The link is " ++ showConsistencyStatus consv
+                ++ if null obligations' then
+                    (if null explanations' then ""
+                    else " because of the following axioms:\n"
+                      ++ showObls explanations')
+                  else " provided that the following obligations\n"
+                     ++ "hold in an imported theory:\n"
+                     ++ showObls obligations', libEnv', provenEdge')
+            Nothing -> return (Unknown "Unknown", "Could not determine whether link is conservative", libEnv, link)
+      let dg = lookupDGraph ln libEnv
+          newDG = lookupDGraph ln newLibEnv
+          history = snd $ splitHistory dg newDG
+          myDiags = showRelDiags 4 ds
+      return ( showRes ++ "\n" ++ myDiags
+              , newLibEnv, provenEdge, history)
 
 updateNodeProof :: LibName -> IntState -> LNode DGNodeLab
                 -> G_theory -> (IntState, [DGChange])

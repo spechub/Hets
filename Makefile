@@ -681,7 +681,7 @@ distclean: clean_stack realclean clean_genRules
 
 ### interactive
 ghci: $(derived_sources)
-	$(STACK_EXEC) ghci $(HC_OPTS)
+	$(STACK_EXEC) ghci -fobject-code $(HC_OPTS)
 
 ### build only, don't link. Target was formerly known as 'build'.
 build-hets: hets.hs

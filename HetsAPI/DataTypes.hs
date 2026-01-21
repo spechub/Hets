@@ -5,26 +5,40 @@ License     :  GPLv2 or higher, see LICENSE.txt
 -}
 module HetsAPI.DataTypes (
     Sentence
-  , SentenceByName
+  , TheorySentence
+  , TheorySentenceByName
   , SignatureJSON
   , SymbolJSON
   , GenericTransportType
-  , TheoryPointer) where
-import qualified Common.OrderedMap as OMap
+  , TheoryPointer
+  , LinkPointer) where
+
 import Data.ByteString.Lazy(ByteString)
+import Data.Graph.Inductive.Graph (LNode, LEdge)
 
+import Common.AS_Annotation(SenAttr(..))
 import Common.LibName (LibName)
-import Static.DevGraph (LibEnv, DGraph, DGNodeLab)
+import qualified Common.OrderedMap as OMap
 
-import Data.Graph.Inductive.Graph (LNode)
+import Logic.Comorphism (AnyComorphism(..))
+import Logic.Prover(ThmStatus(..))
+
+import Static.DevGraph (LibEnv, DGraph, DGNodeLab, DGLinkLab)
+import Static.GTheory (BasicProof(..))
+
+
 
 -- | In the API if it is not possible to export the generic type, they are converted to JSON.
 type GenericTransportType = ByteString
 
+
 type Sentence = GenericTransportType
-type SentenceByName = OMap.OMap String Sentence
+
+type TheorySentence = SenAttr Sentence (ThmStatus (AnyComorphism, BasicProof))
+type TheorySentenceByName = OMap.OMap String TheorySentence
 
 type SignatureJSON = GenericTransportType
 type SymbolJSON = GenericTransportType
 
 type TheoryPointer = (LibName, LibEnv, DGraph, LNode DGNodeLab)
+type LinkPointer = (LibName, LibEnv, LEdge DGLinkLab)
