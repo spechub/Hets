@@ -16,6 +16,8 @@ Parser for DOL documents
 module Syntax.Parse_AS_Library (library) where
 
 import Logic.Grothendieck
+import Logic.SemConstr
+import Logic.HDef
 import Syntax.AS_Structured
 import Syntax.AS_Library
 import Syntax.Parse_AS_Structured
@@ -41,6 +43,8 @@ import Control.Monad
 import qualified Control.Monad.Fail as Fail
 
 import Framework.AS
+
+import Debug.Trace
 
 lGAnnos :: LogicGraph -> AParser st (LogicGraph, [Annotation])
 lGAnnos lG = do
@@ -296,6 +300,35 @@ libItem l = specDefn l
        q <- optEnd
        return (Newlogic_defn (LogicDef n ml s m f p pa)
           (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
+  <|> -- newhlogic
+    do (n, s1) <- newhlogicP
+       s2 <- equalT
+       (Logic_name ln msubln _, b, s3) <-  baselogicP l <|> hlogicP l
+       let msubln' = case msubln of 
+                       Nothing -> Nothing
+                       Just tok -> Just $ tokStr tok
+       _ <- dotT
+       (semcs, _) <- do
+                     asKey constrS
+                     _ <- colonT
+                     constrs <- constrP `separatedBy` commaT
+                     _ <- dotT
+                     return constrs
+                     <|>
+                     return ([], [])
+       (lvars,_) <- do 
+                    asKey quantS
+                    _ <- colonT
+                    --_ <- oParenT
+                    vars <- varP `separatedBy` commaT
+                    _ <- dotT -- cParenT
+                    return vars
+                    <|>
+                    return ([],[])
+       q <- optEnd
+       let newHL = (Hlogic_defn (HLogicDef (show n) (ln, msubln') b (concat semcs) lvars) 
+                  (catRange $ [s1, s2, s3] ++ maybeToList q))
+       trace ("newHL:" ++ show newHL) $ return newHL
    <|> -- newcomorphism
      do (n, s1) <- newcomorphismP
         s2 <- equalT
@@ -308,6 +341,14 @@ libItem l = specDefn l
         q <- optEnd
         return (Newcomorphism_defn (ComorphismDef n ml s t sv pv mv)
            (catRange ([s1, s2, s3, s4, s5, s6, s7, s8] ++ maybeToList q)))
+  <|> --newhcomorphism
+     do (n, s1) <- newhcomorphismP
+        s2 <- equalT
+        (baseCom, _) <- basecomP 
+        (sourceH, _) <- sourceHLogicP
+        q <- optEnd
+        let newHCom = Hcom_defn (HComDef n baseCom sourceH) $ catRange $ [s1, s2] ++ maybeToList q
+        trace ("newHCom:" ++ show newHCom) $ return newHCom
   <|> -- just a spec (turned into "spec spec = sp")
      do p1 <- getPos
         a <- aSpec l
@@ -430,12 +471,121 @@ imports l = do
     (sps, ps) <- separatedBy (annoParser $ groupSpec l) anComma
     return (sps, catRange (s : ps))
 
+newhlogicP :: AParser st (IRI, Token)
+newhlogicP = do
+  s <- asKey newhlogicS
+  n <- simpleId
+  return (simpleIdToIRI n, s)
+
+baselogicP :: LogicGraph -> AParser st (Logic_name, Bool, Token)
+baselogicP lg = do 
+  s <- asKey baselogicS
+  _ <- colonT
+  ln <- logicName lg
+  return (ln, False, s)
+
+newhcomorphismP :: AParser st (String, Token)
+newhcomorphismP = do
+  s <- asKey hcomS
+  n <- simpleId
+  return (show n, s)
+
+basecomP :: AParser st (String, Token)
+basecomP = do 
+  s <- asKey basecomS
+  _ <- colonT
+  n <- simpleId
+  return (show n, s)
+
+sourceHLogicP :: AParser st (String, Token)
+sourceHLogicP = do 
+  s <- asKey sourceHLogicS
+  _ <- colonT
+  n <- simpleId
+  return (show n, s)
+
+hlogicP :: LogicGraph -> AParser st (Logic_name, Bool, Token)
+hlogicP lg = do 
+  s <- asKey hlogicS
+  _ <- colonT
+  ln <- logicName lg
+  return (ln, True, s)
+
 newlogicP :: AParser st (IRI, Token)
 newlogicP = do
   s <- asKey newlogicS
   n <- simpleId
   return (simpleIdToIRI n, s)
 
+constrP :: AParser st [SemanticConstraint]
+constrP = do
+  _ <- asKey reflexiveS
+  return [ReflexiveMod]
+  <|> do
+  _ <- asKey transitiveS
+  return [TransitiveMod]
+  <|> do
+  _ <- asKey symmetricS
+  return [SymmetricMod]
+  <|> do
+  _ <- asKey serialS
+  return [SerialMod]
+  <|> do
+  _ <- asKey euclideanS
+  return [EuclideanMod]
+  <|> do
+  _ <- asKey functionalConstrS
+  return [FunctionalMod]
+  <|> do
+  _ <- asKey linearS
+  return [LinearMod]
+  <|> do
+  _ <- asKey totalS
+  return [TotalMod]
+  <|> do
+   _ <- asKey sameInterpretationS
+   _ <- oParenT
+   (s, _) <- (scanAnyWords `separatedBy` skip) `separatedBy` commaT
+   _ <- cParenT
+   return $ map (\x -> SameInterpretation $ concat $ intersperse " " $ fst x ) s
+  <|> do
+   _ <- asKey sameDomainS
+   _ <- oParenT
+   s <- do 
+         i1 <- simpleId
+         s2 <- do 
+           _ <- skip
+           i2 <- simpleId
+           return $ show i2
+           <|> do
+           return ""
+         return $ if null s2 then show i1 else show i1 ++ " " ++ s2
+   _ <- cParenT
+   case s of 
+     "partial" -> return $ [SameDomain False]
+     "rigid partial" -> return $ [SameDomain True]
+     _ -> error $ "unknown same domain contraint:" ++ show s
+
+varP :: AParser st (String, Maybe Token)
+varP = {- do
+   (s, _) <- simpleId `separatedBy` skip
+   return (concat $ map show s, Nothing) 
+   <|> -} do 
+   s1 <- simpleId
+   (tailStr, mt) <- do 
+     _s <- doubleColonT
+     s2 <- simpleId
+     return $ ("", Just s2)
+     <|> do
+     _ <- skip
+     (s, _) <- simpleId `separatedBy` skip
+     let strs = intersperse " " $ map show s
+     return (concat strs, Nothing)
+     <|> do
+     return ("", Nothing)
+   if show s1 == "rigid" then return (tailStr, mt)
+   else return (show s1 ++ (if null tailStr then "" else " " ++ tailStr), mt)
+    
 metaP :: AParser st (FRAM, Token)
 metaP = do
   s <- asKey metaS

@@ -160,7 +160,9 @@ instance PrettyLG LIB_ITEM where
             fsep ((pretty l <+> keyword getS) : prettyDownloadItems ab)
         Logic_decl aa _ -> pretty aa
         Newlogic_defn nl _ -> pretty nl
+        Hlogic_defn nl _ -> pretty nl
         Newcomorphism_defn nc _ -> pretty nc
+        Hcom_defn nc _ -> pretty nc
 
 instance PrettyLG OmsOrNetwork where
    prettyLG lg s = case s of

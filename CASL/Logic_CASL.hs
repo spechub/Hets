@@ -47,7 +47,7 @@ import CASL.OMDocExport
 import CASL.Freeness
 
 -- test
-import CASL.Formula (formula)
+import CASL.Formula (formula, primFormula)
 
 #ifdef UNI_PACKAGE
 import CASL.QuickCheck
@@ -228,10 +228,13 @@ instance Sentences CASL CASLFORMULA CASLSign CASLMor Symbol where
       symmap_of CASL = morphismToSymbMap
       sym_name CASL = symName
       symKind CASL = show . pretty . symbolKind . symbType
+      extSymKind CASL = extSymbolKind . symbType
       symsOfSen CASL _ = Set.toList
         . foldFormula (symbolsRecord $ const Set.empty)
       simplify_sen CASL = simplifyCASLSen
       print_named CASL = printTheoryFormula
+      -- test nominals
+      is_nominal_sen CASL = isNominalSen 
 
 instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
                SYMB_ITEMS SYMB_MAP_ITEMS
@@ -240,6 +243,7 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
                Symbol RawSymbol where
          basic_analysis CASL = Just basicCASLAnalysis
          sen_analysis CASL = Just cASLsen_analysis
+         convertTheory CASL = Just convertCASLTheory
          stat_symb_map_items CASL = statSymbMapItems
          stat_symb_items CASL = statSymbItems
          signature_colimit CASL diag = return $ signColimit diag extCASLColimit
@@ -249,13 +253,16 @@ instance StaticAnalysis CASL CASLBasicSpec CASLFORMULA
 
          qualify CASL = qualifySig
          symbol_to_raw CASL = symbolToRaw
+         raw_to_symbol CASL = rawToSymbol
          id_to_raw CASL = idToRaw
          matches CASL = CASL.Morphism.matches
          is_transportable CASL = isSortInjective
          is_injective CASL = isInjective
+         raw_to_var CASL = rawToVar 
 
          empty_signature CASL = emptySign ()
          add_symb_to_sign CASL = addSymbToSign
+         add_noms_to_sign CASL = addNomsToSign
 
          signature_union CASL s = return . addSig const s
          signatureDiff CASL s = return . diffSig const s
@@ -278,6 +285,7 @@ instance Logic CASL CASL_Sublogics
          stability CASL = Stable
          -- for Hybridization
          parse_basic_sen CASL = Just $ \ _ -> formula []
+         parse_prim_formula CASL = Just $ const (primFormula [])
 
          proj_sublogic_epsilon CASL = pr_epsilon ()
          all_sublogics CASL = sublogics_all []
@@ -295,6 +303,20 @@ instance Logic CASL CASL_Sublogics
          addOMadtToTheory CASL = OMI.addOMadtToTheory
          addOmdocToTheory CASL = OMI.addOmdocToTheory
          syntaxTable CASL = Just . getSyntaxTable
+         constr_to_sens CASL = constrToSens
+         -- helpers for hybridization
+           -- for each type, its name and the file where it is defined
+         sublogicsTypeName CASL = ("CASL_Sublogics","CASL.Sublogic")
+         basicSpecTypeName CASL = ("CASLBasicSpec","CASL.Logic_CASL")
+         sentenceTypeName CASL = ("CASLFORMULA","CASL.AS_Basic_CASL")
+         symbItemsTypeName CASL = ("SYMB_ITEMS","CASL.AS_Basic_CASL")
+         symbMapItemsTypeName CASL = ("SYMB_MAP_ITEMS","CASL.AS_Basic_CASL")
+         signTypeName CASL = ("CASLSign","CASL.Sign")
+         morphismTypeName CASL = ("CASLMor","CASL.Morphism")
+         symbolTypeName CASL = ("Symbol","")
+         rawSymbolTypeName CASL = ("RawSymbol","CASL.Morphism")
+         proofTreeTypeName CASL = ("ProofTree","Common.ProofTree") 
+
 #ifdef UNI_PACKAGE
          provers CASL =
            [ quickCheckProver

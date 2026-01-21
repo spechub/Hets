@@ -138,6 +138,9 @@ class (Language cid,
     -- expansion preserves satisfaction
     eps :: cid -> Bool
     eps _ = True
+    -- helpers for hybridization
+    com_path :: cid -> String
+    com_path _ = ""
     -- a comorphism is a generalized theoroidal comorphism (GTC)
     -- if the presence of an axiom in a theory
     -- impacts on the signature of the translated theory along the GTC

@@ -192,7 +192,10 @@ unsafeToSig _ = unsafeCoerce
    type associated with l. -}
 undFormAna :: (StaticAnalysis l bs sen si smi sign mor symb raw) =>
                 l -> a -> b -> bs -> Result sen
-undFormAna l a b c = (maybeE 4 $ sen_analysis l) (c, a', b')
+undFormAna l a b c = let Result df mx = (maybeE 4 $ sen_analysis l) (c, a', b')
+                     in case mx of 
+                         Nothing -> Result df Nothing
+                         Just (s, _) -> Result df $ Just s
         where a' = unsafeToSig l a
               b' = unsafeToForm l b
 

@@ -13,6 +13,8 @@ module Framework.Analysis
      ( anaLogicDef
      , anaComorphismDef
      , addLogic2LogicList
+     , addHLogic
+     , addComorphism2ComorphismList
      ) where
 
 import Framework.AS
@@ -185,6 +187,17 @@ addLogic2LogicList l = do
       else
       writeFile file contentsNew
     Left er -> error $ show er
+
+addHLogic :: String -> IO ()
+addHLogic hld = do
+  let file = dynLogicsDir ++ "/" ++ dynLogicsFile
+  contentsOld <- readFile file
+  let res = runParser (parserh hld) (emptyAnnos ()) "" contentsOld
+  case res of 
+    Right contentsNew -> 
+     writeFile file contentsNew
+    Left er -> error $ show er
+
 {- ----------------------------------------------------------------------------
 Comorphism analysis -}
 
@@ -380,11 +393,90 @@ parser l = do
                    do (xs, _) <- logParser `separatedBy` commaT
                       cBracketT
                       return xs
-
+  hlg_var_decl <- do v <- asStr "dynHLogicList"
+                     s <- asStr "::"
+                     t <- do oBracketT
+                             oParenT
+                             asStr "String"
+                             commaT
+                             asStr "HLogicDef"
+                             cParenT
+                             cBracketT
+                             return "[(String, HLogicDef)]"
+                     return $ unwords [v, s, t]
+  hlog_var_def <- do v <- asStr "dynHLogicList"
+                     s <- asStr "="
+                     return $ unwords [v, s]
+  hlog_list <- do oBracketT
+                  (do cBracketT
+                      return [])
+                   <|>
+                   do (xs, _) <- hLogParser `separatedBy` commaT
+                      cBracketT
+                      return xs
   return $ header ++ mod_decl ++ "\n\n" ++
            intercalate "\n" (imps ++ [l_imp]) ++ "\n\n" ++
            log_var_decl ++ "\n" ++ log_var_def ++ " " ++ "[" ++
-           intercalate ", " (log_list ++ [l_log]) ++ "]"
+           intercalate ", " (log_list ++ [l_log]) ++ "]" ++ "\n\n" ++
+           hlg_var_decl ++ "\n" ++ hlog_var_def ++ " " ++ "[\n   " ++
+           (intercalate "  ,\n" hlog_list) ++ " ]"
+
+parserh :: String -> AParser st String
+parserh hlog = do  
+  header <- skipUntil "module"
+  mod_decl <- do m <- asStr "module"
+                 n <- moduleName
+                 w <- asStr "where"
+                 return $ unwords [m, n, w]
+  imps <- many1 $ do
+             i <- asStr "import"
+             n <- moduleName
+             return $ unwords [i, n]
+  log_var_decl <- do v <- asStr dynLogicsCon
+                     s <- asStr "::"
+                     t <- do oBracketT
+                             asStr "AnyLogic"
+                             cBracketT
+                             return "[AnyLogic]"
+                     return $ unwords [v, s, t]
+  log_var_def <- do v <- asStr dynLogicsCon
+                    s <- asStr "="
+                    return $ unwords [v, s]
+  log_list <- do oBracketT
+                 (do cBracketT
+                     return [])
+                   <|>
+                   do (xs, _) <- logParser `separatedBy` commaT
+                      cBracketT
+                      return xs
+  hlg_var_decl <- do v <- asStr "dynHLogicList"
+                     s <- asStr "::"
+                     t <- do oBracketT
+                             oParenT
+                             asStr "String"
+                             commaT
+                             asStr "HLogicDef"
+                             cParenT
+                             cBracketT
+                             return "[(String, HLogicDef)]"
+                     return $ unwords [v, s, t]
+  hlog_var_def <- do v <- asStr "dynHLogicList"
+                     s <- asStr "="
+                     return $ unwords [v, s]
+  hlog_list <- do oBracketT
+                  (do cBracketT
+                      return [])
+                   <|>
+                   do (xs, _) <- hLogParser `separatedBy` commaT
+                      cBracketT
+                      return xs
+  return $ header ++ mod_decl ++ "\n\n" ++
+           intercalate "\n" imps ++ "\n\n" ++
+           log_var_decl ++ "\n" ++ log_var_def ++ " " ++ "[" ++
+           intercalate ", " log_list ++ "]" ++ "\n\n" ++
+           hlg_var_decl ++ "\n" ++ hlog_var_def ++ " " ++ "[\n   " ++
+           intercalate "\n  ," (hlog_list ++ [hlog]) ++ " ]" 
+
 
 parserc :: String -> AParser st String
 parserc c = do
@@ -440,6 +532,81 @@ moduleName = do
   dotT
   n <- simpleId
   return $ tokStr m ++ "." ++ tokStr n
+
+hLogParser :: AParser st String
+hLogParser = do
+ l <- asStr "("
+ char '"'
+ k <- simpleId
+ char '"'
+ c <- asStr ","
+ hld <- asStr "HLogicDef"
+ char '"'
+ hldn <- simpleId
+ char '"'
+ let parseHQ = do 
+      l1 <- asStr "("
+      char '"'
+      (strs, _) <- scanAnyWords `separatedBy` skip --TODO: this should only work for quants but not for logics!
+      let lg = concat $ intersperse " " strs
+      char '"'
+      c1 <- asStr ","
+      subl <- do 
+         n <- asStr "Nothing"
+         return n 
+         <|> do
+         j <- asStr "Just"
+         char '"'
+         sub <- simpleId
+         char '"'
+         return $ j ++ " \"" ++ tokStr sub ++ "\""
+      r1 <- asStr ")"
+      return $ l1 ++ "\"" ++ lg ++ "\"" ++ c1 ++ " " ++ subl ++ r1  
+      <|> return ""
+      
+     parseConstr =  do
+      s <- asStr "ReflexiveMod" 
+           <|> asStr "TransitiveMod"
+           <|> asStr "SymmetricMod" 
+           <|> asStr "SerialMod"
+           <|> asStr "EuclideanMod"
+           <|> asStr "FunctionalMod"
+           <|> asStr "LinearMod"
+           <|> asStr "TotalMod"
+           <|> do
+            s1 <- asStr sameInterpretationS
+            char '"' -- _oP <- oParenT
+            (str, _) <- scanAnyWords `separatedBy` skip -- ) `separatedBy` commaT
+            char '"' -- _cP <- cParenT
+            return $ s1 ++ "\""  ++ (concat $ intersperse " " str) ++ "\"" 
+            -- this needs testing!
+           <|> do
+            s1 <- asStr sameDomainS
+            _ <- skip
+            arg <- asStr "False" <|> asStr "True"
+            _ <- skip
+            return $ s1 ++ " " ++ arg
+           <|> do
+            return "" 
+      return s 
+    
+ hldb <- parseHQ
+ hldf <- asStr "True" <|> asStr "False"
+ _ <- oBracketT
+ (hldc, _) <- parseConstr `separatedBy` commaT
+ _ <- cBracketT
+ _ <- oBracketT
+ (hldq, _) <- parseHQ `separatedBy` commaT
+ _ <- cBracketT
+-- HLogicDef aString  
+--           (bString, Nothing) | (bString, Just cString) 
+--           True | False
+--           [semconstr] -- still need a parser for this one!
+--           [(String, Nothing) | (String, Just String) `separatedBy`]
+ let hldString = intercalate " " 
+                  [hld, "\"" ++ tokStr hldn ++ "\"", hldb, hldf, "[" ++ (intercalate "," hldc) ++ "]",  "[" ++ (intercalate "," hldq) ++ "]"]
+ r <- asStr ")"
+ return $ l ++ "\"" ++  tokStr k ++ "\"" ++ c ++ " " ++ hldString ++ r
 
 logParser :: AParser st String
 logParser = do

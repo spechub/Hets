@@ -456,6 +456,16 @@ Some manual intervention is still required: a parser and a semantics analyser fo
 logic need to be declared at source code level.
 Currently, the hybridised versions of the following logics may be used in a fully automatic way:
 Propositional, CASL, CoCASL, and any other logic already hybridised.
+
+\item[RigidCASL] is an extension of \CASL with markers for rigidity of symbols.
+This is needed in hybridisation.
+
+\item[HPAR] is the hybridisation of RigidCASL used in the main example of \cite{DBLP:journals/mscs/DiaconescuM16}. Unlike HybridCASL, it features quantification on nominals.
+
+\item[GenHyb] is the Hets implementation of the H method\footnote{See \url{http://imar.ro/~diacon/forver/forver.html}}
+of hybridisation of arbitrary institutions and of institution comorphisms \cite{DBLP:journals/lu/Diaconescu20}. It is a more recent implementation than Hybrid and it allows to specify the parameters of the hybridisation method. Hets analyses these parameters and generates source code. 
+The new logic or logic translation is made available after a recompilation of the Hets sources. Details about the Hets implementation can be found in 
+\cite{DBLP:conf/calco/Codescu19}.
 \end{description}
 
 Various logics are supported with proof tools. Proof support for the

@@ -107,6 +107,7 @@ import Logic.ExtSign
 import Logic.Logic
 import Logic.Modification
 import Logic.Morphism
+import Logic.HDef
 
 import ATerm.Lib
 
@@ -437,6 +438,7 @@ data LogicGraph = LogicGraph
     , currentSublogic :: Maybe G_sublogics
     , currentTargetBase :: Maybe (LibName, String)
     , sublogicBasedTheories :: Map.Map AnyLogic SublogicBasedTheories
+    , knownHybLogics :: Map.Map String HLogicDef
     , comorphisms :: Map.Map String AnyComorphism
     , inclusions :: Map.Map (String, String) AnyComorphism
     , unions :: Map.Map (String, String) (AnyComorphism, AnyComorphism)
@@ -456,6 +458,7 @@ emptyLogicGraph = LogicGraph
     , currentSublogic = Nothing
     , currentTargetBase = Nothing
     , sublogicBasedTheories = Map.empty
+    , knownHybLogics = Map.empty 
     , comorphisms = Map.empty
     , inclusions = Map.empty
     , unions = Map.empty

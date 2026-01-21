@@ -18,7 +18,7 @@ import OWL2.AS
 import OWL2.Keywords hiding (comment)
 import OWL2.ColonKeywords
 
-import Common.Keywords
+import Common.Keywords hiding (reflexiveS, transitiveS, symmetricS)
 import Common.IRI
 import Common.Id (stringToId)
 import Common.Lexer

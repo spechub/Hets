@@ -24,7 +24,7 @@ import qualified Common.Lib.MapSet as MapSet
 
 import Hybrid.AS_Hybrid
 import Hybrid.HybridSign
-import Hybrid.Keywords
+import Hybrid.Keywords ()
 import qualified Data.Map as Map
 
 

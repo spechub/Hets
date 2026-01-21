@@ -29,6 +29,7 @@ import Data.Typeable
 
 import Logic.Grothendieck
 import Logic.Logic
+import Logic.HDef
 
 import Syntax.AS_Architecture
 import Syntax.AS_Structured
@@ -82,6 +83,10 @@ data LIB_ITEM = Spec_defn SPEC_NAME GENERICITY (Annoted SPEC) Range
               -- pos:  "newlogic", Logic_name, "=", opt "end"
               | Newcomorphism_defn ComorphismDef Range
               -- pos: "newcomorphism", Comorphism_name, "=", opt "end"
+              | Hlogic_defn HLogicDef Range
+              -- pos: "newhlogic", Logic_name, "=", opt "end"
+              | Hcom_defn HComDef Range
+              -- pos: "newhcomorphism", Comorphism_name, "=", opt "end"
                 deriving (Show, Typeable)
 
 data AlignSem = SingleDomain | GlobalDomain | ContextualizedDomain

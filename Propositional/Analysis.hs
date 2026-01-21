@@ -22,6 +22,8 @@ module Propositional.Analysis
     , inducedFromToMorphism
     , signatureColimit
     , pROPsen_analysis
+    , pSymsOfSen
+    , constrToSens
     )
     where
 
@@ -41,6 +43,16 @@ import qualified Data.Set as Set
 import qualified Propositional.AS_BASIC_Propositional as AS_BASIC
 import qualified Propositional.Morphism as Morphism
 import qualified Propositional.Symbol as Symbol
+
+import Logic.SemConstr
+import qualified CASL.AS_Basic_CASL as CBasic
+
+constrToSens :: Sign.Sign -> String -> SemanticConstraint -> Result.Result ([AS_Anno.Named CBasic.CASLFORMULA])
+constrToSens _ _ sc =
+ case sc of
+  SameInterpretation "prop" -> error $ "Same interpretation of propositions implies identical local models"
+  SameInterpretation k -> error $ "invalid kind for logic Propositional:" ++ k
+  _ -> error $ "invalid constraint for logic Propositional:" ++ show sc 
 
 -- | Datatype for formulas with diagnosis data
 data DIAG_FORM = DiagForm
@@ -336,10 +348,23 @@ signatureColimit graph = do
 
 
 pROPsen_analysis :: (AS_BASIC.BASIC_SPEC, Sign.Sign, AS_BASIC.FORMULA)
-  -> Result.Result AS_BASIC.FORMULA
+  -> Result.Result (AS_BASIC.FORMULA, AS_BASIC.FORMULA)
 pROPsen_analysis (_, s, f) =
         let x = addFormula [] (NumForm annoF 0) s
             h = return . diagnosis . head
-            g = Just . AS_Anno.sentence . formula . head
+            g = AS_Anno.sentence . formula . head
             annoF = AS_Anno.Annoted f Id.nullRange [] []
-        in Result.Result (h x) (g x)
+            gx = g x
+        in Result.Result (h x) $ Just (gx, gx)
+
+pSymsOfSen :: Sign.Sign -> AS_BASIC.FORMULA -> [Symbol.Symbol]
+pSymsOfSen sig sen = 
+ case sen of
+  AS_BASIC.False_atom _ -> []
+  AS_BASIC.True_atom _ -> []
+  AS_BASIC.Predication tok -> [Symbol.Symbol $ Id.simpleIdToId tok]
+  AS_BASIC.Negation f _ -> pSymsOfSen sig f
+  AS_BASIC.Conjunction fs _ -> concatMap (pSymsOfSen sig) fs
+  AS_BASIC.Disjunction fs _ -> concatMap (pSymsOfSen sig) fs
+  AS_BASIC.Implication f1 f2 _ -> (pSymsOfSen sig f1) ++ (pSymsOfSen sig f2)
+  AS_BASIC.Equivalence f1 f2 _ -> (pSymsOfSen sig f1) ++ (pSymsOfSen sig f2)

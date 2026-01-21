@@ -54,8 +54,8 @@ atS = "@"
 hereS :: String
 hereS = "Here"
 
-nominalS :: String
-nominalS = "nominal"
+--nominalS :: String
+--nominalS = "nominal"
 
 timeS :: String
 timeS = "time"

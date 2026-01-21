@@ -22,6 +22,9 @@ multiOpt = "MultiParamTypeClasses"
 synOpt :: String
 synOpt = "TypeSynonymInstances"
 
+flexOpt :: String
+flexOpt = "FlexibleInstances"
+
 prefixBy :: String -> [String] -> [String]
 prefixBy s = map (s ++)
 

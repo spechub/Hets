@@ -32,7 +32,7 @@ import System.Exit (exitFailure)
 
 import Common.Result
 
-import Logic.Logic (provers, AnyLogic (Logic), top_sublogic) -- hiding (top)
+import Logic.Logic (provers, AnyLogic (Logic), top_sublogic, language_name) -- hiding (top)
 import Logic.Coerce ()
 import Logic.Grothendieck
 import Logic.Comorphism
@@ -44,6 +44,7 @@ import CASL.Sublogic
 import Comorphisms.QBF2Prop
 import Comorphisms.Prop2QBF
 import Comorphisms.Prop2CASL
+--import Comorphisms.HPropNoms2CASL -- TODO: remove import
 import Comorphisms.CASL2SubCFOL
 import Comorphisms.CASL2PCFOL
 import Comorphisms.CASL2HasCASL
@@ -51,6 +52,7 @@ import Comorphisms.CFOL2IsabelleHOL
 import Comorphisms.CommonLogic2IsabelleHOL
 import Comorphisms.CSMOF2CASL
 #ifdef CASLEXTENSIONS
+import Comorphisms.HPAR2CASL
 import Comorphisms.CoCASL2CoPCFOL
 import Comorphisms.CoCASL2CoSubCFOL
 import Comorphisms.CoCFOL2IsabelleHOL
@@ -74,6 +76,8 @@ import Comorphisms.Haskell2IsabelleHOLCF
 #endif
 import Comorphisms.SuleCFOL2TPTP
 import Comorphisms.LogicList
+
+import Comorphisms.DynComorphismList
 
 type KnownProversMap = Map.Map String [AnyComorphism]
 type KnownConsCheckersMap = Map.Map String [AnyComorphism]
@@ -190,6 +194,8 @@ spassComorphisms =
        csmof2casl <- compSPASS (Comorphism CSMOF2CASL)
 #ifdef CASLEXTENSIONS
 -- hybrid
+       --hpropnoms2SPASS <- compSPASS $ Comorphism HPropNoms2CASL
+       hpar2SPASS <- compSPASS $ Comorphism HPAR2CASL
        hybr2SPASS <- compComorphism (Comorphism Hybrid2CASL) partOut
        prop2SPASS <- compComorphism (Comorphism Prop2CASL) partOut
        casl_dl2SPASS <- compComorphism (Comorphism CASL_DL2CASL) partOut
@@ -204,11 +210,16 @@ spassComorphisms =
        {- Fixme: constraint empty mapping is not available after Modal2CASL
        mod2SPASS <- compComorphism (Comorphism Modal2CASL) partSubOut
        CommonLogic -}
-       return
+       dynSpassList <- mapM compSPASS
+                       $ filter (\(Comorphism cid) -> let tLid = targetLogic cid in language_name tLid == "CASL")
+                       dynComorphismList
+       return $
          [ Comorphism suleCFOL2TPTP
          , partOut
          , partSubOut
 #ifdef CASLEXTENSIONS
+         --, hpropnoms2SPASS
+         , hpar2SPASS
          , prop2SPASS
          , casl_dl2SPASS
          , maude2SPASS
@@ -221,7 +232,7 @@ spassComorphisms =
 #ifndef NOOWLLOGIC
          , owl2spass
 #endif
-         ]
+         ] ++ dynSpassList
 
 quickCheckComorphisms :: Result [AnyComorphism]
 quickCheckComorphisms = do

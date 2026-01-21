@@ -19,6 +19,7 @@ module Propositional.Parse_AS_Basic
   , symbItems
   , symbMapItems
   , impFormula
+  , primFormula
   ) where
 
 import Common.AnnoState
