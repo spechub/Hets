@@ -57,6 +57,8 @@ import Data.Char (isSpace)
 import Data.List (isPrefixOf)
 import Data.Maybe
 
+import UML.Parser
+
 noPrefix :: QName -> Bool
 noPrefix = isNothing . qPrefix
 
@@ -68,6 +70,9 @@ isPpXml q = qName q == "Lib" && noPrefix q
 
 isDMU :: QName -> Bool
 isDMU q = qName q == "ClashResult" && noPrefix q
+
+isXMI :: QName -> Bool 
+isXMI q = qName q == "XMI"
 
 isRDF :: QName -> Bool
 isRDF q = qName q == "RDF" && qPrefix q == Just "rdf"
@@ -87,8 +92,13 @@ guessXmlContent isXml str = case dropWhile isSpace str of
       | isDMU q -> Left "unexpected DMU xml format"
       | isPpXml q -> Left "unexpected pp.xml format"
       | null (qName q) || not isXml -> Right GuessIn
+      | isUMLCDroot e-> Right UMLCDXmi
       | otherwise -> Left $ "unknown XML format: " ++ tagEnd q ""
  _ -> Right GuessIn  -- assume that it is no xml content
+
+isUMLCDroot :: Element -> Bool 
+isUMLCDroot el0 = not $ isNothing $ findModelElement el0 
+
 
 isDgXmlFile :: HetcatsOpts -> FilePath -> String -> Bool
 isDgXmlFile opts file content = guess file (intype opts) == DgXml

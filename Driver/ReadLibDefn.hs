@@ -34,6 +34,7 @@ import QVTR.ParseQvtAsLibDefn
 import TPTP.ParseAsLibDefn
 import FreeCAD.Logic_FreeCAD
 
+import Data.Maybe 
 import Driver.Options
 import Driver.ReadFn
 
@@ -42,10 +43,14 @@ import Common.Result
 import Common.ResultT
 
 import Text.ParserCombinators.Parsec
+import Text.XML.Light
 
 import Control.Monad.Trans (MonadIO (..))
 import qualified Control.Monad.Fail as Fail
 import Data.List
+
+import UML.ParseUMLAsLibDefn
+import UML.Parser
 
 mimeTypeMap :: [(String, InType)]
 mimeTypeMap =
@@ -96,8 +101,12 @@ guessInput opts mr file input =
       _ -> return $ joinFileTypes fty ty
   else return fty
 
+isUMLCDroot :: Element -> Bool 
+isUMLCDroot el0 = not $ isNothing $ findModelElement el0 
+
 readLibDefn :: LogicGraph -> HetcatsOpts -> Maybe String
   -> FilePath -> FilePath -> String -> ResultT IO [LIB_DEFN]
+
 readLibDefn lgraph opts mr file fileForPos input =
     if null input then Fail.fail ("empty input file: " ++ file) else
     case intype opts of
@@ -112,7 +121,12 @@ readLibDefn lgraph opts mr file fileForPos input =
 #ifdef RDFLOGIC
      -- RDFIn -> liftIO $ parseRDF file
 #endif
-      Xmi -> return [parseXmi file input]
+      UMLCDXmi -> liftIO $ fmap (: []) $  parseUMLCDasLibDefn file
+      Xmi -> liftIO $ fmap (: []) $ case parseXMLDoc input of 
+                                        Nothing -> error "empty XMI" 
+                                        Just e -> case isUMLCDroot e of 
+                                            True -> parseUMLCDasLibDefn file
+                                            False ->  parseXmi file input
       Qvt -> liftIO $ fmap (: []) $ parseQvt file input
       TPTPIn -> parseTPTP opts file input
 #ifndef NOOWLLOGIC

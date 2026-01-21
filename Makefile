@@ -120,7 +120,7 @@ logics = CASL HasCASL Isabelle Modal Hybrid TopHybrid Temporal \
     CoCASL COL CspCASL CASL_DL \
     SoftFOL ConstraintCASL Propositional RelationalScheme VSE OMDoc DFOL \
     LF Framework Maude ExtModal CommonLogic CSL QBF Adl HolLight Fpl THF \
-    FreeCAD OWL2 RDF CSMOF QVTR TPTP NeSyPatterns
+    FreeCAD OWL2 RDF CSMOF QVTR TPTP UML NeSyPatterns
 
 TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Haskell/wrap.hs Isabelle/isa.hs Syntax/hetpa.hs \
@@ -362,6 +362,8 @@ RDF_files = RDF/AS.hs RDF/Symbols.hs RDF/Sign.hs RDF/Morphism.hs \
 
 CSMOF_files = CSMOF/As.hs CSMOF/Sign.hs
 
+UML_files = UML/UML.hs UML/Sign.hs UML/Morphism.hs UML/StateMachine.hs
+
 QVTR_files = QVTR/As.hs QVTR/Sign.hs
 
 TPTP_files = TPTP/AS.hs TPTP/Sign.hs TPTP/Sublogic.hs
@@ -470,6 +472,9 @@ RDF/ATC_RDF.der.hs: $(RDF_files) $(GENRULES)
 
 CSMOF/ATC_CSMOF.der.hs: $(CSMOF_files) $(GENRULES)
 	$(GENRULECALL) -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances -o $@ $(CSMOF_files)
+
+UML/ATC_UML.der.hs: $(UML_files) $(GENRULES)
+	$(GENRULECALL) -i Common.ATerm.ConvInstances -o $@ $(UML_files)
 
 QVTR/ATC_QVTR.der.hs: $(QVTR_files) CSMOF/ATC_CSMOF.hs $(GENRULES)
 	$(GENRULECALL) -i CSMOF.ATC_CSMOF -i Common.ATerm.ConvInstances -i Common.Json.ConvInstances \

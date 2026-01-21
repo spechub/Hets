@@ -539,6 +539,7 @@ data InType =
   | CommonLogicIn Bool  -- ^ "clf" or "clif" ('True' is long version)
   | DgXml
   | Xmi
+  | UMLCDXmi
   | Qvt
   | TPTPIn
   | HtmlIn -- just to complain
@@ -570,6 +571,7 @@ instance Show InType where
     Xmi -> "xmi"
     Qvt -> "qvt"
     HtmlIn -> "html"
+    UMLCDXmi -> "UMLCD"
 
 -- maybe this optional tree prefix can be omitted
 instance Read InType where

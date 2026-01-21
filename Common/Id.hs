@@ -91,7 +91,7 @@ data Token = Token { tokStr :: String
                    } deriving (Eq, Ord, Typeable, Data)
 
 instance Show Token where
-  show = tokStr
+  show x = "(mkSimpleId "++['"'] ++ (tokStr x) ++ ['"'] ++ ")"
 
 instance Read Token where
   readsPrec i = map (\ (a, r) -> (mkSimpleId a, r)) . readsPrec i
