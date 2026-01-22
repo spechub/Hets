@@ -130,11 +130,11 @@ TESTTARGETFILES += Scratch.hs CASL/fromKif.hs CASL/capa.hs HasCASL/hacapa.hs \
     Comorphisms/test/sublogicGraph.hs PGIP/ParseProofScript.hs \
     Common/testxupdate.hs Common/testxpath.hs \
     SoftFOL/dfg.hs Adl/adl.hs GUI/displayDependencyGraph.hs \
-	OWL2/scripts/runTest.hs
+	OWL2/scripts/runTest.hs Propositional/test/TestSublogics.hs
 
 ### list of directories to run checks in
 TESTDIRS += Common CASL Fpl/test HasCASL test ExtModal/Tries \
-    CommonLogic/TestData OWL2/tests
+    CommonLogic/TestData OWL2/tests Propositional/test
 
 hs_clean_files = Haskell/TiATC.hs Haskell/TiDecorateATC.hs \
     Haskell/TiPropATC.hs Haskell/ATC_Haskell.der.hs
